@@ -5,6 +5,7 @@
 //! by the config and the wall-clock budget, and interruption leaves a truthful
 //! status and a recoverable checkpoint.
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -26,17 +27,73 @@ use crate::replay::{GameRecord, ReplayHeader, ReplayWriter, SearchRecord, audit_
 use crate::run_dir::{RunDir, RunStatus};
 use recur64_search::{Evaluator, SelfPlayConfig, play_game_from};
 
-/// Self-play concurrency metrics. `peak_in_flight_evaluations` is the direct
-/// evidence that games executed *concurrently* rather than sequentially: a
-/// configured `active_games`/`cpu_workers` only counts if this rises above 1.
+/// Self-play concurrency and data-health metrics. `peak_in_flight_evaluations`
+/// is the direct evidence that games executed *concurrently* rather than
+/// sequentially: a configured `active_games`/`cpu_workers` only counts if this
+/// rises above 1. The termination/outcome fields are the data-health record
+/// required before trusting a learning run.
+///
+/// Illegal selected actions are impossible by construction: `play_game_from`
+/// only applies moves returned by the rules engine's legal-action list, and the
+/// replay audit re-verifies legality on read.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SelfPlayMetrics {
     pub requested_active_games: u32,
     pub cpu_workers: usize,
     pub games: u64,
     pub plies: u64,
+    pub mean_game_plies: f64,
     pub peak_in_flight_evaluations: usize,
+    /// Termination label -> count (checkmate, stalemate, threefold_repetition,
+    /// fifty_move_rule, insufficient_material, truncated, aborted).
+    pub terminations: BTreeMap<String, u64>,
+    /// Completed-game results from the board's perspective.
+    pub white_wins: u64,
+    pub draws: u64,
+    pub black_wins: u64,
+    /// Games without a terminal result (truncated/aborted); excluded by the
+    /// learner and never labelled as draws.
+    pub truncated: u64,
     pub inference: MetricsSnapshot,
+}
+
+/// Build self-play metrics from collected game records.
+fn selfplay_metrics(
+    cfg: &RunConfig,
+    records: &[GameRecord],
+    inference: MetricsSnapshot,
+) -> SelfPlayMetrics {
+    let mut terminations: BTreeMap<String, u64> = BTreeMap::new();
+    let (mut white_wins, mut draws, mut black_wins, mut truncated) = (0u64, 0u64, 0u64, 0u64);
+    for r in records {
+        *terminations.entry(r.termination.clone()).or_insert(0) += 1;
+        match r.outcome {
+            Some(0) => white_wins += 1,
+            Some(1) => draws += 1,
+            Some(2) => black_wins += 1,
+            _ => truncated += 1,
+        }
+    }
+    let plies: u64 = records.iter().map(|r| r.plies.len() as u64).sum();
+    let games = records.len() as u64;
+    SelfPlayMetrics {
+        requested_active_games: cfg.active_games,
+        cpu_workers: cfg.cpu_workers,
+        games,
+        plies,
+        mean_game_plies: if games == 0 {
+            0.0
+        } else {
+            plies as f64 / games as f64
+        },
+        peak_in_flight_evaluations: inference.peak_in_flight,
+        terminations,
+        white_wins,
+        draws,
+        black_wins,
+        truncated,
+        inference,
+    }
 }
 
 /// Outcome of a bounded run.
@@ -218,14 +275,7 @@ pub fn run<B: AutodiffBackend>(
 
     let inference_metrics = owner.metrics().snapshot();
     owner.shutdown();
-    let selfplay = SelfPlayMetrics {
-        requested_active_games: cfg.active_games,
-        cpu_workers: cfg.cpu_workers,
-        games: records.len() as u64,
-        plies: records.iter().map(|r| r.plies.len() as u64).sum(),
-        peak_in_flight_evaluations: inference_metrics.peak_in_flight,
-        inference: inference_metrics.clone(),
-    };
+    let selfplay = selfplay_metrics(cfg, &records, inference_metrics.clone());
 
     let mut writer = ReplayWriter::new(&run_dir.replay(), header, cfg.shard_max_games)?;
     for r in records {
@@ -411,9 +461,24 @@ pub fn write_report(run_dir: &RunDir, report: &RunReport) -> anyhow::Result<()> 
     }
     if let Some(s) = &report.selfplay {
         md.push_str(&format!(
-            "- selfplay: {} games, {} plies, active_games {} / workers {}, peak in-flight evals {}\n",
-            s.games, s.plies, s.requested_active_games, s.cpu_workers, s.peak_in_flight_evaluations
+            "- selfplay: {} games, {} plies, mean {:.1} plies/game, active_games {} / workers {}, peak in-flight evals {}\n",
+            s.games,
+            s.plies,
+            s.mean_game_plies,
+            s.requested_active_games,
+            s.cpu_workers,
+            s.peak_in_flight_evaluations
         ));
+        md.push_str(&format!(
+            "- results: W/D/L {}/{}/{}, truncated {}\n",
+            s.white_wins, s.draws, s.black_wins, s.truncated
+        ));
+        let terms: Vec<String> = s
+            .terminations
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect();
+        md.push_str(&format!("- terminations: {}\n", terms.join(", ")));
         md.push_str(&format!(
             "- concurrency: batch mean {:.2} / p50 {} / p95 {} / max {}\n",
             s.inference.batch_size_mean,
@@ -477,7 +542,7 @@ pub fn collect_only<B: AutodiffBackend>(
     let inference_metrics = owner.metrics().snapshot();
     owner.shutdown();
 
-    let plies: u64 = records.iter().map(|r| r.plies.len() as u64).sum();
+    let metrics = selfplay_metrics(cfg, &records, inference_metrics);
     let mut writer = ReplayWriter::new(replay_dir, header, cfg.shard_max_games)?;
     for r in records {
         writer.push(r)?;
@@ -485,12 +550,8 @@ pub fn collect_only<B: AutodiffBackend>(
     let manifest = writer.finish()?;
     let _ = std::fs::remove_dir_all(&tmp_ckpt);
     Ok(SelfPlayMetrics {
-        requested_active_games: cfg.active_games,
-        cpu_workers: cfg.cpu_workers,
         games: manifest.games,
-        plies,
-        peak_in_flight_evaluations: inference_metrics.peak_in_flight,
-        inference: inference_metrics,
+        ..metrics
     })
 }
 

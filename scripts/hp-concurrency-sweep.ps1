@@ -38,7 +38,6 @@ $runIndex = 0
 foreach ($ag in $ActiveGames) {
     foreach ($cw in $CpuWorkers) {
         if ($cw -gt $ag) { continue }          # more workers than games is pointless
-        if ($ag % $cw -ne 0) { continue }      # keep the work split even
         foreach ($mb in $MaxBatch) {
             foreach ($tus in $TimeoutUs) {
                 for ($rep = 1; $rep -le $Repeat; $rep++) {
@@ -65,6 +64,8 @@ foreach ($ag in $ActiveGames) {
                     }
                     $m = $raw.Substring($i) | ConvertFrom-Json
                     $inf = $m.inference
+                    $wall = $sw.Elapsed.TotalSeconds
+                    $eps = if ($wall -gt 0) { [math]::Round($inf.submitted / $wall, 1) } else { 0 }
                     $rows.Add([pscustomobject]@{
                         name                   = $name
                         active_games           = $ag
@@ -74,6 +75,7 @@ foreach ($ag in $ActiveGames) {
                         repeat                 = $rep
                         games                  = $m.games
                         plies                  = $m.plies
+                        mean_game_plies        = [math]::Round($m.mean_game_plies, 1)
                         peak_in_flight         = $m.peak_in_flight_evaluations
                         batch_mean             = [math]::Round($inf.batch_size_mean, 3)
                         batch_p50              = $inf.batch_size_p50
@@ -83,11 +85,16 @@ foreach ($ag in $ActiveGames) {
                         errors                 = $inf.errors
                         queue_wait_p95_us      = $inf.queue_wait_us_p95
                         forward_us_mean        = [math]::Round($inf.forward_us_mean, 1)
-                        wall_secs              = [math]::Round($sw.Elapsed.TotalSeconds, 2)
+                        evals_per_sec          = $eps
+                        white_wins             = $m.white_wins
+                        draws                  = $m.draws
+                        black_wins             = $m.black_wins
+                        truncated              = $m.truncated
+                        wall_secs              = [math]::Round($wall, 2)
                     })
-                    Write-Output ("[{0}] {1}: peak_in_flight={2} batch p50/p95/max={3}/{4}/{5} games={6} wall={7}s" -f `
+                    Write-Output ("[{0}] {1}: peak_in_flight={2} batch p50/p95/max={3}/{4}/{5} evals/s={6} games={7} wall={8}s" -f `
                         $runIndex, $name, $m.peak_in_flight_evaluations, $inf.batch_size_p50, `
-                        $inf.batch_size_p95, $inf.batch_size_max, $m.games, [math]::Round($sw.Elapsed.TotalSeconds, 1))
+                        $inf.batch_size_p95, $inf.batch_size_max, $eps, $m.games, [math]::Round($wall, 1))
                 }
             }
         }
