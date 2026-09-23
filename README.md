@@ -12,6 +12,13 @@ chess contracts: observation V1, action V1, rules profile, perft), and **Phase 2
 audit → train → checkpoint → arena → report). It is **not** a chess engine and
 contains no UCI engine loop or strength claims.
 
+> **Experimental branch note.** This checkout is `experiment/hp-r15`, a separate
+> experimental lineage forked from Phase 2 (`78be205`). It explores a ~15M
+> matched-parameter F15/R15 recurrence-vs-search comparison on a home HP machine.
+> It is not mainline and must not be merged without a separate decision. See
+> `docs/HP_EXPERIMENT.md` and `docs/HP_CHANGES.md`; machine-specific detail stays
+> in those files.
+
 ## Requirements
 
 - Rust toolchain 1.97.1 (see `rust-toolchain.toml`).

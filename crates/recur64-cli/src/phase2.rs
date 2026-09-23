@@ -81,8 +81,14 @@ pub struct ReportArgs {
 fn selfplay_impl<B: AutodiffBackend>(cfg: &RunConfig, output: &Path) -> anyhow::Result<()> {
     std::fs::create_dir_all(output)?;
     let cancel = CancelToken::new();
-    let games = collect_only::<B>(cfg, output, &cancel)?;
-    println!("wrote {games} games to {}", output.display());
+    let metrics = collect_only::<B>(cfg, output, &cancel)?;
+    println!(
+        "wrote {} games ({} plies) to {}",
+        metrics.games,
+        metrics.plies,
+        output.display()
+    );
+    println!("{}", serde_json::to_string_pretty(&metrics)?);
     Ok(())
 }
 
@@ -180,6 +186,7 @@ fn run_impl<B: AutodiffBackend>(
 
 pub fn run_selfplay(args: SelfplayArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => selfplay_impl::<CpuTrain>(&cfg, &args.output),
         "cuda" => {
@@ -207,6 +214,7 @@ pub fn run_replay_audit(args: ReplayAuditArgs) -> anyhow::Result<()> {
 
 pub fn run_train(args: TrainArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => train_impl::<CpuTrain>(&cfg, &args.replay, &args.checkpoint, &args.output),
         "cuda" => {
@@ -230,6 +238,7 @@ pub fn run_train(args: TrainArgs) -> anyhow::Result<()> {
 
 pub fn run_arena(args: ArenaArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => arena_impl::<CpuTrain>(&cfg, &args.reference, &args.candidate, &args.output),
         "cuda" => {
@@ -253,6 +262,7 @@ pub fn run_arena(args: ArenaArgs) -> anyhow::Result<()> {
 
 pub fn run_run(args: RunArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => run_impl::<CpuTrain>(&cfg, &args.run_dir, args.force),
         "cuda" => {

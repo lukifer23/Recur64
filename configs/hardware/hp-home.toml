@@ -1,0 +1,32 @@
+# Recur64 HP hardware scheduling profile — PROVISIONAL.
+#
+# This file is a *template overlay*, not a standalone run config. It exists to
+# keep HARDWARE SCHEDULING parameters separate from SCIENTIFIC parameters.
+#
+# Scientific parameters (model geometry, simulations_per_move, c_puct, optimizer,
+# training objective, replay policy, temperature) must be IDENTICAL across
+# machines for a fair comparison. The values below may differ per machine.
+#
+# Usage: copy the values you need into an HP run config (which also carries
+# run_id, [model], and the scientific search settings), or diff them against the
+# resolved `runs/<id>/config.toml`. Automated base+overlay merging is a
+# follow-up ticket; today the resolved config written per run is the record of
+# truth.
+#
+# All values below are HYPOTHESES until the H0.7 concurrency sweep measures them.
+
+hardware_profile = "hp-home"
+
+# --- Self-play scheduling (measured, not guessed) ---
+active_games = 16          # candidate; sweep 8/16/32/64
+cpu_workers = 6            # candidate; 6 physical cores (12 logical) on Ryzen 5 7535HS
+max_inference_batch = 64   # candidate; 4 GB VRAM is the binding constraint
+batch_timeout_us = 2000    # candidate; longer than the 500 us default to improve coalescing
+ply_cap = 400
+
+# --- Learner scheduling ---
+train_batch = 32           # candidate; physical batch
+# gradient_accumulation = 4  # not yet implemented (ticket R1.3)
+
+# --- Run budget ---
+run_budget_minutes = 30

@@ -19,7 +19,9 @@ pub mod run_dir;
 
 pub use cancel::CancelToken;
 pub use config::RunConfig;
-pub use coordinator::{RunReport, collect_only, game_uci_moves, run, write_report};
+pub use coordinator::{
+    RunReport, SelfPlayMetrics, collect_only, game_uci_moves, run, write_report,
+};
 pub use evaluator::SyncEvaluator;
 pub use inference::{
     BatchEvaluator, BatchedEvaluator, BatchedModel, InferenceConfig, InferenceMetrics,

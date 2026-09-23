@@ -1,0 +1,25 @@
+# Recur64 HP experiment F15: feed-forward control.
+# width 512, 8 heads (head_dim 64), FFN 768, 8 unique transformer blocks.
+# Exact unique parameters: 15,154,120 (see `recur64 model-info`).
+# Feed-forward control uses input=0, core=8, output=0; executed blocks at R=1 = 8.
+name = "f15"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

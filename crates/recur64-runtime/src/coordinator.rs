@@ -24,7 +24,20 @@ use crate::learner::{LearnerConfig, TrainReport, train_from_games};
 use crate::model_io;
 use crate::replay::{GameRecord, ReplayHeader, ReplayWriter, SearchRecord, audit_dir};
 use crate::run_dir::{RunDir, RunStatus};
-use recur64_search::{SelfPlayConfig, play_game_from};
+use recur64_search::{Evaluator, SelfPlayConfig, play_game_from};
+
+/// Self-play concurrency metrics. `peak_in_flight_evaluations` is the direct
+/// evidence that games executed *concurrently* rather than sequentially: a
+/// configured `active_games`/`cpu_workers` only counts if this rises above 1.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SelfPlayMetrics {
+    pub requested_active_games: u32,
+    pub cpu_workers: usize,
+    pub games: u64,
+    pub plies: u64,
+    pub peak_in_flight_evaluations: usize,
+    pub inference: MetricsSnapshot,
+}
 
 /// Outcome of a bounded run.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -39,6 +52,7 @@ pub struct RunReport {
     pub reference_model_id: String,
     pub candidate_model_id: String,
     pub inference: Option<MetricsSnapshot>,
+    pub selfplay: Option<SelfPlayMetrics>,
     pub elapsed_secs: f64,
 }
 
@@ -53,6 +67,85 @@ fn read_model_id(dir: &Path) -> String {
                 .map(|s| s.to_string())
         })
         .unwrap_or_default()
+}
+
+/// Play `cfg.active_games` games across `cfg.cpu_workers` worker threads.
+///
+/// This is the **only** parallel self-play path: both `run` and `collect_only`
+/// call it, so a configured concurrency value always corresponds to real
+/// concurrent execution. The workers block on the single inference owner, which
+/// coalesces their requests into batches (see `MetricsSnapshot`).
+fn collect_parallel(
+    cfg: &RunConfig,
+    evaluator: &dyn Evaluator,
+    cancel: &CancelToken,
+    deadline: Instant,
+) -> Vec<GameRecord> {
+    let sp = SelfPlayConfig {
+        simulations_per_move: cfg.simulations_per_move,
+        c_puct: cfg.c_puct,
+        temperature: cfg.temperature,
+        ply_cap: cfg.ply_cap,
+        recurrence: cfg.recurrence,
+    };
+    let search_record = SearchRecord {
+        simulations: cfg.simulations_per_move,
+        c_puct: cfg.c_puct,
+        temperature: cfg.temperature,
+        recurrence: cfg.recurrence,
+    };
+
+    let workers = cfg.cpu_workers.max(1);
+    let games_total = cfg.active_games as usize;
+    let mut records: Vec<GameRecord> = Vec::new();
+
+    std::thread::scope(|scope| {
+        let mut handles = Vec::new();
+        for w in 0..workers {
+            let per = games_total / workers;
+            let extra = if w < games_total % workers { 1 } else { 0 };
+            let start = w * per + w.min(games_total % workers);
+            let count = per + extra;
+            let ev = evaluator;
+            let cancel = cancel.clone();
+            let search_record = search_record.clone();
+            let seed = cfg.seed;
+            let start_fen = cfg.start_fen.clone();
+            handles.push(scope.spawn(move || {
+                let mut out = Vec::with_capacity(count);
+                for i in 0..count {
+                    if cancel.is_cancelled() || Instant::now() > deadline {
+                        break;
+                    }
+                    let game_index = start + i;
+                    let game_seed = seed.wrapping_add(game_index as u64);
+                    let start_state = match &start_fen {
+                        Some(f) => match GameState::from_fen(f) {
+                            Ok(s) => s,
+                            Err(_) => continue,
+                        },
+                        None => GameState::startpos(),
+                    };
+                    let mut rng = recur64_search::Rng::new(game_seed);
+                    if let Ok(mut g) = play_game_from(ev, &sp, &mut rng, start_state) {
+                        g.seed = game_seed;
+                        out.push(GameRecord::from_selfplay(
+                            game_index as u64,
+                            &g,
+                            search_record.clone(),
+                        ));
+                    }
+                }
+                out
+            }));
+        }
+        for h in handles {
+            if let Ok(mut v) = h.join() {
+                records.append(&mut v);
+            }
+        }
+    });
+    records
 }
 
 /// Run the bounded vertical slice.
@@ -121,76 +214,21 @@ pub fn run<B: AutodiffBackend>(
     );
     let evaluator = owner.evaluator();
 
-    let sp = SelfPlayConfig {
-        simulations_per_move: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        ply_cap: cfg.ply_cap,
-        recurrence: cfg.recurrence,
-    };
-    let search_record = SearchRecord {
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        recurrence: cfg.recurrence,
-    };
-
-    let workers = cfg.cpu_workers.max(1);
-    let games_total = cfg.active_games as usize;
-    let mut records: Vec<GameRecord> = Vec::new();
-
-    std::thread::scope(|scope| {
-        let mut handles = Vec::new();
-        for w in 0..workers {
-            let per = games_total / workers;
-            let extra = if w < games_total % workers { 1 } else { 0 };
-            let start = w * per + w.min(games_total % workers);
-            let count = per + extra;
-            let ev = &evaluator;
-            let cancel = cancel.clone();
-            let search_record = search_record.clone();
-            let seed = cfg.seed;
-            let start_fen = cfg.start_fen.clone();
-            handles.push(scope.spawn(move || {
-                let mut out = Vec::with_capacity(count);
-                for i in 0..count {
-                    if cancel.is_cancelled() || Instant::now() > deadline {
-                        break;
-                    }
-                    let game_index = start + i;
-                    let game_seed = seed.wrapping_add(game_index as u64);
-                    let start_state = match &start_fen {
-                        Some(f) => match GameState::from_fen(f) {
-                            Ok(s) => s,
-                            Err(_) => continue,
-                        },
-                        None => GameState::startpos(),
-                    };
-                    let mut rng = recur64_search::Rng::new(game_seed);
-                    if let Ok(mut g) = play_game_from(ev, &sp, &mut rng, start_state) {
-                        g.seed = game_seed;
-                        out.push(GameRecord::from_selfplay(
-                            game_index as u64,
-                            &g,
-                            search_record.clone(),
-                        ));
-                    }
-                }
-                out
-            }));
-        }
-        for h in handles {
-            if let Ok(mut v) = h.join() {
-                records.append(&mut v);
-            }
-        }
-    });
+    let records = collect_parallel(cfg, &evaluator, cancel, deadline);
 
     let inference_metrics = owner.metrics().snapshot();
     owner.shutdown();
+    let selfplay = SelfPlayMetrics {
+        requested_active_games: cfg.active_games,
+        cpu_workers: cfg.cpu_workers,
+        games: records.len() as u64,
+        plies: records.iter().map(|r| r.plies.len() as u64).sum(),
+        peak_in_flight_evaluations: inference_metrics.peak_in_flight,
+        inference: inference_metrics.clone(),
+    };
 
     let mut writer = ReplayWriter::new(&run_dir.replay(), header, cfg.shard_max_games)?;
-    for r in records.drain(..) {
+    for r in records {
         writer.push(r)?;
     }
     let manifest = writer.finish()?;
@@ -207,6 +245,7 @@ pub fn run<B: AutodiffBackend>(
         let mut report = interrupted_report(cfg, started, reference_model_id);
         report.games_collected = games_collected;
         report.inference = Some(inference_metrics);
+        report.selfplay = Some(selfplay);
         return Ok(report);
     }
 
@@ -310,6 +349,7 @@ pub fn run<B: AutodiffBackend>(
         reference_model_id,
         candidate_model_id,
         inference: Some(inference_metrics),
+        selfplay: Some(selfplay),
         elapsed_secs: started.elapsed().as_secs_f64(),
     };
     write_report(run_dir, &report)?;
@@ -329,6 +369,7 @@ fn interrupted_report(cfg: &RunConfig, started: Instant, reference_model_id: Str
         reference_model_id,
         candidate_model_id: String::new(),
         inference: None,
+        selfplay: None,
         elapsed_secs: started.elapsed().as_secs_f64(),
     }
 }
@@ -368,17 +409,32 @@ pub fn write_report(run_dir: &RunDir, report: &RunReport) -> anyhow::Result<()> 
             m.submitted, m.batches, m.batch_size_mean, m.batch_size_p95, m.queue_wait_us_p95
         ));
     }
+    if let Some(s) = &report.selfplay {
+        md.push_str(&format!(
+            "- selfplay: {} games, {} plies, active_games {} / workers {}, peak in-flight evals {}\n",
+            s.games, s.plies, s.requested_active_games, s.cpu_workers, s.peak_in_flight_evaluations
+        ));
+        md.push_str(&format!(
+            "- concurrency: batch mean {:.2} / p50 {} / p95 {} / max {}\n",
+            s.inference.batch_size_mean,
+            s.inference.batch_size_p50,
+            s.inference.batch_size_p95,
+            s.inference.batch_size_max
+        ));
+    }
     md.push_str(&format!("- elapsed: {:.1}s\n", report.elapsed_secs));
     std::fs::write(run_dir.report().join("report.md"), md)?;
     Ok(())
 }
 
 /// Helper for the `selfplay` CLI: play games and write replay without training.
+/// Uses the same parallel collect path as `run`, so `active_games`/`cpu_workers`
+/// reflect real concurrent execution.
 pub fn collect_only<B: AutodiffBackend>(
     cfg: &RunConfig,
     replay_dir: &Path,
     cancel: &CancelToken,
-) -> anyhow::Result<u64> {
+) -> anyhow::Result<SelfPlayMetrics> {
     let inner_device: Device<B::InnerBackend> = Default::default();
     let b_device: B::Device = Default::default();
     let reference_model = model_io::build::<B>(&cfg.model, &b_device);
@@ -416,39 +472,26 @@ pub fn collect_only<B: AutodiffBackend>(
         },
     );
     let ev = owner.evaluator();
-    let sp = SelfPlayConfig {
-        simulations_per_move: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        ply_cap: cfg.ply_cap,
-        recurrence: cfg.recurrence,
-    };
-    let search_record = SearchRecord {
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        recurrence: cfg.recurrence,
-    };
+    let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
+    let records = collect_parallel(cfg, &ev, cancel, deadline);
+    let inference_metrics = owner.metrics().snapshot();
+    owner.shutdown();
 
+    let plies: u64 = records.iter().map(|r| r.plies.len() as u64).sum();
     let mut writer = ReplayWriter::new(replay_dir, header, cfg.shard_max_games)?;
-    for i in 0..cfg.active_games as u64 {
-        if cancel.is_cancelled() {
-            break;
-        }
-        let game_seed = cfg.seed.wrapping_add(i);
-        let start_state = match &cfg.start_fen {
-            Some(f) => GameState::from_fen(f)?,
-            None => GameState::startpos(),
-        };
-        let mut rng = recur64_search::Rng::new(game_seed);
-        let mut g = play_game_from(&ev, &sp, &mut rng, start_state)?;
-        g.seed = game_seed;
-        writer.push(GameRecord::from_selfplay(i, &g, search_record.clone()))?;
+    for r in records {
+        writer.push(r)?;
     }
     let manifest = writer.finish()?;
-    owner.shutdown();
     let _ = std::fs::remove_dir_all(&tmp_ckpt);
-    Ok(manifest.games)
+    Ok(SelfPlayMetrics {
+        requested_active_games: cfg.active_games,
+        cpu_workers: cfg.cpu_workers,
+        games: manifest.games,
+        plies,
+        peak_in_flight_evaluations: inference_metrics.peak_in_flight,
+        inference: inference_metrics,
+    })
 }
 
 /// Reconstruct a game's UCI move list (used by tests and diagnostics).

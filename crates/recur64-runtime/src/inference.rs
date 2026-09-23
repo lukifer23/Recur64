@@ -6,7 +6,7 @@
 //! receives exactly one response (a result or an error), so no caller can block
 //! forever — including during shutdown.
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, TrySendError, sync_channel};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -185,6 +185,11 @@ pub struct InferenceMetrics {
     pub timeout_flushes: AtomicU64,
     pub queue_wait_us_sum: AtomicU64,
     pub forward_us_sum: AtomicU64,
+    /// Simultaneous in-flight evaluator calls. This is the direct measure of
+    /// *real* concurrency: a configured worker count only matters if this gauge
+    /// actually rises above 1 (and batch p50 rises with it).
+    pub in_flight: AtomicUsize,
+    pub peak_in_flight: AtomicUsize,
     samples: Mutex<SampleBuffer>,
 }
 
@@ -237,6 +242,7 @@ impl InferenceMetrics {
                 self.forward_us_sum.load(Ordering::Relaxed),
                 self.batches.load(Ordering::Relaxed),
             ),
+            peak_in_flight: self.peak_in_flight.load(Ordering::Relaxed),
         }
     }
 }
@@ -280,6 +286,8 @@ pub struct MetricsSnapshot {
     pub queue_wait_us_p50: u64,
     pub queue_wait_us_p95: u64,
     pub forward_us_mean: f64,
+    /// Peak simultaneous in-flight evaluator calls (real concurrency gauge).
+    pub peak_in_flight: usize,
 }
 
 /// Owns the inference thread and its channel.
@@ -453,6 +461,19 @@ pub struct BatchedEvaluator {
 
 impl Evaluator for BatchedEvaluator {
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
+        // Real-concurrency gauge: count simultaneous evaluator calls so a
+        // configured `cpu_workers`/`active_games` can be checked against actual
+        // concurrent execution (see MetricsSnapshot::peak_in_flight).
+        let now = self.metrics.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+        self.metrics.peak_in_flight.fetch_max(now, Ordering::SeqCst);
+        let result = self.evaluate_inner(request);
+        self.metrics.in_flight.fetch_sub(1, Ordering::SeqCst);
+        result
+    }
+}
+
+impl BatchedEvaluator {
+    fn evaluate_inner(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
         let (respond, response_rx) = sync_channel(1);
         let msg = Request {
             observation: request.observation.clone(),

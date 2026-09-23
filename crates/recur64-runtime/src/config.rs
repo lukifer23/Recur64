@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use recur64_model::config::ModelConfig;
+use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
     1
@@ -116,10 +116,46 @@ pub struct RunConfig {
     /// A simple endgame start lets a systems smoke produce completed games.
     #[serde(default)]
     pub start_fen: Option<String>,
+
+    /// Label for the hardware scheduling profile this run resolved to
+    /// (e.g. "hp-home"). Scheduling parameters may differ per machine; the
+    /// scientific parameters above must not.
+    #[serde(default)]
+    pub hardware_profile: Option<String>,
+
+    /// Label for the model profile this run used (e.g. "f15", "r15").
+    #[serde(default)]
+    pub model_profile: Option<String>,
 }
 
 impl RunConfig {
     pub fn from_toml_str(s: &str) -> anyhow::Result<Self> {
         Ok(toml::from_str(s)?)
+    }
+
+    /// Parse the device string into a typed device kind.
+    pub fn device_kind(&self) -> anyhow::Result<DeviceKind> {
+        match self.device.as_str() {
+            "cpu" => Ok(DeviceKind::Cpu),
+            "cuda" => Ok(DeviceKind::Cuda),
+            other => anyhow::bail!("unknown device '{other}' (expected cpu or cuda)"),
+        }
+    }
+
+    /// Parse the precision string into a typed precision.
+    pub fn precision_kind(&self) -> anyhow::Result<Precision> {
+        match self.precision.as_str() {
+            "fp32" => Ok(Precision::Fp32),
+            "bf16" => Ok(Precision::Bf16),
+            "fp16" => Ok(Precision::Fp16),
+            other => anyhow::bail!("unknown precision '{other}' (expected fp32, bf16 or fp16)"),
+        }
+    }
+
+    /// Refuse a device/precision combination that has not been tested end-to-end.
+    /// This is called on every run path (not only `bench`) so a BF16/FP16 request
+    /// fails visibly instead of silently running something else.
+    pub fn ensure_supported(&self) -> anyhow::Result<()> {
+        recur64_model::precision::ensure_supported(self.precision_kind()?, self.device_kind()?)
     }
 }

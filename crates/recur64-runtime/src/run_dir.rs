@@ -22,6 +22,18 @@ pub struct RunMetadata {
     pub run_id: String,
     pub status: RunStatus,
     pub git_revision: Option<String>,
+    /// Branch the binary was built from (HP experiment provenance).
+    #[serde(default)]
+    pub git_branch: Option<String>,
+    /// Self-play / learner seed recorded for this run.
+    #[serde(default)]
+    pub seed: u64,
+    /// Hardware scheduling profile label (e.g. "hp-home").
+    #[serde(default)]
+    pub hardware_profile: Option<String>,
+    /// Model profile label (e.g. "f15", "r15").
+    #[serde(default)]
+    pub model_profile: Option<String>,
     pub recur64_version: String,
     pub observation_version: u32,
     pub action_version: u32,
@@ -38,7 +50,11 @@ impl RunMetadata {
         Self {
             run_id: cfg.run_id.clone(),
             status: RunStatus::Running,
-            git_revision: None,
+            git_revision: option_env!("RECUR64_GIT_SHA").map(|s| s.to_string()),
+            git_branch: option_env!("RECUR64_GIT_BRANCH").map(|s| s.to_string()),
+            seed: cfg.seed,
+            hardware_profile: cfg.hardware_profile.clone(),
+            model_profile: cfg.model_profile.clone(),
             recur64_version: crate::VERSION.to_string(),
             observation_version: v.observation,
             action_version: v.action,

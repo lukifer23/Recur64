@@ -6,9 +6,10 @@ use burn::backend::Flex;
 use recur64_model::config::ProbeConfig;
 use recur64_model::model::ProbeModel;
 
-/// Executed transformer blocks for the F10 R=1 control, used as the neural
-/// compute baseline for the multiplier column.
-const F10_R1_BASELINE_BLOCKS: f64 = 8.0;
+/// Executed transformer blocks for the feed-forward R=1 control. Both F15 and
+/// R15 execute 8 blocks at R=1, so this is the neural-compute baseline for the
+/// multiplier column on this branch.
+const CONTROL_R1_BLOCKS: f64 = 8.0;
 
 pub fn run_model_info(path: &Path) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(path)?;
@@ -50,20 +51,20 @@ pub fn run_model_info(path: &Path) -> anyhow::Result<()> {
     println!("\nexecuted transformer blocks and compute multiplier:");
     println!(
         "  {:<10} {:>16} {:>18} {:>12}",
-        "R", "final blocks", "deep-sup blocks", "mult vs F10R1"
+        "R", "final blocks", "deep-sup blocks", "mult vs R=1"
     );
     for r in &cfg.recurrence {
         let final_blocks = cfg.model.executed_blocks_final(*r);
         let deep = cfg.model.executed_blocks_deep_supervision(*r);
-        let mult = final_blocks as f64 / F10_R1_BASELINE_BLOCKS;
+        let mult = final_blocks as f64 / CONTROL_R1_BLOCKS;
         println!(
             "  R={:<8} {:>16} {:>18} {:>12.2}x",
             r, final_blocks, deep, mult
         );
     }
     println!(
-        "\nnote: 'mult vs F10R1' = executed_blocks / {:.0} (F10 R=1 control).",
-        F10_R1_BASELINE_BLOCKS
+        "\nnote: 'mult vs R=1' = executed_blocks / {:.0} (the 8-block R=1 control).",
+        CONTROL_R1_BLOCKS
     );
     Ok(())
 }
