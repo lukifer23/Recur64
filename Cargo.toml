@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["crates/recur64-core", "crates/recur64-model", "crates/recur64-cli"]
+members = [
+    "crates/recur64-core",
+    "crates/recur64-search",
+    "crates/recur64-model",
+    "crates/recur64-runtime",
+    "crates/recur64-cli",
+]
 
 [workspace.package]
 version = "0.1.0"
