@@ -46,6 +46,42 @@ impl ReplayWriter {
         })
     }
 
+    /// Open a writer that appends to an existing replay directory (multi-cycle).
+    /// If a manifest exists, its shards are retained and shard numbering
+    /// continues; otherwise this behaves like [`ReplayWriter::new`].
+    pub fn open_append(
+        dir: &Path,
+        header: ReplayHeader,
+        shard_max_games: usize,
+    ) -> anyhow::Result<Self> {
+        anyhow::ensure!(shard_max_games >= 1, "shard_max_games must be >= 1");
+        fs::create_dir_all(dir)?;
+        let manifest_path = dir.join("manifest.json");
+        let (shards, games, bytes, next_index) = if manifest_path.exists() {
+            let manifest: Manifest = serde_json::from_slice(&fs::read(&manifest_path)?)?;
+            let next = manifest
+                .shards
+                .iter()
+                .filter_map(|s| parse_shard_index(&s.file))
+                .max()
+                .map(|m| m + 1)
+                .unwrap_or(0);
+            (manifest.shards, manifest.games, manifest.bytes, next)
+        } else {
+            (Vec::new(), 0, 0, 0)
+        };
+        Ok(Self {
+            dir: dir.to_path_buf(),
+            header,
+            shard_max_games,
+            buffer: Vec::new(),
+            shard_index: next_index,
+            shards,
+            games_written: games,
+            bytes_written: bytes,
+        })
+    }
+
     /// Buffer a game, flushing a shard when the buffer is full.
     pub fn push(&mut self, game: GameRecord) -> anyhow::Result<()> {
         self.buffer.push(game);
@@ -89,9 +125,11 @@ impl ReplayWriter {
         }
         fs::rename(&tmp, &final_path)?;
 
+        let positions: u64 = shard.games.iter().map(|g| g.plies.len() as u64).sum();
         self.shards.push(ShardInfo {
             file: name,
             games: shard.games.len() as u64,
+            positions,
             bytes: bytes.len() as u64,
             crc32: crc,
         });
@@ -113,6 +151,13 @@ impl ReplayWriter {
         write_manifest_atomic(&self.dir, &manifest)?;
         Ok(manifest)
     }
+}
+
+fn parse_shard_index(file: &str) -> Option<u32> {
+    file.strip_prefix("shard-")?
+        .strip_suffix(".r64shard")?
+        .parse()
+        .ok()
 }
 
 /// Write the manifest atomically (temp + rename).

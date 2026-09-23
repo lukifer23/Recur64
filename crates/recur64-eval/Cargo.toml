@@ -9,3 +9,5 @@ description.workspace = true
 recur64-core = { path = "../recur64-core" }
 recur64-search = { path = "../recur64-search" }
 serde = { workspace = true }
+toml = { workspace = true }
+anyhow = { workspace = true }

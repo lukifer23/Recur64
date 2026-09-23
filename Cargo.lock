@@ -4482,9 +4482,11 @@ dependencies = [
 name = "recur64-eval"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "recur64-core",
  "recur64-search",
  "serde",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]

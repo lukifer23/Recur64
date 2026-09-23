@@ -1,0 +1,54 @@
+# Recur64 HP — R15 bounded pilot (Phase 3 multi-cycle controller, CUDA).
+#
+# Identical to hp/f15-pilot.toml except the shared recurrent core (2 input +
+# 4 core + 2 output) and recurrence. Unique parameter count is identical to F15
+# (15,154,120). R=1 here is the structural control; R=2/4 add internal compute.
+run_id = "hp-r15-pilot"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "r15"
+hardware_profile = "hp-home"
+
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+active_games = 32
+cpu_workers = 8
+ply_cap = 400
+seed = 1
+
+max_inference_batch = 64
+batch_timeout_us = 2000
+
+shard_max_games = 128
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+
+train_batch = 32
+accumulation_steps = 4
+max_updates = 200
+lr = 3.0e-4
+
+arena_games = 40
+opening_suite = "configs/openings-v1.toml"
+
+cycles = 3
+position_budget = 40000
+snapshot_policy = "conservative"
+promotion_score_floor = 0.35
+run_budget_minutes = 60
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 2
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

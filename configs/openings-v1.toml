@@ -1,0 +1,16 @@
+version = 1
+provenance = "Recur64 deterministic legal prefixes: count=12, plies=6, seed=20260923"
+openings = [
+    "r1bqkbnr/pppp2pp/2n1pp2/8/4P3/N4N2/PPPP1PPP/R1BQKB1R w KQkq - 0 4",
+    "rnbqkbnr/p1p1ppp1/1p5p/3p4/P6P/7R/1PPPPPP1/RNBQKBN1 w Qkq d6 0 4",
+    "rnbqkbnr/pppp3p/6p1/4pp2/4P1P1/P7/1PPP1P1P/RNBQKBNR w KQkq - 0 4",
+    "r1bqkbn1/pppppppr/n6p/8/8/2N3PN/PPPPPP1P/R1BQKB1R w KQq - 1 4",
+    "r1bqkbnr/ppp1pppp/3p4/2n5/2P5/6PP/PP1PPP2/RNBQKBNR w KQkq - 0 4",
+    "r1bqkbnr/pp2pppp/n2p4/2p1P3/8/7N/PPPP1PPP/RNBQKB1R w KQkq - 0 4",
+    "rnbqkb1r/pp1pppp1/2p2n1p/8/1PP5/8/P2PPPPP/RNBQKBNR w KQkq - 0 4",
+    "rnbqkbnr/p2pp1pp/1pp5/5p2/1P2P3/5P2/P1PP2PP/RNBQKBNR w KQkq - 0 4",
+    "rnbqkbr1/ppppppp1/5n1p/1N6/4P3/8/PPPP1PPP/R1BQKBNR w KQq - 0 4",
+    "1nbqkbnr/r1pppppp/8/pp6/3PP3/8/PPP2PPP/RNBQKBNR w KQk - 1 4",
+    "rnbqkbnr/pp1pp1p1/2p2p1p/6N1/8/7P/PPPPPPP1/RNBQKB1R w KQkq - 0 4",
+    "r1bqkb1r/1ppppppp/2n2n2/p7/3P1P2/7N/PPP1P1PP/RNBQKB1R w KQkq - 1 4",
+]

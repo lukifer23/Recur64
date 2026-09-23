@@ -174,6 +174,10 @@ pub struct Shard {
 pub struct ShardInfo {
     pub file: String,
     pub games: u64,
+    /// Total positions (plies) across the shard's games. Defaulted for reading
+    /// manifests written before this field existed.
+    #[serde(default)]
+    pub positions: u64,
     pub bytes: u64,
     pub crc32: u32,
 }

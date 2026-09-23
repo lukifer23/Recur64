@@ -1,0 +1,45 @@
+# Recur64 Phase 3 Stage A — small F10 standard-start systems smoke.
+# Verifies the F10 graph runs the full loop on real games from the standard start.
+run_id = "f10-smoke"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+
+simulations_per_move = 8
+c_puct = 1.0
+temperature = 1.0
+active_games = 16
+cpu_workers = 8
+ply_cap = 200
+seed = 1
+
+max_inference_batch = 32
+batch_timeout_us = 500
+
+shard_max_games = 64
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+
+train_batch = 16
+accumulation_steps = 1
+max_updates = 4
+lr = 3.0e-4
+
+arena_games = 2
+
+cycles = 1
+run_budget_minutes = 8
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

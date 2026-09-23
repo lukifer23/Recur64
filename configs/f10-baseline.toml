@@ -1,0 +1,65 @@
+# Recur64 Phase 3 — F10 + PUCT control baseline (frozen contract).
+#
+# Feed-forward F10 (width 384, 12 heads, ffn 768, 8 blocks), R=1, PUCT only,
+# self-play only, random init, FP32. Standard start. No Gumbel / R10 / diffusion
+# / geometric bias / auxiliary heads / external labels / BF16.
+#
+# Values marked "(frozen)" are set after the Stage A sweeps (T3.3/T3.4) and must
+# not change without a new experiment id.
+run_id = "f10-baseline"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+
+# Standard starting position (main baseline).
+# start_fen omitted -> GameState::startpos()
+
+# Self-play. Frozen after the Stage A sweep.
+simulations_per_move = 64      # (frozen) selected in T3.4
+c_puct = 1.0                   # (frozen) retained unless clearly pathological
+temperature = 1.0              # frozen convention: sample all plies, no noise
+# argmax_after_ply omitted -> sample every ply at `temperature` (baseline)
+active_games = 64
+cpu_workers = 8
+ply_cap = 512
+seed = 1
+
+# Inference batching. Frozen after the Stage A sweep.
+max_inference_batch = 64
+batch_timeout_us = 500
+
+# Replay.
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+
+# Learner.
+train_batch = 64
+accumulation_steps = 4
+max_updates = 2000
+lr = 3.0e-4
+# warmup_updates / planned_updates omitted -> resolved from the budget.
+
+# Arena / evaluation.
+arena_games = 100
+opening_suite = "configs/openings-v1.toml"
+
+# Pilot scheduling.
+cycles = 1
+snapshot_policy = "conservative"
+promotion_score_floor = 0.35
+run_budget_minutes = 60
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

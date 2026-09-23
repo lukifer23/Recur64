@@ -13,7 +13,7 @@ use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
 use recur64_core::{GameState, StandardMove};
-use recur64_eval::{ArenaConfig, ArenaResult, run_arena};
+use recur64_eval::{ArenaConfig, ArenaResult, OpeningSuite, run_arena};
 use recur64_model::checkpoint::{CheckpointMeta, save_training};
 use recur64_model::train::adamw;
 
@@ -126,12 +126,15 @@ fn read_model_id(dir: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// Play `cfg.active_games` games across `cfg.cpu_workers` worker threads.
+/// Play `cfg.active_games` games with `cfg.active_games` concurrent worker
+/// threads, pulling game indices from a shared atomic queue. `active_games` is
+/// therefore the real concurrency: many leaf requests are in flight and the
+/// batcher can coalesce them.
 ///
-/// This is the **only** parallel self-play path: both `run` and `collect_only`
-/// call it, so a configured concurrency value always corresponds to real
-/// concurrent execution. The workers block on the single inference owner, which
-/// coalesces their requests into batches (see `MetricsSnapshot`).
+/// Both `run` and `collect_only` use this single path, so a configured
+/// concurrency value always means real concurrent execution. (The Phase 2
+/// `collect_only` played games sequentially, and the Phase 2 coordinator
+/// bounded concurrency by `cpu_workers`, producing tiny batches.)
 fn collect_parallel(
     cfg: &RunConfig,
     evaluator: &dyn Evaluator,
@@ -152,29 +155,31 @@ fn collect_parallel(
         recurrence: cfg.recurrence,
     };
 
-    let workers = cfg.cpu_workers.max(1);
+    let concurrency = (cfg.active_games as usize).max(1);
     let games_total = cfg.active_games as usize;
+    let next = std::sync::atomic::AtomicU64::new(0);
     let mut records: Vec<GameRecord> = Vec::new();
 
     std::thread::scope(|scope| {
         let mut handles = Vec::new();
-        for w in 0..workers {
-            let per = games_total / workers;
-            let extra = if w < games_total % workers { 1 } else { 0 };
-            let start = w * per + w.min(games_total % workers);
-            let count = per + extra;
+        for _ in 0..concurrency {
             let ev = evaluator;
             let cancel = cancel.clone();
             let search_record = search_record.clone();
             let seed = cfg.seed;
             let start_fen = cfg.start_fen.clone();
+            let next = &next;
             handles.push(scope.spawn(move || {
-                let mut out = Vec::with_capacity(count);
-                for i in 0..count {
+                let mut out = Vec::new();
+                loop {
                     if cancel.is_cancelled() || Instant::now() > deadline {
                         break;
                     }
-                    let game_index = start + i;
+                    let game_index =
+                        next.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as usize;
+                    if game_index >= games_total {
+                        break;
+                    }
                     let game_seed = seed.wrapping_add(game_index as u64);
                     let start_state = match &start_fen {
                         Some(f) => match GameState::from_fen(f) {
@@ -312,8 +317,12 @@ pub fn run<B: AutodiffBackend>(
     let mut optim = adamw::<B, _>();
     let learner_cfg = LearnerConfig {
         batch_size: cfg.train_batch,
+        accumulation_steps: cfg.accumulation_steps,
         max_updates: cfg.max_updates,
         lr: cfg.lr,
+        warmup_updates: cfg.resolved_warmup(),
+        planned_updates: cfg.resolved_planned_updates(),
+        start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
     };
@@ -371,6 +380,12 @@ pub fn run<B: AutodiffBackend>(
         model_io::load::<B::InnerBackend>(&run_dir.candidate_ckpt(), &cfg.model, &inner_device)?;
     let ref_ev = SyncEvaluator::new(ref_infer, cfg.recurrence, inner_device.clone());
     let cand_ev = SyncEvaluator::new(cand_infer, cfg.recurrence, inner_device);
+    let openings = match &cfg.opening_suite {
+        Some(p) => OpeningSuite::load(std::path::Path::new(p))
+            .map(|s| s.openings)
+            .unwrap_or_default(),
+        None => Vec::new(),
+    };
     let arena_cfg = ArenaConfig {
         games: cfg.arena_games,
         simulations: cfg.simulations_per_move,
@@ -378,6 +393,7 @@ pub fn run<B: AutodiffBackend>(
         recurrence: cfg.recurrence,
         ply_cap: cfg.ply_cap,
         seed: cfg.seed,
+        openings,
     };
     let arena = run_arena(
         &ref_ev,

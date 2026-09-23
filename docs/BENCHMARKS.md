@@ -200,3 +200,36 @@ include kernel JIT/autotune, so the mean overstates steady-state GPU latency.
 Queue wait is dominated by CPU forward time in the CPU run. These are single-run
 numbers on a desktop workstation, not statistically characterized, and no
 optimization was performed in Phase 2.
+
+---
+
+# Phase 3 — F10 baseline systems metrics (CUDA, FP32)
+
+## Stage A batching sweep (`recur64 bench-runtime`, F10, standard start)
+
+Warmup (F10 forward, batch 1–64) ≈ 2.5–5 s, recorded separately.
+
+| active games | max batch | batch mean / p50 / p95 | games/h | pos/s | VRAM MB |
+|---:|---:|---|---:|---:|---:|
+| 32 | 32 | 26.5 / 32 / 32 | 8,202 | 189.7 | 1,033 |
+| 64 | 32 | 31.9 / 32 / 32 | 9,017 | 249.0 | 1,449 |
+| 64 | 64 | 34.0 / 40 / 47 | 12,720 | 215.7 | 1,769 |
+| 128 | 64 | 28.5 / 36 / 46 | 22,817 | 203.8 | 2,441 |
+
+Search-budget sweep (active 64, batch 64, ply_cap 100):
+
+| sims/move | positions/s |
+|---:|---:|
+| 16 | 47.0 |
+| 32 | 33.5 |
+| 64 | 17.5 |
+
+## Stage C bounded pilot (4 cycles, ~62 min, sims 32, 64 games/cycle)
+
+~44,232 positions (~44k positions/h including a 20-game arena and raw match).
+Per-cycle: loss often rising (e.g. 1.29→3.66), grad norm 44–88, reuse 0.07–0.13,
+arena near-all draws, raw policy vs random 0.17–0.32.
+
+See `docs/F10_BASELINE.md` for the full table and the decision package.
+Limitations: single run, one workstation, no statistical characterization; no
+optimization performed.

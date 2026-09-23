@@ -156,8 +156,12 @@ fn train_impl<B: AutodiffBackend>(
     let mut optim = adamw::<B, _>();
     let learner_cfg = recur64_runtime::LearnerConfig {
         batch_size: cfg.train_batch,
+        accumulation_steps: cfg.accumulation_steps,
         max_updates: cfg.max_updates,
         lr: cfg.lr,
+        warmup_updates: cfg.resolved_warmup(),
+        planned_updates: cfg.resolved_planned_updates(),
+        start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
     };
@@ -194,6 +198,12 @@ fn arena_impl<B: AutodiffBackend>(
     let cand_model = model_io::load::<B::InnerBackend>(candidate, &cfg.model, &device)?;
     let ref_ev = SyncEvaluator::new(ref_model, cfg.recurrence, device.clone());
     let cand_ev = SyncEvaluator::new(cand_model, cfg.recurrence, device);
+    let openings = match &cfg.opening_suite {
+        Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))
+            .map(|s| s.openings)
+            .unwrap_or_default(),
+        None => Vec::new(),
+    };
     let arena_cfg = ArenaConfig {
         games: cfg.arena_games,
         simulations: cfg.simulations_per_move,
@@ -201,6 +211,7 @@ fn arena_impl<B: AutodiffBackend>(
         recurrence: cfg.recurrence,
         ply_cap: cfg.ply_cap,
         seed: cfg.seed,
+        openings,
     };
     let result = eval_run_arena(
         &ref_ev,

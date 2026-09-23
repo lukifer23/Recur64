@@ -194,3 +194,58 @@ Phase 2 is **GO**: the whole learning system closes the loop truthfully and
 reproducibly on real legal chess with real neural outputs. Strength was never the
 goal; Micro remains weak by design. Phase 3 (F10 baseline and longer pilots) may
 proceed only after review of these artifacts.
+
+---
+
+# Phase 3 — F10 + PUCT control baseline
+
+## COMPLETED
+
+- `RunConfig` Phase 3 fields (cycles, budgets, reuse, warmup/planned, accumulation,
+  snapshot policy, opening suite, config hash) and `lineage.jsonl` provenance.
+- `bench-runtime`: CUDA warmup + batching/active-game sweep (cold/warm separated).
+- Fixed a real concurrency bug: `active_games` now means concurrent games, so
+  batches coalesce (mean 20–34; was 1.0).
+- Streaming replay sampler + capacity archiving (bounded memory).
+- Learner hardening: policy/WDL loss split, grad norm, warmup+cosine schedule,
+  gradient accumulation, per-update metrics, health guards.
+- F10 checkpoint/resume proof (bit-exact on CPU; schedule + optimizer preserved).
+- Raw-policy evaluator; frozen opening suite; arena openings + 95% CI.
+- `recur64 pilot`: bounded multi-cycle controller with a conservative snapshot
+  policy.
+- CLI: `bench-runtime | gen-openings | eval-policy | pilot`.
+- Docs: `F10_BASELINE.md`; configs `f10-baseline`, `f10-pilot`, `f10-stage-c`,
+  `f10-smoke`, `f10-sweep`, `openings-v1`.
+
+## VERIFIED
+
+- `cargo test --workspace` passes (~180 tests); fmt/clippy clean.
+- F10 standard-start self-play runs legally (zero illegal actions); audit passes.
+- Batcher coalesces; warmup recorded separately.
+- Streaming sampler excludes truncated games; capacity archives oldest shards.
+- Learner schedule/accumulation/metrics unit tests pass.
+- F10 resume is bit-exact (Δloss = Δweight = 0).
+- Bounded pilot completes multiple cycles and writes a report + lineage.
+
+## FAILED / WEAK (honest)
+
+- **Learning health is poor at this scale:** loss unstable within cycles
+  (often rising), grad norms high (44–88), replay reuse far below target
+  (0.07–0.13 vs 2.0), and raw policy vs random below 0.5.
+- **Searched self-play is repetition-dominated** (arena near-all threefold/
+  fifty-move draws), so the searched arena is uninformative for untrained models.
+
+## NOT RUN
+
+- The full ~2h Stage C pilot and the ~24h baseline (blocked on the fixes below).
+- BF16/FP16 (gated).
+
+## BLOCKED
+
+- Long baseline is **CONDITIONAL GO**: fix reuse/update scaling, training
+  stability, and repetition-dominated search, then re-run a bounded pilot.
+
+## Next gate
+
+Phase 3 pilot is **CONDITIONAL GO**. See `docs/F10_BASELINE.md` for the decision
+package. No ~24h run without explicit owner approval.

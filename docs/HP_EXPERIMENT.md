@@ -137,6 +137,33 @@ the only intended difference.
 Configs: `configs/f15.toml`, `configs/r15.toml`.
 Contract test: `crates/recur64-model/tests/f15_r15_parity.rs`.
 
+## Upstream reconciliation (Phase 3 merged)
+
+`main` advanced to `5ac291c` ("Phase 3: F10 + PUCT control baseline"). It is
+merged into this branch. Phase 3 had already implemented and measured much of
+what this branch planned to discover, so the merge replaces planned work with
+measured work:
+
+| Topic | Phase 3 result | Effect on this branch |
+|---|---|---|
+| Concurrency | `active_games` = concurrent games (one thread each); batch mean 1.0 → 20–34 | **Adopted**; `collect_parallel` now uses this model for both `run` and `collect_only` |
+| Provenance | `config_hash` + `lineage.jsonl`; `metadata.json` still lacked the git SHA | Combined with this branch's build-time git SHA/branch |
+| Batching / search budget | sims 16/32/64 → 47/33.5/17.5 pos/s; sims frozen at 64 | Start from 64 and re-measure on the RTX 2050 |
+| Learner | loss split, grad norm, warmup+cosine, gradient accumulation, health guards, bit-exact resume | **Adopted wholesale** |
+| Replay | streaming sampler + capacity archiving (bounded memory) | **Adopted wholesale** |
+| Evaluation | raw-policy evaluator + frozen opening suite + arena 95% CI | **Adopted**; replaces the planned raw-policy harness |
+| Multi-cycle control | `recur64 pilot` bounded controller | **Adopted** as the learning loop |
+| F10 pilot outcome | loss unstable, grad norm 44–88, reuse 0.07–0.13 vs target 2.0, raw policy ≤ random, searched play repetition-dominated | **Learning health is the blocker, not recurrence** |
+
+**Updated prior (important).** The Phase 3 F10 baseline shows the *feed-forward*
+learner is not yet learning well: raw policy is at or below random, and searched
+self-play is repetition-dominated (the untrained value function shuffles into
+draws). A recurrence-vs-search comparison is meaningless until the base learner
+is healthy. On this branch, R15 entry is therefore gated on the same
+learning-health criteria Phase 3 set before its 24h run, not merely on "F15
+runs". The HP branch's advantage is a *larger* model and a *different GPU*, not
+a licence to skip the health gate.
+
 ## Divergences from the primary branch
 
 - **Model size:** F15/R15 (~15.15M) instead of F10/R10 (~9.8M).

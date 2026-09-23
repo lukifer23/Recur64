@@ -37,6 +37,15 @@ pub fn wdl_ce<B: Backend>(logits: &Tensor<B, 2>, target: &Tensor<B, 1, Int>) -> 
     -picked.mean()
 }
 
+/// Mean predicted-policy entropy over valid positions (nats).
+pub fn policy_entropy<B: Backend>(out: &PolicyOutput<B>) -> Tensor<B, 1> {
+    let p = out.log_probs.clone().exp();
+    let per = -(p * out.log_probs.clone()).sum_dim(1).squeeze_dim::<1>(1);
+    let per = per.mask_fill(out.valid.clone().bool_not(), 0.0);
+    let n = out.valid.clone().float().sum().clamp(1.0, f32::MAX);
+    per.sum() / n
+}
+
 /// Combined loss for one readout.
 pub fn readout_loss<B: Backend>(r: &Readout<B>, t: &Targets<B>) -> Tensor<B, 1> {
     policy_ce(&r.policy, &t.policy_target) + wdl_ce(&r.wdl_logits, &t.wdl_target)
