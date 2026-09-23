@@ -302,5 +302,25 @@ Updated as work lands. DETECTED ≠ TESTED.
 - **H0.6** — F15/R15 GPU benchmark matrix + VRAM/power/thermal envelope. DONE.
 - **Infra C3/C4/C5/C7** — provenance, precision gate, real concurrency + gauge,
   schedule overrides + sweep tooling. DONE (verified).
-- **H0.7** concurrency sweep, **H0.8** freeze profile, **H1.x** search budget /
-  smoke / control, **R1.x** recurrence: **NOT YET RUN**.
+- **H0.7** — concurrency sweep (pre-merge): real concurrency confirmed; best
+  334.6 evals/s at 12 workers, batch p50 = 11. DONE (superseded by Phase 3's
+  structural concurrency fix).
+- **Merge** — Phase 3 (`5ac291c`) merged and reconciled (commit `fa66c32`);
+  build (CUDA) + full test suite + fmt/clippy clean. DONE.
+- **H0.8** freeze profile, **H1.x** search budget / pilot / control, **R1.x**
+  recurrence: **NOT YET RUN**.
+
+## Revised next steps (post-merge)
+
+Phase 3 supplies the tooling this branch was about to build. The HP progression
+is therefore re-based on it:
+
+1. **HP batching sweep** — `recur64 bench-runtime` on the RTX 2050 (replaces the
+   hand-rolled `scripts/hp-concurrency-sweep.ps1`), then freeze the HP hardware
+   scheduling profile.
+2. **Search budget** — start from Phase 3's frozen `sims = 64`; re-measure on
+   the RTX 2050 before changing it.
+3. **F15 learning smoke / pilot** — `recur64 pilot` with `configs/hp/f15-pilot.toml`.
+4. **Raw policy + openings** — `recur64 eval-policy` and `configs/openings-v1.toml`.
+5. **R15 entry gate** — requires F15 *learning health*, not just "F15 runs"
+   (see the updated prior above).

@@ -102,10 +102,28 @@ DETECTED ≠ TESTED. Each entry states what was actually verified and how.
 - **Evidence (TESTED):** `cuda-smoke` PASS on F15; F15/R15 benchmark matrices
   finite; peak VRAM 1,953 / 2,113 MiB; `cargo test --release` and clippy clean.
 
+## C8 — Merge Phase 3 (`origin/main`) and reconcile
+
+- **Why:** main advanced to `5ac291c` (F10 + PUCT control baseline) with work
+  that supersedes several planned HP tasks.
+- **What:**
+  - Merged `8f14203` + `5ac291c`; resolved conflicts in `config.rs`,
+    `coordinator.rs`, `lib.rs`, `run_dir.rs` (README/phase2 auto-merged).
+  - Adopted Phase 3's `active_games` = concurrency model as the single
+    `collect_parallel` path (used by both `run` and `collect_only`); kept
+    `SelfPlayMetrics` (terminations/WDL/truncation + `peak_in_flight`).
+  - Kept HP provenance additions (`git SHA`/branch, seed, profile labels) on top
+    of Phase 3's `lineage.jsonl`/`config_hash`.
+  - Added `configs/hp/{f15,r15}-pilot.toml` using the Phase 3 pilot contract.
+  - Superseded tooling: Phase 3's `bench-runtime` replaces the hand-rolled HP
+    sweep scripts; `eval-policy` + `openings-v1` replace the planned raw-policy
+    harness.
+- **Evidence:** merge commit `fa66c32`; CUDA build OK; full test suite OK;
+  fmt/clippy clean.
+
 ---
 
 ## Not yet done (tracked in `HP_EXPERIMENT.md`)
 
-Concurrency sweep (H0.7), freeze hardware profile (H0.8), search-budget
-comparison (H1.1), real-search learning smoke (H1.3), checkpoint/resume (H1.4),
-F15 control run (H1.5), R15 training/evaluation (R1.x).
+HP batching sweep on the RTX 2050, freeze hardware profile, search-budget
+re-measurement, F15 pilot / learning-health analysis, R15 training/evaluation.
