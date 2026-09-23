@@ -11,6 +11,7 @@ fn cfg() -> ArenaConfig {
         recurrence: 1,
         ply_cap: 4,
         seed: 7,
+        openings: Vec::new(),
     }
 }
 

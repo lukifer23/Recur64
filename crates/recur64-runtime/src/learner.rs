@@ -1,32 +1,48 @@
-//! The first learner: policy + WDL cross-entropy from real Recur64 replay.
+//! The learner: policy + WDL cross-entropy from real Recur64 replay.
 //!
 //! Games are reconstructed from their start FEN and selected moves, so the
 //! learner trains on genuine legal positions and genuine search targets. Games
-//! without a result (truncated/aborted) are excluded: they must never be turned
-//! into draw labels.
+//! without a result (truncated/aborted) are excluded.
+//!
+//! Supports gradient accumulation (effective batch), a warmup + cosine LR
+//! schedule, and per-update metrics (total/policy/WDL loss, grad norm, LR,
+//! policy entropy) with visible health guards.
+//!
+//! Two entry points:
+//! - [`train_from_games`] materializes every example (small runs / tests).
+//! - [`train_from_store`] samples on demand from a [`ReplayStore`], bounding
+//!   memory regardless of replay capacity.
 
-use burn::optim::Optimizer;
+use burn::optim::{GradientsAccumulator, GradientsParams, Optimizer};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use burn::tensor::{Int, TensorData};
 
-use recur64_core::{
-    ActionId, Color, GameState, ObservationV1, StandardMove, encode_observation_v1,
-};
+use recur64_core::{ActionId, GameState, StandardMove};
 use recur64_model::action::CandidateBatch;
-use recur64_model::loss::Targets;
+use recur64_model::loss::{Targets, model_loss, policy_ce, policy_entropy, wdl_ce};
 use recur64_model::model::{CandidateTensors, ProbeModel};
-use recur64_model::train::train_step;
-
-use crate::replay::schema::GameRecord;
+use recur64_model::train::global_grad_norm;
 use recur64_search::Rng;
+
+use crate::replay::sampler::{ReplayStore, TrainingExample, example_for_ply};
+use crate::replay::schema::GameRecord;
 
 /// Learner configuration.
 #[derive(Debug, Clone)]
 pub struct LearnerConfig {
+    /// Physical (micro-batch) size per forward/backward.
     pub batch_size: usize,
+    /// Gradient-accumulation steps; effective batch = `batch_size * this`.
+    pub accumulation_steps: usize,
     pub max_updates: usize,
+    /// Peak (base) learning rate.
     pub lr: f64,
+    pub warmup_updates: u64,
+    pub planned_updates: u64,
+    /// Global update index this training segment starts at (for schedule
+    /// continuity across cycles and resume).
+    pub start_update: u64,
     pub recurrence: usize,
     pub seed: u64,
 }
@@ -35,60 +51,64 @@ impl Default for LearnerConfig {
     fn default() -> Self {
         Self {
             batch_size: 32,
+            accumulation_steps: 1,
             max_updates: 10,
             lr: 3e-4,
+            warmup_updates: 0,
+            planned_updates: 10,
+            start_update: 0,
             recurrence: 1,
             seed: 0,
         }
     }
 }
 
-/// One training example reconstructed from replay.
-#[derive(Debug, Clone)]
-pub struct TrainingExample {
-    pub observation: ObservationV1,
-    pub legal: Vec<ActionId>,
-    /// Target distribution aligned to `legal`.
-    pub policy: Vec<f32>,
-    /// WDL class from the side-to-move perspective: 0 win, 1 draw, 2 loss.
-    pub wdl: i64,
+/// Per-update training metrics.
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct UpdateMetrics {
+    pub update: usize,
+    pub total_loss: f32,
+    pub policy_loss: f32,
+    pub wdl_loss: f32,
+    pub grad_norm: f32,
+    pub lr: f64,
+    pub policy_entropy: f32,
 }
 
 /// Report of a training run.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct TrainReport {
     pub examples: usize,
+    pub examples_consumed: u64,
     pub games_used: usize,
     pub games_skipped: usize,
     pub updates: usize,
     pub first_loss: f32,
     pub last_loss: f32,
     pub loss_curve: Vec<(usize, f32)>,
+    pub metrics: Vec<UpdateMetrics>,
 }
 
-/// WDL class from the side-to-move perspective.
-fn wdl_class(outcome: u8, side: Color) -> i64 {
-    match outcome {
-        1 => 1, // draw
-        0 => {
-            if side == Color::White {
-                0
-            } else {
-                2
-            }
-        }
-        2 => {
-            if side == Color::Black {
-                0
-            } else {
-                2
-            }
-        }
-        _ => 1,
+fn scalar<B: Backend>(t: Tensor<B, 1>) -> f32 {
+    t.into_data()
+        .to_vec::<f32>()
+        .ok()
+        .and_then(|v| v.first().copied())
+        .unwrap_or(f32::NAN)
+}
+
+/// Learning rate at a given update: linear warmup then cosine decay.
+pub fn lr_at(step: u64, base: f64, warmup: u64, planned: u64) -> f64 {
+    if warmup > 0 && step < warmup {
+        base * (step + 1) as f64 / warmup as f64
+    } else {
+        let denom = planned.saturating_sub(warmup).max(1) as f64;
+        let progress = (step.saturating_sub(warmup) as f64 / denom).min(1.0);
+        base * (0.5 * (1.0 + (std::f64::consts::PI * progress).cos())).max(0.0)
     }
 }
 
-/// Reconstruct training examples from completed games.
+/// Reconstruct training examples from completed games (materializes all).
 pub fn build_examples(
     games: &[GameRecord],
 ) -> Result<(Vec<TrainingExample>, usize, usize), String> {
@@ -104,29 +124,13 @@ pub fn build_examples(
         let mut state =
             GameState::from_fen(&game.start_fen).map_err(|e| format!("start FEN: {e}"))?;
         for (i, ply) in game.plies.iter().enumerate() {
-            let legal = state.legal_actions();
-            let mut policy = vec![0.0f32; legal.len()];
-            for (idx, prob) in &ply.target {
-                let pos = legal
-                    .iter()
-                    .position(|a| a.index() == *idx as u32)
-                    .ok_or_else(|| {
-                        format!("game {} ply {i}: target action not legal", game.game_id)
-                    })?;
-                policy[pos] += *prob;
-            }
-            let observation = encode_observation_v1(&state);
-            let wdl = wdl_class(outcome, state.side_to_move());
-            examples.push(TrainingExample {
-                observation,
-                legal: legal.clone(),
-                policy,
-                wdl,
-            });
-
-            let perspective = state.perspective();
+            examples.push(
+                example_for_ply(&state, outcome, ply)
+                    .map_err(|e| format!("game {} ply {i}: {e}", game.game_id))?,
+            );
             let id = ActionId::from_index(ply.selected as u32)
                 .map_err(|e| format!("game {} ply {i}: {e}", game.game_id))?;
+            let perspective = state.perspective();
             let (from, to, promo) = id.to_physical(perspective);
             let promotion = if promo.is_none() { None } else { Some(promo) };
             state
@@ -138,7 +142,7 @@ pub fn build_examples(
 }
 
 /// Build model tensors for a batch of examples.
-fn build_batch<B: Backend>(
+pub fn build_batch_tensors<B: Backend>(
     batch: &[&TrainingExample],
     device: &B::Device,
 ) -> (Tensor<B, 3>, CandidateTensors<B>, Targets<B>) {
@@ -187,9 +191,104 @@ fn build_batch<B: Backend>(
     )
 }
 
-/// Train `model` on reconstructed replay for a bounded number of updates.
-pub fn train_from_games<B, O>(
+#[allow(clippy::too_many_arguments)]
+fn run_updates<B, O, F>(
     mut model: ProbeModel<B>,
+    optim: &mut O,
+    cfg: &LearnerConfig,
+    device: &B::Device,
+    total_examples: usize,
+    games_used: usize,
+    games_skipped: usize,
+    mut next_batch: F,
+) -> Result<(ProbeModel<B>, TrainReport), String>
+where
+    B: AutodiffBackend,
+    O: Optimizer<ProbeModel<B>, B>,
+    F: FnMut(usize) -> Result<Vec<TrainingExample>, String>,
+{
+    let accum = cfg.accumulation_steps.max(1);
+    let micro = cfg.batch_size.max(1);
+    let planned = cfg.planned_updates.max(1);
+    let mut loss_curve = Vec::new();
+    let mut metrics = Vec::new();
+    let mut consumed = 0u64;
+
+    for update in 0..cfg.max_updates {
+        let global_update = cfg.start_update + update as u64;
+        let lr = lr_at(global_update, cfg.lr, cfg.warmup_updates, planned);
+        let mut accumulator = GradientsAccumulator::<ProbeModel<B>>::new();
+        let mut components: Option<(f32, f32, f32, f32)> = None;
+        let mut micro_count = 0usize;
+
+        for _ in 0..accum {
+            let examples = next_batch(micro)?;
+            if examples.is_empty() {
+                break;
+            }
+            micro_count += 1;
+            consumed += examples.len() as u64;
+            let refs: Vec<&TrainingExample> = examples.iter().collect();
+            let (board, cands, targets) = build_batch_tensors::<B>(&refs, device);
+            let out = model.forward_r(board, &cands, cfg.recurrence, false);
+            let readout = &out.readouts[0];
+            let policy_loss = scalar(policy_ce(&readout.policy, &targets.policy_target));
+            let wdl_loss = scalar(wdl_ce(&readout.wdl_logits, &targets.wdl_target));
+            let entropy = scalar(policy_entropy(&readout.policy));
+            let loss = model_loss(&out, &targets);
+            let total = scalar(loss.clone());
+            let grads = GradientsParams::from_grads(loss.backward(), &model);
+            accumulator.accumulate(&model, grads);
+            components = Some((total, policy_loss, wdl_loss, entropy));
+        }
+        if micro_count == 0 {
+            break;
+        }
+
+        let grads = accumulator.grads();
+        let grad_norm = global_grad_norm(&grads, &model);
+        let (total, policy_loss, wdl_loss, entropy) = components.expect("at least one micro-batch");
+        if !total.is_finite() || !grad_norm.is_finite() {
+            return Err(format!(
+                "non-finite loss/grad at update {update}: loss={total} grad={grad_norm}"
+            ));
+        }
+        model = optim.step(lr, model, grads);
+
+        metrics.push(UpdateMetrics {
+            update: global_update as usize,
+            total_loss: total,
+            policy_loss,
+            wdl_loss,
+            grad_norm,
+            lr,
+            policy_entropy: entropy,
+        });
+        loss_curve.push((update, total));
+    }
+
+    let first_loss = metrics.first().map(|m| m.total_loss).unwrap_or(f32::NAN);
+    let last_loss = metrics.last().map(|m| m.total_loss).unwrap_or(f32::NAN);
+    let updates = metrics.len();
+    Ok((
+        model,
+        TrainReport {
+            examples: total_examples,
+            examples_consumed: consumed,
+            games_used,
+            games_skipped,
+            updates,
+            first_loss,
+            last_loss,
+            loss_curve,
+            metrics,
+        },
+    ))
+}
+
+/// Train on materialized examples (small runs / tests).
+pub fn train_from_games<B, O>(
+    model: ProbeModel<B>,
     optim: &mut O,
     games: &[GameRecord],
     cfg: &LearnerConfig,
@@ -203,64 +302,57 @@ where
     if examples.is_empty() {
         return Err("no trainable examples (all games truncated/aborted?)".into());
     }
-
-    // Deterministic shuffle.
     let mut rng = Rng::new(cfg.seed);
     for i in (1..examples.len()).rev() {
         let j = (rng.next_u64() as usize) % (i + 1);
         examples.swap(i, j);
     }
-
-    let batch_size = cfg.batch_size.max(1);
-    let mut first_loss = f32::NAN;
-    let mut last_loss = f32::NAN;
-    let mut loss_curve = Vec::new();
-    let mut updates = 0usize;
-
-    for update in 0..cfg.max_updates {
-        let start = (update * batch_size) % examples.len();
-        let end = (start + batch_size).min(examples.len());
-        let batch: Vec<&TrainingExample> = examples[start..end].iter().collect();
-        if batch.is_empty() {
-            break;
-        }
-        let (board, cands, targets) = build_batch::<B>(&batch, device);
-        let (m, loss) = train_step(
-            model,
-            optim,
-            board,
-            &cands,
-            &targets,
-            cfg.recurrence,
-            false,
-            cfg.lr,
-        );
-        model = m;
-        let l = loss
-            .into_data()
-            .to_vec::<f32>()
-            .map_err(|e| format!("loss read: {e}"))?[0];
-        if !l.is_finite() {
-            return Err(format!("non-finite loss at update {update}: {l}"));
-        }
-        if update == 0 {
-            first_loss = l;
-        }
-        last_loss = l;
-        loss_curve.push((update, l));
-        updates += 1;
-    }
-
-    Ok((
+    let total = examples.len();
+    let mut cursor = 0usize;
+    run_updates(
         model,
-        TrainReport {
-            examples: examples.len(),
-            games_used: used,
-            games_skipped: skipped,
-            updates,
-            first_loss,
-            last_loss,
-            loss_curve,
+        optim,
+        cfg,
+        device,
+        total,
+        used,
+        skipped,
+        |batch_size| {
+            if cursor + batch_size > examples.len() {
+                cursor = 0; // wrap for reuse
+            }
+            let end = (cursor + batch_size).min(examples.len());
+            let out = examples[cursor..end].to_vec();
+            cursor = end;
+            Ok(out)
         },
-    ))
+    )
+}
+
+/// Train by sampling on demand from a [`ReplayStore`] (bounded memory).
+pub fn train_from_store<B, O>(
+    store: &ReplayStore,
+    model: ProbeModel<B>,
+    optim: &mut O,
+    cfg: &LearnerConfig,
+    device: &B::Device,
+) -> Result<(ProbeModel<B>, TrainReport), String>
+where
+    B: AutodiffBackend,
+    O: Optimizer<ProbeModel<B>, B>,
+{
+    if store.sampleable() == 0 {
+        return Err("no trainable examples (all games truncated/aborted?)".into());
+    }
+    let mut rng = Rng::new(cfg.seed);
+    run_updates(
+        model,
+        optim,
+        cfg,
+        device,
+        store.sampleable(),
+        store.total_games(),
+        0,
+        |batch_size| store.sample_batch(batch_size, &mut rng),
+    )
 }

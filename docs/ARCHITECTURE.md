@@ -182,3 +182,26 @@ the accelerator is never fought over.
 
 See `docs/SEARCH.md`, `docs/REPLAY.md`, and `docs/RUNS.md`.
 
+---
+
+# Phase 3 — F10 control baseline
+
+Phase 3 turns the Phase 2 loop into a measured F10 (9.8M param, R=1) baseline.
+
+- **Concurrency model:** `active_games` = concurrent games (one per thread), so
+  the batcher coalesces leaf requests (mean batch 20–34). Phase 2 bounded
+  concurrency by `cpu_workers` and produced tiny batches.
+- **Streaming replay sampler** (`replay/sampler.rs`): keeps compact `GameRecord`s
+  and reconstructs each example on demand, so memory is bounded by replay
+  capacity. `enforce_capacity` archives oldest shards (never deletes).
+- **Learner** (`learner.rs`): policy/WDL loss split, grad norm, warmup + cosine
+  schedule, gradient accumulation, per-update metrics, health guards; F10 resume
+  is bit-exact.
+- **Raw-policy evaluation** (`eval_policy.rs`) and a **frozen opening suite**
+  (`recur64-eval::openings`).
+- **Arena** uses the opening suite (paired colors) and reports a 95% CI.
+- **Pilot** (`pilot.rs`): bounded multi-cycle COLLECT → AUDIT → TRAIN → EVALUATE
+  with a conservative snapshot policy and lineage.
+
+See `docs/F10_BASELINE.md` for the measured baseline and decision package.
+

@@ -6,6 +6,7 @@ use recur64_core::{ActionId, Color, GameState, PromotionCode, StandardMove, Term
 use recur64_model::config::ModelConfig;
 use recur64_model::model::ProbeModel;
 use recur64_model::train::{CpuTrainBackend, adamw};
+use recur64_runtime::learner::lr_at;
 use recur64_runtime::learner::{build_examples, train_from_games};
 use recur64_runtime::replay::{GameRecord, PlyRecord, SearchRecord};
 use recur64_runtime::{LearnerConfig, SelfPlayConfig, SyncEvaluator, play_game_seeded};
@@ -126,6 +127,58 @@ fn truncated_games_are_excluded() {
 }
 
 #[test]
+fn lr_schedule_warmup_then_cosine() {
+    let base = 3e-4;
+    let warmup = 10u64;
+    let planned = 100u64;
+    // Warmup ramps up.
+    assert!(lr_at(0, base, warmup, planned) < lr_at(9, base, warmup, planned));
+    assert!((lr_at(9, base, warmup, planned) - base).abs() < 1e-12);
+    // Cosine decays after warmup and ends near zero.
+    assert!(lr_at(50, base, warmup, planned) < base);
+    assert!(lr_at(100, base, warmup, planned) < 1e-9);
+    // Monotone non-increasing after warmup.
+    let mut prev = f64::INFINITY;
+    for step in warmup..=planned {
+        let lr = lr_at(step, base, warmup, planned);
+        assert!(lr <= prev + 1e-15, "lr rose at step {step}");
+        prev = lr;
+    }
+}
+
+#[test]
+fn accumulation_consumes_effective_batch_and_logs_metrics() {
+    let device = Default::default();
+    let gs = vec![fools_mate(0), fools_mate(1)];
+    let model = ProbeModel::<CpuTrainBackend>::new(micro(), &device);
+    let mut optim = adamw::<CpuTrainBackend, ProbeModel<CpuTrainBackend>>();
+    let cfg = LearnerConfig {
+        batch_size: 2,
+        accumulation_steps: 2,
+        max_updates: 2,
+        lr: 3e-3,
+        warmup_updates: 0,
+        planned_updates: 2,
+        start_update: 0,
+        recurrence: 1,
+        seed: 3,
+    };
+    let (_, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
+    assert_eq!(report.updates, 2);
+    // 2 updates x 2 accumulation steps x 2 micro-batch = 8 examples consumed.
+    assert_eq!(report.examples_consumed, 8);
+    assert_eq!(report.metrics.len(), 2);
+    for m in &report.metrics {
+        assert!(m.total_loss.is_finite());
+        assert!(m.policy_loss.is_finite());
+        assert!(m.wdl_loss.is_finite());
+        assert!(m.grad_norm.is_finite() && m.grad_norm > 0.0);
+        assert!(m.policy_entropy.is_finite());
+        assert!(m.lr > 0.0);
+    }
+}
+
+#[test]
 fn training_updates_parameters_and_loss_is_finite() {
     let device = Default::default();
     let gs = vec![fools_mate(0), fools_mate(1)];
@@ -134,8 +187,12 @@ fn training_updates_parameters_and_loss_is_finite() {
     let mut optim = adamw::<CpuTrainBackend, ProbeModel<CpuTrainBackend>>();
     let cfg = LearnerConfig {
         batch_size: 2,
+        accumulation_steps: 1,
         max_updates: 2,
         lr: 3e-3,
+        warmup_updates: 0,
+        planned_updates: 2,
+        start_update: 0,
         recurrence: 1,
         seed: 7,
     };

@@ -90,6 +90,27 @@ cargo run --release -p recur64-cli -- report --run-dir runs/smoke-1
 The GPU variant is `configs/smoke-cuda.toml` (add `--features cuda` and the CUDA
 environment below).
 
+### Phase 3 F10 baseline (CUDA)
+
+```sh
+# Stage A: warmup + batching/active-game sweep.
+cargo run --release -p recur64-cli --features cuda -- bench-runtime \
+    --config configs/f10-sweep.toml --output runs/sweep --grid small --games-per-cell 128
+
+# Generate the frozen evaluation opening suite.
+cargo run --release -p recur64-cli -- gen-openings --output configs/openings-v1.toml
+
+# Raw-policy evaluation (no search) of a checkpoint.
+cargo run --release -p recur64-cli --features cuda -- eval-policy \
+    --config configs/f10-stage-c.toml --checkpoint runs/<run>/checkpoints/candidate --output runs/<run>/eval
+
+# Bounded multi-cycle pilot (collect -> train -> evaluate).
+cargo run --release -p recur64-cli --features cuda -- pilot \
+    --config configs/f10-stage-c.toml --run-dir runs/f10-stage-c-1 --force
+```
+
+See `docs/F10_BASELINE.md` for measured results and the long-run decision.
+
 ### GPU (CUDA)
 
 ```sh

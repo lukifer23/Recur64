@@ -14,6 +14,7 @@ mod inspect;
 mod model_info;
 mod perft;
 mod phase2;
+mod phase3;
 
 #[derive(Parser)]
 #[command(
@@ -59,6 +60,12 @@ enum Commands {
     Report(phase2::ReportArgs),
     /// Stage A: CUDA warmup + batching/active-game sweep.
     BenchRuntime(bench_runtime::BenchRuntimeArgs),
+    /// Generate the frozen evaluation opening suite.
+    GenOpenings(phase3::GenOpeningsArgs),
+    /// Evaluate a checkpoint's raw policy (no search) vs random legal play.
+    EvalPolicy(phase3::EvalPolicyArgs),
+    /// Bounded multi-cycle F10 pilot (collect/train/evaluate).
+    Pilot(phase3::PilotArgs),
     /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
     #[cfg(feature = "cuda")]
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
@@ -81,6 +88,9 @@ fn main() -> anyhow::Result<()> {
         Commands::Run(args) => phase2::run_run(args),
         Commands::Report(args) => phase2::run_report(args),
         Commands::BenchRuntime(args) => bench_runtime::run(args),
+        Commands::GenOpenings(args) => phase3::run_gen_openings(args),
+        Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
+        Commands::Pilot(args) => phase3::run_pilot_cmd(args),
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
     }
