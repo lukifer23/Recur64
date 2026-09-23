@@ -5,10 +5,13 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 mod bench;
+mod bench_core;
 #[cfg(feature = "cuda")]
 mod cuda_smoke;
 mod doctor;
+mod inspect;
 mod model_info;
+mod perft;
 
 #[derive(Parser)]
 #[command(
@@ -32,6 +35,14 @@ enum Commands {
     },
     /// Bounded benchmark matrix; writes raw data to --output.
     Bench(bench::BenchArgs),
+    /// Count legal move tree nodes from a FEN (validates move generation).
+    Perft(perft::PerftArgs),
+    /// Print termination/rules/legal-candidate facts for a FEN.
+    ValidatePosition(inspect::ValidateArgs),
+    /// Encode a FEN as Observation V1 and list canonical legal actions.
+    Encode(inspect::EncodeArgs),
+    /// Phase 1 CPU baselines: movegen/apply/encode/perft throughput.
+    BenchCore(bench_core::BenchCoreArgs),
     /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
     #[cfg(feature = "cuda")]
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
@@ -43,6 +54,10 @@ fn main() -> anyhow::Result<()> {
         Commands::Doctor => doctor::run_doctor(),
         Commands::ModelInfo { config } => model_info::run_model_info(&config),
         Commands::Bench(args) => bench::run_bench(args),
+        Commands::Perft(args) => perft::run_perft(args),
+        Commands::ValidatePosition(args) => inspect::run_validate(args),
+        Commands::Encode(args) => inspect::run_encode(args),
+        Commands::BenchCore(args) => bench_core::run_bench_core(args),
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
     }

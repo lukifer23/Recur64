@@ -5,10 +5,10 @@ matched end-to-end compute, does a small **recurrent** square-token transformer
 that spends compute on internal refinement beat spending the same compute on
 external search?
 
-This repository currently contains **Phase 0 only**: a systems probe that proves
-the model-shaped graph trains on the target workstation with honest device and
-precision reporting. It is **not** a chess engine and contains no chess rules,
-search, self-play, replay, or UCI.
+The repository currently contains **Phase 0** (a systems probe proving the
+model-shaped graph trains on this workstation) and **Phase 1** (explicit, tested
+chess contracts: observation V1, action V1, rules profile, perft). It is **not** a
+chess engine and contains no search, self-play, replay, or UCI engine loop.
 
 ## Requirements
 
@@ -47,6 +47,31 @@ cargo run --release -- bench --config configs/micro.toml --output runs/micro-cpu
 
 Use `--release` for any throughput measurement.
 
+### Chess contracts (Phase 1, CPU-only)
+
+```sh
+# Count legal move tree nodes (validates move generation/conversion).
+cargo run --release -p recur64-cli -- perft \
+    --fen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" --depth 5
+
+# Print termination/rules/legal-candidate facts for a position.
+cargo run --release -p recur64-cli -- validate-position \
+    --fen "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+
+# Encode a position as Observation V1 and list canonical legal actions.
+cargo run --release -p recur64-cli -- encode \
+    --fen "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1" --actions
+
+# Phase 1 CPU baselines (movegen/apply/encode/perft throughput).
+cargo run --release -p recur64-cli -- bench-core --output runs/bench-core
+```
+
+Optional independent differential oracle (GPL-3.0, dev/test only, off by default):
+
+```sh
+cargo test -p recur64-core --features oracle
+```
+
 ### GPU (CUDA)
 
 ```sh
@@ -67,12 +92,15 @@ cargo run --release -p recur64-cli --features cuda -- bench \
 ## Layout
 
 ```
+crates/recur64-core    chess contracts: squares, actions, GameState, rules,
+                       observation V1, UCI, perft (CPU-only, no Burn)
 crates/recur64-model   probe graph, heads, losses, recurrence, optimizer,
                        checkpoint, precision gate, fixtures
-crates/recur64-cli     `recur64` binary: doctor | model-info | bench
+crates/recur64-cli     `recur64` binary: doctor | model-info | bench | cuda-smoke
+                       | perft | validate-position | encode | bench-core
 configs/               micro.toml, f10.toml, r10-probe.toml
 docs/                  HARDWARE, ARCHITECTURE, BENCHMARKS, DECISIONS, STATUS,
-                       plus the preserved master spec and Phase 0 kickoff
+                       REPRESENTATIONS, RULES_PROFILE, plus the preserved specs
 ```
 
 ## What Phase 0 does and does not prove

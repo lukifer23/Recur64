@@ -1,0 +1,21 @@
+[package]
+name = "recur64-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+[features]
+default = []
+# Optional independent differential oracle. GPL-3.0-or-later, dev/test only.
+# Off by default; see docs/DECISIONS.md D10.
+oracle = ["dep:shakmaty"]
+
+[dependencies]
+cozy-chess = { workspace = true }
+serde = { workspace = true }
+# Only pulled when the `oracle` feature is enabled.
+shakmaty = { version = "0.30", optional = true }
+
+[dev-dependencies]
+proptest = "1"

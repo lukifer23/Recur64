@@ -1,41 +1,51 @@
-//! Action-index convention and legal-candidate batching for the Phase 0 probe.
+//! Action-index convention and legal-candidate batching for the probe model.
 //!
 //! The action ID is a *storage/indexing* convention only. It is deliberately
 //! **not** backed by a dense `hidden -> 20480` output layer. The policy path
 //! produces scores from source/destination square representations and gathers
 //! only the supplied legal candidates.
+//!
+//! Phase 1 made `recur64-core` the single source of truth for the action
+//! encoding; the constants and functions below delegate to it while preserving
+//! the Phase 0 public API.
+
+use recur64_core::{ActionId, PromotionCode, Square};
 
 /// Promotion code: no promotion.
-pub const PROMO_NONE: u8 = 0;
+pub const PROMO_NONE: u8 = recur64_core::PROMO_NONE;
 /// Promotion code: knight.
-pub const PROMO_N: u8 = 1;
+pub const PROMO_N: u8 = recur64_core::PROMO_N;
 /// Promotion code: bishop.
-pub const PROMO_B: u8 = 2;
+pub const PROMO_B: u8 = recur64_core::PROMO_B;
 /// Promotion code: rook.
-pub const PROMO_R: u8 = 3;
+pub const PROMO_R: u8 = recur64_core::PROMO_R;
 /// Promotion code: queen.
-pub const PROMO_Q: u8 = 4;
+pub const PROMO_Q: u8 = recur64_core::PROMO_Q;
 
 /// Number of promotion codes, including "none".
-pub const PROMO_CODES: u32 = 5;
+pub const PROMO_CODES: u32 = recur64_core::PROMO_CODES as u32;
 /// Number of squares per side.
-pub const SQUARES: u32 = 64;
+pub const SQUARES: u32 = recur64_core::NUM_SQUARES as u32;
 /// Total action-index space: `64 * 64 * 5`.
-pub const ACTION_SPACE: u32 = SQUARES * SQUARES * PROMO_CODES; // 20480
+pub const ACTION_SPACE: u32 = recur64_core::ACTION_SPACE;
 
 /// Encode a move into the Recur64 action-index space.
+///
+/// Panics visibly on out-of-range squares or promotion codes.
 pub fn action_id(from: u32, to: u32, promo: u8) -> u32 {
-    debug_assert!(from < SQUARES && to < SQUARES && (promo as u32) < PROMO_CODES);
-    (from * SQUARES + to) * PROMO_CODES + promo as u32
+    let f = Square::index(from as usize);
+    let t = Square::index(to as usize);
+    let p = PromotionCode::new(promo).expect("valid promotion code");
+    ActionId::encode(f, t, p).index()
 }
 
 /// Decode an action index back into `(from, to, promo)`.
+///
+/// Panics visibly on an out-of-range id.
 pub fn decode_action_id(id: u32) -> (u32, u32, u8) {
-    let promo = (id % PROMO_CODES) as u8;
-    let rest = id / PROMO_CODES;
-    let to = rest % SQUARES;
-    let from = rest / SQUARES;
-    (from, to, promo)
+    let a = ActionId::from_index(id).expect("valid action id");
+    let (f, t, p) = a.decode();
+    (f as u32, t as u32, p.code())
 }
 
 /// A padded batch of legal candidate lists.
@@ -130,6 +140,16 @@ mod tests {
     fn action_space_is_20480() {
         assert_eq!(ACTION_SPACE, 20_480);
         assert_eq!(action_id(63, 63, PROMO_Q), ACTION_SPACE - 1);
+    }
+
+    #[test]
+    fn matches_core_encoding() {
+        // Drift guard: the model's encoding equals recur64-core's.
+        for id in 0..ACTION_SPACE {
+            let (f, t, p) = decode_action_id(id);
+            assert_eq!(action_id(f, t, p), id);
+            assert_eq!(id, recur64_core::ActionId::from_index(id).unwrap().index());
+        }
     }
 
     #[test]

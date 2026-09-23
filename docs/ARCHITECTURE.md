@@ -97,3 +97,45 @@ have not yet materialized copies the deferred initializer, so each clone
 re-samples on first access — breaking value-preserving clones and therefore
 resume proofs. `ProbeModel::new` calls `force_init()` to materialize every
 parameter eagerly. See `DECISIONS.md` D6.
+
+---
+
+# Phase 1 — Chess contracts
+
+Phase 1 adds `recur64-core`, a CPU-only, Burn-free crate that defines the chess
+world. It contains no search, self-play, replay, or learning.
+
+```
+recur64-core   (cozy-chess 0.3.4 only; no Burn)
+     ↑   ↑
+     │   └── recur64-model   (re-exports core action constants; graph unchanged)
+     │
+recur64-cli    (depends on both; hosts perft / validate-position / encode /
+                bench-core and the model-boundary integration test)
+```
+
+## Core modules
+
+| Module | Responsibility |
+|---|---|
+| `square` | `Square`/`Color`/`Piece`, canonical (side-to-move) transform |
+| `action` | `ActionId`, `PromotionCode`, `ActionList` (fixed-capacity) |
+| `uci` | `StandardMove`, UCI parse/format, cozy↔standard castling conversion |
+| `game` | `GameState`, authoritative history, single `apply` transition path |
+| `rules` | `Termination`, precedence, conservative insufficient material |
+| `observation` | `ObservationV1` `[64,119]` encoder |
+| `perft` | perft traversal through Recur64's conversion |
+| `fixtures` | CPW perft fixtures + edge-case FENs with provenance |
+| `schema` | durable contract version constants |
+
+See `REPRESENTATIONS.md` and `RULES_PROFILE.md` for the frozen contracts.
+
+## Neural boundary
+
+Real chess data reaches the existing Phase 0 model without changing it:
+`GameState` → `encode_observation_v1` → `[1,64,119]` tensor; `legal_actions`
+(canonical) → `CandidateBatch::from_lists` → `CandidateTensors::from_batch` →
+`ProbeModel::forward_r`. Terminal positions yield an empty candidate list and are
+bypassed (never fed through an all-masked softmax). Verified in
+`crates/recur64-cli/tests/model_boundary.rs` (CPU FP32, no training).
+

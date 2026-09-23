@@ -16,6 +16,7 @@ cuda = ["recur64-model/cuda", "burn/cuda"]
 store = ["recur64-model/store"]
 
 [dependencies]
+recur64-core = { path = "../recur64-core" }
 recur64-model = { path = "../recur64-model", default-features = false }
 burn = { workspace = true, features = ["std", "autodiff"] }
 clap = { workspace = true }

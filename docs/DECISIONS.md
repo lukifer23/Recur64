@@ -81,6 +81,71 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **Status:** ACCEPTED
 - **Decision:** Training is Rust. Any deviation requires its own ADR.
 
+## D9 — cozy-chess for rules and move generation
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** Pin `cozy-chess = "=0.3.4"` (MIT) as the sole production chess
+  dependency. Do not switch to a higher-perft crate.
+- **Why:** correctness, maturity, MIT license, stable API, and the `util`
+  UCI converters. Its internal king-captures-rook castling is contained at the
+  `uci` boundary; `Board::same_position` is the FIDE repetition authority.
+- **Verified:** `crates/recur64-core/tests/cozy_api.rs` pins the exact behaviors
+  Recur64 relies on.
+
+## D10 — shakmaty as an optional, dev-only differential oracle
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** `shakmaty` 0.30.1 is an **optional** dependency behind the
+  non-default `oracle` feature, used only in tests for legal-move-set and
+  mate/stalemate comparison. It is never in the production runtime.
+- **Why:** it is GPL-3.0-or-later; keeping it optional and off by default avoids
+  any distribution obligation while still providing independent validation.
+- **Mandatory independent validation** remains published CPW perft counts plus
+  hand-verified fixtures.
+
+## D11 — En-passant observation is FEN-style
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** Observation V1's EP indicator is set after any double pawn push
+  (FEN semantics), regardless of whether a legal EP capture exists. The
+  repetition key instead uses the stricter FIDE notion via `same_position`.
+- **Why:** literal reading of the observation spec; avoids a per-position
+  legality query in the encoder. The two notions are documented separately.
+
+## D12 — Termination precedence and auto-claim draws
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** Precedence is checkmate, stalemate, insufficient material,
+  threefold, 50-move, truncated. Threefold and 50-move are **auto-claimed on the
+  current position**. `Truncated`/`Aborted` are not results.
+- **Why:** checkmate must never be overwritten; the training convention must be
+  identical everywhere. See `RULES_PROFILE.md`.
+
+## D13 — `recur64-core` boundary
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** New CPU-only, Burn-free crate owning the chess contracts.
+  Dependency direction is `core ← model ← cli` and `core ← cli`; no cycles.
+- **Why:** the chess world must be testable and fast without CUDA/Burn, and
+  Phase 2's self-play/replay will consume it directly.
+
+## D14 — Model re-exports core action constants
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** `recur64-model::action` delegates to `recur64-core` for
+  `PROMO_*`, `SQUARES`, `ACTION_SPACE`, `action_id`, `decode_action_id`, while
+  preserving the Phase 0 public API. A drift-guard test checks equality over the
+  full 20,480 space.
+- **Why:** single source of truth; the Phase 0 test suite is the regression gate.
+
+## D15 — Checkpoint contract metadata deferred to Phase 2
+
+- **Status:** ACCEPTED (Phase 1)
+- **Decision:** Phase 1 does not modify `CheckpointMeta`. Contract version
+  constants exist in `recur64-core::schema`; Phase 2 will add optional
+  `#[serde(default)]` fields and refuse to resume on a mismatch.
+- **Why:** avoids Phase 0 checkpoint churn; no chess checkpoints exist yet.
+
 ## Version pins
 
 | Component | Pin |
@@ -88,6 +153,9 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 | Rust | 1.97.1 (`rust-toolchain.toml`) |
 | burn | =0.21.0 |
 | cubecl (transitive) | 0.10.0 |
+| cozy-chess | =0.3.4 (MIT) |
+| shakmaty | 0.30, optional `oracle` feature (GPL-3.0, dev-only) |
+| proptest | 1 (dev-dependency) |
 | serde / serde_json / toml / anyhow / clap | caret, locked by `Cargo.lock` |
 
 ## Rejected / deferred

@@ -15,6 +15,7 @@ cuda = ["burn/cuda"]
 store = ["burn/store"]
 
 [dependencies]
+recur64-core = { path = "../recur64-core" }
 burn = { workspace = true, features = ["std", "autodiff"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

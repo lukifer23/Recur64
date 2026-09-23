@@ -127,3 +127,35 @@ executed blocks, as expected.
 - Do not extrapolate games/sec, Elo, or training-time forecasts from these
   measurements. No self-play exists yet.
 - Warm-up effects and OS scheduling noise are present on a desktop CPU.
+
+---
+
+# Phase 1 — chess core baselines (CPU)
+
+Release-mode, CPU-only rules/encoding throughput. These establish a baseline for
+the future self-play path; they are **not** an optimization target.
+
+Command:
+
+```
+cargo run --release -p recur64-cli -- bench-core --output runs/bench-core
+```
+
+Raw: `runs/bench-core/bench-core.json`, `runs/bench-core/bench-core.md`.
+Environment: Intel Core Ultra 9 285K; cozy-chess 0.3.4 default features;
+`apply(clone)` = clone + apply one legal move (includes history clone).
+
+| position | legal | movegen/s | apply(clone)/s | encode/s | perft nps |
+|---|---:|---:|---:|---:|---:|
+| startpos | 20 | 5,844,194 | 8,607,333 | 3,229,453 | 55,086,634 |
+| kiwipete | 48 | 2,348,741 | 10,731,917 | 3,013,137 | 51,360,344 |
+| endgame_kp | 14 | 9,102,494 | 10,530,750 | 3,036,053 | 40,114,123 |
+| promotion | 7 | 15,567,837 | 9,285,051 | 3,601,657 | 40,714,286 |
+| castling | 26 | 4,173,187 | 10,273,269 | 3,177,730 | 45,359,736 |
+
+Sizes: `GameState` 88 B, `Board` 96 B, `StandardMove` 4 B (fixed overhead plus
+the per-ply history allocation).
+
+Limitations: `apply` includes a history clone; perft uses cozy movegen routed
+through Recur64's conversion. Numbers are single-run and not statistically
+characterized. No optimization was performed in Phase 1.
