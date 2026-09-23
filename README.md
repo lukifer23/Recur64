@@ -6,9 +6,11 @@ that spends compute on internal refinement beat spending the same compute on
 external search?
 
 The repository currently contains **Phase 0** (a systems probe proving the
-model-shaped graph trains on this workstation) and **Phase 1** (explicit, tested
-chess contracts: observation V1, action V1, rules profile, perft). It is **not** a
-chess engine and contains no search, self-play, replay, or UCI engine loop.
+model-shaped graph trains on this workstation), **Phase 1** (explicit, tested
+chess contracts: observation V1, action V1, rules profile, perft), and **Phase 2**
+(the first complete vertical slice: PUCT self-play → batched inference → replay →
+audit → train → checkpoint → arena → report). It is **not** a chess engine and
+contains no UCI engine loop or strength claims.
 
 ## Requirements
 
@@ -72,6 +74,22 @@ Optional independent differential oracle (GPL-3.0, dev/test only, off by default
 cargo test -p recur64-core --features oracle
 ```
 
+### Phase 2 vertical slice (CPU)
+
+```sh
+# Bounded collect -> audit -> train -> evaluate -> report.
+cargo run --release -p recur64-cli -- run --config configs/smoke.toml \
+    --run-dir runs/smoke-1 --force
+
+# Individual stages.
+cargo run --release -p recur64-cli -- selfplay --config configs/smoke.toml --output runs/sp
+cargo run --release -p recur64-cli -- replay-audit --input runs/sp
+cargo run --release -p recur64-cli -- report --run-dir runs/smoke-1
+```
+
+The GPU variant is `configs/smoke-cuda.toml` (add `--features cuda` and the CUDA
+environment below).
+
 ### GPU (CUDA)
 
 ```sh
@@ -94,13 +112,19 @@ cargo run --release -p recur64-cli --features cuda -- bench \
 ```
 crates/recur64-core    chess contracts: squares, actions, GameState, rules,
                        observation V1, UCI, perft (CPU-only, no Burn)
+crates/recur64-search  PUCT, Evaluator trait, chess adapter, game play (no Burn)
 crates/recur64-model   probe graph, heads, losses, recurrence, optimizer,
                        checkpoint, precision gate, fixtures
+crates/recur64-runtime inference owner/batcher, replay, learner, coordinator
+crates/recur64-eval    paired-color systems arena
 crates/recur64-cli     `recur64` binary: doctor | model-info | bench | cuda-smoke
                        | perft | validate-position | encode | bench-core
-configs/               micro.toml, f10.toml, r10-probe.toml
+                       | selfplay | replay-audit | train | arena | run | report
+configs/               micro.toml, f10.toml, r10-probe.toml, smoke.toml,
+                       smoke-cuda.toml
 docs/                  HARDWARE, ARCHITECTURE, BENCHMARKS, DECISIONS, STATUS,
-                       REPRESENTATIONS, RULES_PROFILE, plus the preserved specs
+                       REPRESENTATIONS, RULES_PROFILE, SEARCH, REPLAY, RUNS,
+                       plus the preserved specs
 ```
 
 ## What Phase 0 does and does not prove

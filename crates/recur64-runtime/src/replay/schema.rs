@@ -115,7 +115,7 @@ impl GameRecord {
     /// Convert a completed self-play game into a replay record.
     pub fn from_selfplay(
         game_id: u64,
-        game: &crate::selfplay::SelfPlayGame,
+        game: &recur64_search::SelfPlayGame,
         search: SearchRecord,
     ) -> Self {
         let plies = game

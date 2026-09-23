@@ -18,6 +18,8 @@ burn = { workspace = true, features = ["std", "autodiff"] }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+toml = { workspace = true }
+recur64-eval = { path = "../recur64-eval", default-features = false }
 bincode = { version = "2", features = ["serde"] }
 crc32fast = "1"
 sha2 = "0.10"

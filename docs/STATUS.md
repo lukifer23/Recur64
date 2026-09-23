@@ -1,4 +1,4 @@
-# Recur64 — Status (Phase 0)
+# Recur64 — Status
 
 ## COMPLETED
 
@@ -134,3 +134,63 @@ moves map one-to-one to actions, castling/promotions/canonicalization are proven
 history/repetition/termination are correct, CPW perft and the independent oracle
 agree, and real chess data feeds the existing model. Phase 2 (Micro vertical
 slice: inference + PUCT + self-play + replay + learner) may proceed.
+
+---
+
+# Phase 2 — First complete vertical slice
+
+## COMPLETED
+
+- New crates `recur64-search`, `recur64-runtime`, `recur64-eval` (acyclic graph).
+- PUCT with perspective-safe backup, deterministic tie-breaks, exact budget.
+- Single-owner batched inference with metrics and always-respond shutdown.
+- Independent self-play games; Rules Profile V1 terminations; truncation ≠ draw.
+- Replay V1: versioned/checksummed/atomic shards, reader, audit.
+- Learner: real positions, policy + WDL CE, truncated games excluded.
+- Checkpoint schema v2 with contract versions and `model_id` content hash.
+- Paired-color systems arena.
+- Bounded `recur64 run` coordinator with run directory and Ctrl+C recovery.
+- CLI: `selfplay`, `replay-audit`, `train`, `arena`, `run`, `report`.
+- Docs: `SEARCH.md`, `REPLAY.md`, `RUNS.md`, ADRs D16–D22.
+
+## VERIFIED (test evidence)
+
+- `cargo test --workspace` passes; Phase 0/1 tests unchanged.
+- PUCT synthetic suite (one move, unequal priors, sign inversion, terminal
+  win/loss/draw, zero-visit, ties, budget, no NaN) and real-chess suite
+  (mate-in-1, forced move, stalemate, neutral perspective).
+- Inference: concurrent requests all answered; batching coalesces; errors
+  propagate; shutdown fails further requests visibly; metrics recorded.
+- Self-play games are legal, replayable move-for-move, and reproducible by seed.
+- Replay round-trip; CRC detects corruption; partial `.tmp` ignored; audit
+  rejects truncated-with-outcome, illegal selected action, bad target sum.
+- Learner reconstructs correct WDL perspective (Fool's mate) and moves parameters.
+- Checkpoint v2 round-trip, `model_id` content hash, contract mismatch refused.
+- Arena runs paired colors, reproducible from seed.
+- **End-to-end:** CPU and CUDA `recur64 run` complete COLLECT → AUDIT → TRAIN →
+  EVALUATE → REPORT. CPU smoke: 8 games, 346 examples, audit clean, loss
+  4.01 → 1.42, arena ran. CUDA smoke: 17,227 requests, 0 errors, batching mean
+  5.5, training + arena ran.
+- Interruption: pre-cancelled run is `interrupted` with a recoverable reference
+  checkpoint and no candidate; cancel during collect never corrupts replay.
+
+## FAILED
+
+- None.
+
+## NOT RUN
+
+- BF16/FP16 (still gated).
+- Gumbel, recurrent R10 comparisons, diffusion (deferred).
+- Long training / strength evaluation (not a Phase 2 goal).
+
+## BLOCKED
+
+- Nothing blocks the Phase 2 gate.
+
+## Next gate
+
+Phase 2 is **GO**: the whole learning system closes the loop truthfully and
+reproducibly on real legal chess with real neural outputs. Strength was never the
+goal; Micro remains weak by design. Phase 3 (F10 baseline and longer pilots) may
+proceed only after review of these artifacts.

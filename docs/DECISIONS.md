@@ -146,6 +146,63 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   `#[serde(default)]` fields and refuse to resume on a mismatch.
 - **Why:** avoids Phase 0 checkpoint churn; no chess checkpoints exist yet.
 
+## D16 — PUCT is the only Phase 2 search
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** Implement PUCT with an explicit formula, perspective-safe backup,
+  deterministic tie-breaks, and an exact traversal budget. Gumbel is deferred.
+- **Why:** correctness and system integration before search sophistication. See
+  `docs/SEARCH.md`.
+
+## D17 — One GPU inference owner; no direct CUDA from workers
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** A single owner thread holds the Burn backend; workers submit
+  single-position requests through a bounded channel and receive exactly one
+  response each. Batching is bounded by `max_inference_batch` and
+  `batch_timeout`.
+- **Why:** avoids intra-tree races, fills batches across independent games, and
+  guarantees no caller blocks forever.
+
+## D18 — Replay stores moves, not observations
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** A game stores its start FEN and selected canonical actions; every
+  position and Observation V1 is reconstructed on read. Targets are sparse.
+- **Why:** compact, auditable, and impossible to silently misalign: an illegal
+  target action is a hard error. See `docs/REPLAY.md`.
+
+## D19 — Truncated/aborted games are excluded from the learner
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** Games without a result are stored with their termination reason
+  but excluded from training; they are never labelled draws.
+- **Why:** the simplest safe policy; no loss change. Policy-only training is
+  deferred.
+
+## D20 — Checkpoint schema v2 records chess contracts and model identity
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** `SCHEMA_VERSION = 2`; `CheckpointMeta` records observation/action/
+  rules/replay versions, `model_id` (SHA-256 of the saved weights), `run_id`, and
+  counters. v1 probe checkpoints fail visibly; a contract mismatch is refused.
+- **Why:** a checkpoint must know which chess world it belongs to.
+
+## D21 — Self-play game loop lives in `recur64-search`
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** `play_game_from`/`play_game_seeded` and the sampling RNG live in
+  `recur64-search`, not the runtime.
+- **Why:** the arena (`recur64-eval`) must drive games without depending on the
+  Burn-backed runtime; this keeps the dependency graph acyclic
+  (`core → search → eval → runtime → cli`).
+
+## D22 — Deterministic RNG, no external rand dependency
+
+- **Status:** ACCEPTED (Phase 2)
+- **Decision:** a small in-crate SplitMix64 provides reproducible move sampling.
+- **Why:** exact reproducibility from a recorded seed without an extra crate.
+
 ## Version pins
 
 | Component | Pin |
@@ -156,6 +213,10 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 | cozy-chess | =0.3.4 (MIT) |
 | shakmaty | 0.30, optional `oracle` feature (GPL-3.0, dev-only) |
 | proptest | 1 (dev-dependency) |
+| bincode | 2 (serde feature) |
+| crc32fast | 1 |
+| sha2 | 0.10 |
+| ctrlc | 3 |
 | serde / serde_json / toml / anyhow / clap | caret, locked by `Cargo.lock` |
 
 ## Rejected / deferred

@@ -1,7 +1,4 @@
-//! A small deterministic RNG (SplitMix64) for reproducible self-play sampling.
-//!
-//! Recur64 does not depend on an external RNG crate so that sampling is exactly
-//! reproducible from a recorded seed.
+//! A small deterministic RNG (SplitMix64) for reproducible move sampling.
 
 /// SplitMix64 generator.
 #[derive(Debug, Clone)]

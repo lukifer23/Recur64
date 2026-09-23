@@ -8,8 +8,9 @@
 use std::collections::BTreeMap;
 
 use recur64_core::{Color, Outcome};
-use recur64_runtime::{SelfPlayConfig, play_game_seeded};
-use recur64_search::{EvalError, EvalRequest, EvalResult, Evaluator};
+use recur64_search::{
+    EvalError, EvalRequest, EvalResult, Evaluator, SelfPlayConfig, play_game_seeded,
+};
 
 /// Arena configuration.
 #[derive(Debug, Clone)]

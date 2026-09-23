@@ -1,4 +1,4 @@
-# Recur64 — Architecture (Phase 0)
+# Recur64 — Architecture
 
 Phase 0 is a systems probe. It contains no chess rules, search, replay, or
 runtime. Its purpose is to prove the model-shaped graph trains on this
@@ -138,4 +138,47 @@ Real chess data reaches the existing Phase 0 model without changing it:
 `ProbeModel::forward_r`. Terminal positions yield an empty candidate list and are
 bypassed (never fed through an all-masked softmax). Verified in
 `crates/recur64-cli/tests/model_boundary.rs` (CPU FP32, no training).
+
+---
+
+# Phase 2 — First complete vertical slice
+
+Phase 2 closes the loop: self-play → search → batched neural inference → replay →
+audit → train → checkpoint → arena → report.
+
+```
+recur64-core ──► recur64-search ──► recur64-eval
+      │                │                 ▲
+      ▼                ▼                 │ (arena; core+search only)
+recur64-model ──► recur64-runtime ───────┘
+                        ▲
+                  recur64-cli (wires all)
+```
+
+Dependency direction is acyclic. `recur64-search` is CPU-only and Burn-free; it
+owns PUCT, the `Evaluator` trait, the chess adapter, and game play. The runtime
+owns the single inference owner, replay, the learner, and the coordinator.
+
+## Inference ownership
+
+Exactly one thread owns the Burn backend. Game workers submit single-position
+requests through a bounded channel; the owner coalesces them into batches and
+answers **every** request (result or error). Self-play uses this owner; the arena
+uses synchronous per-model evaluators; the owner is shut down before training so
+the accelerator is never fought over.
+
+## The slice
+
+- **Self-play** (`recur64-search::play`): independent legal games, PUCT per move,
+  temperature move selection, Rules Profile V1 terminations.
+- **Replay V1** (`recur64-runtime::replay`): versioned/checksummed/atomic shards;
+  positions reconstructed from the move list; audit rejects corruption.
+- **Learner** (`recur64-runtime::learner`): reconstructs real positions, policy +
+  WDL cross-entropy, bounded updates; truncated/aborted games are excluded.
+- **Arena** (`recur64-eval`): paired-color candidate vs reference systems
+  comparison.
+- **Coordinator** (`recur64-runtime::coordinator`): bounded COLLECT → AUDIT →
+  TRAIN → EVALUATE → REPORT with a run directory and interruption recovery.
+
+See `docs/SEARCH.md`, `docs/REPLAY.md`, and `docs/RUNS.md`.
 

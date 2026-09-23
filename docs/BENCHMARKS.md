@@ -159,3 +159,44 @@ the per-ply history allocation).
 Limitations: `apply` includes a history clone; perft uses cozy movegen routed
 through Recur64's conversion. Numbers are single-run and not statistically
 characterized. No optimization was performed in Phase 1.
+
+---
+
+# Phase 2 — vertical-slice system metrics
+
+These are **system integration** measurements, not chess strength. The run report
+records self-play and inference metrics from the batcher. Both runs use the
+Micro model (1,351,840 params), PUCT with 16 simulations/move, and the K+Q vs K
+smoke start.
+
+| | CPU (`smoke.toml`) | CUDA (`smoke-cuda.toml`) |
+|---|---:|---:|
+| games collected | 8 | 16 |
+| training examples | 346 | (trained) |
+| inference requests | 5,301 | 17,227 |
+| batches | 2,132 | 3,111 |
+| batch size mean / p50 / p95 | 2.49 / 2 / 4 | 5.54 / 7 / 8 |
+| queue wait mean / p50 / p95 (µs) | 9,486 / 9,992 / 15,574 | 4,600 / 3,847 / 9,911 |
+| forward latency mean (µs) | 13,355 | 14,204 |
+| training loss (first → last) | 4.01 → 1.42 | (see run report) |
+| elapsed (s) | 84 | 144 |
+
+Commands:
+
+```
+cargo run --release -p recur64-cli -- run --config configs/smoke.toml \
+    --run-dir runs/smoke-1 --force
+
+$env:CUDA_PATH = "$env:LOCALAPPDATA\Recur64\cuda\12.9.1"
+$env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
+cargo run --release -p recur64-cli --features cuda -- run \
+    --config configs/smoke-cuda.toml --run-dir runs/smoke-cuda-1 --force
+```
+
+Raw data: `runs/<run-id>/report/report.json` (git-ignored).
+
+Limitations: `forward latency mean` includes the first CUDA batches, which
+include kernel JIT/autotune, so the mean overstates steady-state GPU latency.
+Queue wait is dominated by CPU forward time in the CPU run. These are single-run
+numbers on a desktop workstation, not statistically characterized, and no
+optimization was performed in Phase 2.

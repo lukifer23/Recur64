@@ -19,7 +19,7 @@ use recur64_model::model::{CandidateTensors, ProbeModel};
 use recur64_model::train::train_step;
 
 use crate::replay::schema::GameRecord;
-use crate::rng::Rng;
+use recur64_search::Rng;
 
 /// Learner configuration.
 #[derive(Debug, Clone)]

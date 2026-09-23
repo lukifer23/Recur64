@@ -4460,7 +4460,9 @@ dependencies = [
  "burn",
  "clap",
  "recur64-core",
+ "recur64-eval",
  "recur64-model",
+ "recur64-runtime",
  "serde",
  "serde_json",
  "toml 0.9.12+spec-1.1.0",
@@ -4480,10 +4482,7 @@ dependencies = [
 name = "recur64-eval"
 version = "0.1.0"
 dependencies = [
- "burn",
  "recur64-core",
- "recur64-model",
- "recur64-runtime",
  "recur64-search",
  "serde",
 ]
@@ -4511,11 +4510,13 @@ dependencies = [
  "crc32fast",
  "ctrlc",
  "recur64-core",
+ "recur64-eval",
  "recur64-model",
  "recur64-search",
  "serde",
  "serde_json",
  "sha2",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]

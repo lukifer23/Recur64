@@ -1,16 +1,17 @@
-//! Independent self-play games using PUCT and a single evaluator.
+//! Independent game play using PUCT and a single evaluator.
 //!
-//! Each game is independent: one `GameState`, one search tree per move, at most
-//! one outstanding leaf evaluation at a time. Terminations come from Rules
-//! Profile V1. Administrative truncation is recorded as `Truncated` and produces
-//! **no** outcome (never a draw).
+//! This lives in `recur64-search` (not the runtime) so that the arena can drive
+//! games without depending on the Burn-backed runtime. It uses only
+//! `recur64-core` and the search itself.
 
-use recur64_core::{ActionId, GameState, Outcome, Termination};
-use recur64_search::{ChessGame, Evaluator, PuctConfig, RootEdge, search};
+use recur64_core::{ActionId, Color, GameState, Outcome, StandardMove, Termination};
 
+use crate::evaluator::Evaluator;
+use crate::game_tree::ChessGame;
+use crate::puct::{PuctConfig, RootEdge, search};
 use crate::rng::Rng;
 
-/// Self-play configuration.
+/// Game-play configuration.
 #[derive(Debug, Clone, Copy)]
 pub struct SelfPlayConfig {
     pub simulations_per_move: u32,
@@ -46,10 +47,10 @@ pub struct SelfPlayPly {
     pub selected: ActionId,
     pub target: Vec<TargetEntry>,
     pub visits_total: u32,
-    pub side_to_move: recur64_core::Color,
+    pub side_to_move: Color,
 }
 
-/// A completed self-play game (pre-serialization).
+/// A completed game (pre-serialization).
 #[derive(Debug, Clone)]
 pub struct SelfPlayGame {
     pub start_fen: String,
@@ -71,7 +72,6 @@ fn sparse_target(edges: &[RootEdge<ActionId>], total_visits: u32) -> Vec<TargetE
             })
             .collect()
     } else {
-        // No visits (degenerate budget): fall back to priors.
         let prior_sum: f32 = edges.iter().map(|e| e.prior).sum();
         edges
             .iter()
@@ -105,7 +105,6 @@ fn sample_action(edges: &[RootEdge<ActionId>], temperature: f32, rng: &mut Rng) 
         .map(|e| (e.visits as f64).powf(inv_t))
         .collect();
     let sum: f64 = weights.iter().sum();
-    // Treat NaN and non-positive sums as "no usable weights".
     if sum.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater) {
         return best.action;
     }
@@ -124,7 +123,7 @@ pub fn play_game(
     evaluator: &dyn Evaluator,
     cfg: &SelfPlayConfig,
     rng: &mut Rng,
-) -> Result<SelfPlayGame, recur64_search::EvalError> {
+) -> Result<SelfPlayGame, crate::EvalError> {
     play_game_from(evaluator, cfg, rng, GameState::startpos())
 }
 
@@ -134,9 +133,8 @@ pub fn play_game_from(
     cfg: &SelfPlayConfig,
     rng: &mut Rng,
     mut state: GameState,
-) -> Result<SelfPlayGame, recur64_search::EvalError> {
+) -> Result<SelfPlayGame, crate::EvalError> {
     let start_fen = state.to_fen();
-    let seed = 0; // overwritten by caller via with_seed if needed
     let mut plies = Vec::new();
     let termination;
 
@@ -160,7 +158,6 @@ pub fn play_game_from(
             },
         )?;
         if result.edges.is_empty() {
-            // No legal moves but not classified terminal: treat as a rules gap.
             termination = Termination::Aborted;
             break;
         }
@@ -176,9 +173,8 @@ pub fn play_game_from(
         let perspective = state.perspective();
         let (from, to, promo) = selected.to_physical(perspective);
         let promotion = if promo.is_none() { None } else { Some(promo) };
-        let mv = recur64_core::StandardMove::new(from, to, promotion);
         state
-            .apply(mv)
+            .apply(StandardMove::new(from, to, promotion))
             .expect("selected action is legal at this position");
     }
 
@@ -188,7 +184,7 @@ pub fn play_game_from(
         plies,
         termination,
         outcome,
-        seed,
+        seed: 0,
     })
 }
 
@@ -197,7 +193,7 @@ pub fn play_game_seeded(
     evaluator: &dyn Evaluator,
     cfg: &SelfPlayConfig,
     seed: u64,
-) -> Result<SelfPlayGame, recur64_search::EvalError> {
+) -> Result<SelfPlayGame, crate::EvalError> {
     let mut rng = Rng::new(seed);
     let mut g = play_game(evaluator, cfg, &mut rng)?;
     g.seed = seed;

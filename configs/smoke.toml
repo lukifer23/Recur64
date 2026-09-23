@@ -1,0 +1,49 @@
+# Recur64 Phase 2 smoke run: a bounded collect -> audit -> train -> evaluate -> report
+# cycle on real legal chess with the Micro model. Systems validation only; no
+# strength claim.
+run_id = "smoke"
+device = "cpu"
+precision = "fp32"
+recurrence = 1
+
+# Self-play. A simple K+Q vs K endgame start makes completed games likely, so the
+# learner always has terminal results to train on.
+start_fen = "8/8/8/4k3/8/8/3Q4/4K3 w - - 0 1"
+simulations_per_move = 16
+c_puct = 1.0
+temperature = 1.0
+active_games = 8
+cpu_workers = 4
+ply_cap = 150
+seed = 1
+
+# Inference batching.
+max_inference_batch = 16
+batch_timeout_us = 500
+
+# Replay.
+shard_max_games = 64
+
+# Learner.
+train_batch = 16
+max_updates = 4
+lr = 3.0e-4
+
+# Arena.
+arena_games = 4
+
+run_budget_minutes = 10
+
+[model]
+width = 192
+heads = 6
+ffn = 384
+input_blocks = 0
+core_blocks = 4
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

@@ -1,0 +1,42 @@
+# Recur64 Phase 2 smoke run on the GPU (CUDA). Same bounded cycle as smoke.toml
+# but with device = "cuda"; requires --features cuda and the user-space CUDA runtime.
+run_id = "smoke-cuda"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+
+start_fen = "8/8/8/4k3/8/8/3Q4/4K3 w - - 0 1"
+simulations_per_move = 16
+c_puct = 1.0
+temperature = 1.0
+active_games = 16
+cpu_workers = 8
+ply_cap = 150
+seed = 1
+
+max_inference_batch = 32
+batch_timeout_us = 500
+
+shard_max_games = 64
+
+train_batch = 32
+max_updates = 8
+lr = 3.0e-4
+
+arena_games = 4
+
+run_budget_minutes = 10
+
+[model]
+width = 192
+heads = 6
+ffn = 384
+input_blocks = 0
+core_blocks = 4
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5
