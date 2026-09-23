@@ -61,6 +61,7 @@ impl PuctGame for ChessGame<'_> {
         self.evaluator.evaluate(EvalRequest {
             observation: &observation,
             legal,
+            side_to_move: self.state.side_to_move(),
         })
     }
 }

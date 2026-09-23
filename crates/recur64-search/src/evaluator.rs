@@ -5,7 +5,7 @@
 //! model evaluator, or a deterministic test evaluator without any change to
 //! search logic.
 
-use recur64_core::{ActionId, ObservationV1};
+use recur64_core::{ActionId, Color, ObservationV1};
 
 /// Errors surfaced by an evaluator. Every request must produce either an
 /// `Ok` result or an `Err`; an evaluator must never drop a request.
@@ -38,6 +38,10 @@ impl std::error::Error for EvalError {}
 pub struct EvalRequest<'a> {
     pub observation: &'a ObservationV1,
     pub legal: &'a [ActionId],
+    /// Side to move at this position. Most evaluators ignore this (the
+    /// observation is already canonical), but the arena uses it to route each
+    /// ply to the correct model.
+    pub side_to_move: Color,
 }
 
 /// Evaluation output, all from the **side-to-move perspective**.
@@ -168,6 +172,7 @@ mod tests {
             .evaluate(EvalRequest {
                 observation: &obs,
                 legal: &legal,
+                side_to_move: recur64_core::Color::White,
             })
             .unwrap();
         assert_eq!(r.policy.len(), 5);
@@ -196,6 +201,7 @@ mod tests {
             ev.evaluate(EvalRequest {
                 observation: &obs,
                 legal: &legal,
+                side_to_move: recur64_core::Color::White,
             })
             .unwrap();
         }

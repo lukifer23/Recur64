@@ -5,6 +5,7 @@ members = [
     "crates/recur64-search",
     "crates/recur64-model",
     "crates/recur64-runtime",
+    "crates/recur64-eval",
     "crates/recur64-cli",
 ]
 

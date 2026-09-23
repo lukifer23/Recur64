@@ -13,7 +13,7 @@ use burn::prelude::*;
 use clap::Args;
 
 use recur64_model::Precision;
-use recur64_model::checkpoint::{CheckpointMeta, SCHEMA_VERSION, load_training, save_training};
+use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::config::ProbeConfig;
 use recur64_model::fixture::SynthFixture;
 use recur64_model::loss::model_loss;
@@ -95,20 +95,17 @@ pub fn run_cuda_smoke(args: CudaSmokeArgs) -> anyhow::Result<()> {
     // --- training checkpoint round trip ---
     let dir = args.output.join("ckpt");
     let _ = std::fs::remove_dir_all(&dir);
-    let meta = CheckpointMeta {
-        schema_version: SCHEMA_VERSION,
-        recur64_version: recur64_model::VERSION.to_string(),
-        git_revision: None,
-        backend: "cuda (Burn 0.21.0)".to_string(),
-        precision: "fp32".to_string(),
-        model: cfg.model.clone(),
-        recurrence: 2,
-        deep_supervision: false,
-        step: 1,
-        lr: 3e-4,
-        seed: args.seed,
-        rng_state: 0,
-    };
+    let meta = CheckpointMeta::new(
+        cfg.model.clone(),
+        2,
+        false,
+        1,
+        3e-4,
+        args.seed,
+        0,
+        "cuda (Burn 0.21.0)",
+        "fp32",
+    );
     save_training(&dir, &tmodel, &optim, &meta)?;
     let template = ProbeModel::<TrainCuda>::new(cfg.model.clone(), &device);
     let fresh = adamw::<TrainCuda, ProbeModel<TrainCuda>>();

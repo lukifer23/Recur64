@@ -36,8 +36,8 @@ fn scalar(t: Tensor<B, 1>) -> f32 {
     t.into_data().to_vec::<f32>().unwrap()[0]
 }
 
-fn tmp_dir() -> PathBuf {
-    std::env::temp_dir().join("recur64_phase0_ckpt")
+fn tmp_dir(name: &str) -> PathBuf {
+    std::env::temp_dir().join(format!("recur64_phase0_ckpt_{name}"))
 }
 
 #[test]
@@ -87,22 +87,19 @@ fn resumed_matches_uninterrupted() {
         model_b = m;
     }
 
-    let dir = tmp_dir();
+    let dir = tmp_dir("resume");
     let _ = std::fs::remove_dir_all(&dir);
-    let meta = CheckpointMeta {
-        schema_version: SCHEMA_VERSION,
-        recur64_version: recur64_model::VERSION.to_string(),
-        git_revision: None,
-        backend: "cpu (Burn Flex) autodiff".to_string(),
-        precision: "fp32".to_string(),
-        model: cfg(),
-        recurrence: 1,
-        deep_supervision: false,
-        step: k as u64,
+    let meta = CheckpointMeta::new(
+        cfg(),
+        1,
+        false,
+        k as u64,
         lr,
-        seed: 77,
-        rng_state: 0,
-    };
+        77,
+        0,
+        "cpu (Burn Flex) autodiff",
+        "fp32",
+    );
     save_training(&dir, &model_b, &optim_b, &meta).expect("save checkpoint");
 
     // Reload into a template that shares the original parameter identities.
@@ -182,26 +179,54 @@ fn cpu_training_is_deterministic() {
 }
 
 #[test]
+fn model_id_is_content_hash() {
+    let device = Default::default();
+    let model = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let optim = adamw::<B, _>();
+    let dir = tmp_dir("model_id");
+    let _ = std::fs::remove_dir_all(&dir);
+    let meta = CheckpointMeta::new(cfg(), 1, false, 0, 3e-4, 0, 0, "cpu", "fp32");
+    save_training(&dir, &model, &optim, &meta).expect("save");
+    let written: CheckpointMeta =
+        serde_json::from_slice(&std::fs::read(dir.join("meta.json")).unwrap()).unwrap();
+    assert!(!written.model_id.is_empty(), "model_id must be recorded");
+    // The recorded id equals the hash of the saved model file.
+    let actual = recur64_model::checkpoint::hash_file(&dir.join("model.mpk")).unwrap();
+    assert_eq!(written.model_id, actual);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn contract_mismatch_is_refused() {
+    let device = Default::default();
+    let model = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let optim = adamw::<B, _>();
+    let dir = tmp_dir("bad_contract");
+    let _ = std::fs::remove_dir_all(&dir);
+    let meta = CheckpointMeta::new(cfg(), 1, false, 0, 3e-4, 0, 0, "cpu", "fp32");
+    save_training(&dir, &model, &optim, &meta).expect("save");
+    // Tamper the recorded observation contract version.
+    let mut written: CheckpointMeta =
+        serde_json::from_slice(&std::fs::read(dir.join("meta.json")).unwrap()).unwrap();
+    written.observation_version = 99;
+    std::fs::write(dir.join("meta.json"), serde_json::to_vec(&written).unwrap()).unwrap();
+
+    let template = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let fresh = adamw::<B, _>();
+    let res = load_training(&dir, template, fresh, &device);
+    assert!(res.is_err(), "contract mismatch must fail");
+    assert!(res.err().unwrap().to_string().contains("contract mismatch"));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn schema_mismatch_is_refused() {
     let device = Default::default();
     let model = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
     let optim = adamw::<B, _>();
-    let dir = tmp_dir().join("bad_schema");
+    let dir = tmp_dir("bad_schema");
     let _ = std::fs::remove_dir_all(&dir);
-    let mut meta = CheckpointMeta {
-        schema_version: SCHEMA_VERSION,
-        recur64_version: recur64_model::VERSION.to_string(),
-        git_revision: None,
-        backend: "cpu".to_string(),
-        precision: "fp32".to_string(),
-        model: cfg(),
-        recurrence: 1,
-        deep_supervision: false,
-        step: 0,
-        lr: 3e-4,
-        seed: 0,
-        rng_state: 0,
-    };
+    let mut meta = CheckpointMeta::new(cfg(), 1, false, 0, 3e-4, 0, 0, "cpu", "fp32");
     save_training(&dir, &model, &optim, &meta).expect("save");
     meta.schema_version = SCHEMA_VERSION + 99;
     std::fs::write(dir.join("meta.json"), serde_json::to_vec(&meta).unwrap()).unwrap();

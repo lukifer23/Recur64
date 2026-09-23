@@ -1,0 +1,152 @@
+//! T2.9: the learner reconstructs real positions and performs real updates.
+
+use burn::backend::Flex;
+
+use recur64_core::{ActionId, Color, GameState, PromotionCode, StandardMove, Termination};
+use recur64_model::config::ModelConfig;
+use recur64_model::model::ProbeModel;
+use recur64_model::train::{CpuTrainBackend, adamw};
+use recur64_runtime::learner::{build_examples, train_from_games};
+use recur64_runtime::replay::{GameRecord, PlyRecord, SearchRecord};
+use recur64_runtime::{LearnerConfig, SelfPlayConfig, SyncEvaluator, play_game_seeded};
+
+fn micro() -> ModelConfig {
+    ModelConfig {
+        width: 192,
+        heads: 6,
+        ffn: 384,
+        input_blocks: 0,
+        core_blocks: 4,
+        output_blocks: 0,
+        squares: 64,
+        in_features: 119,
+        policy_dim: 128,
+        wdl_classes: 3,
+        promo_codes: 5,
+        rms_eps: 1e-5,
+    }
+}
+
+/// Build a real, auditable game record from UCI moves and a known result.
+fn record_from_uci(game_id: u64, moves: &[&str], outcome: u8, termination: &str) -> GameRecord {
+    let mut state = GameState::startpos();
+    let start_fen = state.to_fen();
+    let mut plies = Vec::new();
+    for m in moves {
+        let perspective = state.perspective();
+        let mv = StandardMove::from_uci(state.board(), m).unwrap();
+        let id = ActionId::from_physical(
+            mv.from,
+            mv.to,
+            mv.promotion.unwrap_or(PromotionCode::NONE),
+            perspective,
+        );
+        assert!(state.legal_actions().contains(&id), "{m} should be legal");
+        plies.push(PlyRecord {
+            selected: id.index() as u16,
+            target: vec![(id.index() as u16, 1.0)],
+            visits_total: 1,
+            side_to_move: if state.side_to_move() == Color::White {
+                0
+            } else {
+                1
+            },
+        });
+        state.apply(mv).unwrap();
+    }
+    GameRecord {
+        game_id,
+        start_fen,
+        seed: 0,
+        search: SearchRecord {
+            simulations: 1,
+            c_puct: 1.0,
+            temperature: 0.0,
+            recurrence: 1,
+        },
+        plies,
+        termination: termination.to_string(),
+        outcome: Some(outcome),
+    }
+}
+
+/// Fool's mate: 1.f3 e5 2.g4 Qh4# (black wins).
+fn fools_mate(game_id: u64) -> GameRecord {
+    record_from_uci(game_id, &["f2f3", "e7e5", "g2g4", "d8h4"], 2, "checkmate")
+}
+
+#[test]
+fn examples_are_reconstructed_with_correct_perspective() {
+    let gs = vec![fools_mate(0)];
+    let (examples, used, skipped) = build_examples(&gs).unwrap();
+    assert_eq!(used, 1);
+    assert_eq!(skipped, 0);
+    assert_eq!(examples.len(), 4);
+    // White to move (black wins) -> loss; black to move -> win.
+    assert_eq!(examples[0].wdl, 2);
+    assert_eq!(examples[1].wdl, 0);
+    assert_eq!(examples[2].wdl, 2);
+    assert_eq!(examples[3].wdl, 0);
+    for ex in &examples {
+        assert!(!ex.legal.is_empty());
+        assert_eq!(ex.policy.len(), ex.legal.len());
+        let sum: f32 = ex.policy.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-6, "policy sum {sum}");
+    }
+}
+
+#[test]
+fn truncated_games_are_excluded() {
+    let device = Default::default();
+    let model = ProbeModel::<Flex>::new(micro(), &device);
+    let ev = SyncEvaluator::new(model, 1, device);
+    let cfg = SelfPlayConfig {
+        simulations_per_move: 2,
+        c_puct: 1.0,
+        temperature: 1.0,
+        ply_cap: 4,
+        recurrence: 1,
+    };
+    let g = play_game_seeded(&ev, &cfg, 1).unwrap();
+    let mut rec = GameRecord::from_selfplay(
+        0,
+        &g,
+        SearchRecord {
+            simulations: 2,
+            c_puct: 1.0,
+            temperature: 1.0,
+            recurrence: 1,
+        },
+    );
+    rec.outcome = None;
+    rec.termination = Termination::Truncated.label().to_string();
+    let (_examples, used, skipped) = build_examples(&[rec]).unwrap();
+    assert_eq!(used, 0);
+    assert_eq!(skipped, 1);
+}
+
+#[test]
+fn training_updates_parameters_and_loss_is_finite() {
+    let device = Default::default();
+    let gs = vec![fools_mate(0), fools_mate(1)];
+    let model = ProbeModel::<CpuTrainBackend>::new(micro(), &device);
+    let before = model.core_weight_scalar();
+    let mut optim = adamw::<CpuTrainBackend, ProbeModel<CpuTrainBackend>>();
+    let cfg = LearnerConfig {
+        batch_size: 2,
+        max_updates: 2,
+        lr: 3e-3,
+        recurrence: 1,
+        seed: 7,
+    };
+    let (trained, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
+    assert_eq!(report.updates, 2);
+    assert!(report.first_loss.is_finite());
+    assert!(report.last_loss.is_finite());
+    assert_eq!(report.loss_curve.len(), 2);
+    let after = trained.core_weight_scalar();
+    assert!(
+        (before - after).abs() > 0.0,
+        "training must move parameters: {before} -> {after}"
+    );
+}

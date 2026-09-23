@@ -17,6 +17,7 @@ store = ["burn/store"]
 [dependencies]
 recur64-core = { path = "../recur64-core" }
 burn = { workspace = true, features = ["std", "autodiff"] }
+sha2 = "0.10"
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

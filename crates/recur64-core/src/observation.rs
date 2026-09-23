@@ -73,6 +73,15 @@ impl Default for ObservationV1 {
     }
 }
 
+impl std::fmt::Debug for ObservationV1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Concise: the raw tensor is 7,616 floats.
+        f.debug_struct("ObservationV1")
+            .field("len", &OBS_LEN)
+            .finish()
+    }
+}
+
 impl ObservationV1 {
     pub fn zeroed() -> Self {
         Self::default()

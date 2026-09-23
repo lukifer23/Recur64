@@ -78,6 +78,7 @@ fn concurrent_requests_all_answered() {
                         .evaluate(EvalRequest {
                             observation: obs,
                             legal,
+                            side_to_move: recur64_core::Color::White,
                         })
                         .unwrap();
                     assert_eq!(r.policy.len(), 3);
@@ -112,6 +113,7 @@ fn batching_coalesces_requests() {
                     ev.evaluate(EvalRequest {
                         observation: obs,
                         legal,
+                        side_to_move: recur64_core::Color::White,
                     })
                     .unwrap();
                 }
@@ -146,6 +148,7 @@ fn errors_propagate_to_every_request() {
     let r = ev.evaluate(EvalRequest {
         observation: &obs,
         legal: &legal,
+        side_to_move: recur64_core::Color::White,
     });
     assert!(r.is_err());
     let m = owner.metrics().snapshot();
@@ -166,6 +169,7 @@ fn shutdown_makes_further_requests_fail_visibly() {
     let r = ev.evaluate(EvalRequest {
         observation: &obs,
         legal: &legal,
+        side_to_move: recur64_core::Color::White,
     });
     assert!(matches!(r, Err(EvalError::Shutdown)));
 }
@@ -181,6 +185,7 @@ fn metrics_are_recorded() {
         ev.evaluate(EvalRequest {
             observation: &obs,
             legal: &legal,
+            side_to_move: recur64_core::Color::White,
         })
         .unwrap();
     }

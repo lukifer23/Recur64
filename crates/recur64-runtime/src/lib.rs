@@ -7,6 +7,7 @@
 
 pub mod evaluator;
 pub mod inference;
+pub mod learner;
 pub mod replay;
 pub mod rng;
 pub mod selfplay;
@@ -16,6 +17,7 @@ pub use inference::{
     BatchEvaluator, BatchedEvaluator, BatchedModel, InferenceConfig, InferenceMetrics,
     InferenceOwner, MetricsSnapshot,
 };
+pub use learner::{LearnerConfig, TrainReport, TrainingExample, build_examples, train_from_games};
 pub use rng::Rng;
 pub use selfplay::{
     SelfPlayConfig, SelfPlayGame, SelfPlayPly, TargetEntry, play_game, play_game_from,

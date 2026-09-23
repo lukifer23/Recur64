@@ -38,6 +38,7 @@ fn policy_is_aligned_and_normalized() {
         .evaluate(EvalRequest {
             observation: &obs,
             legal: &legal,
+            side_to_move: recur64_core::Color::White,
         })
         .unwrap();
 
@@ -62,12 +63,14 @@ fn evaluation_is_deterministic() {
         .evaluate(EvalRequest {
             observation: &obs,
             legal: &legal,
+            side_to_move: recur64_core::Color::White,
         })
         .unwrap();
     let b = ev
         .evaluate(EvalRequest {
             observation: &obs,
             legal: &legal,
+            side_to_move: recur64_core::Color::White,
         })
         .unwrap();
     assert_eq!(a.policy, b.policy);
@@ -83,6 +86,7 @@ fn empty_legal_is_rejected() {
     let err = ev.evaluate(EvalRequest {
         observation: &obs,
         legal: &[],
+        side_to_move: recur64_core::Color::White,
     });
     assert!(err.is_err());
 }
