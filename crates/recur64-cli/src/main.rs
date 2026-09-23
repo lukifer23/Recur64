@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 
 mod bench;
 mod bench_core;
+mod bench_runtime;
 #[cfg(feature = "cuda")]
 mod cuda_smoke;
 mod doctor;
@@ -56,6 +57,8 @@ enum Commands {
     Run(phase2::RunArgs),
     /// Print a run's metadata and report.
     Report(phase2::ReportArgs),
+    /// Stage A: CUDA warmup + batching/active-game sweep.
+    BenchRuntime(bench_runtime::BenchRuntimeArgs),
     /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
     #[cfg(feature = "cuda")]
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
@@ -77,6 +80,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Arena(args) => phase2::run_arena(args),
         Commands::Run(args) => phase2::run_run(args),
         Commands::Report(args) => phase2::run_report(args),
+        Commands::BenchRuntime(args) => bench_runtime::run(args),
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
     }

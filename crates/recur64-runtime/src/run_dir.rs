@@ -136,3 +136,55 @@ pub fn read_metadata(root: &Path) -> anyhow::Result<RunMetadata> {
         root.join("metadata.json"),
     )?)?)
 }
+
+/// One cycle's provenance record, appended to `lineage.jsonl`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LineageRecord {
+    pub cycle: u32,
+    pub run_id: String,
+    pub parent_model_id: String,
+    pub candidate_model_id: String,
+    pub replay_model_ids: Vec<String>,
+    pub new_positions: u64,
+    pub examples_consumed: u64,
+    pub optimizer_step_start: u64,
+    pub optimizer_step_end: u64,
+    pub wall_clock_secs: f64,
+    pub arena_candidate_score: Option<f64>,
+    pub snapshot_decision: String,
+    pub config_hash: String,
+    pub git_revision: Option<String>,
+    pub seed: u64,
+}
+
+impl RunDir {
+    /// Append a lineage record (JSON Lines, one record per cycle).
+    pub fn append_lineage(&self, record: &LineageRecord) -> anyhow::Result<()> {
+        use std::io::Write;
+        let path = self.root.join("lineage.jsonl");
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)?;
+        writeln!(f, "{}", serde_json::to_string(record)?)?;
+        f.sync_all()?;
+        Ok(())
+    }
+
+    /// Read all lineage records.
+    pub fn read_lineage(&self) -> anyhow::Result<Vec<LineageRecord>> {
+        let path = self.root.join("lineage.jsonl");
+        if !path.exists() {
+            return Ok(Vec::new());
+        }
+        let text = std::fs::read_to_string(path)?;
+        let mut out = Vec::new();
+        for line in text.lines() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            out.push(serde_json::from_str(line)?);
+        }
+        Ok(out)
+    }
+}

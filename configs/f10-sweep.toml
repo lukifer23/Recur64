@@ -1,0 +1,35 @@
+# Recur64 Phase 3 Stage A — fast F10 sweep config.
+# Low simulation budget and ply cap so the batching sweep runs quickly; this is
+# a throughput probe, not a strength run.
+run_id = "f10-sweep"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+
+simulations_per_move = 4
+c_puct = 1.0
+temperature = 1.0
+active_games = 64
+ply_cap = 100
+seed = 1
+
+max_inference_batch = 64
+batch_timeout_us = 500
+
+train_batch = 16
+max_updates = 1
+lr = 3.0e-4
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

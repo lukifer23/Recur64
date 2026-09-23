@@ -16,6 +16,7 @@ pub mod learner;
 pub mod model_io;
 pub mod replay;
 pub mod run_dir;
+pub mod sweep;
 
 pub use cancel::CancelToken;
 pub use config::RunConfig;
@@ -26,7 +27,8 @@ pub use inference::{
     InferenceOwner, MetricsSnapshot,
 };
 pub use learner::{LearnerConfig, TrainReport, TrainingExample, build_examples, train_from_games};
-pub use run_dir::{RunDir, RunMetadata, RunStatus, read_metadata, write_metadata};
+pub use run_dir::{LineageRecord, RunDir, RunMetadata, RunStatus, read_metadata, write_metadata};
+pub use sweep::{SweepCellResult, SweepCellSpec};
 
 // Re-exported from `recur64-search` for convenience.
 pub use recur64_search::{

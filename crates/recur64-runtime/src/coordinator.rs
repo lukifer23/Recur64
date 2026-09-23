@@ -135,29 +135,34 @@ pub fn run<B: AutodiffBackend>(
         recurrence: cfg.recurrence,
     };
 
-    let workers = cfg.cpu_workers.max(1);
+    // `active_games` is the concurrency: one game per thread, so many leaf
+    // requests are in flight and the batcher can coalesce them. (The Phase 2
+    // model, where `cpu_workers` bounded concurrency, produced tiny batches.)
+    let concurrency = (cfg.active_games as usize).max(1);
     let games_total = cfg.active_games as usize;
+    let next = std::sync::atomic::AtomicU64::new(0);
     let mut records: Vec<GameRecord> = Vec::new();
 
     std::thread::scope(|scope| {
         let mut handles = Vec::new();
-        for w in 0..workers {
-            let per = games_total / workers;
-            let extra = if w < games_total % workers { 1 } else { 0 };
-            let start = w * per + w.min(games_total % workers);
-            let count = per + extra;
+        for _ in 0..concurrency {
             let ev = &evaluator;
             let cancel = cancel.clone();
             let search_record = search_record.clone();
             let seed = cfg.seed;
             let start_fen = cfg.start_fen.clone();
+            let next = &next;
             handles.push(scope.spawn(move || {
-                let mut out = Vec::with_capacity(count);
-                for i in 0..count {
+                let mut out = Vec::new();
+                loop {
                     if cancel.is_cancelled() || Instant::now() > deadline {
                         break;
                     }
-                    let game_index = start + i;
+                    let game_index =
+                        next.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as usize;
+                    if game_index >= games_total {
+                        break;
+                    }
                     let game_seed = seed.wrapping_add(game_index as u64);
                     let start_state = match &start_fen {
                         Some(f) => match GameState::from_fen(f) {

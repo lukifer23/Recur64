@@ -1,4 +1,4 @@
-//! Phase 2 run configuration. Every run records its fully resolved config.
+//! Phase 2/3 run configuration. Every run records its fully resolved config.
 
 use serde::{Deserialize, Serialize};
 
@@ -58,6 +58,30 @@ fn default_device() -> String {
 fn default_seed() -> u64 {
     1
 }
+fn default_cycles() -> u32 {
+    1
+}
+fn default_replay_max_positions() -> u64 {
+    100_000
+}
+fn default_replay_reuse_target() -> f64 {
+    2.0
+}
+fn default_accumulation_steps() -> usize {
+    4
+}
+
+/// How the self-play snapshot is chosen between cycles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum SnapshotPolicy {
+    /// The candidate becomes the next self-play snapshot only if all health
+    /// gates pass and the arena score is not below `promotion_score_floor`.
+    #[default]
+    Conservative,
+    /// Always keep the initial reference as the self-play snapshot.
+    FrozenReference,
+}
 
 /// A complete, resolved Phase 2 run configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -114,12 +138,139 @@ pub struct RunConfig {
 
     /// Optional start position for self-play. Defaults to the standard start.
     /// A simple endgame start lets a systems smoke produce completed games.
+    /// Phase 3 baselines use the standard start.
     #[serde(default)]
     pub start_fen: Option<String>,
+
+    // --- Phase 3 ---
+    /// Number of bounded collect/train/evaluate cycles in a `pilot` run.
+    #[serde(default = "default_cycles")]
+    pub cycles: u32,
+    /// Optional total-position budget across the pilot (stop when reached).
+    #[serde(default)]
+    pub position_budget: Option<u64>,
+    /// Bounded replay capacity. Oldest shards are archived when exceeded.
+    #[serde(default = "default_replay_max_positions")]
+    pub replay_max_positions: u64,
+    /// Target `examples_consumed / new_positions_inserted`.
+    #[serde(default = "default_replay_reuse_target")]
+    pub replay_reuse_target: f64,
+    /// LR warmup updates. `None` scales to the budget (`min(1000, ~10%)`).
+    #[serde(default)]
+    pub warmup_updates: Option<u64>,
+    /// Planned total updates for the cosine schedule. `None` derives it.
+    #[serde(default)]
+    pub planned_updates: Option<u64>,
+    /// Gradient-accumulation steps (effective batch = train_batch * this).
+    #[serde(default = "default_accumulation_steps")]
+    pub accumulation_steps: usize,
+    /// If set, use argmax (temperature 0) after this ply. `None` = sample all
+    /// plies at `temperature` (the Phase 3 baseline convention).
+    #[serde(default)]
+    pub argmax_after_ply: Option<u32>,
+    /// Path to a frozen opening suite used only for evaluation.
+    #[serde(default)]
+    pub opening_suite: Option<String>,
+    /// Snapshot selection policy between cycles.
+    #[serde(default)]
+    pub snapshot_policy: SnapshotPolicy,
+    /// Arena score floor (candidate) for conservative promotion.
+    #[serde(default = "default_score_floor")]
+    pub promotion_score_floor: f64,
+}
+
+fn default_score_floor() -> f64 {
+    0.35
 }
 
 impl RunConfig {
     pub fn from_toml_str(s: &str) -> anyhow::Result<Self> {
         Ok(toml::from_str(s)?)
+    }
+
+    /// Effective training batch = physical batch * accumulation steps.
+    pub fn effective_batch(&self) -> usize {
+        self.train_batch.max(1) * self.accumulation_steps.max(1)
+    }
+
+    /// Resolved warmup updates for the schedule.
+    pub fn resolved_warmup(&self) -> u64 {
+        self.warmup_updates.unwrap_or_else(|| {
+            let planned = self.planned_updates.unwrap_or(self.max_updates as u64);
+            (planned / 10).clamp(10, 1000)
+        })
+    }
+
+    /// Resolved planned updates for the cosine schedule.
+    pub fn resolved_planned_updates(&self) -> u64 {
+        self.planned_updates
+            .unwrap_or(self.max_updates as u64)
+            .max(1)
+    }
+
+    /// Stable hash of the resolved config (for provenance).
+    pub fn config_hash(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let bytes = serde_json::to_vec(self).unwrap_or_default();
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        format!("{:x}", hasher.finalize())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn f10_toml() -> &'static str {
+        r#"
+run_id = "t"
+device = "cuda"
+recurrence = 1
+simulations_per_move = 64
+temperature = 1.0
+cycles = 4
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+train_batch = 64
+accumulation_steps = 4
+max_updates = 200
+arena_games = 50
+snapshot_policy = "conservative"
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+"#
+    }
+
+    #[test]
+    fn parses_phase3_fields_and_defaults() {
+        let cfg = RunConfig::from_toml_str(f10_toml()).unwrap();
+        assert_eq!(cfg.cycles, 4);
+        assert_eq!(cfg.replay_max_positions, 100_000);
+        assert_eq!(cfg.effective_batch(), 256);
+        assert_eq!(cfg.snapshot_policy, SnapshotPolicy::Conservative);
+        // Omitted -> defaults.
+        assert_eq!(cfg.precision, "fp32");
+        assert!(cfg.start_fen.is_none());
+        assert!(cfg.argmax_after_ply.is_none());
+        // Warmup scales to ~10% of planned updates (max_updates=200 -> 20).
+        assert_eq!(cfg.resolved_warmup(), 20);
+        assert_eq!(cfg.resolved_planned_updates(), 200);
+        assert!(!cfg.config_hash().is_empty());
+    }
+
+    #[test]
+    fn warmup_scaling_is_bounded() {
+        let mut cfg = RunConfig::from_toml_str(f10_toml()).unwrap();
+        cfg.max_updates = 100_000;
+        assert_eq!(cfg.resolved_warmup(), 1000); // capped
+        cfg.max_updates = 10;
+        assert_eq!(cfg.resolved_warmup(), 10); // floored
     }
 }
