@@ -8,10 +8,15 @@ workstation with honest device/precision reporting.
 
 - **Framework:** Burn **0.21.0** (stable), pinned in `Cargo.toml`/`Cargo.lock`.
 - **CPU baseline:** `burn-flex` (`burn::backend::Flex`) with `burn-autodiff`.
-- **GPU target (pending):** `burn-cuda` (CubeCL/CUDA). Requires a CUDA 12.x
-  runtime on `PATH`; none is installed yet (see `DECISIONS.md`, D3).
-- **Precision:** FP32 only for now. BF16/FP16 requests fail visibly until the
-  full graph is verified on the selected device.
+- **GPU:** `burn-cuda` (CubeCL/CUDA) on native Windows, using a **user-space**
+  CUDA 12.9.1 runtime extracted from NVIDIA redistributable archives (no admin).
+  Verified by `recur64 cuda-smoke` (forward R=1/2/4, backward, AdamW, checkpoint
+  restore) and by a synchronized benchmark. See `DECISIONS.md` D3/D8.
+- **Precision:** FP32 only. BF16/FP16 requests fail visibly until the full graph
+  is verified on the selected device.
+
+Build the GPU path with `--features cuda`; the `recur64` process needs
+`CUDA_PATH` and `PATH` pointing at the extracted runtime (see README).
 
 ## Probe graph
 

@@ -26,19 +26,28 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 
 ## D3 — CUDA runtime via user-space redistributables (no admin)
 
-- **Status:** PENDING (owner-approved direction; not yet installed)
+- **Status:** ACCEPTED (implemented and verified)
 - **Decision:** Because there are no administrator rights, do not use the CUDA
-  Windows installer. Instead extract the CUDA 12.x redistributable component
-  archives (`cuda_nvrtc`, `libcublas`, `cuda_cudart`; `cuda_nvcc` only if
-  required by `cudarc`'s build script) into a user directory such as
-  `%LOCALAPPDATA%\Recur64\cuda\12.x`, and set `CUDA_PATH`, `PATH`, and
-  `CUDA_VERSION` **for the `recur64` process only**. No PATH/registry/system
-  changes.
-- **Why:** `burn-cuda` requires CUDA 12.x on `PATH`; the display driver is
-  already present, so only user-space runtime libraries are missing.
-- **Open risk:** `cudarc`/CubeCL must find the extracted `nvrtc`/`cublas`; if
-  they cannot, fall back to WSL2 (D2/B).
-- **Not yet done:** no CUDA component has been downloaded or extracted.
+  Windows installer. Extract the CUDA **12.9.1** redistributable component
+  archives (`cuda_cudart`, `cuda_nvrtc`, `cuda_nvcc`, `libnvjitlink`,
+  `libcublas`) into `%LOCALAPPDATA%\Recur64\cuda\12.9.1` and set `CUDA_PATH` and
+  `PATH` **for the `recur64` process only**. No PATH/registry/system changes.
+- **Why:** `burn-cuda` requires CUDA 12.x on `PATH`; the display driver (596.71)
+  is already present, so only user-space runtime libraries were missing.
+- **Evidence:** `burn-cuda`/`cubecl-cuda`/`cudarc` compile and link against the
+  extracted runtime; `recur64 cuda-smoke` passes on the RTX 2000 Ada (FP32
+  forward R=1/2/4, backward, AdamW, checkpoint restore). See `BENCHMARKS.md`.
+- **Result:** native Windows CUDA works; WSL2 (D2/B) is not required.
+
+## D8 — CUDA FP32 is the accepted GPU backend
+
+- **Status:** ACCEPTED
+- **Decision:** Use `burn-cuda` (Burn 0.21.0) on native Windows for the Phase 0
+  GPU path. No fallback to tch-rs or Candle was needed.
+- **Evidence:** CUDA smoke PASS; synchronized R10 benchmark at batch 1–128 and
+  R=1/2/4 with finite outputs; checkpoint restore on GPU.
+- **Not claimed:** BF16 support, GPU bit-exact determinism, or full-training-run
+  stability. BF16 remains refused until the full graph is tested.
 
 ## D4 — CPU FP32 correctness baseline via Flex
 

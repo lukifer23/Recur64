@@ -23,7 +23,7 @@ and other identifiers are intentionally omitted.
 | WSL | WSL 2.5.10, kernel 6.6.87.2-1, one distro `BendExp` (v2, stopped) |
 | Rust | rustc 1.97.1 (2026-07-14), cargo 1.97.1, rustup 1.29.0, host `x86_64-pc-windows-msvc` |
 | Linker | `rust-lld` + a bundled `xwin-splat` MSVC/CRT/SDK library set via `~/.cargo/config.toml`; **no Visual Studio / Windows Kits install** |
-| CUDA toolkit | **ABSENT** — no `nvcc`, no `nvrtc`, no `CUDA_PATH` |
+| CUDA toolkit | **user-space redist 12.9.1** at `%LOCALAPPDATA%\Recur64\cuda\12.9.1` (no installer, no admin) |
 | Python | present (unrelated venv); **not used as a trainer** |
 
 ## What was actually TESTED
@@ -34,14 +34,15 @@ and other identifiers are intentionally omitted.
 | CPU FP32 full probe graph (fwd/bwd/AdamW/checkpoint) | **TESTED — passes** |
 | CPU FP32 bit-exact resume | **TESTED — Δloss = 0, Δweight = 0** |
 | CPU FP32 bounded benchmark | **TESTED — see BENCHMARKS.md** |
-| CUDA graph on the RTX 2000 Ada | **NOT YET TESTED** (no CUDA runtime available) |
+| Native Windows CUDA build/link (Burn 0.21.0 `burn-cuda`, CubeCL/CUDA) | **TESTED — works** |
+| CUDA FP32 graph on the RTX 2000 Ada (fwd R=1/2/4, bwd, AdamW, checkpoint) | **TESTED — `recur64 cuda-smoke` PASS** |
+| CUDA FP32 synchronized benchmark (R10, batch 1–128, R=1/2/4) | **TESTED — see BENCHMARKS.md** |
 | BF16 full graph | **NOT YET TESTED** (hardware capable; backend path not exercised) |
 
 ## Remains unknown
 
-- Whether Burn/CubeCL CUDA executes this exact graph on native Windows.
-- Whether a user-space (no-admin) CUDA 12.x runtime can be assembled and found by
-  `cudarc`/CubeCL on this machine.
 - Whether BF16 is numerically stable for the full graph on this GPU.
-- Whether WSL2 (fresh Ubuntu) is required, and how its throughput compares.
-- Warm/cold GPU throughput, peak VRAM at R=1/2/4, and GPU checkpoint timings.
+- Whether WSL2 (fresh Ubuntu) would be materially faster (native Windows works,
+  so WSL2 is not currently required).
+- Peak VRAM at R=1/2/4 and GPU checkpoint timings under sustained load.
+- GPU numerical determinism / bit-exactness (only tolerance-bounded claims hold).

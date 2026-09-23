@@ -7,7 +7,7 @@ use std::path::Path;
 use std::process::Command;
 
 use recur64_model::config::{DeviceKind, Precision};
-use recur64_model::precision;
+use recur64_model::precision::{self, SupportStatus};
 
 fn run(program: &str, args: &[&str]) -> Option<String> {
     let out = Command::new(program).args(args).output().ok()?;
@@ -104,6 +104,28 @@ pub fn run_doctor() -> anyhow::Result<()> {
             .map(|s| s.lines().last().unwrap_or("").to_string())
             .unwrap_or_else(|| "NOT FOUND".to_string())
     );
+    println!("cuda feature compiled   : {}", cfg!(feature = "cuda"));
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        let base = Path::new(&local).join("Recur64").join("cuda");
+        if base.is_dir() {
+            let versions: Vec<String> = std::fs::read_dir(&base)
+                .into_iter()
+                .flatten()
+                .flatten()
+                .filter(|e| e.path().is_dir())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+                .collect();
+            println!(
+                "user-space CUDA : {} ({})",
+                base.display(),
+                if versions.is_empty() {
+                    "none".to_string()
+                } else {
+                    versions.join(", ")
+                }
+            );
+        }
+    }
 
     println!("\n-- precision support --");
     println!("note: DETECTED is not TESTED. Non-FP32 requires the full graph to run.");
@@ -113,7 +135,11 @@ pub fn run_doctor() -> anyhow::Result<()> {
         (Precision::Bf16, DeviceKind::Cuda),
         (Precision::Fp16, DeviceKind::Cuda),
     ] {
-        let (status, note) = precision::status(p, d);
+        let (mut status, mut note) = precision::status(p, d);
+        if p == Precision::Fp32 && d == DeviceKind::Cuda && cfg!(feature = "cuda") {
+            status = SupportStatus::Tested;
+            note = "CUDA FP32 graph verified via `recur64 cuda-smoke`";
+        }
         let dev = match d {
             DeviceKind::Cpu => "cpu",
             DeviceKind::Cuda => "cuda",

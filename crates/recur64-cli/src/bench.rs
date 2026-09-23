@@ -1,19 +1,23 @@
 //! `recur64 bench` — bounded Phase 0 benchmark matrix.
 //!
-//! Writes raw JSON and a markdown summary to the output directory. Timings are
-//! wall-clock; CPU runs have no device synchronization step. GPU runs must
-//! synchronize and mark invalid any timing that cannot be guaranteed.
+//! Writes raw JSON and a markdown summary to the output directory. GPU timings
+//! synchronize the device; if synchronization cannot be performed the run fails
+//! rather than publishing an invalid number.
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use burn::backend::Flex;
 use burn::prelude::*;
+use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 use recur64_model::config::ProbeConfig;
 use recur64_model::fixture::SynthFixture;
 use recur64_model::model::ProbeModel;
-use recur64_model::train::{CpuTrainBackend, adamw, train_step};
+use recur64_model::train::{adamw, train_step};
+
+#[cfg(feature = "cuda")]
+use burn::backend::Cuda;
 
 #[derive(Args, Debug)]
 pub struct BenchArgs {
@@ -21,6 +25,9 @@ pub struct BenchArgs {
     pub config: PathBuf,
     #[arg(long)]
     pub output: PathBuf,
+    /// Device: `cpu` (Burn Flex) or `cuda` (Burn CUDA).
+    #[arg(long, default_value = "cpu")]
+    pub device: String,
     /// Inference batch sizes.
     #[arg(long, value_delimiter = ',', default_value = "1,16,64,128")]
     pub inference_batches: Vec<usize>,
@@ -61,6 +68,7 @@ struct BenchReport {
     config: String,
     precision: String,
     device: String,
+    synchronized: bool,
     unique_params: usize,
     unique_blocks: usize,
     notes: Vec<String>,
@@ -88,43 +96,93 @@ fn all_finite<B: Backend>(out: &recur64_model::model::ModelOutput<B>) -> bool {
 pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(&args.config)?;
     let cfg = ProbeConfig::from_toml_str(&text)?;
+    recur64_model::precision::ensure_supported(cfg.precision, cfg.device)?;
+
     let recurrences: Vec<usize> = if args.recurrences.is_empty() {
         cfg.recurrence.clone()
     } else {
         args.recurrences.clone()
     };
 
-    // CPU FP32 only for Phase 0; the precision gate refuses anything else.
-    recur64_model::precision::ensure_supported(cfg.precision, cfg.device)?;
+    match args.device.as_str() {
+        "cpu" => run_with::<Flex, burn::backend::Autodiff<Flex>>(
+            &cfg,
+            &args,
+            &recurrences,
+            "cpu (Burn Flex)",
+            false,
+        ),
+        "cuda" => {
+            #[cfg(feature = "cuda")]
+            {
+                run_with::<Cuda, burn::backend::Autodiff<Cuda>>(
+                    &cfg,
+                    &args,
+                    &recurrences,
+                    "cuda (Burn 0.21.0)",
+                    true,
+                )
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+            }
+        }
+        other => anyhow::bail!("unknown device '{other}' (expected cpu or cuda)"),
+    }
+}
 
-    let device = Default::default();
-    let model = ProbeModel::<Flex>::new(cfg.model.clone(), &device);
+fn run_with<B, TB>(
+    cfg: &ProbeConfig,
+    args: &BenchArgs,
+    recurrences: &[usize],
+    label: &str,
+    synchronized: bool,
+) -> anyhow::Result<()>
+where
+    B: Backend,
+    TB: AutodiffBackend,
+{
+    // Both backends address the same physical device (index 0); each backend
+    // exposes its own device type, so construct them independently.
+    let device: B::Device = Default::default();
+    let tb_device: TB::Device = Default::default();
+    let model = ProbeModel::<B>::new(cfg.model.clone(), &device);
     let unique_params = model.num_params();
 
     let mut notes = vec![
-        "CPU (Burn Flex) FP32. No device synchronization needed on CPU.".to_string(),
+        format!("{label}, {} precision.", cfg.precision.label()),
         "Cold = first invocation; warm = mean of steady-state iterations.".to_string(),
         "Not chess learning; synthetic fixtures only.".to_string(),
     ];
+    if synchronized {
+        notes.push("Device synchronized around each timed region.".to_string());
+    } else {
+        notes.push("CPU path: no device synchronization required.".to_string());
+    }
 
     let mut cases: Vec<Case> = Vec::new();
 
     // Inference.
     for &batch in &args.inference_batches {
         let fx = SynthFixture::new(batch, cfg.model.in_features, args.seed);
-        let (board, cands, _t) = fx.tensors::<Flex>(&device);
-        for &r in &recurrences {
+        let (board, cands, _t) = fx.tensors::<B>(&device);
+        for &r in recurrences {
+            B::sync(&device)?;
             let t0 = Instant::now();
             let out = model.forward_r(board.clone(), &cands, r, false);
+            B::sync(&device)?;
             let cold = t0.elapsed().as_secs_f64();
             let finite = all_finite(&out);
             for _ in 0..args.warmup {
                 let _ = model.forward_r(board.clone(), &cands, r, false);
             }
+            B::sync(&device)?;
             let t1 = Instant::now();
             for _ in 0..args.iters {
                 let _ = model.forward_r(board.clone(), &cands, r, false);
             }
+            B::sync(&device)?;
             let warm = t1.elapsed().as_secs_f64() / args.iters as f64;
             cases.push(Case {
                 kind: "inference",
@@ -137,7 +195,7 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
                 finite,
             });
             println!(
-                "inference  batch={batch:<4} R={r} blocks={:<3} cold={:.1}ms warm={:.1}ms ex/s={:.1}",
+                "inference  batch={batch:<4} R={r} blocks={:<3} cold={:.2}ms warm={:.2}ms ex/s={:.1}",
                 cfg.model.executed_blocks_final(r),
                 cold * 1000.0,
                 warm * 1000.0,
@@ -150,11 +208,11 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
     if !args.skip_training {
         for &batch in &args.train_batches {
             let fx = SynthFixture::new(batch, cfg.model.in_features, args.seed);
-            let (board, cands, targets) = fx.tensors::<CpuTrainBackend>(&device);
-            for &r in &recurrences {
-                let mut m = ProbeModel::<CpuTrainBackend>::new(cfg.model.clone(), &device);
-                let mut optim = adamw::<CpuTrainBackend, ProbeModel<CpuTrainBackend>>();
-                // cold
+            let (board, cands, targets) = fx.tensors::<TB>(&tb_device);
+            for &r in recurrences {
+                let mut m = ProbeModel::<TB>::new(cfg.model.clone(), &tb_device);
+                let mut optim = adamw::<TB, ProbeModel<TB>>();
+                TB::sync(&tb_device)?;
                 let t0 = Instant::now();
                 let (m2, loss) = train_step(
                     m,
@@ -167,14 +225,17 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
                     3e-4,
                 );
                 m = m2;
+                TB::sync(&tb_device)?;
                 let cold = t0.elapsed().as_secs_f64();
                 let finite = loss
                     .into_data()
                     .to_vec::<f32>()
                     .map(|v| v.iter().all(|x| x.is_finite()))
                     .unwrap_or(false);
+                let steps = args.train_steps.max(1);
+                TB::sync(&tb_device)?;
                 let t1 = Instant::now();
-                for _ in 0..args.train_steps.saturating_sub(1) {
+                for _ in 0..steps.saturating_sub(1) {
                     let (m2, _) = train_step(
                         m,
                         &mut optim,
@@ -187,7 +248,8 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
                     );
                     m = m2;
                 }
-                let warm = t1.elapsed().as_secs_f64() / (args.train_steps.max(1) as f64);
+                TB::sync(&tb_device)?;
+                let warm = t1.elapsed().as_secs_f64() / steps as f64;
                 cases.push(Case {
                     kind: "training",
                     batch,
@@ -203,7 +265,7 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
                     finite,
                 });
                 println!(
-                    "training   batch={batch:<4} R={r} cold={:.1}ms warm={:.1}ms ex/s={:.1} finite={finite}",
+                    "training   batch={batch:<4} R={r} cold={:.2}ms warm={:.2}ms ex/s={:.1} finite={finite}",
                     cold * 1000.0,
                     warm * 1000.0,
                     batch as f64 / warm
@@ -217,10 +279,11 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
         burn_version: recur64_model::BURN_VERSION.to_string(),
         config: cfg.name.clone(),
         precision: cfg.precision.label().to_string(),
-        device: "cpu (Burn Flex)".to_string(),
+        device: label.to_string(),
+        synchronized,
         unique_params,
         unique_blocks: cfg.model.unique_blocks(),
-        notes: std::mem::take(&mut notes),
+        notes,
         cases,
     };
 
@@ -236,8 +299,12 @@ fn write_report(output: &Path, report: &BenchReport) -> anyhow::Result<()> {
     let mut md = String::new();
     md.push_str(&format!("# Recur64 bench: {}\n\n", report.config));
     md.push_str(&format!(
-        "- recur64 {} | burn {} | {} | device {}\n",
-        report.recur64_version, report.burn_version, report.precision, report.device
+        "- recur64 {} | burn {} | {} | device {} | synchronized {}\n",
+        report.recur64_version,
+        report.burn_version,
+        report.precision,
+        report.device,
+        report.synchronized
     ));
     md.push_str(&format!(
         "- unique params: {} | unique blocks: {}\n\n",

@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 mod bench;
+#[cfg(feature = "cuda")]
+mod cuda_smoke;
 mod doctor;
 mod model_info;
 
@@ -30,6 +32,9 @@ enum Commands {
     },
     /// Bounded benchmark matrix; writes raw data to --output.
     Bench(bench::BenchArgs),
+    /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
+    #[cfg(feature = "cuda")]
+    CudaSmoke(cuda_smoke::CudaSmokeArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -38,5 +43,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Doctor => doctor::run_doctor(),
         Commands::ModelInfo { config } => model_info::run_model_info(&config),
         Commands::Bench(args) => bench::run_bench(args),
+        #[cfg(feature = "cuda")]
+        Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
     }
 }

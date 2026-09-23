@@ -1,8 +1,9 @@
 # Recur64 — Benchmarks (Phase 0)
 
-All numbers below are **CPU (Burn Flex, FP32)** on the target workstation. They
-are systems measurements, not chess-learning results. No GPU benchmark exists
-yet because no CUDA runtime is installed (see `DECISIONS.md` D3).
+Systems measurements on the target workstation. Not chess-learning results.
+Two backends were measured: **CPU (Burn Flex, FP32)** and **CUDA (Burn 0.21.0,
+FP32)** on the RTX 2000 Ada. GPU timings synchronize the device around each
+timed region.
 
 ## Exact commands
 
@@ -59,15 +60,66 @@ micro's core-only layout), consistent with compute-bound behaviour.
 
 Training step cost scales with executed blocks and the backward pass.
 
+## GPU (CUDA) — R10 probe, 9,805,288 params
+
+Environment: NVIDIA RTX 2000 Ada (16 GB), driver 596.71, user-space CUDA 12.9.1,
+Burn 0.21.0 `burn-cuda`, FP32. `--device cuda`; device synchronized.
+
+```
+$env:CUDA_PATH = "$env:LOCALAPPDATA\Recur64\cuda\12.9.1"
+$env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
+cargo run --release -p recur64-cli --features cuda -- bench \
+    --config configs/r10-probe.toml --device cuda --output runs/r10-cuda \
+    --inference-batches 1,16,64,128 --recurrences 1,2,4 \
+    --train-batches 32,64,128 --iters 20 --warmup 5 --train-steps 3
+```
+
+Raw: `runs/r10-cuda/bench.json`, `runs/r10-cuda/bench.md`.
+
+### Inference (R10)
+
+| batch | R | blocks | cold ms | warm ms | examples/s |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 1 | 8 | 2294.63 | 7.50 | 133.3 |
+| 1 | 2 | 12 | 9.67 | 9.52 | 105.1 |
+| 1 | 4 | 20 | 15.06 | 14.88 | 67.2 |
+| 16 | 1 | 8 | 1340.29 | 11.69 | 1368.2 |
+| 16 | 2 | 12 | 15.92 | 14.68 | 1090.0 |
+| 16 | 4 | 20 | 24.46 | 24.00 | 666.7 |
+| 64 | 1 | 8 | 995.62 | 26.11 | 2451.0 |
+| 64 | 2 | 12 | 38.28 | 38.66 | 1655.3 |
+| 64 | 4 | 20 | 68.02 | 64.36 | 994.4 |
+| 128 | 1 | 8 | 515.13 | 62.78 | 2038.9 |
+| 128 | 2 | 12 | 94.10 | 95.62 | 1338.7 |
+| 128 | 4 | 20 | 155.96 | 159.08 | 804.6 |
+
+### Training (R10, physical batch)
+
+| batch | R | cold ms | warm ms | examples/s |
+|---:|---:|---:|---:|---:|
+| 32 | 1 | 6944.93 | 77.85 | 411.0 |
+| 32 | 2 | 136.66 | 90.54 | 353.4 |
+| 32 | 4 | 203.53 | 133.26 | 240.1 |
+| 64 | 1 | 1074.35 | 110.10 | 581.3 |
+| 64 | 2 | 215.73 | 148.03 | 432.3 |
+| 64 | 4 | 344.70 | 225.82 | 283.4 |
+| 128 | 1 | 827.57 | 203.78 | 628.1 |
+| 128 | 2 | 438.03 | 293.62 | 435.9 |
+| 128 | 4 | 714.15 | 474.22 | 269.9 |
+
+Large cold times reflect CubeCL/CUDA kernel autotuning and JIT compilation on
+first use; warm numbers are the steady state. Warm throughput falls roughly with
+executed blocks, as expected.
+
 ## Not run / unsupported
 
 - **F10 / R10 CPU benchmarks:** not run (expected to be far slower than micro);
   their exact parameter counts and executed-block accounting are reported by
   `model-info`.
-- **GPU inference/training:** NOT RUN — no CUDA runtime installed.
 - **BF16 / FP16:** refused by the precision gate until the full graph is verified.
-- **OOM cases:** none observed on CPU.
-- **Peak VRAM / host RAM / checkpoint timing:** not yet measured (CPU path).
+- **OOM cases:** none observed at batch <= 128 on either backend.
+- **Peak VRAM / host RAM / checkpoint timing:** not yet measured under load.
+- **GPU determinism:** not claimed; only tolerance-bounded equality holds.
 
 ## Limitations
 

@@ -18,7 +18,9 @@
 - Shared recurrent core with R=1/2/4, full backprop, deep-supervision switch.
 - AdamW training; bounded overfit proof.
 - Training checkpoint (model + optimizer + metadata) with schema versioning.
-- `recur64 bench` bounded matrix with JSON/markdown output.
+- `recur64 bench` bounded matrix with JSON/markdown output (CPU and CUDA).
+- `recur64 cuda-smoke` GPU proof (feature-gated).
+- User-space CUDA 12.9.1 runtime (no admin) and native Windows Burn CUDA build.
 - Precision gate (FP32 accepted; BF16/FP16 fail visibly).
 - Documentation: `HARDWARE.md`, `ARCHITECTURE.md`, `BENCHMARKS.md`,
   `DECISIONS.md`, `STATUS.md`, `README.md`, `AGENTS.md`.
@@ -40,6 +42,13 @@
 - Checkpoint resume on CPU FP32 is **bit-exact** (Δloss = 0, Δweight = 0).
 - Schema-mismatched checkpoints are refused visibly.
 - Unsupported precision requests fail visibly.
+- Native Windows Burn CUDA builds and links against the user-space CUDA 12.9.1
+  runtime.
+- `recur64 cuda-smoke` **PASS** on the RTX 2000 Ada: FP32 forward at R=1/2/4
+  (8/12/20 blocks) finite, backward + AdamW update moves parameters, GPU
+  checkpoint restore is exact (delta 0).
+- Synchronized GPU benchmark matrix (R10, batch 1–128, R=1/2/4) produced finite
+  results; see `BENCHMARKS.md`.
 
 ## FAILED
 
@@ -47,19 +56,19 @@
 
 ## NOT RUN
 
-- Any GPU/CUDA workload (no CUDA runtime installed).
 - F10/R10 CPU benchmarks.
 - BF16 / FP16 full-graph tests.
-- Peak VRAM/host-RAM measurement and checkpoint timing.
-- WSL2 evaluation.
+- Peak VRAM/host-RAM measurement and checkpoint timing under load.
+- WSL2 evaluation (not required: native Windows CUDA works).
+- GPU bit-exact determinism (not claimed).
 
 ## BLOCKED
 
-- GPU backend proof is blocked pending a user-space CUDA 12.x runtime
-  (`DECISIONS.md` D3) or a decision to use WSL2 (`D2`).
+- Nothing blocks the Phase 0 gate. BF16 remains intentionally unverified.
 
 ## Next gate
 
-Phase 0 remains **CONDITIONAL GO**: CPU FP32 correctness is complete, but the
-GPU backend proof is pending. Proceeding to the CUDA stage requires owner
-approval to download/extract the NVIDIA redistributable archives (no admin).
+Phase 0 is **GO**: CPU FP32 correctness and the native Windows CUDA FP32 graph
+are both verified. BF16 is the only outstanding precision item and is deferred
+until it can be tested as a complete graph. The next phase (chess contracts) can
+proceed.
