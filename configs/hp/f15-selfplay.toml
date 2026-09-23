@@ -1,0 +1,47 @@
+# Recur64 HP — F15 standard-start self-play (CUDA).
+#
+# Scientific: F15 geometry, PUCT, temperature, optimizer, replay policy.
+# Hardware scheduling: active_games / cpu_workers / batch caps (swept by
+# scripts/hp-concurrency-sweep.ps1 and frozen after H0.7/H1.1).
+#
+# Standard start position (no start_fen): real games, not a toy endgame.
+run_id = "hp-f15-selfplay"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f15"
+hardware_profile = "hp-home"
+
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+active_games = 16
+cpu_workers = 6
+ply_cap = 400
+seed = 1
+
+max_inference_batch = 64
+batch_timeout_us = 2000
+
+shard_max_games = 64
+
+train_batch = 32
+max_updates = 8
+lr = 3.0e-4
+
+arena_games = 4
+run_budget_minutes = 30
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

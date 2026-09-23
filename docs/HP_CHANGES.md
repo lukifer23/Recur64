@@ -79,9 +79,33 @@ DETECTED ≠ TESTED. Each entry states what was actually verified and how.
   this ledger.
 - **Evidence:** hardware values were collected read-only; no identifiers recorded.
 
+## C7 — CUDA runtime, schedule overrides, and sweep tooling
+
+- **Why:** enable the GPU path and make hardware-scheduling sweeps possible
+  without editing scientific configs.
+- **What:**
+  - CUDA 12.9.1 user-space runtime installed at
+    `%LOCALAPPDATA%\Recur64\cuda\12.9.1` from the pinned redist components
+    `cuda_cudart`, `cuda_nvrtc`, **`cuda_nvcc`**, `libnvjitlink`, `libcublas`.
+  - Two reproducibility fixes recorded in `HP_EXPERIMENT.md`: the
+    `nvrtc64_12.dll` alias cudarc 0.19.9 expects, and the `cuda_nvcc`
+    `include/crt` + `nvvm/libdevice` headers nvrtc needs.
+  - `ScheduleOverrides` CLI flags on `selfplay`/`run`
+    (`--active-games`, `--cpu-workers`, `--max-inference-batch`,
+    `--batch-timeout-us`, `--simulations-per-move`, `--ply-cap`).
+  - `scripts/hp-concurrency-sweep.ps1` — real concurrency sweep with a hard stop
+    when `peak_in_flight ≤ 1` or `batch p50 ≤ 1`.
+  - `configs/hp/f15-selfplay.toml`, `configs/hp/r15-selfplay.toml` — standard-start
+    CUDA run configs with hardware/model profile labels.
+  - Contract tests: `RunConfig` device/precision parsing + gate rejection;
+    `RunMetadata` seed/profile/git provenance + JSON round-trip.
+- **Evidence (TESTED):** `cuda-smoke` PASS on F15; F15/R15 benchmark matrices
+  finite; peak VRAM 1,953 / 2,113 MiB; `cargo test --release` and clippy clean.
+
 ---
 
 ## Not yet done (tracked in `HP_EXPERIMENT.md`)
 
-CUDA runtime setup, F15 CPU/GPU correctness, benchmarks, concurrency sweep,
-search-budget comparison, real-search learning smoke, control run, R15 training.
+Concurrency sweep (H0.7), freeze hardware profile (H0.8), search-budget
+comparison (H1.1), real-search learning smoke (H1.3), checkpoint/resume (H1.4),
+F15 control run (H1.5), R15 training/evaluation (R1.x).

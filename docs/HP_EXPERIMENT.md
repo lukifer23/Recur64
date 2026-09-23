@@ -72,7 +72,28 @@ or secrets are recorded.
 Toolchain decision for this machine: use the standard **MSVC** linker (VS Build
 Tools is installed), rather than replicating the workstation's `rust-lld` +
 `xwin-splat` setup. The framework version (Burn 0.21.0) and Rust pin are
-unchanged. CUDA runtime setup is tracked separately below.
+unchanged.
+
+### CUDA runtime (user-space, pinned)
+
+The HP has a CUDA-capable GPU (Ampere, compute 8.6) and an NVIDIA driver that
+reports a CUDA UMD version newer than 12.x, but no CUDA toolkit and no
+`CUDA_PATH`. To keep the CUDA version **byte-identical** to the workstation and
+avoid a system-wide install, this branch uses the same pinned **user-space
+CUDA 12.9.1 redistributable** approach as `docs/DECISIONS.md` D3:
+
+- Components extracted into `%LOCALAPPDATA%\Recur64\cuda\12.9.1`:
+  `cuda_cudart`, `cuda_nvrtc`, `libnvjitlink`, `libcublas` (the runtime
+  libraries `burn-cuda`/`cubecl-cuda`/`cudarc` load dynamically).
+- `CUDA_PATH` and `PATH` are set **for the `recur64` process only**; no PATH,
+  registry, driver, or system change.
+
+A system-wide CUDA Toolkit install was considered (admin is available) and is
+**not** used: it would not simplify the runtime and would break the cross-machine
+reproducibility goal. This is a deliberate divergence-in-tooling but not in
+framework version or numerics.
+
+Status: install + `cuda-smoke` on F15 are **in progress** (see status log).
 
 ## F15 / R15 model family
 
@@ -163,15 +184,96 @@ throughput measurement. Full detail and evidence: **`docs/HP_CHANGES.md`**.
   timeout flushes small batches on CPU. GPU batching must be measured, not
   assumed (H0.7).
 
+### CUDA on the RTX 2050 (TESTED)
+
+`recur64 cuda-smoke --config configs/f15.toml`: **PASS** — FP32 forward R=1
+(8 blocks) finite, backward + AdamW moved the core weight (0.029754 →
+0.029455), GPU checkpoint restore exact (delta 0).
+
+F15 (8 blocks, R=1) inference, warm, CUDA FP32:
+
+| batch | warm ms | examples/s |
+|---:|---:|---:|
+| 1 | 8.50 | 117.7 |
+| 8 | 13.57 | 589.5 |
+| 16 | 25.04 | 638.9 |
+| 32 | 51.03 | 627.1 |
+| 64 | 101.27 | 632.0 |
+
+F15 training (autodiff), warm:
+
+| batch | warm ms | examples/s |
+|---:|---:|---:|
+| 16 | 145.05 | 110.3 |
+| 32 | 167.87 | 190.6 |
+| 64 | 290.47 | 220.3 |
+
+R15 inference, warm, by recurrence (executed blocks 8 / 12 / 20):
+
+| batch | R=1 ex/s | R=2 ex/s | R=4 ex/s |
+|---:|---:|---:|---:|
+| 1 | 173.6 | 91.1 | 53.4 |
+| 8 | 607.7 | 416.4 | 253.5 |
+| 16 | 624.6 | 421.4 | 255.1 |
+| 32 | 615.2 | 412.7 | 248.9 |
+| 64 | 617.2 | 412.9 | 248.6 |
+
+R15 training, warm:
+
+| batch | R=1 ex/s | R=2 ex/s | R=4 ex/s |
+|---:|---:|---:|---:|
+| 16 | 166.4 | 148.7 | 95.5 |
+| 32 | 249.2 | 179.4 | 118.8 |
+
+**Compute accounting sanity:** inference throughput scales ≈ inversely with
+executed blocks (8/12/20 → ~617/413/249 ex/s), i.e. recurrence cost is linear in
+blocks, as designed. The F15/R15 comparison can therefore be accounted in
+executed blocks.
+
+GPU resource envelope (measured with a 0.5 s sampler during the benchmarks):
+
+| Metric | F15 | R15 |
+|---|---:|---:|
+| Peak VRAM | 1,953 MiB | 2,113 MiB |
+| Peak power draw | 25.8 W | 44.8 W |
+| Peak temperature | 62 °C | 63 °C |
+| Peak SM clock | 1,710 MHz | 1,710 MHz |
+| Peak GPU util | 100% | 100% |
+
+The card has 4,096 MiB; these runs used ~half. Batch 64 inference and batch 32
+training (R=4) are safely inside the envelope. Batch 128 training at R=4 is
+**not** yet tested and may exceed VRAM; it is not assumed.
+
+**Cold/JIT caveat:** first use of each shape JIT-compiles and autotunes
+(0.5–8 s per case). Warm numbers are the steady state; cold numbers must never
+be quoted as throughput.
+
+### CUDA runtime reproducibility notes
+
+Two non-obvious fixes were required and are part of the HP setup:
+
+1. `cudarc` 0.19.9 looks for `nvrtc64_12.dll`, but the CUDA 12.9.1 redist ships
+   `nvrtc64_120_0.dll`. An alias copy (`nvrtc64_12.dll`) was created in the
+   user-space `bin`. Without it, JIT compilation silently produced no-op
+   kernels.
+2. `nvrtc` needs the compiler-internal headers and libdevice, which live in the
+   **`cuda_nvcc`** component (`include/crt/*`, `nvvm/libdevice/libdevice.10.bc`),
+   not `cuda_cudart`. The full set is `cuda_cudart`, `cuda_nvrtc`, `cuda_nvcc`,
+   `libnvjitlink`, `libcublas`.
+
 ## Status log
 
 Updated as work lands. DETECTED ≠ TESTED.
 
 - **H0.1** — branch created at `78be205`; tag `hp-phase2-base`. DONE.
 - **H0.2** — read-only hardware discovery. DONE (table above).
+- **H0.3** — CUDA runtime setup (user-space 12.9.1: cudart, nvrtc, **nvcc/crt
+  headers**, nvjitlink, cublas + `nvrtc64_12.dll` alias). DONE.
 - **H0.4** — F15/R15 configs + exact parameter counts. DONE (verified by
   `model-info` and the parity test).
-- **Infra C3/C4/C5** — provenance, precision gate, real concurrency + gauge.
-  DONE (verified).
-- CUDA runtime/toolchain, F15 CPU/GPU correctness, benchmarks, concurrency sweep,
-  search-budget comparison, learning smoke, control run, R15: **NOT YET RUN**.
+- **H0.5** — F15 CUDA correctness. DONE (`cuda-smoke` PASS).
+- **H0.6** — F15/R15 GPU benchmark matrix + VRAM/power/thermal envelope. DONE.
+- **Infra C3/C4/C5/C7** — provenance, precision gate, real concurrency + gauge,
+  schedule overrides + sweep tooling. DONE (verified).
+- **H0.7** concurrency sweep, **H0.8** freeze profile, **H1.x** search budget /
+  smoke / control, **R1.x** recurrence: **NOT YET RUN**.

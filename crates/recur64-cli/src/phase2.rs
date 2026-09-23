@@ -20,12 +20,62 @@ fn load_config(path: &Path) -> anyhow::Result<RunConfig> {
     RunConfig::from_toml_str(&text)
 }
 
+/// Hardware-scheduling overrides. These let a sweep vary scheduling parameters
+/// from the command line without editing scientific config files. They override
+/// only hardware scheduling keys, never model geometry or search settings.
+#[derive(Args, Debug, Default, Clone)]
+pub struct ScheduleOverrides {
+    /// Number of self-play games to launch.
+    #[arg(long)]
+    pub active_games: Option<u32>,
+    /// Number of self-play worker threads.
+    #[arg(long)]
+    pub cpu_workers: Option<usize>,
+    /// Maximum inference batch size.
+    #[arg(long)]
+    pub max_inference_batch: Option<usize>,
+    /// Batch coalescing timeout in microseconds.
+    #[arg(long)]
+    pub batch_timeout_us: Option<u64>,
+    /// Simulations per move (search budget).
+    #[arg(long)]
+    pub simulations_per_move: Option<u32>,
+    /// Ply cap before a game is truncated.
+    #[arg(long)]
+    pub ply_cap: Option<u32>,
+}
+
+impl ScheduleOverrides {
+    fn apply(&self, cfg: &mut RunConfig) {
+        if let Some(v) = self.active_games {
+            cfg.active_games = v;
+        }
+        if let Some(v) = self.cpu_workers {
+            cfg.cpu_workers = v;
+        }
+        if let Some(v) = self.max_inference_batch {
+            cfg.max_inference_batch = v;
+        }
+        if let Some(v) = self.batch_timeout_us {
+            cfg.batch_timeout_us = v;
+        }
+        if let Some(v) = self.simulations_per_move {
+            cfg.simulations_per_move = v;
+        }
+        if let Some(v) = self.ply_cap {
+            cfg.ply_cap = v;
+        }
+    }
+}
+
 #[derive(Args, Debug)]
 pub struct SelfplayArgs {
     #[arg(long)]
     pub config: PathBuf,
     #[arg(long)]
     pub output: PathBuf,
+    #[command(flatten)]
+    pub schedule: ScheduleOverrides,
 }
 
 #[derive(Args, Debug)]
@@ -68,6 +118,8 @@ pub struct RunArgs {
     pub run_dir: PathBuf,
     #[arg(long, default_value_t = false)]
     pub force: bool,
+    #[command(flatten)]
+    pub schedule: ScheduleOverrides,
 }
 
 #[derive(Args, Debug)]
@@ -185,7 +237,8 @@ fn run_impl<B: AutodiffBackend>(
 // --- command entry points ---
 
 pub fn run_selfplay(args: SelfplayArgs) -> anyhow::Result<()> {
-    let cfg = load_config(&args.config)?;
+    let mut cfg = load_config(&args.config)?;
+    args.schedule.apply(&mut cfg);
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => selfplay_impl::<CpuTrain>(&cfg, &args.output),
@@ -261,7 +314,8 @@ pub fn run_arena(args: ArenaArgs) -> anyhow::Result<()> {
 }
 
 pub fn run_run(args: RunArgs) -> anyhow::Result<()> {
-    let cfg = load_config(&args.config)?;
+    let mut cfg = load_config(&args.config)?;
+    args.schedule.apply(&mut cfg);
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => run_impl::<CpuTrain>(&cfg, &args.run_dir, args.force),

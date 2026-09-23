@@ -159,3 +159,53 @@ impl RunConfig {
         recur64_model::precision::ensure_supported(self.precision_kind()?, self.device_kind()?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base_toml() -> &'static str {
+        r#"
+run_id = "t"
+device = "cpu"
+precision = "fp32"
+[model]
+width = 32
+heads = 4
+ffn = 64
+input_blocks = 0
+core_blocks = 1
+output_blocks = 0
+"#
+    }
+
+    #[test]
+    fn device_and_precision_parse() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert_eq!(cfg.device_kind().unwrap(), DeviceKind::Cpu);
+        assert_eq!(cfg.precision_kind().unwrap(), Precision::Fp32);
+        cfg.device = "cuda".into();
+        assert_eq!(cfg.device_kind().unwrap(), DeviceKind::Cuda);
+        cfg.device = "bogus".into();
+        assert!(cfg.device_kind().is_err());
+    }
+
+    #[test]
+    fn gate_rejects_untested_precision_visibly() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert!(cfg.ensure_supported().is_ok(), "fp32 must be accepted");
+        cfg.precision = "bf16".into();
+        assert!(cfg.ensure_supported().is_err(), "bf16 must be refused");
+        cfg.precision = "fp16".into();
+        assert!(cfg.ensure_supported().is_err(), "fp16 must be refused");
+    }
+
+    #[test]
+    fn schedule_override_fields_round_trip() {
+        let cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert_eq!(cfg.active_games, 32);
+        assert_eq!(cfg.cpu_workers, 8);
+        assert_eq!(cfg.max_inference_batch, 32);
+        assert_eq!(cfg.batch_timeout_us, 500);
+    }
+}

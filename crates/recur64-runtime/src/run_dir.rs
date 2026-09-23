@@ -152,3 +152,61 @@ pub fn read_metadata(root: &Path) -> anyhow::Result<RunMetadata> {
         root.join("metadata.json"),
     )?)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cfg() -> RunConfig {
+        RunConfig::from_toml_str(
+            r#"
+run_id = "meta-test"
+device = "cpu"
+precision = "fp32"
+seed = 7
+hardware_profile = "hp-home"
+model_profile = "f15"
+[model]
+width = 32
+heads = 4
+ffn = 64
+input_blocks = 0
+core_blocks = 1
+output_blocks = 0
+"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn metadata_records_seed_and_profiles() {
+        let meta = RunMetadata::new(&cfg());
+        assert_eq!(meta.seed, 7);
+        assert_eq!(meta.hardware_profile.as_deref(), Some("hp-home"));
+        assert_eq!(meta.model_profile.as_deref(), Some("f15"));
+    }
+
+    #[test]
+    fn metadata_records_git_provenance_when_built_in_repo() {
+        let meta = RunMetadata::new(&cfg());
+        if option_env!("RECUR64_GIT_SHA").is_some() {
+            assert!(
+                meta.git_revision.is_some(),
+                "git revision must be recorded when built inside the repo"
+            );
+        }
+        if option_env!("RECUR64_GIT_BRANCH").is_some() {
+            assert!(meta.git_branch.is_some());
+        }
+    }
+
+    #[test]
+    fn metadata_round_trips_through_json() {
+        let meta = RunMetadata::new(&cfg());
+        let bytes = serde_json::to_vec(&meta).unwrap();
+        let back: RunMetadata = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(back.run_id, meta.run_id);
+        assert_eq!(back.seed, meta.seed);
+        assert_eq!(back.git_revision, meta.git_revision);
+    }
+}
