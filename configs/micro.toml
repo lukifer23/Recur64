@@ -1,0 +1,23 @@
+# Recur64 Phase 0 Micro probe: fast correctness / smoke graph.
+# 4 unique transformer blocks, feed-forward (core-only) control.
+name = "micro"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 192
+heads = 6
+ffn = 384
+input_blocks = 0
+core_blocks = 4
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

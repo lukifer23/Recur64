@@ -1,0 +1,23 @@
+# Recur64 Phase 0 F10 probe: feed-forward control.
+# width 384, 12 heads, FFN 768, 8 unique transformer blocks.
+name = "f10"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

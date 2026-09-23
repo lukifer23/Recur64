@@ -1,0 +1,24 @@
+# Recur64 Phase 0 R10 probe: shared recurrent core.
+# 2 input + 4 shared-core + 2 output = 8 unique blocks.
+# Final-output inference executes 2 + 4R + 2 blocks: R=1 -> 8, R=2 -> 12, R=4 -> 20.
+name = "r10-probe"
+device = "cpu"
+precision = "fp32"
+recurrence = [1, 2, 4]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 2
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

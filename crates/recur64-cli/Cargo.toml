@@ -1,0 +1,25 @@
+[package]
+name = "recur64-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+[[bin]]
+name = "recur64"
+path = "src/main.rs"
+
+[features]
+default = ["cpu"]
+cpu = ["recur64-model/cpu", "burn/flex"]
+cuda = ["recur64-model/cuda", "burn/cuda"]
+store = ["recur64-model/store"]
+
+[dependencies]
+recur64-model = { path = "../recur64-model", default-features = false }
+burn = { workspace = true, features = ["std", "autodiff"] }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
