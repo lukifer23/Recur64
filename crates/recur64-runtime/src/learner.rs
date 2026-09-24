@@ -13,10 +13,13 @@
 //! - [`train_from_store`] samples on demand from a [`ReplayStore`], bounding
 //!   memory regardless of replay capacity.
 
+use burn::module::{Module, ModuleVisitor, Param};
 use burn::optim::{GradientsAccumulator, GradientsParams, Optimizer};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use burn::tensor::{Int, TensorData};
+use std::marker::PhantomData;
+use std::time::Instant;
 
 use recur64_core::{ActionId, GameState, StandardMove};
 use recur64_model::action::CandidateBatch;
@@ -45,6 +48,7 @@ pub struct LearnerConfig {
     pub start_update: u64,
     pub recurrence: usize,
     pub seed: u64,
+    pub deadline: Option<Instant>,
 }
 
 impl Default for LearnerConfig {
@@ -59,6 +63,7 @@ impl Default for LearnerConfig {
             start_update: 0,
             recurrence: 1,
             seed: 0,
+            deadline: None,
         }
     }
 }
@@ -73,6 +78,33 @@ pub struct UpdateMetrics {
     pub grad_norm: f32,
     pub lr: f64,
     pub policy_entropy: f32,
+}
+
+struct MeanGradVisitor<'a, B: AutodiffBackend> {
+    grads: &'a mut GradientsParams,
+    divisor: f32,
+    _backend: PhantomData<B>,
+}
+
+impl<B: AutodiffBackend> ModuleVisitor<B> for MeanGradVisitor<'_, B> {
+    fn visit_float<const D: usize>(&mut self, param: &Param<Tensor<B, D>>) {
+        if let Some(grad) = self.grads.remove::<B::InnerBackend, D>(param.id) {
+            self.grads
+                .register::<B::InnerBackend, D>(param.id, grad / self.divisor);
+        }
+    }
+}
+
+fn mean_gradients<B: AutodiffBackend>(
+    grads: &mut GradientsParams,
+    model: &ProbeModel<B>,
+    examples: usize,
+) {
+    model.visit(&mut MeanGradVisitor::<B> {
+        grads,
+        divisor: examples as f32,
+        _backend: PhantomData,
+    });
 }
 
 /// Report of a training run.
@@ -215,11 +247,18 @@ where
     let mut consumed = 0u64;
 
     for update in 0..cfg.max_updates {
+        if cfg
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            break;
+        }
         let global_update = cfg.start_update + update as u64;
         let lr = lr_at(global_update, cfg.lr, cfg.warmup_updates, planned);
         let mut accumulator = GradientsAccumulator::<ProbeModel<B>>::new();
-        let mut components: Option<(f32, f32, f32, f32)> = None;
+        let mut components = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
         let mut micro_count = 0usize;
+        let mut update_examples = 0usize;
 
         for _ in 0..accum {
             let examples = next_batch(micro)?;
@@ -227,6 +266,7 @@ where
                 break;
             }
             micro_count += 1;
+            update_examples += examples.len();
             consumed += examples.len() as u64;
             let refs: Vec<&TrainingExample> = examples.iter().collect();
             let (board, cands, targets) = build_batch_tensors::<B>(&refs, device);
@@ -237,17 +277,28 @@ where
             let entropy = scalar(policy_entropy(&readout.policy));
             let loss = model_loss(&out, &targets);
             let total = scalar(loss.clone());
-            let grads = GradientsParams::from_grads(loss.backward(), &model);
+            let grads =
+                GradientsParams::from_grads((loss * examples.len() as f32).backward(), &model);
             accumulator.accumulate(&model, grads);
-            components = Some((total, policy_loss, wdl_loss, entropy));
+            let weight = examples.len() as f32;
+            components.0 += total * weight;
+            components.1 += policy_loss * weight;
+            components.2 += wdl_loss * weight;
+            components.3 += entropy * weight;
         }
         if micro_count == 0 {
             break;
         }
 
-        let grads = accumulator.grads();
+        let mut grads = accumulator.grads();
+        mean_gradients(&mut grads, &model, update_examples);
         let grad_norm = global_grad_norm(&grads, &model);
-        let (total, policy_loss, wdl_loss, entropy) = components.expect("at least one micro-batch");
+        let (total, policy_loss, wdl_loss, entropy) = (
+            components.0 / update_examples as f32,
+            components.1 / update_examples as f32,
+            components.2 / update_examples as f32,
+            components.3 / update_examples as f32,
+        );
         if !total.is_finite() || !grad_norm.is_finite() {
             return Err(format!(
                 "non-finite loss/grad at update {update}: loss={total} grad={grad_norm}"

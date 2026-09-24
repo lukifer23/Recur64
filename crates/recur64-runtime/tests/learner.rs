@@ -162,6 +162,7 @@ fn accumulation_consumes_effective_batch_and_logs_metrics() {
         start_update: 0,
         recurrence: 1,
         seed: 3,
+        deadline: None,
     };
     let (_, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
     assert_eq!(report.updates, 2);
@@ -195,6 +196,7 @@ fn training_updates_parameters_and_loss_is_finite() {
         start_update: 0,
         recurrence: 1,
         seed: 7,
+        deadline: None,
     };
     let (trained, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
     assert_eq!(report.updates, 2);

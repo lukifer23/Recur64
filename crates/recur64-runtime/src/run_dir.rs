@@ -160,8 +160,10 @@ pub struct LineageRecord {
     pub run_id: String,
     pub parent_model_id: String,
     pub candidate_model_id: String,
+    pub promoted_model_id: String,
     pub replay_model_ids: Vec<String>,
     pub new_positions: u64,
+    pub new_trainable_positions: u64,
     pub examples_consumed: u64,
     pub optimizer_step_start: u64,
     pub optimizer_step_end: u64,
@@ -169,7 +171,10 @@ pub struct LineageRecord {
     pub arena_candidate_score: Option<f64>,
     pub snapshot_decision: String,
     pub config_hash: String,
+    pub scientific_config_hash: String,
+    pub resolved_config_hash: String,
     pub git_revision: Option<String>,
+    pub git_branch: Option<String>,
     pub seed: u64,
 }
 

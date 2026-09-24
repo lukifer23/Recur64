@@ -12,23 +12,22 @@ use std::time::{Duration, Instant};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
-use recur64_core::GameState;
 use recur64_eval::{ArenaConfig, ArenaResult, OpeningSuite, run_arena};
-use recur64_model::checkpoint::{CheckpointMeta, save_training};
+use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 
 use crate::SyncEvaluator;
 use crate::cancel::CancelToken;
 use crate::config::{RunConfig, SnapshotPolicy};
-use crate::eval_policy::{RawMatchResult, raw_policy_vs_random};
+use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
+use crate::eval_policy::{
+    RawMatchResult, RawParentResult, raw_policy_vs_parent, raw_policy_vs_random,
+};
 use crate::inference::{BatchedModel, InferenceConfig, InferenceOwner};
 use crate::learner::{LearnerConfig, TrainReport, train_from_store};
 use crate::model_io;
-use crate::replay::{
-    GameRecord, ReplayHeader, ReplayStore, ReplayWriter, SearchRecord, audit_dir, enforce_capacity,
-};
+use crate::replay::{ReplayHeader, ReplayStore, ReplayWriter, audit_dir, enforce_capacity};
 use crate::run_dir::{LineageRecord, RunDir, RunStatus};
-use recur64_search::{SelfPlayConfig, play_game_from};
 
 /// One cycle's report.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -36,14 +35,24 @@ pub struct CycleReport {
     pub cycle: u32,
     pub games: u64,
     pub positions: u64,
+    pub new_trainable_positions: u64,
+    pub mean_target_entropy: f64,
+    pub mean_top1_visit_share: f64,
+    pub requested_examples: f64,
+    pub requested_updates: usize,
+    pub scheduled_updates: usize,
+    pub selfplay: SelfPlayMetrics,
     pub audit_ok: bool,
     pub train: Option<TrainReport>,
     pub arena: Option<ArenaResult>,
+    pub reference_arena: Option<ArenaResult>,
     pub raw: Option<RawMatchResult>,
+    pub raw_parent: Option<RawParentResult>,
     pub snapshot_model_id: String,
     pub candidate_model_id: String,
     pub replay_positions: u64,
     pub reuse_ratio: f64,
+    pub reuse_shortfall_reason: Option<String>,
     pub decision: String,
     pub wall_secs: f64,
 }
@@ -74,103 +83,11 @@ fn read_model_id(dir: &Path) -> String {
         .unwrap_or_default()
 }
 
-fn load_openings(cfg: &RunConfig) -> Vec<String> {
+fn load_openings(cfg: &RunConfig) -> anyhow::Result<Vec<String>> {
     match &cfg.opening_suite {
-        Some(p) => OpeningSuite::load(Path::new(p))
-            .map(|s| s.openings)
-            .unwrap_or_default(),
-        None => Vec::new(),
+        Some(p) => Ok(OpeningSuite::load(Path::new(p))?.openings),
+        None => Ok(Vec::new()),
     }
-}
-
-/// Collect `active_games` concurrent self-play games with the snapshot model.
-fn collect_games<B: AutodiffBackend>(
-    cfg: &RunConfig,
-    snapshot_dir: &Path,
-    inner_device: &Device<B::InnerBackend>,
-    cancel: &CancelToken,
-    deadline: Instant,
-    game_id_base: u64,
-) -> anyhow::Result<Vec<GameRecord>> {
-    let inference_model =
-        model_io::load::<B::InnerBackend>(snapshot_dir, &cfg.model, inner_device)?;
-    let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
-    let owner = InferenceOwner::spawn(
-        batched,
-        InferenceConfig {
-            max_batch: cfg.max_inference_batch,
-            batch_timeout: Duration::from_micros(cfg.batch_timeout_us),
-            ..InferenceConfig::default()
-        },
-    );
-    let ev = owner.evaluator();
-    let sp = SelfPlayConfig {
-        simulations_per_move: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        ply_cap: cfg.ply_cap,
-        recurrence: cfg.recurrence,
-    };
-    let search_record = SearchRecord {
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        recurrence: cfg.recurrence,
-    };
-    let concurrency = (cfg.active_games as usize).max(1);
-    let games_total = cfg.active_games as usize;
-    let next = std::sync::atomic::AtomicU64::new(0);
-    let mut records = Vec::new();
-
-    std::thread::scope(|scope| {
-        let mut handles = Vec::new();
-        for _ in 0..concurrency {
-            let ev = &ev;
-            let cancel = cancel.clone();
-            let search_record = search_record.clone();
-            let seed = cfg.seed;
-            let start_fen = cfg.start_fen.clone();
-            let next = &next;
-            handles.push(scope.spawn(move || {
-                let mut out = Vec::new();
-                loop {
-                    if cancel.is_cancelled() || Instant::now() > deadline {
-                        break;
-                    }
-                    let gi = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as usize;
-                    if gi >= games_total {
-                        break;
-                    }
-                    let game_seed = seed.wrapping_add(gi as u64);
-                    let start = match &start_fen {
-                        Some(f) => match GameState::from_fen(f) {
-                            Ok(s) => s,
-                            Err(_) => continue,
-                        },
-                        None => GameState::startpos(),
-                    };
-                    let mut rng = recur64_search::Rng::new(game_seed);
-                    if let Ok(mut g) = play_game_from(ev, &sp, &mut rng, start) {
-                        g.seed = game_seed;
-                        out.push(GameRecord::from_selfplay(
-                            game_id_base + gi as u64,
-                            &g,
-                            search_record.clone(),
-                        ));
-                    }
-                }
-                out
-            }));
-        }
-        for h in handles {
-            if let Ok(mut v) = h.join() {
-                records.append(&mut v);
-            }
-        }
-    });
-
-    owner.shutdown();
-    Ok(records)
 }
 
 fn copy_dir(src: &Path, dst: &Path) -> anyhow::Result<()> {
@@ -182,6 +99,10 @@ fn copy_dir(src: &Path, dst: &Path) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn arena_informative_for_promotion(arena: &ArenaResult) -> bool {
+    arena.truncated < arena.games && arena.candidate_wins + arena.reference_wins > 0
 }
 
 /// Run a bounded multi-cycle pilot.
@@ -212,6 +133,7 @@ pub fn run_pilot<B: AutodiffBackend>(
         cfg.precision.clone(),
     );
     ref_meta.run_id = cfg.run_id.clone();
+    ref_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
     save_training(
         &run_dir.reference_ckpt(),
         &reference_model,
@@ -220,7 +142,7 @@ pub fn run_pilot<B: AutodiffBackend>(
     )?;
     let reference_model_id = read_model_id(&run_dir.reference_ckpt());
 
-    let openings = load_openings(cfg);
+    let openings = load_openings(cfg)?;
     let mut snapshot_dir: PathBuf = run_dir.reference_ckpt();
     let mut snapshot_model_id = reference_model_id.clone();
     let mut cumulative_updates = 0u64;
@@ -244,25 +166,70 @@ pub fn run_pilot<B: AutodiffBackend>(
         }
 
         let cycle_start = Instant::now();
+        let parent_model_id = snapshot_model_id.clone();
+        let optimizer_step_start = cumulative_updates;
 
         // COLLECT
-        let records = collect_games::<B>(
-            cfg,
-            &snapshot_dir,
-            &inner_device,
-            cancel,
-            deadline,
-            total_games_collected,
-        )?;
+        let inference_model =
+            model_io::load::<B::InnerBackend>(&snapshot_dir, &cfg.model, &inner_device)?;
+        let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
+        let owner = InferenceOwner::spawn(
+            batched,
+            InferenceConfig {
+                max_batch: cfg.max_inference_batch,
+                batch_timeout: Duration::from_micros(cfg.batch_timeout_us),
+                ..InferenceConfig::default()
+            },
+        );
+        let evaluator = owner.evaluator();
+        let collected = collect_parallel(cfg, &evaluator, cancel, deadline, total_games_collected);
+        let inference_metrics = owner.metrics().snapshot();
+        owner.shutdown();
+        let records = collected?;
+        let selfplay = selfplay_metrics(cfg, &records, inference_metrics);
         let games = records.len() as u64;
-        total_games_collected += games;
+        total_games_collected += cfg.collection_shape()?.0 as u64;
         let positions: u64 = records.iter().map(|g| g.plies.len() as u64).sum();
-        let header = ReplayHeader::new(
+        let new_trainable_positions: u64 = records
+            .iter()
+            .filter(|g| g.outcome.is_some())
+            .map(|g| g.plies.len() as u64)
+            .sum();
+        let target_stats: Vec<(f64, f64)> = records
+            .iter()
+            .flat_map(|g| &g.plies)
+            .map(|ply| {
+                let entropy = -ply
+                    .target
+                    .iter()
+                    .map(|(_, p)| {
+                        let p = *p as f64;
+                        if p > 0.0 { p * p.ln() } else { 0.0 }
+                    })
+                    .sum::<f64>();
+                let top1 = ply
+                    .target
+                    .iter()
+                    .map(|(_, p)| *p as f64)
+                    .fold(0.0, f64::max);
+                (entropy, top1)
+            })
+            .collect();
+        let mean_target_entropy =
+            target_stats.iter().map(|v| v.0).sum::<f64>() / target_stats.len().max(1) as f64;
+        let mean_top1_visit_share =
+            target_stats.iter().map(|v| v.1).sum::<f64>() / target_stats.len().max(1) as f64;
+        if games < cfg.collection_shape()?.0 as u64 {
+            status = "budget_exhausted_during_collect".into();
+            break;
+        }
+        let mut header = ReplayHeader::new(
             cfg.run_id.clone(),
             snapshot_model_id.clone(),
             backend_label(cfg),
             cfg.precision.clone(),
         );
+        header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
         let mut writer = ReplayWriter::open_append(&run_dir.replay(), header, cfg.shard_max_games)?;
         for r in records {
             writer.push(r)?;
@@ -281,8 +248,19 @@ pub fn run_pilot<B: AutodiffBackend>(
         // TRAIN
         let store = ReplayStore::open(&run_dir.replay())?;
         let replay_positions = store.total_positions();
-        let train_model = model_io::load::<B>(&snapshot_dir, &cfg.model, &b_device)?;
-        let mut optim = adamw::<B, _>();
+        let (train_model, mut optim, parent_meta) = load_training(
+            &snapshot_dir,
+            model_io::build::<B>(&cfg.model, &b_device),
+            adamw::<B, _>(),
+            &b_device,
+        )?;
+        anyhow::ensure!(
+            parent_meta.update_counter == cumulative_updates
+                && parent_meta.lr_schedule_step == cumulative_updates,
+            "accepted optimizer trajectory mismatch at cycle {cycle}"
+        );
+        let (scheduled_updates, requested_examples) = cfg.reuse_updates(new_trainable_positions)?;
+        let requested_updates = (requested_examples / cfg.effective_batch() as f64).ceil() as usize;
         // The schedule spans the whole pilot (cycles x per-cycle updates), not
         // just one cycle, so warmup/decay behave as intended.
         let planned = cfg
@@ -292,13 +270,14 @@ pub fn run_pilot<B: AutodiffBackend>(
         let learner_cfg = LearnerConfig {
             batch_size: cfg.train_batch,
             accumulation_steps: cfg.accumulation_steps,
-            max_updates: cfg.max_updates,
+            max_updates: scheduled_updates,
             lr: cfg.lr,
             warmup_updates: warmup,
             planned_updates: planned,
             start_update: cumulative_updates,
             recurrence: cfg.recurrence,
             seed: cfg.seed.wrapping_add(cycle as u64),
+            deadline: Some(deadline),
         };
         let (candidate_model_id, train_report) =
             match train_from_store(&store, train_model, &mut optim, &learner_cfg, &b_device) {
@@ -315,10 +294,10 @@ pub fn run_pilot<B: AutodiffBackend>(
                         cfg.precision.clone(),
                     );
                     meta.run_id = cfg.run_id.clone();
+                    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
                     meta.update_counter = cumulative_updates + report.updates as u64;
                     meta.lr_schedule_step = cumulative_updates + report.updates as u64;
                     save_training(&run_dir.candidate_ckpt(), &trained, &optim, &meta)?;
-                    cumulative_updates += report.updates as u64;
                     (read_model_id(&run_dir.candidate_ckpt()), Some(report))
                 }
                 Err(e) if e.contains("no trainable") => {
@@ -329,6 +308,8 @@ pub fn run_pilot<B: AutodiffBackend>(
             };
 
         // EVALUATE
+        let parent_infer =
+            model_io::load::<B::InnerBackend>(&snapshot_dir, &cfg.model, &inner_device)?;
         let ref_infer = model_io::load::<B::InnerBackend>(
             &run_dir.reference_ckpt(),
             &cfg.model,
@@ -340,6 +321,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             &inner_device,
         )?;
         let ref_ev = SyncEvaluator::new(ref_infer, cfg.recurrence, inner_device.clone());
+        let parent_ev = SyncEvaluator::new(parent_infer, cfg.recurrence, inner_device.clone());
         let cand_ev = SyncEvaluator::new(cand_infer, cfg.recurrence, inner_device.clone());
         let arena_cfg = ArenaConfig {
             games: cfg.arena_games,
@@ -351,6 +333,13 @@ pub fn run_pilot<B: AutodiffBackend>(
             openings: openings.clone(),
         };
         let arena = run_arena(
+            &parent_ev,
+            &cand_ev,
+            &parent_model_id,
+            &candidate_model_id,
+            &arena_cfg,
+        )?;
+        let reference_arena = run_arena(
             &ref_ev,
             &cand_ev,
             &reference_model_id,
@@ -365,21 +354,53 @@ pub fn run_pilot<B: AutodiffBackend>(
             cfg.seed.wrapping_add(cycle as u64),
             &openings,
         )?;
+        let raw_parent = raw_policy_vs_parent(
+            &cand_ev,
+            &parent_ev,
+            cfg.arena_games.max(4),
+            cfg.ply_cap,
+            cfg.seed.wrapping_add(cycle as u64),
+            &openings,
+        )?;
 
         // SNAPSHOT DECISION (conservative).
+        let achieved_reuse = if new_trainable_positions == 0 {
+            0.0
+        } else {
+            train_report
+                .as_ref()
+                .map(|r| r.examples_consumed as f64 / new_trainable_positions as f64)
+                .unwrap_or(0.0)
+        };
         let healthy = audit.ok()
+            && selfplay.inference.errors == 0
+            && achieved_reuse >= cfg.replay_reuse_target * 0.8
             && train_report
                 .as_ref()
-                .map(|r| r.updates > 0)
+                .map(|r| {
+                    r.updates > 0
+                        && r.metrics.iter().all(|m| {
+                            m.total_loss.is_finite()
+                                && m.policy_loss.is_finite()
+                                && m.wdl_loss.is_finite()
+                                && m.grad_norm.is_finite()
+                                && m.policy_entropy.is_finite()
+                        })
+                })
                 .unwrap_or(false);
         let decision = match cfg.snapshot_policy {
             SnapshotPolicy::FrozenReference => "continue".to_string(),
             SnapshotPolicy::Conservative => {
-                if healthy && arena.candidate_score >= cfg.promotion_score_floor {
+                if healthy
+                    && arena_informative_for_promotion(&arena)
+                    && arena.candidate_score >= cfg.promotion_score_floor
+                {
                     let snap = run_dir.checkpoints().join(format!("snapshot-{cycle:03}"));
                     copy_dir(&run_dir.candidate_ckpt(), &snap)?;
                     snapshot_dir = snap;
                     snapshot_model_id = candidate_model_id.clone();
+                    cumulative_updates = optimizer_step_start
+                        + train_report.as_ref().map(|r| r.updates as u64).unwrap_or(0);
                     "promote".to_string()
                 } else {
                     "continue".to_string()
@@ -387,55 +408,81 @@ pub fn run_pilot<B: AutodiffBackend>(
             }
         };
 
-        let reuse_ratio = if positions > 0 {
+        let reuse_ratio = if new_trainable_positions > 0 {
             train_report
                 .as_ref()
-                .map(|r| r.examples_consumed as f64 / positions as f64)
+                .map(|r| r.examples_consumed as f64 / new_trainable_positions as f64)
                 .unwrap_or(0.0)
         } else {
             0.0
+        };
+        let reuse_shortfall_reason = if requested_updates > scheduled_updates {
+            Some("max_updates safety cap".to_string())
+        } else if train_report
+            .as_ref()
+            .is_some_and(|r| r.updates < scheduled_updates)
+        {
+            Some("run deadline or replay exhaustion".to_string())
+        } else if reuse_ratio < cfg.replay_reuse_target * 0.8 {
+            Some("effective-batch rounding or insufficient trainable positions".to_string())
+        } else {
+            None
         };
 
         let cycle_report = CycleReport {
             cycle,
             games,
             positions,
+            new_trainable_positions,
+            mean_target_entropy,
+            mean_top1_visit_share,
+            requested_examples,
+            requested_updates,
+            scheduled_updates,
+            selfplay,
             audit_ok: audit.ok(),
             train: train_report,
             arena: Some(arena),
+            reference_arena: Some(reference_arena),
             raw: Some(raw),
+            raw_parent: Some(raw_parent),
             snapshot_model_id: snapshot_model_id.clone(),
             candidate_model_id: candidate_model_id.clone(),
             replay_positions,
             reuse_ratio,
+            reuse_shortfall_reason,
             decision: decision.clone(),
             wall_secs: cycle_start.elapsed().as_secs_f64(),
         };
         run_dir.append_lineage(&LineageRecord {
             cycle,
             run_id: cfg.run_id.clone(),
-            parent_model_id: snapshot_model_id.clone(),
+            parent_model_id: parent_model_id.clone(),
             candidate_model_id: candidate_model_id.clone(),
-            replay_model_ids: vec![snapshot_model_id.clone()],
+            promoted_model_id: snapshot_model_id.clone(),
+            replay_model_ids: vec![parent_model_id],
             new_positions: positions,
+            new_trainable_positions,
             examples_consumed: cycle_report
                 .train
                 .as_ref()
                 .map(|t| t.examples_consumed)
                 .unwrap_or(0),
-            optimizer_step_start: cumulative_updates.saturating_sub(
-                cycle_report
+            optimizer_step_start,
+            optimizer_step_end: optimizer_step_start
+                + cycle_report
                     .train
                     .as_ref()
                     .map(|t| t.updates as u64)
                     .unwrap_or(0),
-            ),
-            optimizer_step_end: cumulative_updates,
             wall_clock_secs: cycle_report.wall_secs,
             arena_candidate_score: cycle_report.arena.as_ref().map(|a| a.candidate_score),
             snapshot_decision: decision,
             config_hash: cfg.config_hash(),
-            git_revision: None,
+            scientific_config_hash: cfg.scientific_config_hash(),
+            resolved_config_hash: cfg.resolved_config_hash(),
+            git_revision: option_env!("RECUR64_GIT_SHA").map(str::to_owned),
+            git_branch: option_env!("RECUR64_GIT_BRANCH").map(str::to_owned),
             seed: cfg.seed,
         })?;
         println!(
@@ -470,4 +517,33 @@ pub fn run_pilot<B: AutodiffBackend>(
     };
     run_dir.update_status(cfg, final_status, Some(status))?;
     Ok(report)
+}
+
+#[cfg(test)]
+mod promotion_tests {
+    use super::*;
+    #[test]
+    fn draw_only_and_all_truncated_arenas_are_uninformative() {
+        let mut arena = ArenaResult {
+            games: 4,
+            candidate_wins: 0,
+            reference_wins: 0,
+            draws: 4,
+            truncated: 0,
+            candidate_score: 0.5,
+            score_ci_low: 0.5,
+            score_ci_high: 0.5,
+            opening_count: 1,
+            terminations: Default::default(),
+            model_reference: "parent".into(),
+            model_candidate: "candidate".into(),
+        };
+        assert!(!arena_informative_for_promotion(&arena));
+        arena.draws = 0;
+        arena.truncated = 4;
+        assert!(!arena_informative_for_promotion(&arena));
+        arena.truncated = 0;
+        arena.candidate_wins = 1;
+        assert!(arena_informative_for_promotion(&arena));
+    }
 }
