@@ -801,3 +801,68 @@ and is deferred until after the corrected F10 baseline.
 
 **B5 — sparse legal-only policy scoring.** NOT RUN. Given B3/B9, the dense
 64×64 grid is not an identified bottleneck, and the smoke comes first (E1).
+
+## P4.5 pre-registration — corrected F10 smoke (written before the run)
+
+Config: `configs/phase4/f10-smoke.toml` (frozen). Reference: v2 `d22c78bd…`.
+Science: F10 head v2, 64 sims, c_puct 1.0, temperature 1.0 through ply 29
+then argmax, root Dirichlet 0.3 / 0.25, ply cap 512, seed 1, seed policy
+`base_seed_plus_global_game_id_v1`. Schedule (MEASURED P4.3):
+32 / 32 / 500 µs, cpu_workers 32, learner 64 × 4 (effective 256). AdamW
+contract unchanged; lr 3e-4; replay 100k; reuse target 2.0; sampler
+unchanged; openings-v1; conservative-v2 promotion with floor 0.5 and
+≥ 4 decisive games.
+
+**Workload derivation (INFERRED from v2-s64, MEASURED as 177.6 trainable
+positions per game):**
+
+| quantity | value | reason |
+|---|---|---|
+| games_per_cycle | 32 | one wave at concurrency 32; ≈ 9–10 min self-play |
+| expected new trainable positions / cycle | ≈ 5,685 | 32 × 177.6 |
+| requested updates / cycle | ≈ 45 | ⌈5,685 × 2.0 / 256⌉ |
+| max_updates (safety cap) | 150 | ≈ 3.3× the request; a config test pins that 3× the expected workload still fits |
+| planned / warmup updates | 90 / 10 | 2 cycles × 45 |
+| arena_games | 32 | v2-s64 self-play was 70% decisive; noise-free argmax arenas may differ, so expect ~16–22 decisive games, well above the gate of 4; covers 12 openings × 2 colours; ≈ 8–9 min per searched arena at 64 sims (100 games would be ≈ 25+ min per arena) |
+| run_budget_minutes | 50 | 2 cycles estimated at 40–55 min; evaluation does not check the deadline, so any overrun is recorded |
+| position_budget | 30,000 | ≈ 2.5× the expected 11,900 |
+
+**Gate (unchanged from the task):**
+
+- **SYSTEM:** zero illegal moves, replay audit clean, zero inference
+  failures, no NaN/Inf, no checkpoint or optimizer mismatch, stable GPU
+  resources.
+- **DATA:** sufficient trainable positions, acceptable truncation, targets
+  not collapsed (the P4.4 degeneracy thresholds apply), repetition not
+  beyond threefold + fifty > 0.80.
+- **TRAINING:**
+  - achieved reuse ≥ 0.8 × target
+  - `max_updates_cap_bound` false; an unexpected binding cap means
+    CONDITIONAL or NO-GO
+  - finite losses and gradients
+  - candidate model_id changes after training
+  - no immediate policy collapse (trainable target / raw policy entropy not
+    collapsing)
+- **EVALUATION:** every requested evaluation completes; uninformative results
+  are labelled; no false promotion; parent and frozen-reference comparisons
+  stay distinct.
+- **STOP immediately** on an illegal move, replay corruption, NaN/Inf, a
+  checkpoint or optimizer mismatch, a CUDA error, repeated OOM, lineage
+  corruption, or scientific identity drift.
+
+Diagnostics that are **not gates** (addendum C7/C8/E2):
+
+- per-cycle `root_search`: noise vs search movement against the generating
+  snapshot
+- `search-gain` per cycle range: network-to-target divergence, predicted
+  W/D/L, |value|, halfmove clock, repeated-position share
+- per-update gradient norms (T1 revisit)
+- replay freshness
+- GPU per phase
+- evaluation owner counts
+
+The E2 questions are answered from these after the run.
+
+**Lifecycle / owner residency:** the P4.4L result decides whether
+`evaluate_candidate` is changed before the smoke. Any change must be
+science-preserving, with a deterministic parity test.

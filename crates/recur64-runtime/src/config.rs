@@ -810,6 +810,29 @@ openings = ['{e4}']
         assert!(!cfg.resolved_config_hash().is_empty());
     }
 
+    /// The corrected Phase 4 smoke realizes the measured 32-way schedule
+    /// (cpu_workers must not silently cap it) and its max_updates safety cap
+    /// does not bind at the pre-registered expected workload.
+    #[test]
+    fn f10_smoke_config_realizes_schedule_and_cap_does_not_bind() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/phase4/f10-smoke.toml");
+        let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(cfg.collection_shape().unwrap(), (32, 32));
+        assert_eq!(cfg.effective_batch(), 256);
+        assert_eq!(cfg.simulations_per_move, 64);
+        assert_eq!(cfg.argmax_after_ply, Some(30));
+        assert_eq!(cfg.root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.lr_schedule(), (10, 90));
+        assert!(cfg.reference_model_id.is_some() && cfg.reference_checkpoint.is_some());
+        // Pre-registered expectation: ~5,685 new trainable positions/cycle.
+        let plan = cfg.update_plan(5685).unwrap();
+        assert_eq!(plan.requested_updates, 45);
+        assert!(!plan.cap_bound);
+        // Even a 3x larger cycle would still fit under the cap.
+        assert!(!cfg.update_plan(3 * 5685).unwrap().cap_bound);
+    }
+
     /// The CUDA fail-fast must accept every versioned NVRTC shared library name
     /// cudarc may try, not just one exact name.
     #[test]
