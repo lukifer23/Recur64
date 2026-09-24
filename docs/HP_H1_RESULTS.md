@@ -119,6 +119,62 @@ MEASURED on CPU (FP32 Flex):
   perft); `cargo fmt --all --check` and `cargo clippy --workspace
   --all-targets` are clean.
 
+## Frozen F15 reference (F1/F2) — MEASURED
+
+`recur64 freeze-reference --config configs/hp/f15-reference.toml --output
+runs/hp-h1-ref-f15`, CUDA FP32, built at `1b0faa8`.
+
+| Field | Value |
+|---|---|
+| model_id | `4271e19fbd6bc32f95017d7808ed14feb4e86d5ae8877193f0b8736139c9dda3` |
+| seed | 1 |
+| git | `1b0faa86982b3cd403393a25ec3ff285196bebbe`, `experiment/hp-r15` |
+| scientific hash (freezing config) | `2b8a3902d05322d9380c513c58181b7490a2afffd683a7b61982bb73fcde8390` |
+| resolved hash (freezing config) | `e3587044ebab063c2cd9e9fb9febee04a2c4ddb8828aaa61d42e8df3afa64211` |
+| opening suite v1 digest | `66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c` |
+| update_counter / lr_schedule_step | 0 / 0 |
+
+The directory holds `meta.json`, `config.toml`, `model.mpk`, `optimizer.mpk`,
+and `reference.json` (model id, seed, git SHA/branch, both hashes, suite
+digest, optimizer contract). Later runs pin the reference by
+`reference_model_id` in their own scientific identity.
+
+**Invalid first attempt (kept for the record).** The first freeze ran from a
+shell without the process-local CUDA env. cudarc could not load NVRTC. It
+panicked only on a worker thread, and the command still wrote a checkpoint
+(`cd85d509…`), whose weights differ from the valid one. That directory was
+renamed `runs/hp-h1-ref-f15-INVALID-no-nvrtc` and is never used.
+`ensure_supported()` now refuses a CUDA run when NVRTC is not on PATH or
+`CUDA_PATHin` (verified: the command errors). `scripts/hp-cuda-env.sh`
+sets the env for Git Bash.
+
+T0 raw-policy diagnostics on the 12 suite positions (`eval-policy`,
+sequential batch-1 CUDA, 8 games): mean policy entropy 2.280 nats (uniform
+3.291), mean top-1 probability 0.330. Raw policy vs random: 8 draws (6
+insufficient material, 2 stalemate), 0 decisive, `informative = false`, wall
+time 4 m 25 s. This is not a strength claim.
+
+## S2 selection rule (pre-registered before any S2 cell ran)
+
+Budgets 8, 16, 32, 64 sims/move on the frozen reference, the frozen S1
+schedule, standard start, and the same game seeds, with 16 games each. 128
+runs only if 64 is not more degenerate than lower budgets and its runtime is
+practical. No 256.
+
+- **Degenerate** if any of: mean top-1 visit share > 0.9;
+  (threefold + fifty-move) > 0.8 of games; trainable-position target entropy
+  < 0.1; truncated > 0.5 of games.
+- **Candidates** are 16/32/64/128; 8 is a curve point only. Also excluded: any
+  budget where 8 games would take more than 12 minutes to collect at the
+  measured rate.
+- **Pick** the highest trainable positions/s among non-degenerate candidates.
+  **Override** to a higher budget only if its (threefold + fifty-move +
+  truncated) share is at least 0.15 lower (absolute) *and* its trainable
+  positions/s is at least 0.5× the leader's.
+- If every candidate is degenerate: search gate CONDITIONAL/NO-GO, and stop
+  before learning. No anti-draw, contempt, or material changes.
+- Prior-vs-posterior divergence: NOT RUN (priors are not stored in replay).
+
 ## Next measured gates
 
 1. Verify the frozen-reference command on CUDA and record model ID, git SHA,
