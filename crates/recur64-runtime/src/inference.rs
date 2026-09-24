@@ -81,6 +81,21 @@ impl<B: Backend> BatchedModel<B> {
     }
 }
 
+/// Release the device memory pool of the thread that ran this model.
+///
+/// CubeCL keys device streams (and their memory pools) by OS thread. An
+/// `InferenceOwner` runs its model on a dedicated thread that exits at
+/// shutdown, so without this its stream's pool is never reused or released,
+/// and VRAM grows by hundreds of MiB per owner lifecycle (measured, P4.4L).
+/// `Drop` runs on the thread that owns the model, so the cleanup targets that
+/// thread's stream. Parameter buffers belong to the loading thread's stream
+/// and are unaffected.
+impl<B: Backend> Drop for BatchedModel<B> {
+    fn drop(&mut self) {
+        B::memory_cleanup(&self.device);
+    }
+}
+
 impl<B: Backend> BatchEvaluator for BatchedModel<B> {
     fn evaluate_batch(
         &self,

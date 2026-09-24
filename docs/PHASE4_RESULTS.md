@@ -866,3 +866,75 @@ The E2 questions are answered from these after the run.
 **Lifecycle / owner residency:** the P4.4L result decides whether
 `evaluate_candidate` is changed before the smoke. Any change must be
 science-preserving, with a deterministic parity test.
+
+## Owner-approved next steps after the smoke (2026-09-24; NOT RUN)
+
+In this order, each measured before and after. Engineering changes must prove
+science parity; science changes get a new experiment identity and are never
+mixed into the recorded Phase 4 smoke evidence.
+
+1. **Throughput.** Multiple leaves in flight per game (virtual loss) for
+   larger batches without more OS threads. This is a search-execution change,
+   so it needs its own ADR and identity. Kernel fusion / launch-overhead
+   investigation (engineering) runs alongside.
+   - Evidence: ~14 trainable pos/s at 64 sims; the forward runs at ~20–25% of
+     peak and is launch-bound; the owner is busy in forward 75–87% of the time
+     at batch ~18.
+2. **Cross-cycle tail waste.** Overlapping collection or a continuous
+   actor/learner. Evidence: single-wave cycles are tail-bound (P4.3A vs
+   P4.3B, 2× throughput difference).
+3. **Evaluation deadline enforcement** (D38). Correctness; required before
+   P4.6.
+4. **Crash-safe replay archival** (D37). Correctness; required before any 24h
+   run.
+5. **Inference-owner residency** (≤ 2 resident owners). Scope set by the
+   P4.4L result.
+
+## B2 — schedule transfer check at the frozen 64 sims (MEASURED)
+
+Binary `eba8c8e`, reference v2, 64 sims, 500 µs, cap = concurrency, at least
+2 waves per cell. Artifacts: `docs/evidence/phase4/transfer/`.
+
+| schedule | games | trainable pos/s | ev/s | batch mean/p50/p95 | queue p50 / p95 µs | fwd ms | mean plies | VRAM MiB | °C |
+|---|---:|---:|---:|---|---|---:|---:|---:|---:|
+| 24 / 24 | 48 | 15.5 | 984 | 15.9 / 24 / 24 | 729 / 14169 | 12.6 | 182.8 | 787 | 77 |
+| **32 / 32 (frozen)** | 64 | 14.4 | 956 | 17.9 / 15 / 32 | 3166 / 14783 | 14.5 | 185.6 | 1041 | 79 |
+| 48 / 48 | 96 | **19.7** | **1289** | 24.7 / 33 / 39 | **18569** / 22513 | 15.5 | 177.6 | 1043 | 80 |
+
+**D2 science-parity check (MEASURED, PASS).** The 32 / 32 cell on the
+rebuilt binary (all addendum code) reproduced the earlier v2-s64 cell:
+
+- same 64 games, 11,880 positions and 11,368 trainable positions
+- W/D/B/T 21/18/24/1 and identical terminations
+- identical scientific hash
+- target entropy equal to ~1e-15 (floating-point summation order across
+  threads)
+
+**Findings.**
+
+- 24 vs 32 is a tie.
+- 48-way is +35–37% over 32, beyond the ±10–15% noise band, with bigger
+  batches despite the P4.3 oversubscription signature (queue p50 18.6 ms).
+- INFERRED: at 64 sims each thread waits longer on the GPU, so extra threads
+  fill batches.
+- **Not a replacement yet:** the cells used different game sets (48 / 64 /
+  96 games). The rule requires a *clear, reproducible* improvement, so the
+  confirmation is 32 vs 48 on the identical 96-game set.
+- It **cannot apply to the pre-registered smoke**: 32 games per cycle caps
+  concurrency at 32, and `games_per_cycle` is scientific. The smoke keeps
+  32 / 32 / 500 exactly as frozen.
+- Recorded as the first measured lead for post-smoke item 1 (throughput).
+
+**First exact search-contribution numbers at T0** (32 / 32 cell, trainable
+plies; `root_search`):
+
+| split | KL | argmax changed |
+|---|---:|---:|
+| network → noisy root prior (noise alone) | 0.068 | 91.2% |
+| noisy root prior → visit target (search) | 0.022 | 11.4% |
+| network → target (combined, the old metric) | 0.116 | 91.3% |
+
+At T0 the combined metric is almost entirely exploration noise: with a flat
+prior, noise flips the argmax. Search movement is small because the network
+value is exactly 0; the mean |root value| is 0.003, from terminal
+discoveries.
