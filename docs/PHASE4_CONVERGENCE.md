@@ -5,8 +5,10 @@ on `main`). The GPU steps P4.2+ are tracked in `docs/PHASE4_RESULTS.md`:
 
 - P4.2 reference: v2, after head v2.
 - P4.3 schedule: MEASURED.
-- P4.4 search budget: in progress.
-- P4.4L / P4.5: not yet run.
+- P4.4 search budget: 64 sims.
+- P4.4L: GO after the D44 owner-memory fix.
+- P4.5 F10 smoke: CONDITIONAL. The loop is interpretable, but the searched
+  arena is repetition-dominated, so no promotion occurs.
 
 The integration branch (`main-integration`, now merged to `main`) transplanted the proven generic harness
 improvements from the experimental branch `experiment/hp-r15`

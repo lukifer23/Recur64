@@ -18,7 +18,7 @@ Phase 4 results.
 | 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
 | 2 | first vertical slice (Micro model) | GO |
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
-| 4 | mainline harness convergence + GPU requalification | in progress |
+| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; F10 smoke CONDITIONAL (arena/promotion contract decision before P4.6) |
 
 Phase 4 so far:
 
@@ -27,8 +27,14 @@ Phase 4 so far:
   `docs/DECISIONS.md` D40) and added standard self-play exploration: root
   Dirichlet noise and argmax after ply 30 (D41). Together they turned
   repetition-dominated self-play into mostly decisive games.
-- The F10 search-budget requalification and the first corrected F10 smoke are
-  next.
+- The F10 search budget is requalified at **64 simulations/move**.
+- A GPU memory defect in the inference-owner lifecycle was found and fixed
+  (D44).
+- **First corrected F10 smoke: CONDITIONAL.**
+  - The learning loop is interpretable, and the value head learns.
+  - Searched evaluation arenas are repetition-dominated, so no candidate is
+    promoted yet.
+  - The evaluation / promotion contract is the next scientific decision.
 
 This is a research laboratory, **not** a chess engine. It has no UCI engine
 loop and makes no strength claims.
@@ -157,9 +163,13 @@ recur64 search-gain --config configs/phase4/f10-reference.toml \
     --checkpoint runs/phase4-f10-reference-v2 --replay runs/sweep-s64/replay \
     --output runs/sweep-s64
 
-# GPU inference-owner lifecycle probe.
+# GPU inference-owner lifecycle probe (measured 32-way schedule).
 recur64 bench-lifecycle --config configs/phase4/f10-reference.toml \
-    --checkpoint runs/phase4-f10-reference-v2 --reps 8 --output runs/lifecycle
+    --checkpoint runs/phase4-f10-reference-v2 --reps 8 --output runs/lifecycle \
+    --arena-games 32 --concurrency 32 --max-batch 32 --timeout-us 500
+
+# Corrected two-cycle F10 learning smoke (frozen, pre-registered config).
+recur64 pilot --config configs/phase4/f10-smoke.toml --run-dir runs/phase4-f10-smoke
 ```
 
 `recur64` is `target/release/recur64` built with `--features cuda` and run
@@ -228,5 +238,7 @@ Established, with evidence in `docs/STATUS.md` and
 **Not** established:
 
 - any chess strength
-- that F10 learns well at this scale (the corrected smoke is next)
+- that F10 learns well at this scale. The corrected smoke shows the value
+  head learning, but no promotion yet: the searched arena is
+  repetition-dominated.
 - that recurrence helps (the R10 R1/R2/R4 experiments have not started)

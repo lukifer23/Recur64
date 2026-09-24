@@ -10,18 +10,18 @@ Compact copies of the machine-readable artifacts live in
 `docs/evidence/phase4/`; the full run directories are under `runs/phase4-*`
 (gitignored, local to the workstation).
 
-## Current status (2026-09-24, in progress)
+## Current status (2026-09-24): P4.2–P4.5 complete; STOP before P4.6
 
 | step | status |
 |---|---|
 | CUDA runtime proof | **GO** (MEASURED) |
-| P4.2 frozen reference | **v1 superseded**; **v2** `d22c78bd…` frozen (head v2) + T0 recorded |
-| P4.3 hardware schedule | **GO**: `configs/hardware/workstation-main.toml` MEASURED (32 / 32 / 500 µs, cpu_workers 32; learner 64×4) |
-| P4.4 search budget | **in progress** on v2: 8 / 16 / 32 done, 64 / 128 / 256 running; v1 curve kept as superseded evidence |
-| P4.4L lifecycle probe | NOT RUN (tooling ready) |
-| P4.5 F10 smoke | NOT RUN |
+| P4.2 frozen reference | v1 superseded; **v2** `d22c78bd…` frozen (head v2); T0 recorded |
+| P4.3 hardware schedule | **GO**: `configs/hardware/workstation-main.toml` MEASURED (32 / 32 / 500 µs, cpu_workers 32; learner 64×4). The 64-sim transfer check shows a 48-way lead, not yet confirmed |
+| P4.4 search budget | **GO: 64 sims** (pre-registered rule; v2 curve 8–256) |
+| P4.4L lifecycle probe | **GO after fix D44**: an owner-memory defect was found and fixed |
+| P4.5 F10 smoke | **CONDITIONAL**: every system, data and training gate passes and the value head learns, but the searched arena is repetition-dominated, so no promotion occurs and learning cannot compound (see P4.5) |
 
-Major findings so far (details below):
+Major findings (details below):
 
 1. `eval-policy` leaked device memory on the autodiff backend: 16 GB VRAM
    within a minute. Fixed (D43).
@@ -38,6 +38,23 @@ Major findings so far (details below):
      threefold + fifty from ~0.5 to 0.08.
 4. The T0 search-gain gate was a design error. It is now a per-cycle
    learning-progress metric (D42).
+   - Under root noise, the offline metric includes the Dirichlet noise.
+   - The exact noise vs search split is now measured in self-play. At T0,
+     search moves the argmax on about 11% of positions.
+5. **GPU memory grew by hundreds of MiB per inference-owner lifecycle.**
+   - VRAM went from 453 MiB to 10.5 GB over 32 lifecycles; this very likely
+     caused the HP branch's late-run exhaustion.
+   - Root cause: CubeCL's per-thread stream memory pools were orphaned by
+     short-lived owner threads.
+   - Fixed by releasing the pool on owner shutdown (D44). Usage now plateaus
+     at about 1 GB, and stayed stable in the smoke.
+6. **Smoke: the loop is interpretable and the value head learns** (WDL loss
+   1.10 → 0.83). But the searched arena, which is deterministic and
+   noise-free, is 75% threefold repetition. The promotion gate is starved
+   (3–5 decisive games), so no promotion happens and learning cannot
+   compound.
+   - This evaluation-contract question is the first scientific decision
+     before P4.6.
 
 ## Hardware and software
 
@@ -873,6 +890,18 @@ In this order, each measured before and after. Engineering changes must prove
 science parity; science changes get a new experiment identity and are never
 mixed into the recorded Phase 4 smoke evidence.
 
+**Added by the smoke result (owner decision needed first):** the searched-arena
+/ promotion contract. Arena play is deterministic, noise-free argmax; 24 of 32
+arena games were threefold, leaving 3–5 decisive games, so the conservative-v2
+gate cannot recognise an improved candidate. Options include:
+
+- arena opening diversity or exploration
+- more arena games
+- a different acceptance statistic
+
+Each is a science change with its own identity. It must be decided before
+P4.6, because otherwise a longer qualification would repeat held cycles.
+
 1. **Throughput.** Multiple leaves in flight per game (virtual loss) for
    larger batches without more OS threads. This is a search-execution change,
    so it needs its own ADR and identity. Kernel fusion / launch-overhead
@@ -1021,3 +1050,172 @@ B9. Artifact: `docs/evidence/phase4/lifecycle/p44l-postfix-one-repeat.json`.
 - Owner residency stays at 3 in the pilot evaluation. With per-owner
   cleanup it no longer accumulates. The ≤ 2-owner refactor is a peak-memory
   optimization and is scheduled after the smoke (owner-approved item 5).
+
+## P4.5 — corrected F10 smoke (MEASURED)
+
+`recur64 pilot --config configs/phase4/f10-smoke.toml --run-dir runs/phase4-f10-smoke`.
+
+- Binary `7a8b492` (clean, `main`), started 2026-09-24 17:01.
+- Status **completed**, 2 cycles, wall **44 m 25 s** against a 50 min budget
+  (overrun 0 s).
+- Artifacts are in `docs/evidence/phase4/smoke/`: identity, lineage, T0,
+  cycle reports, pilot report, replay identity, GPU log and per-cycle
+  search-gain.
+
+**Identity.**
+
+- scientific `5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3`
+- resolved `63b446c4ee428e34b5c3bc0c2061b7e9d729e1ffffce4f86d6473e9504fec428`
+- reference `d22c78bd…`
+- opening digest `66d6dcf5…`
+- promotion rule `conservative-v2`
+
+Both lineage records carry the same scientific hash.
+
+**T0 under the smoke config.** Raw policy vs random: 1 W / 29 D / 2 L,
+score 0.484, 3 decisive, informative. Policy entropy 3.285 of 3.291
+uniform; top-1 0.046.
+
+| | cycle 0 | cycle 1 |
+|---|---|---|
+| **Self-play** | | |
+| games req / done / failed | 32 / 32 / 0 | 32 / 32 / 0 |
+| positions / trainable / trainable games | 6394 / 6394 / 32 | 5486 / 4974 / 31 |
+| W / D / B / T | 9 / 12 / 11 / 0 | 12 / 6 / 13 / 1 |
+| terminations | mate 20, insuff 9, fifty 2, threefold 1 | mate 25, insuff 5, threefold 1, trunc 1 |
+| draw share / repetition share / mean plies | 0.375 / 0.031 / 199.8 | 0.188 / 0.031 / 171.4 |
+| mean halfmove clock / repeated-position share | 7.32 / 0.002 | 5.42 / 0.001 |
+| **Targets** | | |
+| all H / top-1 | 2.924 / 0.143 | 2.973 / 0.142 |
+| trainable H / top-1 | 2.924 / 0.143 | 3.017 / 0.135 |
+| **Root search** (trainable) | | |
+| KL(noisy ‖ net) / argmax changed by noise | 0.067 / 90.6% | 0.068 / 92.0% |
+| KL(target ‖ noisy) / argmax changed by search | **0.019 / 11.0%** | **0.025 / 11.8%** |
+| mean abs network value / root value | 0.000 / 0.002 | 0.000 / 0.004 |
+| **Inference** | | |
+| requests / errors | 407,109 / 0 | 349,239 / 0 |
+| batch mean / p50 / p95 / max | 13.0 / 14 / 30 / 32 | 10.6 / 7 / 32 / 32 |
+| queue p50 / p95 us; forward ms | 5260 / 9809; 15.3 | 4858 / 10895; 16.0 |
+| **GPU** | | |
+| VRAM start, then peak in collect / train / eval (MiB) | 602; 602 / 2780 / 3245 | 3245; 3294 / 3242 / 3274 |
+| mean busy util collect / train / eval; max C | 48 / 73 / 47 %; 74 | 49 / 81 / 45 %; 69 |
+| **Replay** | | |
+| total games / sampleable positions | 32 / 6394 | 64 / 11368 |
+| current-cycle sample fraction / mean sample age (cycles) | 1.000 / 0.00 | 0.669 / 0.33 |
+| reuse requested / achieved | 2.0 / 2.002 | 2.0 / 2.007 |
+| **Updates** | | |
+| requested / scheduled / completed / cap / cap_bound | 50 / 50 / 50 / 150 / false | 39 / 39 / 39 / 150 / false |
+| **Training** | | |
+| examples consumed | 12,800 | 9,984 |
+| total loss, first to last | 4.059 to 3.849 | 4.193 to 4.090 |
+| policy loss, first to last | 2.961 to 3.022 | 3.095 to 3.115 |
+| **WDL loss, first to last** | **1.099 to 0.826** | **1.099 to 0.974** |
+| policy entropy, first to last | 2.958 to 3.021 | 3.091 to 3.114 |
+| pre-clip grad norm max / mean | 6.85 / 1.83 | 3.98 / 1.93 |
+| LR, first to last | 0 to 2.0e-4 | 0 to 2.0e-4 |
+| **Evaluation** | | |
+| searched candidate vs parent: W / D / L, score | 1 / 27 / 4, 0.453 | 1 / 29 / 2, 0.484 |
+| decisive / informative / terminations | 5 / true / threefold 24, fifty 3, mate 5 | 3 / true / threefold 24, fifty 5, mate 3 |
+| searched candidate vs reference | = parent arena (parent is the reference; labelled) | = parent arena (labelled) |
+| raw candidate vs random | 3 / 27 / 2, 0.516, 5 decisive | 2 / 26 / 4, 0.469, 6 decisive |
+| raw candidate vs parent | 0 / 26 / 6, 0.406, 6 decisive | 0 / 31 / 1, 0.484, 1 decisive |
+| **Lineage** | | |
+| parent to candidate | d22c78bd to 9fe5a1f4 | d22c78bd to e8675fab |
+| decision / hold reason | hold / score_not_above_parent | hold / arena_uninformative |
+| optimizer step start to end; accepted after | 0 to 50; 0 | 0 to 39; 0 |
+| eval owners spawned / max resident | 3 / 3 | 3 / 3 |
+| **Time** | | |
+| collect / train / eval / wall (s) | 664 / 32 / 667 / 1364 | 723 / 22 / 547 / 1292 |
+
+- **Independent GPU log:** peak 3,276 MiB, max 74 C. Throttle reasons were
+  idle and power cap only.
+- **Replay audit:** 64 games, 11,880 plies, 0 errors.
+- **Replay sidecar:** verified. Both cycles were generated by reference v2
+  at 64 sims, argmax after ply 30, epsilon 0.25, head v2.
+
+### Gate evaluation
+
+| gate | result |
+|---|---|
+| zero illegal moves; replay audit clean | PASS (audit: 0 errors) |
+| zero inference failures | PASS (0 of 756,348) |
+| no NaN / Inf | PASS |
+| no checkpoint or optimizer mismatch | PASS (the accepted trajectory stays at 0 on holds, by design) |
+| stable GPU resources | PASS (3.2-3.3 GB across both cycles; D44 confirmed in a real pilot) |
+| sufficient trainable positions; acceptable truncation | PASS |
+| targets not collapsed; repetition below 0.80 | PASS (H about 3.0; threefold + fifty 0.03-0.09) |
+| intended reuse achieved; cap not controlling | PASS (2.00 / 2.01; cap_bound false) |
+| finite losses and gradients; model id changes | PASS |
+| no immediate policy collapse | PASS (policy entropy 2.96 to 3.11) |
+| all evaluations complete; uninformative results labelled; no false promotion | PASS |
+| parent and frozen-reference comparisons distinct | N/A: with no promotion, parent == reference, and the reuse is labelled |
+
+### E2 questions
+
+1. **Does policy loss fall?** It is flat to slightly rising (2.96 to 3.02,
+   3.10 to 3.12). That is interpretable: the targets are near-uniform (H
+   about 3.0, the same as the model's entropy), so there is little policy
+   signal yet.
+2. **Does WDL loss learn?** **Yes.** It fell from 1.099 (uniform) to 0.826
+   in cycle 0 and to 0.974 in cycle 1.
+3. **Does value move off neutral?** The trained candidates' WDL loss fell,
+   so their value predictions moved. The candidates' value distribution on
+   positions was NOT MEASURED: `search-gain` only evaluates the generating
+   network. The self-play networks stayed exactly neutral (|value| 0.000)
+   because no candidate was promoted.
+4. **Does search movement grow as value learns?** NOT TESTABLE in this
+   smoke. Both cycles were generated by the untrained reference. Search
+   moved the argmax on about 11% of positions (KL about 0.02) in both.
+5. **Is repetition low?** In self-play, yes: 3% of games, and at most 0.2%
+   of positions repeated. **In the searched arenas, no: 24 of 32 games
+   ended in threefold** in both cycles.
+6. **Are targets purposeful?** Not yet. They are broad, close to the prior.
+7. **Does the raw policy improve on T0?** No: 0.516 and 0.469 vs 0.484.
+8. **Is there decisive candidate-vs-parent evidence?** Weak: 5 and 3
+   decisive games out of 32.
+9. **Is replay fresh?** Healthy: the current-cycle fraction was 0.67 and
+   the mean sample age 0.33 cycles.
+10. **Is max_updates only a safety cap?** Yes (50 of 150, 39 of 150).
+11. **Is GPU throughput stable across cycles?** Stable within the one-wave
+    tail effect: collection went from 9.6 to 7.6 positions/s, and batch mean
+    from 13.0 to 10.6 as games ended.
+12. **Is the owner lifecycle stable?** Yes: VRAM went from 3,245 to 3,274
+    MiB across cycle 1.
+
+### Verdict: **F10 SMOKE CONDITIONAL**
+
+The corrected F10 learning loop is **interpretable**: every system, data and
+training gate passes, and the value head learns. Two measured conditions
+stop learning from compounding under the current contract. Both must be
+resolved before P4.6.
+
+1. **The searched evaluation arena has its own repetition attractor.**
+   - Arena play is deterministic argmax with no root noise. Two
+     near-identical, near-zero-value networks shuffle into threefold
+     repetition: 24 of 32 games, in both cycles.
+   - The conservative-v2 gate therefore sees only 3-5 decisive games and
+     held both cycles, correctly on that evidence.
+   - Fixing this is an evaluation-contract (science) change: for example,
+     arena opening diversity or exploration, more games, or a different
+     acceptance statistic. It needs an owner decision and a new identity.
+2. **Without promotion, learning does not accumulate.**
+   - By design (D31), a held candidate is discarded. Each cycle retrains
+     from the untrained reference, and self-play never uses a learned value
+     head.
+   - So the central question, whether search movement rises once the value
+     head learns, cannot be answered until a candidate is promoted or the
+     acceptance protocol is revisited.
+
+INFERRED:
+
+- The pipeline itself is no longer the blocker.
+- The policy target can only become purposeful once the value head guides
+  search.
+- The value head can only guide search once the evaluation protocol can
+  recognise a better candidate.
+
+The owner-approved post-smoke items (throughput, tail waste, D38, D37,
+residency) stand. The arena / promotion contract is added as the first
+scientific decision before P4.6.
+
+**STOP.** No P4.6, R10 or 24h run was started.

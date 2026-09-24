@@ -283,8 +283,11 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
 
 ## VERIFIED
 
-- fmt/clippy clean; `cargo test --workspace --release` 191 passed, 0 failed,
-  1 ignored.
+- fmt/clippy clean; `cargo test --workspace --release` 196 passed, 0 failed,
+  1 ignored, at the smoke binary (`7a8b492`).
+- Every load path refuses a checkpoint with a model-config or head-version
+  mismatch.
+- A fresh R10 at R1/R2/R4 also starts at 1.000 × uniform with value 0.000.
 - A fresh F10 prior is 0.999 × uniform entropy with value 0.000 (was 0.502 /
   0.245) — `tests/t0_prior.rs`.
 - F10 == R10 == 9,805,672 unique parameters under head v2.
@@ -301,15 +304,39 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
 - The T0 search-gain gate was a design error. It is now a learning-progress
   metric (D42).
 
-## IN PROGRESS
+## PHASE 4 GPU RESULTS (details in docs/PHASE4_RESULTS.md)
 
-- P4.4 search-budget curve on reference v2 (8 / 16 / 32 done; 64 / 128 / 256
-  running).
+- P4.4 search budget: **64 simulations/move**, frozen by the pre-registered
+  rule on reference v2 (curve 8-256; 128 failed both override conditions).
+- P4.4L lifecycle: **GO after fix D44.**
+  - Inference-owner VRAM grew 453 MiB to 10.5 GB over 32 lifecycles, because
+    CubeCL's per-thread stream pools were orphaned.
+  - After the fix it plateaus at about 1 GB.
+- Science parity was proven for the addendum code (identical data
+  aggregates and scientific hash).
+- **P4.5 F10 smoke: CONDITIONAL.**
+  - Every system, data and training gate passed: 0 inference errors across
+    756k requests, audit clean, reuse 2.00/2.01, cap never bound, VRAM
+    stable, 44.4 min wall.
+  - The WDL head learns (loss 1.10 to 0.83). The policy target is still
+    near-uniform.
+  - The searched arena is 75% threefold, leaving 3-5 decisive games of 32.
+    Both cycles held, so learning does not compound.
+
+## NEXT (owner decision first)
+
+- The searched-arena / promotion contract, a science change, must be
+  decided before P4.6.
+- Then, in owner-approved order:
+  1. throughput (virtual loss, plus confirming the 48-way lead)
+  2. cross-cycle tail waste
+  3. D38 evaluation deadline
+  4. D37 crash-safe archival
+  5. owner residency
 
 ## NOT RUN
 
-- P4.4L GPU lifecycle probe, P4.5 F10 smoke, P4.6 bounded qualification,
-  P4.7 R10 entry decision.
+- P4.6 bounded qualification and the P4.7 R10 entry decision.
 - No 24h run is authorized.
 
 ## Historical evidence note
