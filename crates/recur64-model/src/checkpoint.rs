@@ -114,7 +114,7 @@ impl CheckpointMeta {
     pub fn check_contracts(&self) -> anyhow::Result<()> {
         anyhow::ensure!(
             self.head_version == crate::model::HEAD_VERSION,
-            "checkpoint head version {} is not the current head version {}: its weights              were trained for a different readout function and are refused",
+            "checkpoint head version {} is not the current head version {}: its weights were trained for a different readout function and are refused",
             self.head_version,
             crate::model::HEAD_VERSION
         );
