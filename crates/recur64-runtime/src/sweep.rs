@@ -14,8 +14,10 @@ use recur64_core::{ActionId, ObservationV1};
 use crate::cancel::CancelToken;
 use crate::config::RunConfig;
 use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
+use crate::gpu_telemetry;
 use crate::inference::{BatchEvaluator, BatchedModel, InferenceConfig, InferenceOwner};
 use crate::model_io;
+use crate::replay::{ReplayHeader, ReplayWriter};
 
 /// One sweep cell.
 #[derive(Debug, Clone, Copy)]
@@ -62,34 +64,60 @@ pub fn grid(small: bool) -> Vec<SweepCellSpec> {
 /// flight and a batch can never exceed `active_games`. A cap at or above the
 /// concurrency therefore does not bind; this coarse pass varies concurrency
 /// with a non-binding cap. Binding-cap and timeout variants are run afterwards
-/// as single cells around the leaders. Candidate values are derived from the
-/// workstation CPU topology and the Phase 3 Stage A priors; they are a starting
-/// matrix, not a frozen schedule.
+/// as single cells around the leaders.
+///
+/// Every cell is realizable with the default 32 games per cell (collection
+/// concurrency is capped by the total game count). Higher oversubscription
+/// lives in [`workstation_high_grid`] and needs proportionally more games.
 pub fn workstation_grid() -> Vec<SweepCellSpec> {
-    [
-        (16, 16, 500),
-        (24, 24, 500),
-        (32, 32, 500),
-        (48, 48, 500),
-        (64, 64, 500),
-        (96, 96, 500),
-    ]
-    .into_iter()
-    .map(
-        |(active_games, max_batch, batch_timeout_us)| SweepCellSpec {
+    uncapped_cells(&[16, 24, 32])
+}
+
+/// Conditional higher-concurrency main-workstation cells (48, 64). Each cell
+/// needs at least `active_games` games to realize its concurrency; the sweep
+/// refuses to run otherwise (see [`validate_cells`]). 96 is run only as an
+/// explicit single cell.
+pub fn workstation_high_grid() -> Vec<SweepCellSpec> {
+    uncapped_cells(&[48, 64])
+}
+
+fn uncapped_cells(concurrency: &[u32]) -> Vec<SweepCellSpec> {
+    concurrency
+        .iter()
+        .map(|&active_games| SweepCellSpec {
             active_games,
-            max_batch,
-            batch_timeout_us,
+            max_batch: active_games as usize,
+            batch_timeout_us: 500,
             simulations: 16,
-        },
-    )
-    .collect()
+        })
+        .collect()
+}
+
+/// Refuse cells whose requested concurrency cannot occur with `games` total
+/// games: a row labelled with a concurrency it never ran is a mislabelled
+/// measurement.
+pub fn validate_cells(cfg: &RunConfig, cells: &[SweepCellSpec], games: u64) -> anyhow::Result<()> {
+    for &cell in cells {
+        let effective = cell_config(cfg, cell, games)?.collection_shape()?.1;
+        anyhow::ensure!(
+            effective == cell.active_games as usize,
+            "cell active={} cannot realize its requested concurrency with {games} games \
+             (effective concurrency {effective}); use --games-per-cell >= {}",
+            cell.active_games,
+            cell.active_games
+        );
+    }
+    Ok(())
 }
 
 /// A measured sweep result.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SweepCellResult {
     pub active_games: u32,
+    /// Concurrency asked for by the cell (`active_games`).
+    pub requested_concurrency: u32,
+    /// Concurrency the collection actually used (`collection_shape().1`).
+    pub effective_concurrency: usize,
     pub max_batch: usize,
     pub batch_timeout_us: u64,
     pub simulations: u32,
@@ -131,16 +159,6 @@ pub struct SweepCellResult {
     pub gpu_samples: u64,
 }
 
-#[derive(Default)]
-struct GpuSamples {
-    peak_vram_mb: Option<u64>,
-    busy_util_sum: u64,
-    busy_samples: u64,
-    util_max: Option<u64>,
-    temp_max: Option<u64>,
-    samples: u64,
-}
-
 /// Warm the inference path for a range of batch sizes; returns elapsed seconds.
 pub fn warmup<B: AutodiffBackend>(
     cfg: &RunConfig,
@@ -168,47 +186,11 @@ pub fn warmup<B: AutodiffBackend>(
     Ok(start.elapsed().as_secs_f64())
 }
 
-/// Sample (memory.used MiB, utilization %, temperature C) via nvidia-smi.
-/// `None` when nvidia-smi is unavailable; the report then shows no GPU data.
-fn sample_gpu() -> Option<(u64, u64, u64)> {
-    let out = std::process::Command::new("nvidia-smi")
-        .args([
-            "--query-gpu=memory.used,utilization.gpu,temperature.gpu",
-            "--format=csv,noheader,nounits",
-        ])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&out.stdout);
-    let mut fields = s
-        .lines()
-        .next()?
-        .split(',')
-        .map(|f| f.trim().parse::<u64>());
-    Some((
-        fields.next()?.ok()?,
-        fields.next()?.ok()?,
-        fields.next()?.ok()?,
-    ))
-}
-
-impl GpuSamples {
-    fn record(&mut self, (mem, util, temp): (u64, u64, u64)) {
-        self.samples += 1;
-        self.peak_vram_mb = Some(self.peak_vram_mb.map_or(mem, |p| p.max(mem)));
-        self.util_max = Some(self.util_max.map_or(util, |p| p.max(util)));
-        self.temp_max = Some(self.temp_max.map_or(temp, |p| p.max(temp)));
-        if util > 0 {
-            self.busy_util_sum += util;
-            self.busy_samples += 1;
-        }
-    }
-}
-
 fn cell_config(cfg: &RunConfig, cell: SweepCellSpec, games: u64) -> anyhow::Result<RunConfig> {
     let mut cell_cfg = cfg.clone();
+    // Keep the legacy label honest: SelfPlayMetrics reports it as the
+    // requested concurrency. Scheduling-only, so not in the scientific hash.
+    cell_cfg.active_games = cell.active_games;
     cell_cfg.games_per_cycle = Some(u32::try_from(games)?);
     cell_cfg.concurrent_games = Some(cell.active_games);
     cell_cfg.cpu_workers = cell.active_games as usize;
@@ -218,12 +200,15 @@ fn cell_config(cfg: &RunConfig, cell: SweepCellSpec, games: u64) -> anyhow::Resu
     Ok(cell_cfg)
 }
 
-/// Run one sweep cell: `games` self-play games, measuring throughput.
+/// Run one sweep cell: `games` self-play games, measuring throughput. With
+/// `replay_output`, the collected games are also written as a replay
+/// directory (real data for training-throughput benchmarks).
 pub fn run_cell<B: AutodiffBackend>(
     cfg: &RunConfig,
     cell: SweepCellSpec,
     games: u64,
     checkpoint: Option<&std::path::Path>,
+    replay_output: Option<&std::path::Path>,
 ) -> anyhow::Result<SweepCellResult> {
     let inner_device: Device<B::InnerBackend> = Default::default();
     <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
@@ -244,36 +229,46 @@ pub fn run_cell<B: AutodiffBackend>(
     let cell_cfg = cell_config(cfg, cell, games)?;
     let scientific_config_hash = cell_cfg.scientific_config_hash()?;
     let resolved_config_hash = cell_cfg.resolved_config_hash();
-    let sampling = std::sync::atomic::AtomicBool::new(true);
-    let gpu = std::sync::Mutex::new(GpuSamples::default());
-    if let Some(v) = sample_gpu() {
-        gpu.lock().expect("GPU sampler mutex").record(v);
-    }
-    let collect_start = Instant::now();
-    let records = std::thread::scope(|scope| {
-        let monitor = scope.spawn(|| {
-            while sampling.load(std::sync::atomic::Ordering::Relaxed) {
-                if let Some(v) = sample_gpu() {
-                    gpu.lock().expect("GPU sampler mutex").record(v);
-                }
-                std::thread::sleep(Duration::from_millis(500));
-            }
-        });
-        let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
-        let result = collect_parallel(&cell_cfg, &ev, &CancelToken::new(), deadline, 0);
-        sampling.store(false, std::sync::atomic::Ordering::Relaxed);
-        monitor.join().expect("VRAM sampler thread");
-        result
-    })?;
-    let collect_secs = collect_start.elapsed().as_secs_f64().max(1e-6);
+    let effective_concurrency = cell_cfg.collection_shape()?.1;
+    let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
+    let ((records, collect_secs), gpu) = gpu_telemetry::monitor(true, || {
+        let collect_start = Instant::now();
+        let records = collect_parallel(&cell_cfg, &ev, &CancelToken::new(), deadline, 0);
+        (records, collect_start.elapsed().as_secs_f64().max(1e-6))
+    });
+    let records = records?;
     let m = owner.metrics().snapshot();
     owner.shutdown();
     let selfplay = selfplay_metrics(&cell_cfg, &records, m.clone());
     let positions = selfplay.plies;
-    let gpu = gpu.into_inner().expect("GPU sampler mutex");
+    if let Some(dir) = replay_output {
+        let model_id = checkpoint
+            .and_then(|c| std::fs::read(c.join("meta.json")).ok())
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+            .and_then(|v| {
+                v.get("model_id")
+                    .and_then(|m| m.as_str())
+                    .map(str::to_owned)
+            })
+            .unwrap_or_else(|| "fresh-seeded-init".into());
+        let mut header = ReplayHeader::new(
+            cfg.run_id.clone(),
+            model_id,
+            format!("{} ({})", cfg.device, cfg.precision),
+            cfg.precision.clone(),
+        );
+        header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+        let mut writer = ReplayWriter::new(dir, header, cfg.shard_max_games)?;
+        for r in records.iter().cloned() {
+            writer.push(r)?;
+        }
+        writer.finish()?;
+    }
 
     Ok(SweepCellResult {
         active_games: cell.active_games,
+        requested_concurrency: cell.active_games,
+        effective_concurrency,
         max_batch: cell.max_batch,
         batch_timeout_us: cell.batch_timeout_us,
         simulations: cell.simulations,
@@ -303,10 +298,9 @@ pub fn run_cell<B: AutodiffBackend>(
         positions_per_sec: positions as f64 / collect_secs,
         evaluations_per_sec: m.completed as f64 / collect_secs,
         peak_vram_mb: gpu.peak_vram_mb,
-        gpu_util_busy_mean: (gpu.busy_samples > 0)
-            .then(|| gpu.busy_util_sum as f64 / gpu.busy_samples as f64),
+        gpu_util_busy_mean: gpu.util_busy_mean,
         gpu_util_max: gpu.util_max,
-        gpu_temp_max_c: gpu.temp_max,
+        gpu_temp_max_c: gpu.temp_max_c,
         gpu_samples: gpu.samples,
         selfplay,
     })
@@ -352,5 +346,48 @@ mod tests {
             "search budget must change scientific identity"
         );
         assert_ne!(b.resolved_config_hash(), search.resolved_config_hash());
+    }
+
+    /// Collection concurrency is capped by the total game count, so a cell
+    /// that asks for more concurrency than it has games would be a mislabelled
+    /// measurement. The default workstation grid must be realizable with the
+    /// default 32 games per cell; oversubscribed cells must be refused.
+    #[test]
+    fn workstation_cells_realize_requested_concurrency_or_are_refused() {
+        let base =
+            RunConfig::from_toml_str(include_str!("../../../configs/phase4/f10-reference.toml"))
+                .expect("parse f10 reference config");
+        let coarse = workstation_grid();
+        assert_eq!(
+            coarse.iter().map(|c| c.active_games).collect::<Vec<_>>(),
+            [16, 24, 32]
+        );
+        validate_cells(&base, &coarse, 32).expect("coarse grid realizable with 32 games");
+        for cell in &coarse {
+            let resolved = cell_config(&base, *cell, 32).unwrap();
+            assert_eq!(
+                resolved.collection_shape().unwrap().1,
+                cell.active_games as usize
+            );
+            assert_eq!(resolved.active_games, cell.active_games);
+            assert!(
+                cell.max_batch >= cell.active_games as usize,
+                "coarse caps must not bind"
+            );
+        }
+
+        let high = workstation_high_grid();
+        assert_eq!(high[0].active_games, 48);
+        assert_eq!(
+            cell_config(&base, high[0], 32)
+                .unwrap()
+                .collection_shape()
+                .unwrap()
+                .1,
+            32,
+            "48 requested with 32 games only ever runs 32"
+        );
+        assert!(validate_cells(&base, &high, 32).is_err());
+        validate_cells(&base, &high, 64).expect("64 games realize 48 and 64");
     }
 }

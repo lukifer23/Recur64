@@ -95,6 +95,19 @@ pub enum SnapshotPolicy {
     FrozenReference,
 }
 
+/// One cycle's learner workload derived from the reuse target.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct UpdatePlan {
+    pub requested_examples: f64,
+    /// Updates the reuse target asks for (uncapped).
+    pub requested_updates: usize,
+    /// Updates actually scheduled (`min(requested, max_updates)`).
+    pub scheduled_updates: usize,
+    pub max_updates: usize,
+    /// True when the `max_updates` safety cap reduced the requested work.
+    pub cap_bound: bool,
+}
+
 /// A complete, resolved Phase 2 run configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunConfig {
@@ -271,6 +284,23 @@ impl RunConfig {
         let requested_examples = new_trainable_positions as f64 * self.replay_reuse_target;
         let requested = (requested_examples / self.effective_batch() as f64).ceil() as usize;
         Ok((requested.min(self.max_updates), requested_examples))
+    }
+
+    /// The full per-cycle update plan, including whether the `max_updates`
+    /// safety cap binds. A binding cap means the cycle cannot reach the
+    /// intended reuse target, so it must be reported, never hidden.
+    pub fn update_plan(&self, new_trainable_positions: u64) -> anyhow::Result<UpdatePlan> {
+        let (scheduled_updates, requested_examples) =
+            self.reuse_updates(new_trainable_positions)?;
+        let requested_updates =
+            (requested_examples / self.effective_batch() as f64).ceil() as usize;
+        Ok(UpdatePlan {
+            requested_examples,
+            requested_updates,
+            scheduled_updates,
+            max_updates: self.max_updates,
+            cap_bound: requested_updates > scheduled_updates,
+        })
     }
 
     /// Resolved warmup updates for the schedule.
@@ -694,6 +724,23 @@ openings = ['{e4}']
         assert_eq!(cfg.reuse_updates(65).unwrap(), (5, 130.0));
         cfg.max_updates = 3;
         assert_eq!(cfg.reuse_updates(65).unwrap().0, 3);
+    }
+
+    #[test]
+    fn update_plan_reports_a_binding_cap() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        cfg.train_batch = 8;
+        cfg.accumulation_steps = 4;
+        cfg.replay_reuse_target = 2.0;
+        cfg.max_updates = 5;
+        let fits = cfg.update_plan(65).unwrap();
+        assert_eq!((fits.requested_updates, fits.scheduled_updates), (5, 5));
+        assert!(!fits.cap_bound, "cap equal to the request does not bind");
+        cfg.max_updates = 3;
+        let capped = cfg.update_plan(65).unwrap();
+        assert_eq!((capped.requested_updates, capped.scheduled_updates), (5, 3));
+        assert!(capped.cap_bound);
+        assert_eq!(capped.requested_examples, 130.0);
     }
 
     /// Legacy configs (no explicit pair) keep the Phase 3 D24 behavior:

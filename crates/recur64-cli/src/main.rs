@@ -6,7 +6,9 @@ use clap::{Parser, Subcommand};
 
 mod bench;
 mod bench_core;
+mod bench_lifecycle;
 mod bench_runtime;
+mod bench_train;
 #[cfg(feature = "cuda")]
 mod cuda_smoke;
 mod doctor;
@@ -60,6 +62,10 @@ enum Commands {
     Report(phase2::ReportArgs),
     /// Stage A: CUDA warmup + batching/active-game sweep.
     BenchRuntime(bench_runtime::BenchRuntimeArgs),
+    /// Learner throughput for physical-batch layouts at one effective batch.
+    BenchTrain(bench_train::BenchTrainArgs),
+    /// GPU inference-owner lifecycle probe (create/evaluate/shutdown/reload).
+    BenchLifecycle(bench_lifecycle::BenchLifecycleArgs),
     /// Generate the frozen evaluation opening suite.
     GenOpenings(phase3::GenOpeningsArgs),
     /// Evaluate a checkpoint's raw policy (no search) vs random legal play.
@@ -90,6 +96,8 @@ fn main() -> anyhow::Result<()> {
         Commands::Run(args) => phase2::run_run(args),
         Commands::Report(args) => phase2::run_report(args),
         Commands::BenchRuntime(args) => bench_runtime::run(args),
+        Commands::BenchTrain(args) => bench_train::run(args),
+        Commands::BenchLifecycle(args) => bench_lifecycle::run(args),
         Commands::GenOpenings(args) => phase3::run_gen_openings(args),
         Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
         Commands::Pilot(args) => phase3::run_pilot_cmd(args),

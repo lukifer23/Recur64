@@ -5,7 +5,10 @@ use std::path::PathBuf;
 use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
-use recur64_runtime::sweep::{SweepCellResult, grid, run_cell, warmup, workstation_grid};
+use recur64_runtime::sweep::{
+    SweepCellResult, grid, run_cell, validate_cells, warmup, workstation_grid,
+    workstation_high_grid,
+};
 use recur64_runtime::{RunConfig, SweepCellSpec};
 
 #[derive(Args, Debug)]
@@ -17,11 +20,19 @@ pub struct BenchRuntimeArgs {
     /// Frozen inference/training checkpoint whose weights are reused in every cell.
     #[arg(long)]
     pub checkpoint: Option<PathBuf>,
-    /// `small`, `full`, or `workstation` (main-workstation schedule candidates).
+    /// `small`, `full`, `workstation` (main-workstation coarse candidates) or
+    /// `workstation-high` (conditional 48/64; needs >= 64 games per cell).
     #[arg(long, default_value = "small")]
     pub grid: String,
+    /// Total games per cell. Must be >= every cell's requested concurrency.
     #[arg(long, default_value_t = 32)]
     pub games_per_cell: u64,
+    /// Write the collected games of the (single) cell to this replay directory.
+    #[arg(long)]
+    pub replay_output: Option<PathBuf>,
+    /// Override the config's ply cap for every cell.
+    #[arg(long)]
+    pub ply_cap: Option<u32>,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
     pub active: Option<u32>,
@@ -39,7 +50,6 @@ fn run_impl<B: AutodiffBackend>(
     args: &BenchRuntimeArgs,
 ) -> anyhow::Result<()> {
     let device: B::Device = Default::default();
-    let full = args.grid == "full";
     let games_per_cell = args.games_per_cell;
     let single = args.active.is_some()
         || args.max_batch.is_some()
@@ -52,11 +62,22 @@ fn run_impl<B: AutodiffBackend>(
             batch_timeout_us: args.timeout_us.unwrap_or(500),
             simulations: args.simulations.unwrap_or(8),
         }]
-    } else if args.grid == "workstation" {
-        workstation_grid()
     } else {
-        grid(!full)
+        match args.grid.as_str() {
+            "small" => grid(true),
+            "full" => grid(false),
+            "workstation" => workstation_grid(),
+            "workstation-high" => workstation_high_grid(),
+            other => anyhow::bail!(
+                "unknown --grid '{other}' (small | full | workstation | workstation-high)"
+            ),
+        }
     };
+    validate_cells(cfg, &cells, games_per_cell)?;
+    anyhow::ensure!(
+        args.replay_output.is_none() || cells.len() == 1,
+        "--replay-output requires a single cell"
+    );
     let max_batch = cells.iter().map(|c| c.max_batch).max().unwrap_or(1);
 
     let warmup_secs = warmup::<B>(cfg, max_batch, &device)?;
@@ -64,10 +85,17 @@ fn run_impl<B: AutodiffBackend>(
 
     let mut results: Vec<SweepCellResult> = Vec::new();
     for cell in cells {
-        let r = run_cell::<B>(cfg, cell, games_per_cell, args.checkpoint.as_deref())?;
+        let r = run_cell::<B>(
+            cfg,
+            cell,
+            games_per_cell,
+            args.checkpoint.as_deref(),
+            args.replay_output.as_deref(),
+        )?;
         println!(
-            "active={:<4} batch={:<4} timeout={:<5}us sims={:<3} | games={}/{} ev/s={:.1} games/h={:>7.1} pos/s={:>6.1} train_pos/s={:>6.1} batch mean/p50/p95={:.2}/{}/{} wait p95={}us vram={:?}MB util={:?}/{:?} temp={:?}C err={}",
+            "active={:<4} eff={:<4} batch={:<4} timeout={:<5}us sims={:<3} | games={}/{} ev/s={:.1} games/h={:>7.1} pos/s={:>6.1} train_pos/s={:>6.1} batch mean/p50/p95={:.2}/{}/{} wait p95={}us vram={:?}MB util={:?}/{:?} temp={:?}C err={}",
             r.active_games,
+            r.effective_concurrency,
             r.max_batch,
             r.batch_timeout_us,
             r.simulations,
@@ -117,12 +145,14 @@ fn run_impl<B: AutodiffBackend>(
     md.push_str(&format!(
         "- warmup: {warmup_secs:.2}s | games/cell: {games_per_cell}\n\n"
     ));
-    md.push_str("| active | batch | timeout us | sims | ev/s | games/h | pos/s | trainable pos/s | batch mean/p50/p95 | wait p95 us | vram MB |\n");
-    md.push_str("|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|\n");
+    md.push_str("| requested conc | effective conc | peak in-flight | batch | timeout us | sims | ev/s | games/h | pos/s | trainable pos/s | batch mean/p50/p95 | wait p95 us | vram MB |\n");
+    md.push_str("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|\n");
     for r in &results {
         md.push_str(&format!(
-            "| {} | {} | {} | {} | {:.1} | {:.1} | {:.1} | {:.1} | {:.2}/{}/{} | {} | {} |\n",
-            r.active_games,
+            "| {} | {} | {} | {} | {} | {} | {:.1} | {:.1} | {:.1} | {:.1} | {:.2}/{}/{} | {} | {} |\n",
+            r.requested_concurrency,
+            r.effective_concurrency,
+            r.peak_in_flight,
             r.max_batch,
             r.batch_timeout_us,
             r.simulations,
@@ -146,7 +176,10 @@ fn run_impl<B: AutodiffBackend>(
 
 pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(&args.config)?;
-    let cfg = RunConfig::from_toml_str(&text)?;
+    let mut cfg = RunConfig::from_toml_str(&text)?;
+    if let Some(ply_cap) = args.ply_cap {
+        cfg.ply_cap = ply_cap;
+    }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => {

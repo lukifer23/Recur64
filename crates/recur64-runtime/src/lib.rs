@@ -12,6 +12,7 @@ pub mod config;
 pub mod coordinator;
 pub mod eval_policy;
 pub mod evaluator;
+pub mod gpu_telemetry;
 pub mod inference;
 pub mod learner;
 pub mod model_io;
@@ -35,7 +36,10 @@ pub use learner::{
     LearnerConfig, TrainReport, build_batch_tensors, build_examples, lr_at, train_from_games,
     train_from_store,
 };
-pub use pilot::{CycleReport, PilotReport, run_pilot};
+pub use pilot::{
+    CycleGpu, CycleReport, EvalModels, EvalOutcome, PilotReport, evaluate_candidate, run_pilot,
+    spawn_owner,
+};
 pub use replay::{ReplayStore, TrainingExample};
 pub use run_dir::{LineageRecord, RunDir, RunMetadata, RunStatus, read_metadata, write_metadata};
 pub use sweep::{SweepCellResult, SweepCellSpec};
