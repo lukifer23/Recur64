@@ -257,15 +257,39 @@ practical. No 256.
   before learning. No anti-draw, contempt, or material changes.
 - Prior-vs-posterior divergence: NOT RUN (priors are not stored in replay).
 
+## S2 — search-budget qualification (MEASURED, gate: GO)
+
+Final curve built from commit `12f761e`, frozen reference `4271e19f…`, F15
+CUDA FP32, standard start, seed 1, frozen S1 schedule 16/16/1000 us, 16 games
+per budget. Every cell completed with zero inference errors, 353 MiB sampled
+VRAM, and temperature at or below 70 C. Per-cell hashes below name the actual
+search and scheduling overrides; this corrects the earlier base-config-only
+sweep hash.
+
+| sims | games | wall s | train pos/s | eval/s | W/D/L | mate/stale/insuf/3fold/50/trunc | mean plies | entropy all/train | top1 all/train | scientific hash | resolved hash |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| 8 | 16/16 | 51.16 | 52.44 | 415.3 | 3/13/0 | 3/1/8/3/1/0 | 167.7 | 0.931/0.931 | 0.553/0.553 | `b90a03be…` | `60aa29f3…` |
+| 16 | 16/16 | 94.11 | 26.83 | 423.7 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 | `2b8a3902…` | `eeb7b353…` |
+| 32 | 16/16 | 206.89 | 12.47 | 393.3 | 4/10/2 | 6/0/7/2/1/0 | 161.3 | 1.276/1.276 | 0.518/0.518 | `f3a6b728…` | `da34f7e6…` |
+| 64 | 16/16 | 429.92 | 6.34 | 399.2 | 4/11/1 | 5/0/6/0/5/0 | 170.3 | 1.375/1.375 | 0.492/0.492 | `843071d9…` | `9f2595dc…` |
+
+No budget was degenerate by the registered thresholds. Eight simulations had
+the best useful throughput. Relative to 8, no deeper budget reduced the
+combined threefold/fifty-move/truncation share by the required 0.15 while
+retaining at least half the leader's throughput. At 64, fifty-move draws rose
+to 5/16. The frozen budget is therefore **8 simulations/move**. The 64-sim
+result does not justify 128, so 128 and 256 are NOT RUN.
+
+The smoke workload formula is
+`clamp(round(600 s * 52.44 trainable positions/s / 167.7 mean plies), 8, 24)`,
+which freezes `games_per_cycle = 24`.
+
 ## Next measured gates
 
-1. Verify the frozen-reference command on CUDA and record model ID, git SHA,
-   scientific/resolved hashes, and seed.
-2. Rerun the scheduling comparisons with that same checkpoint, then freeze
-   concurrency, batch cap, timeout, and physical/effective training batch.
-3. Compare 32/64/128 simulations with the frozen schedule and checkpoint.
-4. Run a bounded real F15 smoke only if search data passes its gate; then run
-   the qualification pilot only if the smoke passes.
-5. Issue exactly one evidence-backed R15 GO / CONDITIONAL GO / NO-GO decision.
+1. Run the bounded two-cycle F15 smoke from `configs/hp/f15-smoke.toml`.
+2. Apply the smoke gate without extending or retuning the run.
+3. If and only if the smoke passes, run the bounded qualification pilot with
+   the identical scientific hash.
+4. Issue exactly one evidence-backed R15 GO / CONDITIONAL GO / NO-GO decision.
 
 No F15 training, qualification pilot, or R15 training has run in H1 yet.

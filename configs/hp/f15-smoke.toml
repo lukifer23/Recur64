@@ -1,0 +1,62 @@
+# Recur64 HP H2 — first bounded F15 learning smoke.
+# Frozen from the measured S1 schedule and S2 search curve on 2026-09-23.
+run_id = "hp-h2-f15-smoke"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f15"
+hardware_profile = "hp-home"
+seed = 1
+
+# Scientific self-play contract.
+simulations_per_move = 8
+c_puct = 1.0
+temperature = 1.0
+ply_cap = 400
+games_per_cycle = 24
+
+# Frozen HP scheduling (excluded from scientific identity).
+concurrent_games = 16
+cpu_workers = 16
+max_inference_batch = 16
+batch_timeout_us = 1000
+
+# Replay and learner contract.
+shard_max_games = 128
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+train_batch = 32
+accumulation_steps = 4
+max_updates = 64
+lr = 3.0e-4
+warmup_updates = 25
+planned_updates = 256
+
+# Evaluation and promotion contract.
+arena_games = 20
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+promotion_score_floor = 0.35
+promotion_min_decisive_games = 4
+
+# Smoke-only bounds. These are excluded from scientific identity.
+cycles = 2
+position_budget = 12000
+run_budget_minutes = 30
+
+reference_checkpoint = "runs/hp-h1-ref-f15"
+reference_model_id = "4271e19fbd6bc32f95017d7808ed14feb4e86d5ae8877193f0b8736139c9dda3"
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

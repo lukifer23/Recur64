@@ -676,4 +676,26 @@ openings = ['{e4}']
         cfg.max_updates = 3;
         assert_eq!(cfg.reuse_updates(65).unwrap().0, 3);
     }
+
+    #[test]
+    fn hp_f15_smoke_config_is_frozen_and_valid() {
+        let mut cfg = RunConfig::from_toml_str(include_str!("../../../configs/hp/f15-smoke.toml"))
+            .expect("parse HP F15 smoke config");
+        cfg.opening_suite = Some(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../configs/openings-v1.toml")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        assert_eq!(cfg.collection_shape().unwrap(), (24, 16));
+        assert_eq!(cfg.simulations_per_move, 8);
+        assert_eq!(cfg.effective_batch(), 128);
+        assert_eq!(cfg.lr_schedule(), (25, 256));
+        assert_eq!(
+            cfg.reference_model_id.as_deref(),
+            Some("4271e19fbd6bc32f95017d7808ed14feb4e86d5ae8877193f0b8736139c9dda3")
+        );
+        assert!(!cfg.scientific_config_hash().unwrap().is_empty());
+        assert!(!cfg.resolved_config_hash().is_empty());
+    }
 }
