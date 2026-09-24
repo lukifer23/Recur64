@@ -179,7 +179,43 @@ is NOT RUN.
 If every tested budget is degenerate: STOP; no F10 learning; no reward
 shaping, contempt, external labels or Gumbel.
 
-### P4.4L lifecycle GO
+#### Owner amendment A1 (2026-09-24, before any P4.4 measurement)
+
+The owner judged the rule above structurally biased toward very low budgets.
+Trainable positions/s scales roughly with 1/sims, and nothing in the rule
+measured whether search improves on the network prior. For reference,
+AlphaZero/MuZero self-play used 800 simulations/move and Leela Chess Zero
+roughly ~800 visits/move. A 16-sim PUCT target sits close to the prior.
+Disclosure: the P4.3 scheduling cells (16 sims) had already shown one budget's
+data health (trainable top-1 0.678, entropy 0.80 nats, threefold+fifty 0.59,
+truncation 0) before this amendment. No 8/32/64/128/256 data existed.
+
+Amended P4.4 (supersedes the corresponding parts above):
+
+- **Curve:** 8 / 16 / 32 / 64 / 128 / 256. 128 is now unconditional (the 128
+  rule above is withdrawn). 256 runs with ~16 games as a **measurement-only**
+  cell: it is recorded, but it is not eligible for selection.
+- **Minimum eligible budget: 64.** 8/16/32 are measured for the curve only.
+- **Search-gain gate (new).** A budget is eligible only if, over trainable
+  plies, mean KL(visit target ‖ network prior) ≥ **0.10 nats** AND the target
+  argmax differs from the prior argmax on ≥ **15%** of positions.
+  - The prior is recomputed offline with `recur64 search-gain`: the replay
+    positions are re-evaluated with the frozen reference. Self-play applies no
+    root noise, so the root prior is exactly that network's policy.
+  - Replay V1 is unchanged.
+  - **Caveat, found before any P4.4 data (CPU plumbing replay at 4 sims):**
+    KL was 0.535 nats while the argmax changed on only 10% of positions.
+    Visit targets are discrete (N visits spread over few moves), so KL is
+    inflated by coarse-graining at low budgets. That is why both conditions
+    are required: argmax change is the guard against quantization-only
+    "gain". The thresholds are unchanged.
+- **Selection:** among eligible budgets (≥ 64, not degenerate, and passing the
+  search-gain gate), take the highest trainable positions/s. The 0.15 / 50%
+  data-health override above still applies among eligible budgets.
+- **Smoke:** uses the budget this rule selects. Its wall bound may extend to
+  ~45 min so each cycle has enough trainable positions to train on.
+
+### P4.4L lifecycle GO (pre-registered)
 
 Modes: `one` (A), `two` (B), `pilot` (C, parent == reference) and
 `pilot-promoted` (C′, forced longitudinal arena), 8 repetitions each.
@@ -188,3 +224,67 @@ Modes: `one` (A), `two` (B), `pilot` (C, parent == reference) and
 ≤ 64 MiB per rep and no monotonic rise across the remaining reps) AND mean
 forward latency per rep stays within ±15% of the median of reps 1–2, with
 zero inference errors. Otherwise diagnose, and fix only with measured cause.
+
+## P4.3 — main-workstation scheduling (MEASURED)
+
+All cells: frozen reference `7d1493b4…`, `configs/phase4/f10-reference.toml`
+science (seed 1, standard start, c_puct 1.0, temperature 1.0, ply cap 512),
+**16 simulations/move**, `first_game_id` 0 in every cell, binary `22e4ec4`.
+Every cell had 0 inference errors.
+
+### P4.3A coarse pass (32 games/cell)
+
+`bench-runtime --grid workstation --games-per-cell 32` → `runs/phase4-sched-coarse`
+
+| conc (req = eff = peak) | cap | trainable pos/s | ev/s | batch mean/p50/p95/max | queue p50/p95 µs | fwd ms | wall s | VRAM MiB | util % | temp °C |
+|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|
+| 16 | 16 | 38.4 | 598 | 10.6/14/16/16 | 3978/15106 | 13.2 | 142.7 | 645 | 44 | 57 |
+| 24 | 24 | 45.1 | 704 | 12.7/14/24/24 | 4348/12419 | 13.2 | 121.3 | 709 | 44 | 59 |
+| 32 | 32 | 45.8 | 714 | 13.8/15/29/32 | 4455/15215 | 13.6 | 119.6 | 805 | 42 | 61 |
+
+Data aggregates were **identical** in all three cells: 5,478 positions (all
+trainable), W/D/B 3/28/1, terminations threefold 19 / insufficient 8 /
+checkmate 4 / stalemate 1, mean 171.2 plies, target entropy 0.798, top-1
+0.678, scientific hash `3565a535…`.
+
+**Finding.** With concurrency ≥ games / 2, the cell is one or two waves, so
+its wall time is roughly the longest game (all games start together).
+24 → 32 moved +1.5%, which is inside the pre-registered 5% tie band. The
+coarse pass therefore cannot rank ≥ 24. The literal 48/64 condition ("rises")
+was met, so the ranking was re-measured with 128 games per cell (≥ 2 waves
+even at 64). 16 was pruned: it was 15% behind with two waves.
+
+### P4.3B multi-wave concurrency (128 games/cell)
+
+`runs/phase4-sched-multiwave-{24,32,high}`
+
+| conc (req = eff = peak) | cap | trainable pos/s | ev/s | batch mean/p50/p95/max | queue p50/p95 µs | fwd ms | wall s | VRAM MiB | util % | temp °C |
+|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|
+| 24 | 24 | 85.9 | 1347 | 21.0/24/24/24 | 336/8894 | 13.9 | 263.6 | 666 | 56 | 77 |
+| 32 | 32 | 88.7 | 1391 | 25.0/32/32/32 | 506/14861 | 15.4 | 255.3 | 922 | 58 | 80 |
+| 48 | 48 | 81.7 | 1281 | 28.6/35/44/48 | 19497/23466 | 18.4 | 277.1 | 1178 | 55 | 80 |
+| 64 | 64 | 93.2 | 1461 | 28.4/34/42/49 | 18936/22755 | 16.6 | 243.1 | 1498 | 58 | 80 |
+
+Data aggregates were **identical** in all four cells: 22,649 positions (all
+trainable), W/D/B 15/100/13, 0 truncated, terminations threefold 69 /
+checkmate 28 / insufficient 26 / stalemate 3 / fifty 2, mean 176.9 plies,
+target entropy 0.787, top-1 0.682, scientific hash `e58a9bc2…`. Changing only
+the schedule did not change the data.
+
+**Findings (INFERRED from the table).**
+
+- Multi-wave throughput is about 2× the single-wave numbers: the coarse pass
+  was tail-bound.
+- Above 32 the queue becomes pathological. Queue p50 rises from 0.5 ms to
+  ~19 ms, longer than a whole forward pass, and batch mean plateaus at ~28
+  even with 48–64 games. That is the CPU-oversubscription signature: 48–64
+  search threads on 24 cores.
+- 48 < 24 shows run-to-run variation of roughly ±5–8%. 64's +5.0% over 32 is
+  at that noise floor.
+- Under the pre-registered constraint (no pathological CPU
+  oversubscription), **32 is the leader** and 64 goes to confirmation as the
+  runner-up.
+- **96: NOT RUN.** Its condition required 64 to beat 48 by ≥ 10% (met) *and*
+  a non-pathological queue (not met).
+- Sustained load reaches 80 °C. From the ring pass onward, an independent
+  `nvidia-smi` log records SM clock and throttle reasons.

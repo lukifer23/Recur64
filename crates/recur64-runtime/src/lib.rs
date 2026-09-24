@@ -19,6 +19,7 @@ pub mod model_io;
 pub mod pilot;
 pub mod replay;
 pub mod run_dir;
+pub mod search_gain;
 pub mod sweep;
 
 pub use cancel::CancelToken;
