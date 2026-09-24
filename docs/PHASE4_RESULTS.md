@@ -938,3 +938,86 @@ At T0 the combined metric is almost entirely exploration noise: with a flat
 prior, noise flips the argmax. Search movement is small because the network
 value is exactly 0; the mean |root value| is 0.003, from terminal
 discoveries.
+
+## P4.4L — GPU inference-owner lifecycle (MEASURED)
+
+**Pre-fix probe: NO-GO.** Binary `eba8c8e`; `bench-lifecycle --reps 8
+--arena-games 32 --concurrency 32 --max-batch 32 --timeout-us 500
+--simulations 8`. The 8 sims are probe-only: the probe measures owner
+residency and latency, not search quality. Artifact:
+`docs/evidence/phase4/lifecycle/p44l-prefix.json`.
+
+| mode | owners | VRAM after shutdown, rep 0 → rep 7 (MiB) | growth / rep | fwd ms | errors |
+|---|---|---|---|---:|---:|
+| one | 1 | 979 → 2803 | +64 … +352 | 12.2–13.8 | 0 |
+| two | 2 | 2995 → 4117 | ≈ +160 | 12.8–12.9 | 0 |
+| pilot (parent == reference) | 3 | 4597 → 6997 | +160 … +416 | 12.4–12.9 | 0 |
+| pilot-promoted | 3 | 7478 → 10459 | +229 … +512 | 12.7–13.1 | 0 |
+
+- VRAM never returned after an owner shut down, and it rose monotonically
+  across all 32 lifecycles: 453 → 10,459 MiB.
+- Latency was stable and there were 0 errors, so memory grew silently until
+  the device would fill.
+- INFERRED: at pilot scale (about 5 owners per cycle) that is ~1–2 GB per
+  cycle, so a 16 GB device would be exhausted in about 10 cycles. This very
+  likely explains the HP branch's "late-run degradation and near-full VRAM".
+
+**Root cause (pinned framework source, cubecl 0.10).**
+
+- `StreamId` is a thread-local id from an incrementing counter
+  (`cubecl-common/src/stream_id.rs`).
+- Streams, and the memory pools behind them, are indexed by
+  `thread id % max_streams` with `max_streams = 128`
+  (`cubecl-runtime/src/stream/base.rs`, `config/streaming.rs`).
+- `memory_usage` and `memory_cleanup` are scoped to the calling thread's
+  stream (`cubecl-runtime/src/client.rs`).
+- Every `InferenceOwner` runs its model on a **fresh OS thread** that exits
+  at shutdown. Each owner's stream pool was therefore orphaned: never reused,
+  never released.
+
+**Fix (A-class correctness, commit `7a8b492`).**
+
+- `impl Drop for BatchedModel` calls `B::memory_cleanup(device)`. `Drop`
+  runs on the owner thread, so it targets that thread's stream.
+- Parameter buffers belong to the loading thread's stream and are
+  unaffected.
+- The fix is allocator-only, so there is no numeric effect.
+
+**Diagnostic confirmation (MEASURED)**, same `one`-mode probe on the fixed
+binary: VRAM after shutdown was 981 → 981 → 981 → 981 → 988 → 897 → 948 →
+948 MiB, a plateau (it was 979 → 2803). Forward latency was 11.9–12.6 ms, 0
+errors. Artifact: `docs/evidence/phase4/lifecycle/diag-cleanup-one.json`.
+
+**Post-fix full probe (MEASURED).** Binary `7a8b492`, same protocol.
+Artifact: `docs/evidence/phase4/lifecycle/p44l-postfix.json`.
+
+| mode | VRAM after shutdown, rep 0 → rep 7 (MiB) | max growth / rep after rep 2 | fwd ms (reps 1–2 median → range) | errors |
+|---|---|---:|---|---:|
+| one | 916 → 961 → … → 1008 → 777 | ≤ 32 | 12.39 → 11.57–**14.66** | 0 |
+| two | 777 (flat) → 664 → 666 | 0 | 12.66 → 11.86–12.86 | 0 |
+| pilot | 858 → 922 → 894 (flat) | 0 | 12.68 → 12.09–13.05 | 0 |
+| pilot-promoted | 926 → 958 → 994 → 1008 → 994 | ≤ 14 | 12.12 → 11.97–12.91 | 0 |
+
+- **VRAM: PASS in every mode.** Plateau at 0.66–1.01 GB across all 32
+  lifecycles (it was 10.5 GB), with no monotonic rise.
+- **Latency:** PASS for `two`, `pilot` and `pilot-promoted`. `one` rep 7
+  was +18% (14.66 ms), which violates the pre-registered ±15% band. It is
+  isolated: reps 4–6 were −6%, and the following `two` reps were within
+  band.
+- Per the strict rule, the violation is not reinterpreted. The `one` mode
+  is **re-measured** below.
+
+**`one`-mode re-measurement (MEASURED).** Forward latency was
+11.21–11.33 ms on every rep (within ±1% of the reps 1–2 median), and VRAM
+plateaued at 602–634 MiB. The earlier +18% rep did not reproduce;
+INFERRED: an isolated per-process / autotune spike of the kind measured in
+B9. Artifact: `docs/evidence/phase4/lifecycle/p44l-postfix-one-repeat.json`.
+
+**P4.4L: GO.**
+
+- VRAM plateaus in every mode (0.6–1.0 GB), where the pre-fix run grew to
+  10.5 GB.
+- Latency is stable on re-measurement, and there were 0 errors.
+- Owner residency stays at 3 in the pilot evaluation. With per-owner
+  cleanup it no longer accumulates. The ≤ 2-owner refactor is a peak-memory
+  optimization and is scheduled after the smoke (owner-approved item 5).

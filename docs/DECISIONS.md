@@ -491,6 +491,26 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   forward recorded graph state that no backward pass consumed (MEASURED).
   After the fix it held a flat 485 MiB.
 
+## D44 - Inference owners release their thread's device memory on shutdown
+
+- **Status:** ACCEPTED (Phase 4, P4.4L)
+- **Decision:** `BatchedModel` calls `B::memory_cleanup(device)` in `Drop`.
+  `Drop` runs on the owner thread, so it releases that thread's CubeCL stream
+  memory pool.
+- **Why:**
+  - CubeCL 0.10 keys device streams and their memory pools by OS thread (up
+    to 128 streams). Each `InferenceOwner` runs on a fresh thread that exits
+    at shutdown, so its pool was orphaned.
+  - MEASURED: VRAM grew 453 -> 10,459 MiB over 32 owner lifecycles, with
+    stable latency and no errors.
+  - After the fix, the same probe plateaus at about 0.9-1.0 GB.
+- **Consequence:**
+  - Long pilots no longer accumulate device memory per cycle.
+  - Reusing persistent owner threads remains a possible later optimization,
+    to avoid re-warming pools; it is not needed for correctness.
+  - Owner residency (at most 2 resident owners) is a separate peak-memory
+    item, scheduled after the smoke.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
