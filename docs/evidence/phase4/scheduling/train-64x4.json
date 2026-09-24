@@ -1,0 +1,57 @@
+{
+  "checkpoint": "runs/phase4-f10-reference",
+  "checkpoint_model_id": "7d1493b47f9e2159f4b8d419ee7d237129d8405b0b551f66c4e61eaf18574263",
+  "device": "cuda",
+  "git_revision": null,
+  "layouts": [
+    {
+      "accumulation_steps": 4,
+      "all_finite": true,
+      "effective_batch": 256,
+      "error": null,
+      "examples_consumed": 5120,
+      "examples_per_sec": 457.91092094293157,
+      "first_loss": 1.7717195749282837,
+      "gpu": {
+        "last_vram_mb": 3049,
+        "min_vram_mb": 3049,
+        "peak_vram_mb": 3049,
+        "samples": 21,
+        "temp_max_c": 67,
+        "util_busy_mean": 78.2,
+        "util_max": 85
+      },
+      "last_loss": 2.428781509399414,
+      "max_grad_norm": 102.37124633789062,
+      "physical_batch": 64,
+      "secs": 11.181214,
+      "step_ms_mean": 559.0607,
+      "updates": 20,
+      "warmup_secs": 6.0882019,
+      "warmup_updates": 2
+    }
+  ],
+  "lr": 0.0003,
+  "lr_schedule": {
+    "planned_updates": 200,
+    "warmup_updates": 20
+  },
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 12,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 384
+  },
+  "precision": "fp32",
+  "replay": "runs/phase4-sched-confirm-t500/replay",
+  "replay_sampleable_positions": 34646,
+  "replay_total_games": 192
+}

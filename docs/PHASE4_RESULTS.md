@@ -288,3 +288,153 @@ the schedule did not change the data.
   a non-pathological queue (not met).
 - Sustained load reaches 80 °C. From the ring pass onward, an independent
   `nvidia-smi` log records SM clock and throttle reasons.
+
+### P4.3C/D batch-cap and timeout rings at concurrency 32 (128 games/cell)
+
+`runs/phase4-sched-ring-b{cap}-t{timeout}`. Independent `nvidia-smi` log:
+`runs/phase4-sched-rings-gpu.csv`.
+
+| cap | timeout µs | trainable pos/s | ev/s | batch mean/p50/p95 | queue p50/p95 µs | fwd ms | VRAM MiB | temp °C |
+|---:|---:|---:|---:|---|---|---:|---:|---:|
+| 16 (binding) | 500 | 78.0 | 1223 | 14.6/16/16 | 11017/12373 | 11.1 | 666 | 74 |
+| 32 | 250 | 97.4 | 1527 | 24.6/32/32 | 430/15682 | 14.5 | 937 | 80 |
+| 32 | 500 (P4.3B) | 88.7 | 1391 | 25.0/32/32 | 506/14861 | 15.4 | 922 | 80 |
+| 32 | 1000 | 95.7 | 1500 | 25.1/32/32 | 399/14488 | 14.4 | 937 | 80 |
+| 32 | 2000 | 77.9 | 1221 | 25.2/32/32 | 415/14507 | 16.9 | 937 | 80 |
+
+Data aggregates were identical to P4.3B in every cell. Every cell had 0
+errors.
+
+**Findings.**
+
+- The binding cap (16) costs about 12%.
+- 250 / 500 / 1000 µs are non-monotone (97 / 89 / 96). Batches fill to the
+  cap at p50 before the timeout fires, so the timeout should matter little
+  here. INFERRED: the spread reflects run-to-run noise of roughly ±8%. That
+  is why the confirmation includes 500 µs as a declared noise control.
+- 2000 µs is pruned.
+
+**Thermals (MEASURED).** SM clock 2400–2460 MHz under load, maximum 80 °C.
+Throttle reasons were only `0x1` (idle) and `0x4` (software power cap, the
+card's 70 W limit). No thermal slowdown was observed.
+
+## Future optimization backlog (INFERRED, NOT RUN)
+
+Recorded at the owner's request so Phase 4 remains the measured baseline that
+each optimization is compared against. None of this is implemented.
+
+Measured basis:
+
+- Mean forward is ~13–15 ms at batch 25–32, and GPU utilization is 55–60%.
+- F10 costs ≈ 1.25 GFLOP per position, so batch 32 ≈ 40 GFLOP. At roughly
+  12 TFLOPS FP32 that would take ≈ 3–4 ms.
+- INFERRED: the forward runs at roughly 20–25% of peak and is launch- or
+  dispatch-bound. Latency is nearly flat in batch size (13.2 → 13.6 ms for
+  batch 10.6 → 13.8 in P4.3A).
+
+Engineering (no science change):
+
+1. Larger batches without more OS threads: several leaves in flight per game
+   (virtual loss), or async multi-game workers. This matters because
+   48/64 threads already show CPU oversubscription on 24 cores.
+2. Pipelined inference owner: double-buffer, so the next batch is assembled
+   while the GPU runs the current one.
+3. Kernel fusion and autotune coverage for RMSNorm, attention with relative
+   bias, and the FFN. Verify which Burn fusion paths are active.
+4. Profile CPU-side costs: observation encoding, legal-move generation,
+   tensor construction, host↔device copies.
+
+Search efficiency (changes search semantics; each needs its own ADR):
+
+- subtree reuse between moves
+- a neural-network evaluation cache keyed by the full observation, including
+  history (relevant because self-play is repetition-heavy)
+- KataGo-style playout-cap randomization
+- Gumbel root search (explicitly deferred)
+- TF32 / BF16 (precision-gated)
+
+Scale context:
+
+- AlphaZero / MuZero self-play used 800 simulations per move.
+- INFERRED: at the ~1,400–1,500 ev/s measured here, 800 simulations would
+  give ≈ 1.8 positions/s.
+
+### P4.3E confirmation (192 games = 6 waves at concurrency 32, cap 32)
+
+`runs/phase4-sched-confirm-t{250,500,1000}`; GPU log
+`runs/phase4-sched-confirm-gpu.csv`. The top two schedules from P4.3C/D were
+32/32/250 and 32/32/1000. 32/32/500 was added as a declared noise control.
+
+| timeout µs | trainable pos/s | ev/s | games/h | batch mean/p50/p95/max | queue p50/p95 µs | fwd ms | wall s | VRAM MiB | util % | temp °C |
+|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|
+| 250 | 105.8 | 1660 | 2111 | 26.3/32/32/32 | 435/15730 | 14.4 | 327.4 | 937 | 60 | 79 |
+| 500 | **109.9** | **1723** | 2192 | 27.4/32/32/32 | 389/**5296** | 14.5 | 315.3 | 937 | 63 | 80 |
+| 1000 | 85.7 | 1343 | 1709 | 27.4/32/32/32 | 400/14385 | 17.3 | 404.5 | 937 | 57 | 80 |
+
+**Data aggregates were identical in all three cells:**
+
+- 34,646 positions, all trainable
+- W/D/B 21/153/18, 0 truncated
+- terminations: threefold 98, insufficient 46, checkmate 39, stalemate 5, fifty 4
+- mean 180.4 plies
+- target entropy 0.788, top-1 0.682
+- scientific hash `a7ac8cf0…`
+
+Every cell had 0 errors. The throttle reasons were only idle and power cap.
+
+**Findings.**
+
+- The timeout ranking flipped between the 128-game and 192-game runs, so
+  timeouts from 250 to 1000 µs are not distinguishable above run-to-run noise.
+- That noise is dominated by per-process forward latency: 14.4 vs 17.3 ms for
+  the same batch shape.
+- INFERRED cause: Burn/CubeCL autotune selects kernels by timing at process
+  start, so separate processes can settle on different kernels. This is added
+  to the optimization backlog.
+
+**Frozen self-play schedule: concurrent_games 32, max_inference_batch 32,
+batch_timeout_us 500, cpu_workers ≥ 32.**
+
+- Primary: it had the highest trainable positions/s in the confirmation set.
+- Secondary: it had the best queue p95, and it is the historical prior.
+- Constraints met: 0 errors, VRAM stable at 937 MiB, no thermal slowdown, and
+  no oversubscription pathology (unlike 48/64).
+- Replay written by this cell (`runs/phase4-sched-confirm-t500/replay`) is the
+  real data used for P4.3F.
+
+### P4.3F training physical batch (MEASURED)
+
+`recur64 bench-train --config configs/phase4/f10-reference.toml --checkpoint
+runs/phase4-f10-reference --replay runs/phase4-sched-confirm-t500/replay
+--layouts L --updates 20 --warmup-updates 2`. Each layout ran in its own
+process so peak VRAM is not shared through the device pool. Effective batch
+was 256 for every layout. The replay was the 34,646-position confirmation
+replay.
+
+| layout | examples/s | ms/update | peak VRAM MiB | max temp °C | loss first → last | max pre-clip grad norm | finite |
+|---|---:|---:|---:|---:|---|---:|---|
+| 32×8 | 432.7 | 591.6 | 1481 | 65 | 1.772 → 2.291 | 102.3 | yes |
+| **64×4** | **457.9** | **559.1** | 3049 | 67 | 1.772 → 2.429 | 102.4 | yes |
+| 128×2 | 410.6 | 623.5 | 4073 | 69 | 1.772 → 2.431 | 102.3 | yes |
+
+**Frozen: 64 × 4 (effective 256).** It is 5.8% faster than 32×8 (outside the
+tie band) and 11.5% faster than 128×2, with ample VRAM headroom. It is also
+the historical prior.
+
+**Health flag (for P4.5, not a P4.3 gate).** Loss rises over these first 20
+warmup updates (1.77 → 2.3–2.4) with pre-clip global gradient norms of about
+100. The per-parameter clip is at 1.0.
+
+## P4.3 GO (MEASURED)
+
+`configs/hardware/workstation-main.toml` is now **MEASURED**:
+
+- self-play: concurrent_games 32, cpu_workers 32, max_inference_batch 32,
+  batch_timeout_us 500
+- learner: train_batch 64, accumulation_steps 4
+
+Machine-readable evidence is in `docs/evidence/phase4/scheduling/`.
+
+**INFERRED transfer check for P4.4.** Every P4.4 cell runs this schedule and
+records eval/s. If eval/s at higher budgets departs materially from about
+1,400–1,700, the schedule is re-checked rather than assumed to transfer.

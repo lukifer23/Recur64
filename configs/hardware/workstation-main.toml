@@ -5,25 +5,46 @@
 # the scientific config hash; scientific parameters must be identical across
 # machines.
 #
-# STATUS: VALUES NOT YET MEASURED ON THE MAIN WORKSTATION.
-# The values below are priors only:
-#   - From Phase 3 Stage A (docs/BENCHMARKS.md): active 32/64/64/128 x batch
-#     32/64 gave 8.2k/9.0k/12.7k/22.8k games/h; batch coalesced (mean 20-34).
-#   - The values are NOT evidence and must be replaced by the P4.3
-#     `configs/hardware/workstation-main.toml` sweep result before a long run.
+# STATUS: MEASURED (Phase 4 P4.3, 2026-09-24). Evidence: docs/PHASE4_RESULTS.md
+# ("P4.3") and docs/evidence/phase4/scheduling/.
+#
+#   frozen reference : 7d1493b47f9e2159f4b8d419ee7d237129d8405b0b551f66c4e61eaf18574263
+#   commit           : 22e4ec4 (binary for all P4.3 cells), main
+#   probe science    : F10 FP32, seed 1, standard start, c_puct 1.0,
+#                      temperature 1.0, ply cap 512, 16 sims/move
+#   selection rule   : trainable positions / wall second (primary); eval/s,
+#                      batching, queue p95, latency (secondary); constraints
+#                      0 inference errors, stable VRAM/temperature, no
+#                      pathological CPU oversubscription; <5% = tie.
+#
+# Self-play (P4.3E confirmation, 192 games = 6 waves):
+#   32 / cap 32 / 500 us : 109.9 trainable pos/s, 1723 ev/s, batch mean 27.4,
+#                          queue p95 5.3 ms, fwd 14.5 ms, 937 MiB, 80 C max,
+#                          0 errors, no thermal slowdown (power-cap only).
+#   48 and 64 concurrency showed CPU oversubscription on 24 cores (queue p50
+#   ~19 ms, batch mean plateau ~28); 96 not run. Timeouts 250..1000 us are not
+#   distinguishable above run-to-run noise (~+/-10-15%, dominated by
+#   per-process forward latency); 2000 us and a binding cap of 16 are worse.
+#
+# Learner (P4.3F, effective batch 256, real replay, 20 timed updates):
+#   64 x 4 : 457.9 examples/s, 559 ms/update, peak 3049 MiB
+#   32 x 8 : 432.7 examples/s; 128 x 2 : 410.6 examples/s (4073 MiB).
 #
 # Machine: Intel Core Ultra 9 285K (24c/24t), 64 GB RAM,
-#          NVIDIA RTX 2000 Ada 16 GB (compute capability 8.9).
+#          NVIDIA RTX 2000 Ada 16 GB (compute capability 8.9), driver 596.71,
+#          user-space CUDA 12.9.1.
 
 hardware_profile = "workstation-main"
 
-# --- Self-play scheduling (PRIOR — unmeasured) ---
+# --- Self-play scheduling (MEASURED) ---
 concurrent_games = 32
-cpu_workers = 24
-max_inference_batch = 64
+# Collection concurrency is min(concurrent_games, cpu_workers, games): keep
+# cpu_workers >= concurrent_games or the frozen concurrency silently shrinks.
+cpu_workers = 32
+max_inference_batch = 32
 batch_timeout_us = 500
 
-# --- Learner scheduling (PRIOR — unmeasured) ---
+# --- Learner scheduling (MEASURED) ---
 # Physical 64 x 4 = effective 256.
 train_batch = 64
 accumulation_steps = 4
