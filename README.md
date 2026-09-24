@@ -5,12 +5,33 @@ matched end-to-end compute, does a small **recurrent** square-token transformer
 that spends compute on internal refinement beat spending the same compute on
 external search?
 
-The repository currently contains **Phase 0** (a systems probe proving the
-model-shaped graph trains on this workstation), **Phase 1** (explicit, tested
-chess contracts: observation V1, action V1, rules profile, perft), and **Phase 2**
-(the first complete vertical slice: PUCT self-play → batched inference → replay →
-audit → train → checkpoint → arena → report). It is **not** a chess engine and
-contains no UCI engine loop or strength claims.
+**Status (Phase 4, in progress).** The full learning loop exists and runs
+on the RTX 2000 Ada workstation: PUCT self-play → batched GPU inference →
+replay → audit → train → checkpoint → searched and raw arenas → report.
+Phase 4 is producing the first trustworthy mainline F10 evidence on it. See
+`docs/STATUS.md` for the gate record and `docs/PHASE4_RESULTS.md` for measured
+Phase 4 results.
+
+| phase | scope | gate |
+|---|---|---|
+| 0 | systems probe: model-shaped graph trains on this machine (CPU + CUDA FP32) | GO |
+| 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
+| 2 | first vertical slice (Micro model) | GO |
+| 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
+| 4 | mainline harness convergence + GPU requalification | in progress |
+
+Phase 4 so far:
+
+- The main-workstation hardware schedule is **measured**.
+- A root-cause audit replaced the model's readout head (**head v2**,
+  `docs/DECISIONS.md` D40) and added standard self-play exploration: root
+  Dirichlet noise and argmax after ply 30 (D41). Together they turned
+  repetition-dominated self-play into mostly decisive games.
+- The F10 search-budget requalification and the first corrected F10 smoke are
+  next.
+
+This is a research laboratory, **not** a chess engine. It has no UCI engine
+loop and makes no strength claims.
 
 ## Requirements
 
@@ -111,6 +132,40 @@ cargo run --release -p recur64-cli --features cuda -- pilot \
 
 See `docs/F10_BASELINE.md` for measured results and the long-run decision.
 
+### Phase 4 (CUDA, main workstation)
+
+```sh
+# Freeze one seeded, untrained reference that every Phase 4 step reuses.
+recur64 freeze-reference --config configs/phase4/f10-reference.toml \
+    --output runs/phase4-f10-reference-v2
+
+# Scheduling sweep (games per cell must realize each requested concurrency).
+recur64 bench-runtime --config configs/phase4/f10-reference.toml \
+    --checkpoint runs/phase4-f10-reference-v2 --grid workstation --games-per-cell 32
+recur64 bench-runtime --config configs/phase4/f10-reference.toml \
+    --checkpoint runs/phase4-f10-reference-v2 --active 32 --max-batch 32 \
+    --timeout-us 500 --simulations 64 --games-per-cell 64 \
+    --output runs/sweep-s64 --replay-output runs/sweep-s64/replay
+
+# Learner throughput per physical x accumulation layout (effective batch fixed).
+recur64 bench-train --config configs/phase4/f10-reference.toml \
+    --checkpoint runs/phase4-f10-reference-v2 --replay runs/sweep-s64/replay \
+    --layouts 64x4 --output runs/train-64x4
+
+# Prior vs search-target divergence of a replay (generating network only).
+recur64 search-gain --config configs/phase4/f10-reference.toml \
+    --checkpoint runs/phase4-f10-reference-v2 --replay runs/sweep-s64/replay \
+    --output runs/sweep-s64
+
+# GPU inference-owner lifecycle probe.
+recur64 bench-lifecycle --config configs/phase4/f10-reference.toml \
+    --checkpoint runs/phase4-f10-reference-v2 --reps 8 --output runs/lifecycle
+```
+
+`recur64` is `target/release/recur64` built with `--features cuda` and run
+with the CUDA environment below. The measured schedule is in
+`configs/hardware/workstation-main.toml`.
+
 ### GPU (CUDA)
 
 ```sh
@@ -133,25 +188,45 @@ cargo run --release -p recur64-cli --features cuda -- bench \
 ```
 crates/recur64-core    chess contracts: squares, actions, GameState, rules,
                        observation V1, UCI, perft (CPU-only, no Burn)
-crates/recur64-search  PUCT, Evaluator trait, chess adapter, game play (no Burn)
-crates/recur64-model   probe graph, heads, losses, recurrence, optimizer,
-                       checkpoint, precision gate, fixtures
-crates/recur64-runtime inference owner/batcher, replay, learner, coordinator
-crates/recur64-eval    paired-color systems arena
+crates/recur64-search  PUCT (+ optional root noise), Evaluator trait, chess
+                       adapter, game play, deterministic RNG (no Burn)
+crates/recur64-model   square-token transformer, readout head v2, losses,
+                       recurrence, optimizer, checkpoint, precision gate
+crates/recur64-runtime inference owner/batcher, replay, learner, coordinator,
+                       pilot, sweep, GPU telemetry, search gain
+crates/recur64-eval    paired-color arenas, opening suites
 crates/recur64-cli     `recur64` binary: doctor | model-info | bench | cuda-smoke
                        | perft | validate-position | encode | bench-core
                        | selfplay | replay-audit | train | arena | run | report
-configs/               micro.toml, f10.toml, r10-probe.toml, smoke.toml,
-                       smoke-cuda.toml
-docs/                  HARDWARE, ARCHITECTURE, BENCHMARKS, DECISIONS, STATUS,
+                       | bench-runtime | bench-train | bench-lifecycle
+                       | search-gain | gen-openings | eval-policy | pilot
+                       | freeze-reference
+configs/               historical Phase 0–3 configs; configs/phase4/ (current
+                       mainline contracts); configs/hardware/ (measured
+                       machine scheduling profiles)
+docs/                  STATUS, PHASE4_RESULTS, PHASE4_CONVERGENCE, DECISIONS
+                       (ADRs), HARDWARE, ARCHITECTURE, BENCHMARKS,
                        REPRESENTATIONS, RULES_PROFILE, SEARCH, REPLAY, RUNS,
-                       plus the preserved specs
+                       F10_BASELINE, evidence/phase4/, plus the preserved specs
 ```
 
-## What Phase 0 does and does not prove
+## What is and is not established
 
-Proves: the real model-shaped graph forwards, backpropagates, optimizes,
-checkpoints, and resumes in Rust; recurrent shared weights receive gradients;
-policy masking/promotions/terminal handling are correct; compute accounting is
-exact. Does **not** prove any chess strength or that recurrence helps. See
-`docs/STATUS.md` and `docs/ARCHITECTURE.md`.
+Established, with evidence in `docs/STATUS.md` and
+`docs/PHASE4_RESULTS.md`:
+
+- The model graph trains, checkpoints and resumes in Rust on CPU and CUDA
+  FP32.
+- Recurrent shared weights receive gradients, and F10 and R10 are matched in
+  unique parameters (9,805,672 under head v2).
+- Chess contracts are exact (perft, independent oracle).
+- The self-play → learning loop closes truthfully: audited replay, provenance,
+  identity hashes, and refusal of mismatched checkpoints.
+- The main-workstation schedule is measured.
+- A fresh network now starts from a near-uniform policy and a neutral value.
+
+**Not** established:
+
+- any chess strength
+- that F10 learns well at this scale (the corrected smoke is next)
+- that recurrence helps (the R10 R1/R2/R4 experiments have not started)

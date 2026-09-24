@@ -10,6 +10,35 @@ Compact copies of the machine-readable artifacts live in
 `docs/evidence/phase4/`; the full run directories are under `runs/phase4-*`
 (gitignored, local to the workstation).
 
+## Current status (2026-09-24, in progress)
+
+| step | status |
+|---|---|
+| CUDA runtime proof | **GO** (MEASURED) |
+| P4.2 frozen reference | **v1 superseded**; **v2** `d22c78bd…` frozen (head v2) + T0 recorded |
+| P4.3 hardware schedule | **GO**: `configs/hardware/workstation-main.toml` MEASURED (32 / 32 / 500 µs, cpu_workers 32; learner 64×4) |
+| P4.4 search budget | **in progress** on v2: 8 / 16 / 32 done, 64 / 128 / 256 running; v1 curve kept as superseded evidence |
+| P4.4L lifecycle probe | NOT RUN (tooling ready) |
+| P4.5 F10 smoke | NOT RUN |
+
+Major findings so far (details below):
+
+1. `eval-policy` leaked device memory on the autodiff backend: 16 GB VRAM
+   within a minute. Fixed (D43).
+2. One-wave sweep cells are tail-bound. The methodology was fixed, and
+   schedules are compared at ≥ 2 waves.
+3. **Root cause of repetition-dominated self-play (D40/D41).** The initial
+   network had an arbitrary, confident policy and a non-neutral value. PUCT
+   reproduced that prior, so self-play distilled it, and nothing broke the
+   loop.
+   - Fixed by head v2 (final norm, scaled logits, zero-init WDL), root
+     Dirichlet noise, and argmax after ply 30.
+   - `argmax_after_ply` had been a dead identity field.
+   - At 16–32 sims, decisive games went from ~12 to ~45 of 64, and
+     threefold + fifty from ~0.5 to 0.08.
+4. The T0 search-gain gate was a design error. It is now a per-cycle
+   learning-progress metric (D42).
+
 ## Hardware and software
 
 | item | value |
@@ -556,3 +585,98 @@ this was a measurement-design error.
 - Budget selection on reference v2: minimum eligible 64, degeneracy gates,
   and highest trainable positions/s, with the 0.15 / 50% data-health
   override.
+
+## P4.2 (re-freeze) — frozen F10 reference v2 (MEASURED)
+
+`recur64 freeze-reference --config configs/phase4/f10-reference.toml --output
+runs/phase4-f10-reference-v2` on CUDA FP32, head v2. **This reference replaces
+v1 for every later Phase 4 step.**
+
+| field | value |
+|---|---|
+| model_id | `d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448` |
+| head_version | 2 |
+| seed | 1 |
+| git | `bbe4a816d450b51a0d0d4f93a99f936c46c82b40`, `main`, clean |
+| geometry | F10 384 / 12 / 768, blocks 0/8/0, R=1, 9,805,672 params |
+| scientific_config_hash | `58a15f88a8881089675a2635eb91150ccc63ab1216dcc2ef0f4f9f47d885a0fc` (identity v4) |
+| resolved_config_hash | `3cd240b7e163a46644810bb2e8172c97204f4e19cc458dba9e94e32e27aed923` |
+| opening digest | `66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c` |
+| optimizer contract | unchanged (`adamw-v1 … clip=per_parameter_l2_norm@1.0 … example_weighted_mean_over_effective_batch`) |
+| update_counter / lr_schedule_step | 0 / 0 |
+
+Loading v1 is now refused, as intended: `checkpoint head version 1 is not the
+current head version 2 … refused` (MEASURED).
+
+### T0 on reference v2 (MEASURED)
+
+`eval-policy`, 100 games, binary `159eb78`. VRAM stayed flat at 498–542 MiB.
+No strength claim is made.
+
+| metric | v1 (superseded) | **v2** |
+|---|---|---|
+| policy W / D / L (score) | 15 / 77 / 8 (0.535) | **7 / 85 / 7 (0.500)** |
+| decisive / informative | 23 / true | 14 / true |
+| truncated | 0 | 1 |
+| terminations | insuff 52, mate 23, fifty 14, stalemate 8, threefold 3 | insuff 59, fifty 21, mate 14, threefold 4, stalemate 1, truncated 1 |
+| mean policy entropy (uniform 3.291) | 1.790 | **3.285** |
+| mean top-1 probability | 0.436 | **0.046** |
+
+INFERRED:
+
+- The v2 raw policy is indistinguishable from random play, which is what a
+  near-uniform prior should give.
+- The per-opening argmax "top moves" match v1. The same seed produces the
+  same projection weights, and scaling plus normalization preserve logit
+  order; the preferences are about 100× weaker.
+
+### T1 — gradient clipping re-measured on v2 (MEASURED; decision: not applied)
+
+`bench-train --layouts 64x4 --updates 20` on the same real replay as P4.3F.
+
+| head | loss first → last | max pre-clip global grad norm | examples/s |
+|---|---|---:|---:|
+| v1 | 1.772 → 2.429 (rising) | 102.4 | 457.9 |
+| v2 | 3.569 → 1.979 (falling) | 12.0 | 440.5 |
+
+**Decision: keep per-parameter clipping (the optimizer contract is
+unchanged).** Head v2 removed the pathology that motivated T1: gradient norms
+fell about 8.5× and the loss now decreases. Changing clipping in the same step
+as the head would also confound attribution. Per-update gradient norms are
+reported by the smoke, and T1 is revisited with that evidence before P4.6.
+
+### P4.4 curve on reference v2 (MEASURED so far; interim)
+
+Binary `159eb78`, reference v2 `d22c78bd…`, schedule 32 / 32 / 500 µs, same
+seeds. Self-play contract (D41): temperature 1.0 for the first 30 plies then
+argmax, root Dirichlet α 0.3 / ε 0.25. 64 games per budget. Artifacts:
+`runs/phase4-search-v2-s{sims}`.
+
+| sims | trainable pos/s | ev/s | W/D/B/T | mean plies | threefold+fifty | truncated | target H (tr) | target top-1 (tr) | terminations |
+|---:|---:|---:|---|---:|---:|---:|---:|---:|---|
+| 8 | 110.7 | 964 | 16/31/14/3 | 287 | 0.141 | 0.047 | 1.729 | 0.263 | mate 30, insuff 20, fifty 9, stalemate 2, trunc 3 |
+| 16 | 59.5 | 948 | 16/22/26/0 | 205 | 0.078 | 0.000 | 2.352 | 0.187 | mate 42, insuff 14, fifty 4, stalemate 3, threefold 1 |
+| 32 | 33.3 | 1061 | 23/17/24/0 | 200 | 0.078 | 0.000 | 2.838 | 0.148 | mate 47, insuff 11, fifty 5, stalemate 1 |
+| 64 / 128 / 256 | running | | | | | | | | |
+
+**v1 → v2 at equal budgets (MEASURED).**
+
+| sims | decisive games (of 64) | threefold+fifty | trainable target entropy | trainable top-1 |
+|---:|---|---|---|---|
+| 16 | 12 → 42 | 0.56 → 0.08 | 0.79 → 2.35 | 0.68 → 0.19 |
+| 32 | 11 → 47 | 0.42 → 0.08 | 0.95 → 2.84 | 0.65 → 0.15 |
+
+**Reading (INFERRED).**
+
+- The repetition loop is broken.
+- Most games now end in checkmate: a near-uniform prior lets search spread,
+  find forced mates, and convert them after ply 30.
+- About 70% of games now carry win/loss value targets, versus ~17% before.
+- Search-gain columns are not meaningful at T0 with a near-flat prior (D42):
+  the argmax changed on ~91% of positions because the prior's argmax is
+  arbitrary.
+
+**Open check (pre-registered transfer check).** ev/s on v2 is 948–1061,
+against 1325 on v1 at 16 sims. Evaluations per position are unchanged
+(~16), so the evaluation rate itself dropped. It is examined after the
+curve completes (forward latency, batch composition) rather than assumed.

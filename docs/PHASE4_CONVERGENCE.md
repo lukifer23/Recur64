@@ -1,10 +1,14 @@
 # Recur64 — Phase 4: Mainline Harness Convergence
 
-Status: **P4.0 (integration) and P4.1 (CPU correctness gate) complete.**
-P4.2+ (frozen reference, scheduling, search budget, smoke, qualification) are
-**NOT RUN**.
+Status: **P4.0 (integration) and P4.1 (CPU correctness gate) complete** (now
+on `main`). The GPU steps P4.2+ are tracked in `docs/PHASE4_RESULTS.md`:
 
-This branch (`main-integration`) transplants the proven generic harness
+- P4.2 reference: v2, after head v2.
+- P4.3 schedule: MEASURED.
+- P4.4 search budget: in progress.
+- P4.4L / P4.5: not yet run.
+
+The integration branch (`main-integration`, now merged to `main`) transplanted the proven generic harness
 improvements from the experimental branch `experiment/hp-r15`
 (`3430e6ca23be18ced66d5d16b9d4663eff50850c`) onto `main` (`5ac291c`), keeping
 the mainline F10/R10 research lineage. It is not a merge and not a
@@ -79,9 +83,10 @@ mainline result.
 - `f10_r10_parity`: F10 and R10 both report 9,805,288 unique parameters; R10
   executes 2+4R+2 = 8/12/20 blocks at R=1/2/4.
 
-## Next (not run here)
+## Next
 
-P4.2 freeze the F10 reference (`recur64 freeze-reference`, CUDA), P4.3
+See `docs/PHASE4_RESULTS.md` for the measured P4.2–P4.4 record. Originally
+planned: P4.2 freeze the F10 reference (`recur64 freeze-reference`, CUDA), P4.3
 workstation scheduling sweep, P4.4 F10 search-budget requalification, P4.5 F10
 smoke, P4.6 F10 bounded qualification, P4.7 R10 entry decision. These are
 hardware runs and require explicit owner approval. No 24h run is authorized.

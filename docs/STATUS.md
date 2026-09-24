@@ -255,42 +255,66 @@ package. No ~24h run without explicit owner approval.
 # Phase 4 — Mainline harness convergence (in progress)
 
 The generic harness improvements proven on the experimental branch
-`experiment/hp-r15` are being brought onto main without importing HP scientific
-assumptions. Details and the porting boundary: `docs/PHASE4_CONVERGENCE.md`.
+`experiment/hp-r15` were brought onto main without importing HP scientific
+assumptions (P4.0/P4.1; `docs/PHASE4_CONVERGENCE.md`). The GPU phase (P4.2+)
+is recorded in **`docs/PHASE4_RESULTS.md`**.
 
-## COMPLETED (P4.0/P4.1 on `main-integration`)
+## COMPLETED
 
-- One authoritative parallel self-play collector used by `run`, `selfplay`,
-  `pilot`, and the sweep; explicit collection errors.
-- Global-game-id self-play seed policy (`base_seed_plus_global_game_id_v1`),
-  fixing the P0 where every pilot cycle replayed the first cycle's games.
-- Example-weighted mean gradient reduction with weighted metrics (fixes inflated
-  gradient norms and final-microbatch-only loss reporting).
-- Optimizer continuation through `load_training`; the accepted trajectory
-  advances only on promotion.
-- Conservative-v2 promotion (decisive games, strictly above 0.5, reuse floor)
-  with hold reasons.
-- Candidate-vs-parent and candidate-vs-reference arenas; raw policy vs parent.
-- Frozen reference checkpoints, `identity.json`, and a T0 baseline.
-- Scientific vs resolved config identity; build-time git provenance; NVRTC
-  fail-fast; precision gate on all run paths; concurrency gauge; GPU
-  instrumentation; strict opening-suite validation and digest.
+- P4.0/P4.1: collection semantics, seed policy, gradient reduction, optimizer
+  continuation, conservative-v2 promotion, frozen references, identity/hashes,
+  provenance, NVRTC and precision gates (see `PHASE4_CONVERGENCE.md`).
+- CUDA runtime proven on the RTX 2000 Ada (cuda-smoke PASS; the NVRTC guard
+  accepts `nvrtc64_120_0.dll`).
+- Sweep methodology: requested vs effective concurrency, refusal of
+  unrealizable cells, and a multi-wave comparison. Shared GPU telemetry.
+  `bench-train`, `bench-lifecycle` and `search-gain` probes.
+- **P4.3 hardware schedule MEASURED** (`configs/hardware/workstation-main.toml`):
+  - self-play: 32 concurrent, cap 32, 500 µs, cpu_workers 32
+  - learner: 64 × 4 (effective 256)
+- **Root-cause fixes (D40–D43):**
+  - head v2: final pre-head RMSNorm, 1/√d policy logits, zero-init WDL
+  - checkpoints carry `head_version` and every load path checks contracts
+  - root Dirichlet noise and argmax after ply 30 in self-play (arenas
+    noise-free)
+  - `argmax_after_ply`, previously a dead identity field, is implemented
+  - inference-only commands run on the inner backend
+- Frozen F10 reference **v2** `d22c78bd…` (head v2) and its T0.
 
 ## VERIFIED
 
-- `cargo fmt`/`clippy` clean; `cargo test --workspace` passes; the CUDA feature
-  type-checks against the user-space CUDA 12.9.1 environment.
-- `f10_r10_parity`: F10 == R10 == 9,805,288 unique parameters; R10 executes
-  8/12/20 blocks at R=1/2/4.
+- fmt/clippy clean; `cargo test --workspace --release` 191 passed, 0 failed,
+  1 ignored.
+- A fresh F10 prior is 0.999 × uniform entropy with value 0.000 (was 0.502 /
+  0.245) — `tests/t0_prior.rs`.
+- F10 == R10 == 9,805,672 unique parameters under head v2.
+- Changing only the schedule left data aggregates identical in every P4.3
+  cell.
+- Head v1 checkpoints are refused under head v2.
 
-## NOT RUN (Phase 4 experiments)
+## FAILED / FOUND
 
-- P4.2 frozen F10 reference; P4.3 workstation scheduling sweep; P4.4 F10
-  search-budget requalification; P4.5 smoke; P4.6 bounded qualification; P4.7
-  R10 entry decision. These are hardware runs and require owner approval.
+- `eval-policy` on the autodiff backend filled 16 GB of VRAM (fixed, D43).
+- Head v1 made self-play distill an arbitrary initial prior. Search gain fell
+  with budget, and games were repetition-dominated (fixed, D40/D41). The v1
+  reference and the v1 P4.4 curve are superseded evidence.
+- The T0 search-gain gate was a design error. It is now a learning-progress
+  metric (D42).
+
+## IN PROGRESS
+
+- P4.4 search-budget curve on reference v2 (8 / 16 / 32 done; 64 / 128 / 256
+  running).
+
+## NOT RUN
+
+- P4.4L GPU lifecycle probe, P4.5 F10 smoke, P4.6 bounded qualification,
+  P4.7 R10 entry decision.
+- No 24h run is authorized.
 
 ## Historical evidence note
 
-The Phase 3 F10 result above predates the seed and gradient fixes and is not a
-clean modern baseline. The HP F15/R15 record lives on `experiment/hp-r15`; it is
-external evidence, not a mainline result.
+The Phase 3 F10 result above predates the seed and gradient fixes and head v2.
+It is not a clean modern baseline, and its checkpoints are head v1. The HP
+F15/R15 record lives on `experiment/hp-r15`; it is external evidence, not a
+mainline result.

@@ -46,6 +46,10 @@ pub struct BenchLifecycleArgs {
     /// Overrides the config's arena_games (raw matches use max(4, this)).
     #[arg(long, default_value_t = 8)]
     pub arena_games: u32,
+    /// Probe-only search budget override (the lifecycle probe measures owner
+    /// residency and latency, not search quality). Recorded in the report.
+    #[arg(long)]
+    pub simulations: Option<u32>,
     /// Seconds to wait after shutdown before the post-shutdown VRAM sample.
     #[arg(long, default_value_t = 1.0)]
     pub settle_secs: f64,
@@ -290,6 +294,9 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchLifecycleArgs) -> a
 pub fn run(args: BenchLifecycleArgs) -> anyhow::Result<()> {
     let mut cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&args.config)?)?;
     cfg.arena_games = args.arena_games;
+    if let Some(sims) = args.simulations {
+        cfg.simulations_per_move = sims;
+    }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => run_impl::<CpuTrain>(&cfg, &args),
