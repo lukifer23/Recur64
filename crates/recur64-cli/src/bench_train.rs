@@ -214,6 +214,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
         "checkpoint_model_id": checkpoint_model_id,
         "replay": args.replay,
         "replay_total_games": store.total_games(),
+        "replay_identity": recur64_runtime::replay_identity::read(&args.replay)?,
         "replay_sampleable_positions": store.sampleable(),
         "device": cfg.device,
         "precision": cfg.precision,

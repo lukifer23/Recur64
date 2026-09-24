@@ -69,6 +69,9 @@ pub struct SearchResult<A> {
     pub traversals: u32,
     /// Mean value estimate from the root's side-to-move perspective.
     pub root_value: f32,
+    /// The network's own value at the root (before search), side-to-move
+    /// perspective; 0 for terminal/empty roots.
+    pub root_network_value: f32,
 }
 
 impl<A: Copy + Ord> SearchResult<A> {
@@ -256,6 +259,7 @@ pub fn search_with_root_noise<G: PuctGame>(
             total_visits: 0,
             traversals: 0,
             root_value: t,
+            root_network_value: 0.0,
         });
     }
     if cfg.simulations == 0 {
@@ -264,6 +268,7 @@ pub fn search_with_root_noise<G: PuctGame>(
             total_visits: 0,
             traversals: 0,
             root_value: 0.0,
+            root_network_value: 0.0,
         });
     }
 
@@ -305,6 +310,7 @@ pub fn search_with_root_noise<G: PuctGame>(
         total_visits: total,
         traversals: cfg.simulations,
         root_value,
+        root_network_value: node.eval_value,
     })
 }
 

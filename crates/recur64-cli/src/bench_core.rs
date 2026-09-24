@@ -47,12 +47,27 @@ struct PosResult {
     perft_nodes_per_sec: f64,
 }
 
+/// Search-relevant per-node costs as a function of game length. Search
+/// clones the full `GameState` (including its whole history) for every
+/// expanded node, so this cost may grow with the ply of the root position.
+#[derive(serde::Serialize)]
+struct PlyResult {
+    ply: u32,
+    legal_moves: usize,
+    history_len: usize,
+    clone_apply_per_sec: f64,
+    clone_only_per_sec: f64,
+    legal_actions_per_sec: f64,
+    encode_per_sec: f64,
+}
+
 #[derive(serde::Serialize)]
 struct CoreReport {
     recur64_version: String,
     profile: &'static str,
     notes: Vec<String>,
     positions: Vec<PosResult>,
+    game_length_sweep: Vec<PlyResult>,
     game_state_size_bytes: usize,
     board_size_bytes: usize,
     standard_move_size_bytes: usize,
@@ -123,6 +138,65 @@ pub fn run_bench_core(args: BenchCoreArgs) -> anyhow::Result<()> {
         results.push(r);
     }
 
+    // Game-length sweep: a deterministic pseudo-random legal game, measured
+    // at increasing plies (stopping early if the game ends).
+    let mut sweep = Vec::new();
+    let mut g = GameState::startpos();
+    let mut lcg: u64 = 0x9E37_79B9_7F4A_7C15;
+    for target in [0u32, 50, 100, 200, 300, 400] {
+        while g.ply() < target && g.termination().is_none() {
+            let moves = g.legal_standard_moves();
+            if moves.is_empty() {
+                break;
+            }
+            lcg = lcg
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            let mv = moves[(lcg >> 33) as usize % moves.len()];
+            g.apply(mv)?;
+        }
+        if g.termination().is_some() || g.ply() < target {
+            println!("game-length sweep stopped at ply {} (game ended)", g.ply());
+            break;
+        }
+        let moves = g.legal_standard_moves();
+        let sample = moves[0];
+        let n = args.apply_iters;
+        let clone_apply_s = time(n, || {
+            let mut s = g.clone();
+            let _ = s.apply(sample);
+        });
+        let clone_s = time(n, || {
+            let _ = std::hint::black_box(g.clone());
+        });
+        let legal_s = time(n, || {
+            let _ = std::hint::black_box(g.legal_actions());
+        });
+        let encode_s = time(n, || {
+            let _ = std::hint::black_box(encode_observation_v1(&g));
+        });
+        let r = PlyResult {
+            ply: g.ply(),
+            legal_moves: moves.len(),
+            history_len: g.history().len(),
+            clone_apply_per_sec: n as f64 / clone_apply_s,
+            clone_only_per_sec: n as f64 / clone_s,
+            legal_actions_per_sec: n as f64 / legal_s,
+            encode_per_sec: n as f64 / encode_s,
+        };
+        println!(
+            "ply {:<4} legal={:<3} history={:<4} clone+apply={:>9.0}/s clone={:>9.0}/s legal_actions={:>9.0}/s encode={:>9.0}/s",
+            r.ply,
+            r.legal_moves,
+            r.history_len,
+            r.clone_apply_per_sec,
+            r.clone_only_per_sec,
+            r.legal_actions_per_sec,
+            r.encode_per_sec
+        );
+        sweep.push(r);
+    }
+
     let report = CoreReport {
         recur64_version: recur64_model::VERSION.to_string(),
         profile: if cfg!(debug_assertions) {
@@ -132,6 +206,7 @@ pub fn run_bench_core(args: BenchCoreArgs) -> anyhow::Result<()> {
         },
         notes,
         positions: results,
+        game_length_sweep: sweep,
         game_state_size_bytes: std::mem::size_of::<GameState>(),
         board_size_bytes: std::mem::size_of::<Board>(),
         standard_move_size_bytes: std::mem::size_of::<StandardMove>(),

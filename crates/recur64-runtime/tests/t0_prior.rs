@@ -34,8 +34,18 @@ fn f10() -> ModelConfig {
     }
 }
 
-#[test]
-fn fresh_f10_prior_is_near_uniform_and_value_near_neutral() {
+fn r10() -> ModelConfig {
+    ModelConfig {
+        input_blocks: 2,
+        core_blocks: 4,
+        output_blocks: 2,
+        ..f10()
+    }
+}
+
+/// (mean entropy / uniform, mean |value|, max |value|, positions) of fresh
+/// networks over three seeds and the openings-v1 suite plus startpos.
+fn fresh_stats(cfg: ModelConfig, recurrence: usize) -> (f64, f64, f64, usize) {
     let suite = OpeningSuite::load(std::path::Path::new("../../configs/openings-v1.toml"))
         .expect("openings-v1");
     let mut fens = suite.openings.clone();
@@ -44,7 +54,11 @@ fn fresh_f10_prior_is_near_uniform_and_value_near_neutral() {
     let (mut ratio_sum, mut abs_value_sum, mut abs_value_max, mut n) = (0.0f64, 0.0f64, 0.0f64, 0);
     for seed in [1u64, 2, 3] {
         <Flex as Backend>::seed(&device, seed);
-        let ev = SyncEvaluator::new(ProbeModel::<Flex>::new(f10(), &device), 1, device);
+        let ev = SyncEvaluator::new(
+            ProbeModel::<Flex>::new(cfg.clone(), &device),
+            recurrence,
+            device,
+        );
         for fen in &fens {
             let state = GameState::from_fen(fen).expect("opening fen");
             let legal = state.legal_actions();
@@ -68,8 +82,17 @@ fn fresh_f10_prior_is_near_uniform_and_value_near_neutral() {
             n += 1;
         }
     }
-    let ratio = ratio_sum / n as f64;
-    let abs_value = abs_value_sum / n as f64;
+    (
+        ratio_sum / n as f64,
+        abs_value_sum / n as f64,
+        abs_value_max,
+        n,
+    )
+}
+
+#[test]
+fn fresh_f10_prior_is_near_uniform_and_value_near_neutral() {
+    let (ratio, abs_value, abs_value_max, n) = fresh_stats(f10(), 1);
     println!(
         "fresh F10 over {n} positions: entropy/uniform = {ratio:.3}, mean |value| = {abs_value:.3}, max |value| = {abs_value_max:.3}"
     );
@@ -81,4 +104,20 @@ fn fresh_f10_prior_is_near_uniform_and_value_near_neutral() {
         abs_value <= 0.1,
         "initial value not neutral: mean |value| = {abs_value:.3}"
     );
+}
+
+/// Head v2 also removes the layout-dependent head-input scale, so a fresh
+/// R10 must start sane as well. R1 is asserted; R2/R4 are diagnostics.
+#[test]
+fn fresh_r10_prior_is_near_uniform_and_value_near_neutral() {
+    for r in [1usize, 2, 4] {
+        let (ratio, abs_value, abs_value_max, n) = fresh_stats(r10(), r);
+        println!(
+            "fresh R10 R{r} over {n} positions: entropy/uniform = {ratio:.3}, mean |value| = {abs_value:.3}, max |value| = {abs_value_max:.3}"
+        );
+        if r == 1 {
+            assert!(ratio >= 0.9, "R10 R1 prior too confident: {ratio:.3}");
+            assert!(abs_value <= 0.1, "R10 R1 value not neutral: {abs_value:.3}");
+        }
+    }
 }

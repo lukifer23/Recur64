@@ -50,6 +50,17 @@ pub struct BenchLifecycleArgs {
     /// residency and latency, not search quality). Recorded in the report.
     #[arg(long)]
     pub simulations: Option<u32>,
+    /// Evaluation concurrency (sets concurrent_games and cpu_workers). A
+    /// reference config's own collection shape may not be the measured
+    /// workstation schedule (e.g. cpu_workers 24 caps it at 24).
+    #[arg(long)]
+    pub concurrency: Option<u32>,
+    /// Inference batch cap override (measured schedule: 32).
+    #[arg(long)]
+    pub max_batch: Option<usize>,
+    /// Inference batch timeout override in microseconds (measured: 500).
+    #[arg(long)]
+    pub timeout_us: Option<u64>,
     /// Seconds to wait after shutdown before the post-shutdown VRAM sample.
     #[arg(long, default_value_t = 1.0)]
     pub settle_secs: f64,
@@ -296,6 +307,17 @@ pub fn run(args: BenchLifecycleArgs) -> anyhow::Result<()> {
     cfg.arena_games = args.arena_games;
     if let Some(sims) = args.simulations {
         cfg.simulations_per_move = sims;
+    }
+    if let Some(c) = args.concurrency {
+        cfg.concurrent_games = Some(c);
+        cfg.cpu_workers = c as usize;
+        cfg.games_per_cycle = Some(cfg.games_per_cycle.unwrap_or(c).max(c));
+    }
+    if let Some(b) = args.max_batch {
+        cfg.max_inference_batch = b;
+    }
+    if let Some(t) = args.timeout_us {
+        cfg.batch_timeout_us = t;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {

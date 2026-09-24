@@ -327,6 +327,13 @@ impl<B: Backend> ProbeModel<B> {
         activation::sigmoid(self.alpha_logit.val()).reshape([1, 1, 1])
     }
 
+    /// The relative-displacement index tensor (depends only on heads and
+    /// squares, never on the position). Inference owners build it once and
+    /// pass it to [`Self::forward_r_with_rel_idx`].
+    pub fn rel_index_tensor(&self, device: &B::Device) -> Tensor<B, 2, Int> {
+        self.rel_idx(device)
+    }
+
     fn rel_idx(&self, device: &B::Device) -> Tensor<B, 2, Int> {
         let data = rel_index_data(self.cfg.heads, self.cfg.squares);
         Tensor::<B, 2, Int>::from_data(
@@ -444,9 +451,22 @@ impl<B: Backend> ProbeModel<B> {
         r: usize,
         deep_supervision: bool,
     ) -> ModelOutput<B> {
+        let rel_idx = self.rel_idx(&board.device());
+        self.forward_r_with_rel_idx(board, cands, r, deep_supervision, &rel_idx)
+    }
+
+    /// [`Self::forward_r`] with a caller-cached relative-index tensor
+    /// (identical values; avoids rebuilding and uploading it per forward).
+    pub fn forward_r_with_rel_idx(
+        &self,
+        board: Tensor<B, 3>,
+        cands: &CandidateTensors<B>,
+        r: usize,
+        deep_supervision: bool,
+        rel_idx: &Tensor<B, 2, Int>,
+    ) -> ModelOutput<B> {
         assert!(r >= 1, "recurrence must be >= 1");
-        let device = board.device();
-        let rel_idx = self.rel_idx(&device);
+        let rel_idx = rel_idx.clone();
         let x = self.embed(board);
 
         let mut h = self.run_blocks(&self.input_blocks, x.clone(), &rel_idx);
@@ -619,6 +639,22 @@ mod tests {
             .to_vec::<f32>()
             .unwrap();
         assert!(vals.iter().all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn cached_rel_index_forward_is_bit_identical() {
+        let device = Default::default();
+        let model = ProbeModel::<B>::new(tiny_cfg(), &device);
+        let (board, cands) = fixture(&device);
+        let rel = model.rel_index_tensor(&device);
+        for r in [1usize, 2] {
+            let a = model.forward_r(board.clone(), &cands, r, false);
+            let b = model.forward_r_with_rel_idx(board.clone(), &cands, r, false, &rel);
+            let (ra, rb) = (&a.readouts[0], &b.readouts[0]);
+            let v = |t: &Tensor<B, 2>| t.clone().into_data().to_vec::<f32>().unwrap();
+            assert_eq!(v(&ra.policy.log_probs), v(&rb.policy.log_probs));
+            assert_eq!(v(&ra.wdl_logits), v(&rb.wdl_logits));
+        }
     }
 
     #[test]

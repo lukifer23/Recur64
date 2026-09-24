@@ -29,6 +29,7 @@ pub fn load<B: Backend>(
             )
         })?)?;
     meta.check_contracts()?;
+    meta.check_model(cfg)?;
     let template = ProbeModel::<B>::new(cfg.clone(), device);
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     let model = template.load_file(dir.join("model"), &recorder, device)?;

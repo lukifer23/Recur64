@@ -69,14 +69,18 @@ pub struct BatchedModel<B: Backend> {
     model: ProbeModel<B>,
     recurrence: usize,
     device: B::Device,
+    /// Position-independent relative-index tensor, built once per owner.
+    rel_idx: Tensor<B, 2, Int>,
 }
 
 impl<B: Backend> BatchedModel<B> {
     pub fn new(model: ProbeModel<B>, recurrence: usize, device: B::Device) -> Self {
+        let rel_idx = model.rel_index_tensor(&device);
         Self {
             model,
             recurrence,
             device,
+            rel_idx,
         }
     }
 }
@@ -120,7 +124,9 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
         }
         let cands = CandidateTensors::from_batch(&cb, &self.device);
 
-        let out = self.model.forward_r(board, &cands, self.recurrence, false);
+        let out =
+            self.model
+                .forward_r_with_rel_idx(board, &cands, self.recurrence, false, &self.rel_idx);
         let readout = out
             .readouts
             .first()

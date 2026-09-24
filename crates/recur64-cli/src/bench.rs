@@ -201,6 +201,44 @@ where
                 warm * 1000.0,
                 batch as f64 / warm
             );
+            // A/B in the same process (per-process autotune variance is
+            // large): per-forward index rebuild vs a cached index tensor,
+            // alternated twice, each iteration synchronized like the real
+            // inference owner (which reads results every batch).
+            let rel = model.rel_index_tensor(&device);
+            for round in 0..2 {
+                for cached in [false, true] {
+                    B::sync(&device)?;
+                    let t = Instant::now();
+                    for _ in 0..args.iters {
+                        let _ = if cached {
+                            model.forward_r_with_rel_idx(board.clone(), &cands, r, false, &rel)
+                        } else {
+                            model.forward_r(board.clone(), &cands, r, false)
+                        };
+                        B::sync(&device)?;
+                    }
+                    let ms = t.elapsed().as_secs_f64() * 1000.0 / args.iters as f64;
+                    cases.push(Case {
+                        kind: if cached {
+                            "inference-sync-rel-cached"
+                        } else {
+                            "inference-sync-rel-rebuilt"
+                        },
+                        batch,
+                        recurrence: r,
+                        executed_blocks: cfg.model.executed_blocks_final(r),
+                        cold_ms: 0.0,
+                        warm_ms: ms,
+                        examples_per_sec: batch as f64 * 1000.0 / ms,
+                        finite,
+                    });
+                    println!(
+                        "  rel-index {} round {round} batch={batch:<4} R={r} sync-per-forward={ms:.3}ms",
+                        if cached { "cached " } else { "rebuilt" }
+                    );
+                }
+            }
         }
     }
 

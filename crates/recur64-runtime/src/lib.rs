@@ -18,6 +18,7 @@ pub mod learner;
 pub mod model_io;
 pub mod pilot;
 pub mod replay;
+pub mod replay_identity;
 pub mod run_dir;
 pub mod search_gain;
 pub mod sweep;

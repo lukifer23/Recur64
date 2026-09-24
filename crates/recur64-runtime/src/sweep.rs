@@ -13,7 +13,9 @@ use recur64_core::{ActionId, ObservationV1};
 
 use crate::cancel::CancelToken;
 use crate::config::RunConfig;
-use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
+use crate::coordinator::{
+    RootSearchSummary, SelfPlayMetrics, collect_parallel_diag, selfplay_metrics,
+};
 use crate::gpu_telemetry;
 use crate::inference::{BatchEvaluator, BatchedModel, InferenceConfig, InferenceOwner};
 use crate::model_io;
@@ -138,6 +140,8 @@ pub struct SweepCellResult {
     pub trainable_positions_per_sec: f64,
     /// Full data-health record: W/D/L, lengths, all/trainable target health.
     pub selfplay: SelfPlayMetrics,
+    /// Exact root-prior diagnostics from self-play (noise vs search movement).
+    pub root_search: RootSearchSummary,
     pub requests: u64,
     pub batches: u64,
     pub batch_mean: f64,
@@ -233,10 +237,10 @@ pub fn run_cell<B: AutodiffBackend>(
     let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
     let ((records, collect_secs), gpu) = gpu_telemetry::monitor(true, || {
         let collect_start = Instant::now();
-        let records = collect_parallel(&cell_cfg, &ev, &CancelToken::new(), deadline, 0);
+        let records = collect_parallel_diag(&cell_cfg, &ev, &CancelToken::new(), deadline, 0);
         (records, collect_start.elapsed().as_secs_f64().max(1e-6))
     });
-    let records = records?;
+    let (records, root_search) = records?;
     let m = owner.metrics().snapshot();
     owner.shutdown();
     let selfplay = selfplay_metrics(&cell_cfg, &records, m.clone());
@@ -251,6 +255,12 @@ pub fn run_cell<B: AutodiffBackend>(
                     .map(str::to_owned)
             })
             .unwrap_or_else(|| "fresh-seeded-init".into());
+        let entry = crate::replay_identity::ReplayIdentityEntry::from_config(
+            &cell_cfg,
+            &model_id,
+            0,
+            records.len() as u64,
+        )?;
         let mut header = ReplayHeader::new(
             cfg.run_id.clone(),
             model_id,
@@ -263,6 +273,7 @@ pub fn run_cell<B: AutodiffBackend>(
             writer.push(r)?;
         }
         writer.finish()?;
+        crate::replay_identity::append(dir, entry)?;
     }
 
     Ok(SweepCellResult {
@@ -303,6 +314,7 @@ pub fn run_cell<B: AutodiffBackend>(
         gpu_temp_max_c: gpu.temp_max_c,
         gpu_samples: gpu.samples,
         selfplay,
+        root_search,
     })
 }
 

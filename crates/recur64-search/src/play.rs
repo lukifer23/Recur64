@@ -72,6 +72,71 @@ pub struct SelfPlayPly {
     pub side_to_move: Color,
 }
 
+/// Per-game sums of root search diagnostics (not serialized into replay).
+///
+/// Three priors are distinguished at every searched root: the network policy,
+/// the noisy root prior PUCT actually used (network mixed with root Dirichlet
+/// noise; identical to the network policy when noise is off), and the final
+/// visit target. `target_vs_noisy` isolates tree-search movement after
+/// exploration noise; `noisy_vs_network` is the noise alone.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct RootSearchDiag {
+    pub plies: u64,
+    pub kl_noisy_vs_network: f64,
+    pub argmax_changed_by_noise: u64,
+    pub kl_target_vs_noisy: f64,
+    pub argmax_changed_by_search: u64,
+    pub kl_target_vs_network: f64,
+    pub argmax_changed_total: u64,
+    pub abs_network_value: f64,
+    pub abs_root_value: f64,
+}
+
+impl RootSearchDiag {
+    pub fn add(&mut self, o: &RootSearchDiag) {
+        self.plies += o.plies;
+        self.kl_noisy_vs_network += o.kl_noisy_vs_network;
+        self.argmax_changed_by_noise += o.argmax_changed_by_noise;
+        self.kl_target_vs_noisy += o.kl_target_vs_noisy;
+        self.argmax_changed_by_search += o.argmax_changed_by_search;
+        self.kl_target_vs_network += o.kl_target_vs_network;
+        self.argmax_changed_total += o.argmax_changed_total;
+        self.abs_network_value += o.abs_network_value;
+        self.abs_root_value += o.abs_root_value;
+    }
+
+    fn push(&mut self, network: &[f32], noisy: &[f32], target: &[f32], net_v: f32, root_v: f32) {
+        self.plies += 1;
+        self.kl_noisy_vs_network += kl(noisy, network);
+        self.kl_target_vs_noisy += kl(target, noisy);
+        self.kl_target_vs_network += kl(target, network);
+        let (an, ao, at) = (argmax(network), argmax(noisy), argmax(target));
+        self.argmax_changed_by_noise += u64::from(an != ao);
+        self.argmax_changed_by_search += u64::from(ao != at);
+        self.argmax_changed_total += u64::from(an != at);
+        self.abs_network_value += net_v.abs() as f64;
+        self.abs_root_value += root_v.abs() as f64;
+    }
+}
+
+/// KL(p || q) in nats over the support of `p`.
+fn kl(p: &[f32], q: &[f32]) -> f64 {
+    p.iter()
+        .zip(q)
+        .filter(|(p, _)| **p > 0.0)
+        .map(|(&p, &q)| p as f64 * (p as f64 / (q as f64).max(1e-12)).ln())
+        .sum()
+}
+
+fn argmax(v: &[f32]) -> usize {
+    v.iter()
+        .enumerate()
+        .fold((0usize, f32::NEG_INFINITY), |b, (i, &x)| {
+            if x > b.1 { (i, x) } else { b }
+        })
+        .0
+}
+
 /// A completed game (pre-serialization).
 #[derive(Debug, Clone)]
 pub struct SelfPlayGame {
@@ -81,6 +146,8 @@ pub struct SelfPlayGame {
     /// `None` for truncated/aborted games.
     pub outcome: Option<Outcome>,
     pub seed: u64,
+    /// Root search diagnostics summed over the game's searched plies.
+    pub root_diag: RootSearchDiag,
 }
 
 fn sparse_target(edges: &[RootEdge<ActionId>], total_visits: u32) -> Vec<TargetEntry> {
@@ -159,6 +226,7 @@ pub fn play_game_from(
     let start_fen = state.to_fen();
     let start_ply = state.ply();
     let mut plies = Vec::new();
+    let mut root_diag = RootSearchDiag::default();
     let termination;
 
     loop {
@@ -189,6 +257,31 @@ pub fn play_game_from(
             termination = Termination::Aborted;
             break;
         }
+        if result.total_visits > 0 {
+            let noisy: Vec<f32> = result.edges.iter().map(|e| e.prior).collect();
+            let network: Vec<f32> = match &root_noise {
+                // Invert the mix: prior' = (1-eps)*p + eps*noise.
+                Some(n) if n.epsilon < 1.0 => noisy
+                    .iter()
+                    .zip(&n.noise)
+                    .map(|(m, x)| ((m - n.epsilon * x) / (1.0 - n.epsilon)).max(0.0))
+                    .collect(),
+                _ => noisy.clone(),
+            };
+            let total = result.total_visits as f32;
+            let visits: Vec<f32> = result
+                .edges
+                .iter()
+                .map(|e| e.visits as f32 / total)
+                .collect();
+            root_diag.push(
+                &network,
+                &noisy,
+                &visits,
+                result.root_network_value,
+                result.root_value,
+            );
+        }
         let target = sparse_target(&result.edges, result.total_visits);
         let temperature = cfg.temperature_at(state.ply() - start_ply);
         let selected = sample_action(&result.edges, temperature, rng);
@@ -214,6 +307,7 @@ pub fn play_game_from(
         termination,
         outcome,
         seed: 0,
+        root_diag,
     })
 }
 
@@ -246,5 +340,38 @@ mod tests {
         assert_eq!(cfg.temperature_at(200), 0.0);
         let always = SelfPlayConfig::default();
         assert_eq!(always.temperature_at(500), always.temperature);
+    }
+
+    #[test]
+    fn root_diagnostics_separate_noise_from_search() {
+        let ev = crate::evaluator::FixedEvaluator::uniform(0.0);
+        let base = SelfPlayConfig {
+            simulations_per_move: 16,
+            ply_cap: 12,
+            ..SelfPlayConfig::default()
+        };
+        let clean = play_game(&ev, &base, &mut Rng::new(9)).unwrap().root_diag;
+        assert!(clean.plies > 0);
+        assert!(
+            clean.kl_noisy_vs_network.abs() < 1e-9,
+            "no noise: noisy == network"
+        );
+        assert_eq!(clean.argmax_changed_by_noise, 0);
+        assert!((clean.kl_target_vs_noisy - clean.kl_target_vs_network).abs() < 1e-9);
+        assert_eq!(clean.argmax_changed_by_search, clean.argmax_changed_total);
+
+        let noisy_cfg = SelfPlayConfig {
+            root_dirichlet_epsilon: 0.25,
+            root_dirichlet_alpha: 0.3,
+            ..base
+        };
+        let noisy = play_game(&ev, &noisy_cfg, &mut Rng::new(9))
+            .unwrap()
+            .root_diag;
+        assert!(
+            noisy.kl_noisy_vs_network > 0.0,
+            "noise must move the root prior"
+        );
+        assert!(noisy.kl_target_vs_noisy.is_finite() && noisy.kl_target_vs_network.is_finite());
     }
 }

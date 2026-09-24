@@ -657,7 +657,9 @@ argmax, root Dirichlet α 0.3 / ε 0.25. 64 games per budget. Artifacts:
 | 8 | 110.7 | 964 | 16/31/14/3 | 287 | 0.141 | 0.047 | 1.729 | 0.263 | mate 30, insuff 20, fifty 9, stalemate 2, trunc 3 |
 | 16 | 59.5 | 948 | 16/22/26/0 | 205 | 0.078 | 0.000 | 2.352 | 0.187 | mate 42, insuff 14, fifty 4, stalemate 3, threefold 1 |
 | 32 | 33.3 | 1061 | 23/17/24/0 | 200 | 0.078 | 0.000 | 2.838 | 0.148 | mate 47, insuff 11, fifty 5, stalemate 1 |
-| 64 / 128 / 256 | running | | | | | | | | |
+| 64 | 13.5 | 898 | 21/18/24/1 | 186 | 0.062 | 0.016 | 2.965 | 0.139 | mate 45, insuff 14, fifty 2, threefold 2, trunc 1 |
+| 128 | 6.7 | 850 | 29/12/23/0 | 138 | 0.062 | 0.000 | 3.007 | 0.134 | mate 52, insuff 8, fifty 4 |
+| 256 (32 games, measurement-only, single wave) | 2.49 | 633 | 9/12/11/0 | 211 | 0.031 | 0.000 | 2.840 | 0.148 | mate 20, insuff 10, fifty 1, stalemate 1 |
 
 **v1 → v2 at equal budgets (MEASURED).**
 
@@ -680,3 +682,43 @@ argmax, root Dirichlet α 0.3 / ε 0.25. 64 games per budget. Artifacts:
 against 1325 on v1 at 16 sims. Evaluations per position are unchanged
 (~16), so the evaluation rate itself dropped. It is examined after the
 curve completes (forward latency, batch composition) rather than assumed.
+
+### P4.4 selection on reference v2 (MEASURED; rule applied exactly as pre-registered)
+
+The eligible budgets are ≥ 64 and not degenerate (amendment A1; A2 removed the
+search-gain gate). 256 is measurement-only.
+
+| sims | eligible | degenerate? | trainable pos/s | decisive share | threefold + fifty + truncated | trainable H | top-1 | wall s (64 games) | peak VRAM MiB | max °C |
+|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | no (< 64) | no | 110.7 | 0.469 | 0.188 | 1.729 | 0.263 | 152 | 943 | 70 |
+| 16 | no | no | 59.5 | 0.656 | 0.078 | 2.352 | 0.187 | 221 | 943 | 76 |
+| 32 | no | no | 33.3 | 0.734 | 0.078 | 2.838 | 0.148 | 384 | 958 | 79 |
+| **64** | yes | no | **13.5** | 0.703 | 0.078 | 2.965 | 0.139 | 842 | 943 | 80 |
+| 128 | yes | no | 6.7 | 0.812 | 0.062 | 3.007 | 0.134 | 1320 | 996 | 80 |
+
+- **Primary:** among eligible budgets, 64 has the highest trainable
+  positions/s, so it is the leader.
+- **Override (128 vs 64):** the combined threefold + fifty + truncated rate
+  improves by 0.016, and the override needs ≥ 0.15. 128 also keeps only
+  49.6% of 64's throughput, against a required ≥ 50%. Both conditions fail,
+  so there is **no override**.
+- 128's more decisive (0.81) and shorter (138 plies) games are recorded but
+  do not qualify under the pre-registered thresholds.
+- Every cell had 0 inference errors. There was no thermal slowdown (80 °C
+  maximum; throttle reasons were power cap and idle only).
+
+256 (MEASURED, not eligible): decisive share 0.625, threefold+fifty 0.031, 0
+errors, max 74 °C. Its throughput is single-wave and tail-biased, as
+pre-declared. Artifacts: `docs/evidence/phase4/search-v2/`.
+
+**FROZEN F10 search budget: 64 simulations/move.** The self-play contract
+is otherwise unchanged: c_puct 1.0, temperature 1.0 through ply 29 then
+argmax, root Dirichlet 0.3 / 0.25, ply cap 512.
+
+INFERRED:
+
+- With a zero-value, near-uniform network, trainable target entropy at
+  64–128 sims (~3.0) is close to the prior entropy (~3.1). Visits spread
+  nearly uniformly except where search finds forced mates.
+- Purposeful targets require the value head to learn. That is exactly what
+  the smoke's per-cycle `root_search` diagnostics are for.

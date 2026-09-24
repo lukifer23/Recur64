@@ -228,6 +228,64 @@ pub(crate) fn collect_parallel(
     deadline: Instant,
     game_id_base: u64,
 ) -> anyhow::Result<Vec<GameRecord>> {
+    collect_parallel_diag(cfg, evaluator, cancel, deadline, game_id_base).map(|(r, _)| r)
+}
+
+/// Root-search diagnostics for one collection, from the exact priors used
+/// during self-play (see [`recur64_search::RootSearchDiag`]). Aggregated
+/// before serialization; Replay V1 is unchanged.
+#[derive(Debug, Clone, Copy, Default, serde::Serialize)]
+pub struct RootSearchStats {
+    pub plies: u64,
+    /// Exploration noise alone: KL(noisy root prior || network policy).
+    pub mean_kl_noisy_vs_network: f64,
+    pub argmax_changed_by_noise: f64,
+    /// Tree-search movement after noise: KL(visit target || noisy root prior).
+    pub mean_kl_target_vs_noisy: f64,
+    pub argmax_changed_by_search: f64,
+    /// Total: KL(visit target || network policy) (noise + search).
+    pub mean_kl_target_vs_network: f64,
+    pub argmax_changed_total: f64,
+    /// Mean |network value| and |backed-up root value| at searched roots.
+    pub mean_abs_network_value: f64,
+    pub mean_abs_root_value: f64,
+}
+
+impl RootSearchStats {
+    fn from_sums(d: &recur64_search::RootSearchDiag) -> Self {
+        let n = d.plies.max(1) as f64;
+        Self {
+            plies: d.plies,
+            mean_kl_noisy_vs_network: d.kl_noisy_vs_network / n,
+            argmax_changed_by_noise: d.argmax_changed_by_noise as f64 / n,
+            mean_kl_target_vs_noisy: d.kl_target_vs_noisy / n,
+            argmax_changed_by_search: d.argmax_changed_by_search as f64 / n,
+            mean_kl_target_vs_network: d.kl_target_vs_network / n,
+            argmax_changed_total: d.argmax_changed_total as f64 / n,
+            mean_abs_network_value: d.abs_network_value / n,
+            mean_abs_root_value: d.abs_root_value / n,
+        }
+    }
+}
+
+/// Root-search diagnostics over all searched plies and over plies of games
+/// with a result (trainable).
+#[derive(Debug, Clone, Copy, Default, serde::Serialize)]
+pub struct RootSearchSummary {
+    pub all: RootSearchStats,
+    pub trainable: RootSearchStats,
+}
+
+/// [`collect_parallel`] that also returns root-search diagnostics.
+pub(crate) fn collect_parallel_diag(
+    cfg: &RunConfig,
+    evaluator: &dyn Evaluator,
+    cancel: &CancelToken,
+    deadline: Instant,
+    game_id_base: u64,
+) -> anyhow::Result<(Vec<GameRecord>, RootSearchSummary)> {
+    let diag_all = std::sync::Mutex::new(recur64_search::RootSearchDiag::default());
+    let diag_trainable = std::sync::Mutex::new(recur64_search::RootSearchDiag::default());
     let sp = SelfPlayConfig {
         simulations_per_move: cfg.simulations_per_move,
         c_puct: cfg.c_puct,
@@ -264,6 +322,7 @@ pub(crate) fn collect_parallel(
             let seed = cfg.seed;
             let start_state = start_state.clone();
             let next = &next;
+            let (diag_all, diag_trainable) = (&diag_all, &diag_trainable);
             handles.push(scope.spawn(move || {
                 let mut out = Vec::new();
                 let mut failures = Vec::new();
@@ -285,6 +344,10 @@ pub(crate) fn collect_parallel(
                     match play_game_from(ev, &sp, &mut rng, start_state.clone()) {
                         Ok(mut g) => {
                             g.seed = game_seed;
+                            diag_all.lock().expect("diag mutex").add(&g.root_diag);
+                            if g.outcome.is_some() {
+                                diag_trainable.lock().expect("diag mutex").add(&g.root_diag);
+                            }
                             out.push(GameRecord::from_selfplay(
                                 game_id,
                                 &g,
@@ -321,7 +384,11 @@ pub(crate) fn collect_parallel(
         }
         Ok(())
     })?;
-    Ok(records)
+    let summary = RootSearchSummary {
+        all: RootSearchStats::from_sums(&diag_all.into_inner().expect("diag mutex")),
+        trainable: RootSearchStats::from_sums(&diag_trainable.into_inner().expect("diag mutex")),
+    };
+    Ok((records, summary))
 }
 
 fn selfplay_game_seed(base_seed: u64, global_game_id: u64) -> u64 {

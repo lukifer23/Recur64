@@ -15,8 +15,8 @@ pub use evaluator::{
 };
 pub use game_tree::ChessGame;
 pub use play::{
-    SelfPlayConfig, SelfPlayGame, SelfPlayPly, TargetEntry, play_game, play_game_from,
-    play_game_seeded,
+    RootSearchDiag, SelfPlayConfig, SelfPlayGame, SelfPlayPly, TargetEntry, play_game,
+    play_game_from, play_game_seeded,
 };
 pub use puct::{
     PuctConfig, PuctGame, RootEdge, RootNoise, SearchResult, search, search_with_root_noise,

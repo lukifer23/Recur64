@@ -419,7 +419,15 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - The raw residual stream made the head-input scale depend on the block
     layout, a potential F10-vs-R10 confound.
   - Head v2 measures 0.999 × uniform and |value| 0.000
-    (`tests/t0_prior.rs`).
+    (`tests/t0_prior.rs`). A fresh R10 at R1/R2/R4 measures 1.000 × uniform
+    and |value| 0.000, matching F10.
+- **Expected zero-init consequence:** at optimizer step 0 the WDL head
+  weights are zero. The first update trains the WDL head itself, while the
+  WDL gradient into the trunk is zero on that first backward pass. This is
+  intended, and is changed only if measured learning shows a harmful
+  value-head delay. The promotion head keeps its default init: zero-init
+  there broke the existing promotion-gradient test, and no promotion
+  pathology has been measured.
 - **Consequence:**
   - The v1 reference (`7d1493b4…`) and all Phase 3 checkpoints are head v1
     and are refused under v2.
@@ -460,6 +468,17 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     can pass such a gate.
   - Visit-count quantization also inflates KL at low budgets.
   - The metric remains the right signal once the value head learns.
+- **Amendment (Phase 4 addendum A1):** under D41 root noise, the offline
+  statistic compares the visit target with the **raw** network policy, so it
+  includes exploration noise as well as tree-search movement.
+  - It is named **`network_to_target_divergence`**. Historical JSON field
+    names are kept for comparability.
+  - The exact split is measured during self-play from the priors PUCT
+    actually used (`root_search`): network → noisy root prior (noise alone),
+    and noisy root prior → visit target (search movement after noise). It is
+    aggregated before serialization, so Replay V1 is unchanged.
+  - Noisy → target is the cleaner search-contribution signal. Neither metric
+    is monotone by construction, and neither is a smoke gate yet.
 
 ## D43 — Inference-only commands evaluate on the inner backend
 

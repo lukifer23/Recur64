@@ -18,7 +18,9 @@ use recur64_model::train::adamw;
 
 use crate::cancel::CancelToken;
 use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy};
-use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
+use crate::coordinator::{
+    RootSearchSummary, SelfPlayMetrics, collect_parallel_diag, selfplay_metrics,
+};
 use crate::eval_policy::{
     PolicyDiagnostics, RawMatchResult, RawParentResult, policy_diagnostics, raw_policy_vs_parent,
     raw_policy_vs_random,
@@ -48,6 +50,8 @@ pub struct CycleReport {
     /// The `max_updates` safety cap reduced the requested work this cycle.
     pub max_updates_cap_bound: bool,
     pub selfplay: SelfPlayMetrics,
+    /// Exact root-prior diagnostics against the generating snapshot.
+    pub root_search: RootSearchSummary,
     pub audit_ok: bool,
     pub train: Option<TrainReport>,
     pub arena: Option<ArenaResult>,
@@ -499,14 +503,14 @@ pub fn run_pilot<B: AutodiffBackend>(
         let evaluator = owner.evaluator();
         let ((collected, collect_secs), collect_gpu) = gpu_telemetry::monitor(gpu_on, || {
             let collect_start = Instant::now();
-            let collected = collect_parallel(cfg, &evaluator, cancel, deadline, first_game_id);
+            let collected = collect_parallel_diag(cfg, &evaluator, cancel, deadline, first_game_id);
             (collected, collect_start.elapsed().as_secs_f64())
         });
         gpu.collect = collect_gpu;
         let inference_metrics = owner.metrics().snapshot();
         drop(evaluator);
         owner.shutdown();
-        let records = collected?;
+        let (records, root_search) = collected?;
         let selfplay = selfplay_metrics(cfg, &records, inference_metrics);
         let games = records.len() as u64;
         total_games_collected += games_per_cycle as u64;
@@ -528,6 +532,15 @@ pub fn run_pilot<B: AutodiffBackend>(
             writer.push(r)?;
         }
         writer.finish()?;
+        crate::replay_identity::append(
+            &run_dir.replay(),
+            crate::replay_identity::ReplayIdentityEntry::from_config(
+                cfg,
+                &snapshot_model_id,
+                first_game_id,
+                games,
+            )?,
+        )?;
         enforce_capacity(&run_dir.replay(), cfg.replay_max_positions)?;
         total_positions += positions;
 
@@ -717,6 +730,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             max_updates: plan.max_updates,
             max_updates_cap_bound: plan.cap_bound,
             selfplay,
+            root_search,
             audit_ok: audit.ok(),
             train: train_report,
             arena: Some(arena),
