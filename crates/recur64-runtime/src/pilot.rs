@@ -46,6 +46,9 @@ pub struct CycleReport {
     pub train: Option<TrainReport>,
     pub arena: Option<ArenaResult>,
     pub reference_arena: Option<ArenaResult>,
+    /// True when the parent was the frozen reference, so `reference_arena` is
+    /// the parent arena (same models, same deterministic games), not rerun.
+    pub reference_arena_is_parent_arena: bool,
     pub raw: Option<RawMatchResult>,
     pub raw_parent: Option<RawParentResult>,
     pub parent_model_id: String,
@@ -473,13 +476,21 @@ pub fn run_pilot<B: AutodiffBackend>(
             &candidate_model_id,
             &arena_cfg,
         )?;
-        let reference_arena = run_arena(
-            &ref_ev,
-            &cand_ev,
-            &reference_model_id,
-            &candidate_model_id,
-            &arena_cfg,
-        )?;
+        // Until the first promotion the parent *is* the frozen reference, so
+        // the longitudinal arena would replay the identical deterministic
+        // comparison. Reuse it and say so.
+        let reference_arena_is_parent_arena = parent_model_id == reference_model_id;
+        let reference_arena = if reference_arena_is_parent_arena {
+            arena.clone()
+        } else {
+            run_arena(
+                &ref_ev,
+                &cand_ev,
+                &reference_model_id,
+                &candidate_model_id,
+                &arena_cfg,
+            )?
+        };
         let raw = raw_policy_vs_random(
             &cand_ev,
             cfg.arena_games.max(4),
@@ -578,6 +589,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             train: train_report,
             arena: Some(arena),
             reference_arena: Some(reference_arena),
+            reference_arena_is_parent_arena,
             raw: Some(raw),
             raw_parent: Some(raw_parent),
             parent_model_id: parent_model_id.clone(),

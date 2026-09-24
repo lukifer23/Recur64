@@ -100,6 +100,11 @@ fn pilot_from_frozen_reference_keeps_identity_and_lineage() {
         assert_eq!(cycle.selfplay.games_completed, 4);
         assert_eq!(cycle.first_game_id, 4 * cycle.cycle as u64);
         let arena = cycle.arena.as_ref().unwrap();
+        assert_eq!(
+            cycle.reference_arena_is_parent_arena,
+            parent == reference_id,
+            "reference arena is reused only while the parent is the reference"
+        );
         assert_eq!(arena.informative, arena.decisive_games > 0);
         match cycle.decision.as_str() {
             "promote" => {

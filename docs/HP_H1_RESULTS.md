@@ -214,12 +214,10 @@ S1B confirmation (32 games per cell, one process per cell):
 | 16 | 16 | 1000 | 16 | 32/32 | 168.8 | 480.6 | 30.43 | 30.43 | 682.6 | 16 | 11.32/14/16/16 | 1641/10104 | 20544 | 0 | 353 | 77.1/95 | 71 | 5/25/2 | 7/5/15/1/4/0 | 160.5 | 1.156/1.156 | 0.537/0.537 |
 | 24 | 16 | 1000 | 16 | 32/32 | 159.8 | 507.7 | 32.14 | 32.14 | 721.0 | 24 | 11.80/16/16/16 | 26735/27572 | 21164 | 0 | 353 | 80.6/95 | 71 | 5/25/2 | 7/5/15/1/4/0 | 160.5 | 1.156/1.156 | 0.537/0.537 |
 
-**Run anomaly (unresolved).** Two attempts at the conc-8/32-game cell ended
-silently right after warmup: no cell line, no JSON, exit status masked by a
-pipe. The Windows Application log shows no crash for either. The third
-attempt, with exit code captured, completed with exit 0. The cause (an
-external kill, or a crash not reported) is unknown. From here on every run
-records its exit code and stderr.
+**Invalid interrupted attempts.** Two conc-8/32-game attempts were deliberately
+stopped after a second controller launched an overlapping GPU process. Neither
+produced a cell result or JSON and neither is evidence. A later exclusive run,
+with exit code and stderr captured, completed with exit 0 and is the row above.
 
 **Decision.** By eval/s at 32 games, 24/16 (507.7) beats 16/16 (480.6) by
 5.6%, below the pre-set 15% bar for exceeding 16. Conc 24 also oversubscribes
@@ -232,9 +230,11 @@ leaders reproduce. Errors 0 everywhere; VRAM ≤ 769 MiB; max temperature
 **Frozen HP profile** (`configs/hardware/hp-home.toml`): `concurrent_games =
 16`, `cpu_workers = 16`, `max_inference_batch = 16` (= observed p95),
 `batch_timeout_us = 1000`, training physical batch 32 × accumulation 4 =
-effective 128. The training batch rests on existing direct measurements
-(191 ex/s at batch 32; F15 benchmark peak 1,953 MiB of 4,096 MiB). No new
-training run was made; the smoke's sampled VRAM confirms it.
+effective 128. A current-head CUDA qualification run completed finite training
+at physical batches 16/32/64: 132.3/195.3/225.4 examples/s. It did not include
+a new VRAM sampler, so the memory basis remains the prior measured F15 peak of
+1,953 MiB at batch 64. Batch 32 is frozen for margin and continuity with the
+effective-batch contract; batch 64 throughput alone does not override it.
 
 ## S2 selection rule (pre-registered before any S2 cell ran)
 
@@ -246,7 +246,7 @@ practical. No 256.
 - **Degenerate** if any of: mean top-1 visit share > 0.9;
   (threefold + fifty-move) > 0.8 of games; trainable-position target entropy
   < 0.1; truncated > 0.5 of games.
-- **Candidates** are 16/32/64/128; 8 is a curve point only. Also excluded: any
+- **Candidates** are 8/16/32/64/128. Also excluded: any
   budget where 8 games would take more than 12 minutes to collect at the
   measured rate.
 - **Pick** the highest trainable positions/s among non-degenerate candidates.

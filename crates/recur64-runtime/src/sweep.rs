@@ -91,6 +91,10 @@ pub struct SweepCellResult {
     pub max_batch: usize,
     pub batch_timeout_us: u64,
     pub simulations: u32,
+    /// Scientific identity after applying this cell's search override.
+    pub scientific_config_hash: String,
+    /// Full runtime identity after applying every cell override.
+    pub resolved_config_hash: String,
     pub games: u64,
     pub requested_games: u64,
     pub peak_in_flight: usize,
@@ -201,6 +205,17 @@ impl GpuSamples {
     }
 }
 
+fn cell_config(cfg: &RunConfig, cell: SweepCellSpec, games: u64) -> anyhow::Result<RunConfig> {
+    let mut cell_cfg = cfg.clone();
+    cell_cfg.games_per_cycle = Some(u32::try_from(games)?);
+    cell_cfg.concurrent_games = Some(cell.active_games);
+    cell_cfg.cpu_workers = cell.active_games as usize;
+    cell_cfg.max_inference_batch = cell.max_batch;
+    cell_cfg.batch_timeout_us = cell.batch_timeout_us;
+    cell_cfg.simulations_per_move = cell.simulations;
+    Ok(cell_cfg)
+}
+
 /// Run one sweep cell: `games` self-play games, measuring throughput.
 pub fn run_cell<B: AutodiffBackend>(
     cfg: &RunConfig,
@@ -224,11 +239,9 @@ pub fn run_cell<B: AutodiffBackend>(
         },
     );
     let ev = owner.evaluator();
-    let mut cell_cfg = cfg.clone();
-    cell_cfg.games_per_cycle = Some(u32::try_from(games)?);
-    cell_cfg.concurrent_games = Some(cell.active_games);
-    cell_cfg.cpu_workers = cell.active_games as usize;
-    cell_cfg.simulations_per_move = cell.simulations;
+    let cell_cfg = cell_config(cfg, cell, games)?;
+    let scientific_config_hash = cell_cfg.scientific_config_hash()?;
+    let resolved_config_hash = cell_cfg.resolved_config_hash();
     let sampling = std::sync::atomic::AtomicBool::new(true);
     let gpu = std::sync::Mutex::new(GpuSamples::default());
     if let Some(v) = sample_gpu() {
@@ -262,6 +275,8 @@ pub fn run_cell<B: AutodiffBackend>(
         max_batch: cell.max_batch,
         batch_timeout_us: cell.batch_timeout_us,
         simulations: cell.simulations,
+        scientific_config_hash,
+        resolved_config_hash,
         games: records.len() as u64,
         requested_games: games,
         peak_in_flight: m.peak_in_flight,
@@ -293,4 +308,47 @@ pub fn run_cell<B: AutodiffBackend>(
         gpu_samples: gpu.samples,
         selfplay,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cell_hashes_name_effective_overrides() {
+        let base = RunConfig::from_toml_str(include_str!("../../../configs/smoke.toml"))
+            .expect("parse smoke config");
+        let schedule_a = SweepCellSpec {
+            active_games: 8,
+            max_batch: 8,
+            batch_timeout_us: 500,
+            simulations: 16,
+        };
+        let schedule_b = SweepCellSpec {
+            active_games: 16,
+            max_batch: 16,
+            batch_timeout_us: 1000,
+            simulations: 16,
+        };
+        let search_b = SweepCellSpec {
+            simulations: 32,
+            ..schedule_b
+        };
+        let a = cell_config(&base, schedule_a, 16).expect("resolve cell a");
+        let b = cell_config(&base, schedule_b, 16).expect("resolve cell b");
+        let search = cell_config(&base, search_b, 16).expect("resolve search cell");
+
+        assert_eq!(
+            a.scientific_config_hash().unwrap(),
+            b.scientific_config_hash().unwrap(),
+            "hardware scheduling must not change scientific identity"
+        );
+        assert_ne!(a.resolved_config_hash(), b.resolved_config_hash());
+        assert_ne!(
+            b.scientific_config_hash().unwrap(),
+            search.scientific_config_hash().unwrap(),
+            "search budget must change scientific identity"
+        );
+        assert_ne!(b.resolved_config_hash(), search.resolved_config_hash());
+    }
 }

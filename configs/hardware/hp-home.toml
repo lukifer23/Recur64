@@ -22,8 +22,9 @@ max_inference_batch = 16
 batch_timeout_us = 1000    # 500/2000 us changed throughput by <= 2.5%
 
 # --- Learner scheduling ---
-# Physical 32 x 4 = effective 128. Direct F15 CUDA training: 191 ex/s at
-# batch 32 (220 at 64); F15 benchmark peak VRAM 1,953 MiB of 4,096. The
-# inference owners are shut down while training runs.
+# Physical 32 x 4 = effective 128. Current-head CUDA qualification measured
+# finite training at 132/195/225 ex/s for physical batches 16/32/64. The prior
+# measured F15 peak was 1,953 MiB of 4,096 at batch 64; batch 32 keeps margin.
+# Inference owners are shut down while training runs.
 train_batch = 32
 accumulation_steps = 4
