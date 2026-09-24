@@ -154,6 +154,88 @@ sequential batch-1 CUDA, 8 games): mean policy entropy 2.280 nats (uniform
 insufficient material, 2 stalemate), 0 decisive, `informative = false`, wall
 time 4 m 25 s. This is not a strength claim.
 
+## S1 — HP scheduling (MEASURED, gate: GO)
+
+Every cell uses the frozen reference `4271e19f…`, binary `1b0faa8`, F15
+FP32 on CUDA, standard start, 16 sims/move, c_puct 1.0, temperature 1.0,
+ply cap 400, seed 1, and game seeds `seed + game_index`. Only concurrency,
+batch cap, and timeout change. JSON: `runs/hp-h1-s1a/`,
+`runs/hp-h1-s1a-ring-*/`, `runs/hp-h1-s1b-*/`.
+
+**Data identity check (MEASURED).** Every 16-game cell produced the same
+games: W/D/L 2/13/1, terminations 3/2/9/1/1/0, mean 157.8 plies, target
+entropy 1.153. The two 32-game cells also match each other. With the frozen
+reference and seed schedule, scheduling changes throughput only, never the
+data.
+
+**Grid change.** Search keeps one leaf in flight per game, so batch size is
+at most the concurrency (measured maximum = concurrency in every cell). A cap
+at or above the concurrency never binds, so the old grid's pairs (16,32)/(16,64)
+and (24,32)/(24,64) were duplicates. The coarse pass instead varies
+concurrency with a non-binding cap and adds one binding-cap probe.
+
+S1A coarse (16 games per cell, one process, cells run in order):
+
+| conc | cap | to us | sims | games | wall s | ev/s | pos/s | trainable pos/s | games/h | inflight | batch mean/p50/p95/max | wait p50/p95 us | fwd us | err | VRAM | util busy/max | temp | W/D/L | mate/stale/insuf/3fold/50/trunc | mean plies | ent all/train | top1 all/train |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 6 | 8 | 1000 | 16 | 16/16 | 147.9 | 269.6 | 17.08 | 17.08 | 389.5 | 6 | 4.98/6/6/6 | 7803/9778 | 11683 | 0 | 353 | 44.0/54 | 67 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 8 | 8 | 1000 | 16 | 16/16 | 91.2 | 436.9 | 27.67 | 27.67 | 631.2 | 8 | 6.39/8/8/8 | 124/9079 | 12473 | 0 | 449 | 70.4/90 | 70 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 12 | 16 | 1000 | 16 | 16/16 | 107.7 | 370.2 | 23.45 | 23.45 | 534.9 | 12 | 8.37/12/12/12 | 7870/10041 | 16206 | 0 | 513 | 60.5/88 | 66 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 16 | 16 | 1000 | 16 | 16/16 | 93.7 | 425.5 | 26.95 | 26.95 | 614.7 | 16 | 10.29/12/16/16 | 3789/10499 | 19133 | 0 | 609 | 69.1/95 | 67 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 24 | 32 | 1000 | 16 | 16/16 | 95.3 | 418.5 | 26.50 | 26.50 | 604.6 | 16 | 10.28/12/16/16 | 4340/10513 | 18966 | 0 | 673 | 67.9/89 | 67 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 24 | 16 | 1000 | 16 | 16/16 | 92.1 | 432.8 | 27.41 | 27.41 | 625.3 | 16 | 10.29/12/16/16 | 3777/10515 | 18779 | 0 | 769 | 69.9/95 | 67 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+
+With 16 games, a 24-concurrency cell can only keep 16 games in flight, so
+24 was confirmed at 32 games.
+
+Timeout ring (16 games per cell, one process per cell):
+
+| conc | cap | to us | sims | games | wall s | ev/s | pos/s | trainable pos/s | games/h | inflight | batch mean/p50/p95/max | wait p50/p95 us | fwd us | err | VRAM | util busy/max | temp | W/D/L | mate/stale/insuf/3fold/50/trunc | mean plies | ent all/train | top1 all/train |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 8 | 500 | 16 | 16/16 | 199.5 | 199.8 | 12.66 | 12.66 | 288.7 | 8 | 6.39/8/8/8 | 172/7692 | 29901 | 0 | 578 | 89.3/100 | 70 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 8 | 8 | 500 | 16 | 16/16 | 94.4 | 422.1 | 26.73 | 26.73 | 609.8 | 8 | 6.39/8/8/8 | 134/9117 | 12922 | 0 | 289 | 67.6/89 | 68 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 8 | 8 | 2000 | 16 | 16/16 | 105.2 | 379.0 | 24.00 | 24.00 | 547.5 | 8 | 6.39/8/8/8 | 135/10628 | 13427 | 0 | 289 | 65.7/89 | 69 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 16 | 16 | 500 | 16 | 16/16 | 94.2 | 423.0 | 26.79 | 26.79 | 611.2 | 16 | 10.27/12/16/16 | 4271/10517 | 19247 | 0 | 353 | 67.5/95 | 67 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+| 16 | 16 | 2000 | 16 | 16/16 | 96.4 | 413.5 | 26.18 | 26.18 | 597.3 | 16 | 10.29/12/16/16 | 4792/10625 | 19548 | 0 | 353 | 67.8/95 | 69 | 2/13/1 | 3/2/9/1/1/0 | 157.8 | 1.153/1.153 | 0.539/0.539 |
+
+The first conc-8/500 µs cell (199.8 ev/s) ran at *higher* GPU utilization
+(89% mean) with forward latency 29.9 ms, against about 13 ms elsewhere. It
+looks like external contention, not the timeout. A rerun of the identical
+cell gave 422.1 ev/s. The directory was later found renamed
+`…-INVALID-contention`, a rename not made by this session. The cell is
+excluded. Timeouts of 500 and 2000 µs are within 2.5% of 1000 µs at
+concurrency 16.
+
+S1B confirmation (32 games per cell, one process per cell):
+
+| conc | cap | to us | sims | games | wall s | ev/s | pos/s | trainable pos/s | games/h | inflight | batch mean/p50/p95/max | wait p50/p95 us | fwd us | err | VRAM | util busy/max | temp | W/D/L | mate/stale/insuf/3fold/50/trunc | mean plies | ent all/train | top1 all/train |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 8 | 1000 | 16 | 32/32 | 181.0 | 448.2 | 28.38 | 28.38 | 636.6 | 8 | 6.71/8/8/8 | 118/9543 | 13163 | 0 | 289 | 72.6/89 | 70 | 5/25/2 | 7/5/15/1/4/0 | 160.5 | 1.156/1.156 | 0.537/0.537 |
+| 16 | 16 | 1000 | 16 | 32/32 | 168.8 | 480.6 | 30.43 | 30.43 | 682.6 | 16 | 11.32/14/16/16 | 1641/10104 | 20544 | 0 | 353 | 77.1/95 | 71 | 5/25/2 | 7/5/15/1/4/0 | 160.5 | 1.156/1.156 | 0.537/0.537 |
+| 24 | 16 | 1000 | 16 | 32/32 | 159.8 | 507.7 | 32.14 | 32.14 | 721.0 | 24 | 11.80/16/16/16 | 26735/27572 | 21164 | 0 | 353 | 80.6/95 | 71 | 5/25/2 | 7/5/15/1/4/0 | 160.5 | 1.156/1.156 | 0.537/0.537 |
+
+**Run anomaly (unresolved).** Two attempts at the conc-8/32-game cell ended
+silently right after warmup: no cell line, no JSON, exit status masked by a
+pipe. The Windows Application log shows no crash for either. The third
+attempt, with exit code captured, completed with exit 0. The cause (an
+external kill, or a crash not reported) is unknown. From here on every run
+records its exit code and stderr.
+
+**Decision.** By eval/s at 32 games, 24/16 (507.7) beats 16/16 (480.6) by
+5.6%, below the pre-set 15% bar for exceeding 16. Conc 24 also oversubscribes
+the 12 logical CPUs and pushes queue wait to 26.7 ms p50. 16/16 beats 8/8
+(448.2) by 7%. Ranking vs S1A: 8, 16, and 24 were within 3% at 16 games,
+where tail effects dominate; at 32 games the order is 24 > 16 > 8. The coarse
+leaders reproduce. Errors 0 everywhere; VRAM ≤ 769 MiB; max temperature
+71 °C; peak in-flight = configured concurrency.
+
+**Frozen HP profile** (`configs/hardware/hp-home.toml`): `concurrent_games =
+16`, `cpu_workers = 16`, `max_inference_batch = 16` (= observed p95),
+`batch_timeout_us = 1000`, training physical batch 32 × accumulation 4 =
+effective 128. The training batch rests on existing direct measurements
+(191 ex/s at batch 32; F15 benchmark peak 1,953 MiB of 4,096 MiB). No new
+training run was made; the smoke's sampled VRAM confirms it.
+
 ## S2 selection rule (pre-registered before any S2 cell ran)
 
 Budgets 8, 16, 32, 64 sims/move on the frozen reference, the frozen S1

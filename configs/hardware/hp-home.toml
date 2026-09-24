@@ -1,32 +1,29 @@
-# Recur64 HP hardware scheduling profile — PROVISIONAL.
+# Recur64 HP hardware scheduling profile — FROZEN for H1 (measured 2026-09-23).
 #
-# This file is a *template overlay*, not a standalone run config. It exists to
-# keep HARDWARE SCHEDULING parameters separate from SCIENTIFIC parameters.
+# Template overlay, not a standalone run config: copy these values into an HP
+# run config. They are HARDWARE SCHEDULING only and are excluded from the
+# scientific config hash; scientific parameters must be identical across
+# machines.
 #
-# Scientific parameters (model geometry, simulations_per_move, c_puct, optimizer,
-# training objective, replay policy, temperature) must be IDENTICAL across
-# machines for a fair comparison. The values below may differ per machine.
-#
-# Usage: copy the values you need into an HP run config (which also carries
-# run_id, [model], and the scientific search settings), or diff them against the
-# resolved `runs/<id>/config.toml`. Automated base+overlay merging is a
-# follow-up ticket; today the resolved config written per run is the record of
-# truth.
-#
-# All values below are HYPOTHESES until the H0.7 concurrency sweep measures them.
+# Evidence: docs/HP_H1_RESULTS.md, "S1 — HP scheduling". Frozen F15 reference
+# 4271e19f…, 16 sims/move, standard start, binary 1b0faa8. RTX 2050 4 GB,
+# Ryzen 5 7535HS (6C/12T).
 
 hardware_profile = "hp-home"
 
-# --- Self-play scheduling (measured, not guessed) ---
-active_games = 16          # candidate; sweep 8/16/32/64
-cpu_workers = 6            # candidate; 6 physical cores (12 logical) on Ryzen 5 7535HS
-max_inference_batch = 64   # candidate; 4 GB VRAM is the binding constraint
-batch_timeout_us = 2000    # candidate; longer than the 500 us default to improve coalescing
-ply_cap = 400
+# --- Self-play scheduling (measured) ---
+# 16 concurrent games: 480.6 eval/s at 32 games, 0 errors, 353 MiB VRAM,
+# 71 C max. Concurrency 24 was +5.6% (< 15% bar), with 12 logical CPUs
+# oversubscribed and queue wait p50 26.7 ms. Search keeps one leaf in flight
+# per game, so the batch cap binds only below concurrency; 16 = observed p95.
+concurrent_games = 16
+cpu_workers = 16
+max_inference_batch = 16
+batch_timeout_us = 1000    # 500/2000 us changed throughput by <= 2.5%
 
 # --- Learner scheduling ---
-train_batch = 32           # candidate; physical batch
-accumulation_steps = 4     # implemented; effective batch = train_batch * accumulation_steps
-
-# --- Run budget ---
-run_budget_minutes = 30
+# Physical 32 x 4 = effective 128. Direct F15 CUDA training: 191 ex/s at
+# batch 32 (220 at 64); F15 benchmark peak VRAM 1,953 MiB of 4,096. The
+# inference owners are shut down while training runs.
+train_batch = 32
+accumulation_steps = 4
