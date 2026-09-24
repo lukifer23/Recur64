@@ -4,6 +4,7 @@
 
 use recur64_model::checkpoint::{CheckpointMeta, save_training};
 use recur64_model::train::{CpuTrainBackend, adamw};
+use recur64_runtime::replay::ReplayReader;
 use recur64_runtime::{CancelToken, RunConfig, RunDir, model_io, run_pilot};
 
 fn cfg(root: &std::path::Path) -> RunConfig {
@@ -86,6 +87,15 @@ fn pilot_from_frozen_reference_keeps_identity_and_lineage() {
         .collect();
     assert_eq!(lineage.len(), 2);
     assert_eq!(report.cycles.len(), 2);
+    let games = ReplayReader::open(&dir.replay())
+        .unwrap()
+        .read_all_games()
+        .unwrap();
+    assert_eq!(games.len(), 8);
+    for game in &games {
+        assert_eq!(game.seed, c.seed.wrapping_add(game.game_id));
+    }
+    assert_ne!(games[0].seed, games[4].seed, "cycle seeds must advance");
     assert_eq!(lineage[0]["parent_model_id"], reference_id.as_str());
     let mut parent = reference_id.clone();
     let mut accepted = 0u64;

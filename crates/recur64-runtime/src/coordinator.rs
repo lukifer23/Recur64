@@ -273,20 +273,22 @@ pub(crate) fn collect_parallel(
                     if game_index >= games_total {
                         break;
                     }
-                    let game_seed = seed.wrapping_add(game_index as u64);
+                    // `game_id_base` advances between pilot cycles. Derive the
+                    // RNG seed from the global id as well, otherwise every
+                    // cycle deterministically repeats the first cycle's games.
+                    let game_id = game_id_base.wrapping_add(game_index as u64);
+                    let game_seed = selfplay_game_seed(seed, game_id);
                     let mut rng = recur64_search::Rng::new(game_seed);
                     match play_game_from(ev, &sp, &mut rng, start_state.clone()) {
                         Ok(mut g) => {
                             g.seed = game_seed;
                             out.push(GameRecord::from_selfplay(
-                                game_id_base + game_index as u64,
+                                game_id,
                                 &g,
                                 search_record.clone(),
                             ));
                         }
-                        Err(e) => {
-                            failures.push(format!("game {}: {e}", game_id_base + game_index as u64))
-                        }
+                        Err(e) => failures.push(format!("game {game_id}: {e}")),
                     }
                 }
                 (out, failures)
@@ -317,6 +319,10 @@ pub(crate) fn collect_parallel(
         Ok(())
     })?;
     Ok(records)
+}
+
+fn selfplay_game_seed(base_seed: u64, global_game_id: u64) -> u64 {
+    base_seed.wrapping_add(global_game_id)
 }
 
 /// Run the bounded vertical slice.
@@ -736,5 +742,19 @@ mod collection_tests {
         let err =
             collect_parallel(&config, &Failing, &CancelToken::new(), deadline, 0).unwrap_err();
         assert!(err.to_string().contains("2 self-play games failed"));
+    }
+
+    #[test]
+    fn game_seed_uses_global_game_id_across_cycles() {
+        let base_seed = 17u64;
+        let games_per_cycle = 24u64;
+        let first_cycle: Vec<_> = (0..games_per_cycle)
+            .map(|index| selfplay_game_seed(base_seed, index))
+            .collect();
+        let second_cycle: Vec<_> = (0..games_per_cycle)
+            .map(|index| selfplay_game_seed(base_seed, games_per_cycle + index))
+            .collect();
+        assert!(first_cycle.iter().all(|seed| !second_cycle.contains(seed)));
+        assert_eq!(second_cycle[0], 41);
     }
 }

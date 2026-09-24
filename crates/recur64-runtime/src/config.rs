@@ -2,6 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Stable contract for deriving a self-play game's RNG seed from its global
+/// game id. This belongs in scientific identity because changing it changes
+/// every generated trajectory after the first cycle.
+pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
+
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -318,7 +323,7 @@ impl RunConfig {
     pub fn scientific_identity(&self) -> anyhow::Result<serde_json::Value> {
         let (warmup, planned) = self.lr_schedule();
         Ok(serde_json::json!({
-            "identity_version": 2,
+            "identity_version": 3,
             "model": self.model,
             "recurrence": self.recurrence,
             "precision": self.precision,
@@ -332,7 +337,10 @@ impl RunConfig {
                 "ply_cap": self.ply_cap,
                 "start_fen": self.start_fen,
             },
-            "collection": { "games_per_cycle": self.collection_shape()?.0 },
+            "collection": {
+                "games_per_cycle": self.collection_shape()?.0,
+                "seed_policy": SELFPLAY_SEED_POLICY,
+            },
             "optimizer": recur64_model::train::OPTIMIZER_CONTRACT,
             "training": {
                 "lr": self.lr,
