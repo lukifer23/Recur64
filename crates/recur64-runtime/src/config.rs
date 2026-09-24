@@ -70,6 +70,13 @@ fn default_replay_reuse_target() -> f64 {
 fn default_accumulation_steps() -> usize {
     4
 }
+fn default_min_decisive_games() -> u32 {
+    4
+}
+
+/// Version of the conservative promotion rule implemented in `pilot.rs`. Part
+/// of the scientific identity; bump it whenever the rule changes.
+pub const PROMOTION_RULE_VERSION: &str = "conservative-v2:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,decisive>=min_decisive,parent_score>0.5,parent_score>=floor";
 
 /// How the self-play snapshot is chosen between cycles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -183,9 +190,21 @@ pub struct RunConfig {
     /// Snapshot selection policy between cycles.
     #[serde(default)]
     pub snapshot_policy: SnapshotPolicy,
-    /// Arena score floor (candidate) for conservative promotion.
+    /// Arena score floor (candidate) for conservative promotion. It can only
+    /// tighten the rule: a score must also be strictly above 0.5.
     #[serde(default = "default_score_floor")]
     pub promotion_score_floor: f64,
+    /// Decisive (won or lost) parent-arena games required before a score can
+    /// promote. A diagnostic floor, not an Elo sample size.
+    #[serde(default = "default_min_decisive_games")]
+    pub promotion_min_decisive_games: u32,
+    /// Frozen reference checkpoint directory to start the pilot from (an
+    /// operational path; identity is `reference_model_id`).
+    #[serde(default)]
+    pub reference_checkpoint: Option<String>,
+    /// Expected content-hash model id of `reference_checkpoint`. Scientific.
+    #[serde(default)]
+    pub reference_model_id: Option<String>,
 
     // --- HP experiment ---
     /// Label for the hardware scheduling profile this run resolved to
@@ -247,17 +266,36 @@ impl RunConfig {
 
     /// Resolved warmup updates for the schedule.
     pub fn resolved_warmup(&self) -> u64 {
-        self.warmup_updates.unwrap_or_else(|| {
-            let planned = self.planned_updates.unwrap_or(self.max_updates as u64);
-            (planned / 10).clamp(10, 1000)
-        })
+        self.lr_schedule().0
     }
 
     /// Resolved planned updates for the cosine schedule.
     pub fn resolved_planned_updates(&self) -> u64 {
-        self.planned_updates
-            .unwrap_or(self.max_updates as u64)
-            .max(1)
+        self.lr_schedule().1
+    }
+
+    /// `(warmup_updates, planned_updates)` used by every learner path and by
+    /// the scientific hash. An explicit `planned_updates` is used as-is. When it
+    /// is unset the legacy derivation spans the pilot (`max_updates * cycles`),
+    /// which makes `cycles` part of the schedule for those configs.
+    pub fn lr_schedule(&self) -> (u64, u64) {
+        let planned = self
+            .planned_updates
+            .unwrap_or(self.max_updates as u64 * self.cycles.max(1) as u64)
+            .max(1);
+        let warmup = self
+            .warmup_updates
+            .unwrap_or((planned / 10).clamp(10, 1000));
+        (warmup, planned)
+    }
+
+    /// Canonical digest of the configured opening suite, or `None` for the
+    /// standard start. Fails if a requested suite cannot be loaded.
+    pub fn opening_suite_digest(&self) -> anyhow::Result<Option<String>> {
+        self.opening_suite
+            .as_ref()
+            .map(|p| Ok(recur64_eval::OpeningSuite::load(std::path::Path::new(p))?.digest()))
+            .transpose()
     }
 
     /// Stable hash of the resolved config (for provenance).
@@ -273,33 +311,61 @@ impl RunConfig {
         self.config_hash()
     }
 
-    /// Experiment identity excludes device scheduling, run naming, and limits.
-    pub fn scientific_config_hash(&self) -> String {
-        use sha2::{Digest, Sha256};
-        let science = serde_json::json!({
+    /// The fields that define the experiment. Excluded on purpose: device,
+    /// concurrency, cpu_workers, inference batch/timeout, hardware/model
+    /// labels, run_id, cycles, wall/position budgets and the max_updates
+    /// safety cap (a binding cap is reported as a reuse shortfall).
+    pub fn scientific_identity(&self) -> anyhow::Result<serde_json::Value> {
+        let (warmup, planned) = self.lr_schedule();
+        Ok(serde_json::json!({
+            "identity_version": 2,
             "model": self.model,
             "recurrence": self.recurrence,
             "precision": self.precision,
-            "simulations_per_move": self.simulations_per_move,
-            "c_puct": self.c_puct,
-            "temperature": self.temperature,
-            "argmax_after_ply": self.argmax_after_ply,
-            "ply_cap": self.ply_cap,
-            "start_fen": self.start_fen,
+            "reference_model_id": self.reference_model_id,
             "seed": self.seed,
-            "optimizer": "adamw-burn-0.21.0",
-            "lr": self.lr,
-            "effective_batch": self.effective_batch(),
-            "warmup_updates": self.resolved_warmup(),
-            "planned_updates": self.resolved_planned_updates(),
-            "replay_max_positions": self.replay_max_positions,
-            "replay_reuse_target": self.replay_reuse_target,
-            "opening_suite": self.opening_suite,
-        });
-        format!(
+            "search": {
+                "simulations_per_move": self.simulations_per_move,
+                "c_puct": self.c_puct,
+                "temperature": self.temperature,
+                "argmax_after_ply": self.argmax_after_ply,
+                "ply_cap": self.ply_cap,
+                "start_fen": self.start_fen,
+            },
+            "collection": { "games_per_cycle": self.collection_shape()?.0 },
+            "optimizer": recur64_model::train::OPTIMIZER_CONTRACT,
+            "training": {
+                "lr": self.lr,
+                "effective_batch": self.effective_batch(),
+                "warmup_updates": warmup,
+                "planned_updates": planned,
+                "replay_reuse_target": self.replay_reuse_target,
+            },
+            "replay": {
+                "max_positions": self.replay_max_positions,
+                "shard_max_games": self.shard_max_games,
+                "sampler": "shard_recency_weight_index_plus_1_v1",
+            },
+            "evaluation": {
+                "opening_suite_digest": self.opening_suite_digest()?,
+                "arena_games": self.arena_games,
+            },
+            "promotion": {
+                "snapshot_policy": self.snapshot_policy,
+                "rule": PROMOTION_RULE_VERSION,
+                "score_floor": self.promotion_score_floor,
+                "min_decisive_games": self.promotion_min_decisive_games,
+            },
+        }))
+    }
+
+    /// Experiment identity hash (see [`Self::scientific_identity`]).
+    pub fn scientific_config_hash(&self) -> anyhow::Result<String> {
+        use sha2::{Digest, Sha256};
+        Ok(format!(
             "{:x}",
-            Sha256::digest(serde_json::to_vec(&science).expect("serializable config"))
-        )
+            Sha256::digest(serde_json::to_vec(&self.scientific_identity()?)?)
+        ))
     }
 
     /// Parse the device string into a typed device kind.
@@ -385,9 +451,10 @@ output_blocks = 0
         assert_eq!(cfg.precision, "fp32");
         assert!(cfg.start_fen.is_none());
         assert!(cfg.argmax_after_ply.is_none());
-        // Warmup scales to ~10% of planned updates (max_updates=200 -> 20).
-        assert_eq!(cfg.resolved_warmup(), 20);
-        assert_eq!(cfg.resolved_planned_updates(), 200);
+        // Legacy schedule spans the pilot: max_updates=200 x cycles=4 = 800
+        // planned updates (what pilot.rs trained with), warmup ~10% = 80.
+        assert_eq!(cfg.resolved_planned_updates(), 800);
+        assert_eq!(cfg.resolved_warmup(), 80);
         assert!(!cfg.config_hash().is_empty());
     }
 
@@ -437,15 +504,132 @@ output_blocks = 0
         cfg.concurrent_games = Some(12);
         cfg.cpu_workers = 12;
         assert_eq!(cfg.collection_shape().unwrap(), (64, 12));
-        let scientific = cfg.scientific_config_hash();
+        let scientific = cfg.scientific_config_hash().unwrap();
         let resolved = cfg.resolved_config_hash();
         cfg.concurrent_games = Some(8);
+        cfg.cpu_workers = 8;
         cfg.max_inference_batch = 64;
         cfg.batch_timeout_us = 2000;
-        assert_eq!(cfg.scientific_config_hash(), scientific);
+        cfg.device = "cuda".into();
+        cfg.hardware_profile = Some("other-machine".into());
+        cfg.run_budget_minutes = 90;
+        cfg.position_budget = Some(1234);
+        cfg.run_id = "renamed".into();
+        assert_eq!(cfg.scientific_config_hash().unwrap(), scientific);
         assert_ne!(cfg.resolved_config_hash(), resolved);
         cfg.concurrent_games = None;
         assert!(cfg.collection_shape().is_err());
+    }
+
+    #[test]
+    fn scientific_hash_tracks_search_training_promotion_and_suite_content() {
+        let mut base = RunConfig::from_toml_str(base_toml()).unwrap();
+        base.games_per_cycle = Some(16);
+        base.concurrent_games = Some(12);
+        base.planned_updates = Some(200);
+        base.warmup_updates = Some(20);
+        let h = base.scientific_config_hash().unwrap();
+
+        // Explicit schedule: cycles is run length only.
+        let mut c = base.clone();
+        c.cycles = 4;
+        assert_eq!(c.scientific_config_hash().unwrap(), h);
+
+        type Mutation = Box<dyn Fn(&mut RunConfig)>;
+        let mutations: Vec<(&str, Mutation)> = vec![
+            ("sims", Box::new(|c| c.simulations_per_move = 32)),
+            ("c_puct", Box::new(|c| c.c_puct = 1.5)),
+            ("ply_cap", Box::new(|c| c.ply_cap = 300)),
+            ("lr", Box::new(|c| c.lr = 1e-4)),
+            ("effective_batch", Box::new(|c| c.accumulation_steps = 8)),
+            ("planned", Box::new(|c| c.planned_updates = Some(300))),
+            ("reuse", Box::new(|c| c.replay_reuse_target = 3.0)),
+            (
+                "games_per_cycle",
+                Box::new(|c| c.games_per_cycle = Some(24)),
+            ),
+            ("shard_max_games", Box::new(|c| c.shard_max_games = 64)),
+            (
+                "min_decisive",
+                Box::new(|c| c.promotion_min_decisive_games = 2),
+            ),
+            (
+                "snapshot",
+                Box::new(|c| c.snapshot_policy = SnapshotPolicy::FrozenReference),
+            ),
+            (
+                "reference",
+                Box::new(|c| c.reference_model_id = Some("abc".into())),
+            ),
+        ];
+        for (name, mutate) in mutations {
+            let mut c = base.clone();
+            mutate(&mut c);
+            assert_ne!(
+                c.scientific_config_hash().unwrap(),
+                h,
+                "{name} must change identity"
+            );
+        }
+        // Equal effective batch from a different physical split is hardware.
+        let mut c = base.clone();
+        c.train_batch = 16;
+        c.accumulation_steps = 8;
+        assert_eq!(c.scientific_config_hash().unwrap(), h);
+
+        // Same suite path, different contents -> different identity.
+        let path =
+            std::env::temp_dir().join(format!("recur64-suite-id-{}.toml", std::process::id()));
+        let start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let e4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+        std::fs::write(
+            &path,
+            format!(
+                "version = 1
+provenance = 'a'
+openings = ['{start}']
+"
+            ),
+        )
+        .unwrap();
+        let mut c = base.clone();
+        c.opening_suite = Some(path.to_string_lossy().into_owned());
+        let h1 = c.scientific_config_hash().unwrap();
+        std::fs::write(
+            &path,
+            format!(
+                "version = 1
+provenance = 'b'
+openings = ['{start}']
+"
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            c.scientific_config_hash().unwrap(),
+            h1,
+            "provenance text is not content"
+        );
+        std::fs::write(
+            &path,
+            format!(
+                "version = 1
+provenance = 'a'
+openings = ['{e4}']
+"
+            ),
+        )
+        .unwrap();
+        assert_ne!(
+            c.scientific_config_hash().unwrap(),
+            h1,
+            "suite content must change identity"
+        );
+        std::fs::remove_file(&path).unwrap();
+        assert!(
+            c.scientific_config_hash().is_err(),
+            "missing suite must fail identity"
+        );
     }
 
     #[test]

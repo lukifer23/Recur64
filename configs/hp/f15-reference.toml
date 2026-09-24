@@ -1,0 +1,43 @@
+# Recur64 HP H1 — frozen F15 reference (seeded untrained weights).
+#
+# `recur64 freeze-reference --config configs/hp/f15-reference.toml \
+#    --output runs/hp-h1-ref-f15` writes the ONE checkpoint that every H1
+# scheduling cell, search-budget cell, smoke and qualification run starts from.
+# Runs pin it by content hash (`reference_model_id`); the hashes recorded in
+# the reference's own reference.json describe this freezing config only.
+run_id = "hp-h1-ref-f15"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f15"
+hardware_profile = "hp-home"
+seed = 1
+
+simulations_per_move = 16
+c_puct = 1.0
+temperature = 1.0
+ply_cap = 400
+games_per_cycle = 16
+concurrent_games = 12
+cpu_workers = 12
+max_inference_batch = 32
+batch_timeout_us = 1000
+
+lr = 3.0e-4
+train_batch = 32
+accumulation_steps = 4
+opening_suite = "configs/openings-v1.toml"
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

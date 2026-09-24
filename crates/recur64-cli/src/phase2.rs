@@ -165,6 +165,7 @@ fn train_impl<B: AutodiffBackend>(
         recurrence: cfg.recurrence,
         seed: cfg.seed,
         deadline: None,
+        ..Default::default()
     };
     let (trained, report) =
         recur64_runtime::train_from_games(model, &mut optim, &games, &learner_cfg, &device)
@@ -211,6 +212,7 @@ fn arena_impl<B: AutodiffBackend>(
         ply_cap: cfg.ply_cap,
         seed: cfg.seed,
         openings,
+        concurrency: 1,
     };
     let result = eval_run_arena(
         &ref_ev,

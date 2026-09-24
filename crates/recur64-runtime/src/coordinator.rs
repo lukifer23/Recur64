@@ -60,7 +60,69 @@ pub struct SelfPlayMetrics {
     pub truncated: u64,
     pub draw_share: f64,
     pub repetition_share: f64,
+    /// Plies in games with a result (the learner's reuse denominator).
+    pub trainable_positions: u64,
+    pub trainable_games: u64,
+    /// Search-target health over every generated ply and over trainable plies.
+    pub target_health: TargetHealth,
     pub inference: MetricsSnapshot,
+}
+
+/// Mean visit-target entropy and top-1 share over a set of plies.
+#[derive(Debug, Clone, Copy, Default, serde::Serialize)]
+pub struct TargetStats {
+    pub positions: u64,
+    pub mean_entropy: f64,
+    pub mean_top1_visit_share: f64,
+}
+
+/// Target health for all generated plies and for the plies the learner can
+/// actually use (games with a result). Computed post hoc from records.
+#[derive(Debug, Clone, Copy, Default, serde::Serialize)]
+pub struct TargetHealth {
+    pub all: TargetStats,
+    pub trainable: TargetStats,
+}
+
+/// Compute [`TargetHealth`] from game records (no search hot-loop cost).
+pub fn target_health(records: &[GameRecord]) -> TargetHealth {
+    let mut sums = [(0u64, 0f64, 0f64); 2];
+    for game in records {
+        for ply in &game.plies {
+            let entropy = -ply
+                .target
+                .iter()
+                .map(|(_, p)| {
+                    let p = *p as f64;
+                    if p > 0.0 { p * p.ln() } else { 0.0 }
+                })
+                .sum::<f64>();
+            let top1 = ply
+                .target
+                .iter()
+                .map(|(_, p)| *p as f64)
+                .fold(0.0, f64::max);
+            let slots: &[usize] = if game.outcome.is_some() {
+                &[0, 1]
+            } else {
+                &[0]
+            };
+            for &i in slots {
+                sums[i].0 += 1;
+                sums[i].1 += entropy;
+                sums[i].2 += top1;
+            }
+        }
+    }
+    let stats = |(n, e, t): (u64, f64, f64)| TargetStats {
+        positions: n,
+        mean_entropy: e / n.max(1) as f64,
+        mean_top1_visit_share: t / n.max(1) as f64,
+    };
+    TargetHealth {
+        all: stats(sums[0]),
+        trainable: stats(sums[1]),
+    }
 }
 
 /// Build self-play metrics from collected game records.
@@ -109,6 +171,13 @@ pub(crate) fn selfplay_metrics(
         truncated,
         draw_share: draws as f64 / games.max(1) as f64,
         repetition_share,
+        trainable_positions: records
+            .iter()
+            .filter(|g| g.outcome.is_some())
+            .map(|g| g.plies.len() as u64)
+            .sum(),
+        trainable_games: games - truncated,
+        target_health: target_health(records),
         inference,
     }
 }
@@ -362,6 +431,7 @@ pub fn run<B: AutodiffBackend>(
         .map(|g| g.plies.len() as u64)
         .sum();
     let (scheduled_updates, _) = cfg.reuse_updates(new_trainable_positions)?;
+    let (warmup_updates, planned_updates) = cfg.lr_schedule();
     let train_model = model_io::load::<B>(&run_dir.reference_ckpt(), &cfg.model, &b_device)?;
     let mut optim = adamw::<B, _>();
     let learner_cfg = LearnerConfig {
@@ -369,12 +439,14 @@ pub fn run<B: AutodiffBackend>(
         accumulation_steps: cfg.accumulation_steps,
         max_updates: scheduled_updates,
         lr: cfg.lr,
-        warmup_updates: cfg.resolved_warmup(),
-        planned_updates: cfg.resolved_planned_updates(),
+        warmup_updates,
+        planned_updates,
         start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
         deadline: Some(deadline),
+        current_cycle_first_game_id: Some(0),
+        games_per_cycle: cfg.collection_shape()?.0 as u64,
     };
     let (train_report, candidate_model_id) =
         match train_from_games(train_model, &mut optim, &all_games, &learner_cfg, &b_device) {
@@ -444,6 +516,7 @@ pub fn run<B: AutodiffBackend>(
         ply_cap: cfg.ply_cap,
         seed: cfg.seed,
         openings,
+        concurrency: 1,
     };
     let arena = run_arena(
         &ref_ev,

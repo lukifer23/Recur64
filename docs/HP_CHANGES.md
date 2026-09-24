@@ -130,6 +130,15 @@ re-measurement, F15 pilot / learning-health analysis, R15 training/evaluation.
 
 ## H1 harness implementation (in progress)
 
+**H1 foundation completion:** fresh-module optimizer continuation proven
+bit-exact; promotion rule `conservative-v2` (min decisive games, strictly
+> 0.5); frozen-reference pilot input with identity file and T0 baseline;
+scientific identity v2 (suite content digest, optimizer contract, promotion
+rule, shared LR schedule); truthful replay accounting and sample provenance;
+informative flags on every head-to-head; all/trainable target health;
+concurrent batched evaluation; git SHA staleness fixed with a `-dirty` flag.
+Details and evidence: [`HP_H1_RESULTS.md`](HP_H1_RESULTS.md).
+
 The reboot-safe measured status is in [`HP_H1_RESULTS.md`](HP_H1_RESULTS.md).
 
 The current branch now shares one self-play collector across `run`, `selfplay`,

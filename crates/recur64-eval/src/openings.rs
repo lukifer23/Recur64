@@ -39,6 +39,19 @@ impl OpeningSuite {
         Ok(suite)
     }
 
+    /// Canonical content digest: version plus the ordered FENs. Provenance
+    /// text and file formatting do not change it; any position change does.
+    pub fn digest(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(format!("recur64-openings-v{}\n", self.version));
+        for fen in &self.openings {
+            hasher.update(fen.trim().as_bytes());
+            hasher.update(b"\n");
+        }
+        format!("{:x}", hasher.finalize())
+    }
+
     pub fn save(&self, path: &Path) -> anyhow::Result<()> {
         std::fs::write(path, toml::to_string_pretty(self)?)?;
         Ok(())

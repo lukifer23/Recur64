@@ -13,7 +13,7 @@ use recur64_core::{ActionId, ObservationV1};
 
 use crate::cancel::CancelToken;
 use crate::config::RunConfig;
-use crate::coordinator::collect_parallel;
+use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
 use crate::inference::{BatchEvaluator, BatchedModel, InferenceConfig, InferenceOwner};
 use crate::model_io;
 
@@ -56,19 +56,21 @@ pub fn grid(small: bool) -> Vec<SweepCellSpec> {
     out
 }
 
-/// HP RTX 2050 schedule candidates; same game count for every cell.
+/// HP RTX 2050 coarse schedule candidates; same game count for every cell.
+///
+/// Search is sequential within a game, so each game has at most one leaf in
+/// flight and a batch can never exceed `concurrent_games`. A cap at or above
+/// the concurrency therefore does not bind; the coarse pass varies
+/// concurrency with a non-binding cap, plus one binding-cap probe. Timeout
+/// variants are run afterwards as single cells around the leaders.
 pub fn hp_grid() -> Vec<SweepCellSpec> {
     [
-        (6, 8, 500),
-        (8, 16, 500),
-        (12, 16, 500),
-        (12, 32, 500),
-        (12, 32, 1000),
-        (12, 32, 2000),
-        (16, 32, 1000),
-        (16, 64, 1000),
+        (6, 8, 1000),
+        (8, 8, 1000),
+        (12, 16, 1000),
+        (16, 16, 1000),
         (24, 32, 1000),
-        (24, 64, 2000),
+        (24, 16, 1000),
     ]
     .into_iter()
     .map(
@@ -94,9 +96,14 @@ pub struct SweepCellResult {
     pub peak_in_flight: usize,
     pub errors: u64,
     pub terminations: std::collections::BTreeMap<String, u64>,
+    /// All-ply target health (kept for comparability with earlier cells).
     pub mean_target_entropy: f64,
     pub mean_top1_visit_share: f64,
     pub positions: u64,
+    pub trainable_positions: u64,
+    pub trainable_positions_per_sec: f64,
+    /// Full data-health record: W/D/L, lengths, all/trainable target health.
+    pub selfplay: SelfPlayMetrics,
     pub requests: u64,
     pub batches: u64,
     pub batch_mean: f64,
@@ -111,6 +118,21 @@ pub struct SweepCellResult {
     pub positions_per_sec: f64,
     pub evaluations_per_sec: f64,
     pub peak_vram_mb: Option<u64>,
+    /// Mean GPU utilization over samples with utilization > 0.
+    pub gpu_util_busy_mean: Option<f64>,
+    pub gpu_util_max: Option<u64>,
+    pub gpu_temp_max_c: Option<u64>,
+    pub gpu_samples: u64,
+}
+
+#[derive(Default)]
+struct GpuSamples {
+    peak_vram_mb: Option<u64>,
+    busy_util_sum: u64,
+    busy_samples: u64,
+    util_max: Option<u64>,
+    temp_max: Option<u64>,
+    samples: u64,
 }
 
 /// Warm the inference path for a range of batch sizes; returns elapsed seconds.
@@ -140,17 +162,43 @@ pub fn warmup<B: AutodiffBackend>(
     Ok(start.elapsed().as_secs_f64())
 }
 
-/// Sample peak VRAM (MiB) via nvidia-smi, best-effort.
-fn sample_vram_mb() -> Option<u64> {
+/// Sample (memory.used MiB, utilization %, temperature C) via nvidia-smi.
+/// `None` when nvidia-smi is unavailable; the report then shows no GPU data.
+fn sample_gpu() -> Option<(u64, u64, u64)> {
     let out = std::process::Command::new("nvidia-smi")
-        .args(["--query-gpu=memory.used", "--format=csv,noheader,nounits"])
+        .args([
+            "--query-gpu=memory.used,utilization.gpu,temperature.gpu",
+            "--format=csv,noheader,nounits",
+        ])
         .output()
         .ok()?;
     if !out.status.success() {
         return None;
     }
     let s = String::from_utf8_lossy(&out.stdout);
-    s.lines().next()?.trim().parse::<u64>().ok()
+    let mut fields = s
+        .lines()
+        .next()?
+        .split(',')
+        .map(|f| f.trim().parse::<u64>());
+    Some((
+        fields.next()?.ok()?,
+        fields.next()?.ok()?,
+        fields.next()?.ok()?,
+    ))
+}
+
+impl GpuSamples {
+    fn record(&mut self, (mem, util, temp): (u64, u64, u64)) {
+        self.samples += 1;
+        self.peak_vram_mb = Some(self.peak_vram_mb.map_or(mem, |p| p.max(mem)));
+        self.util_max = Some(self.util_max.map_or(util, |p| p.max(util)));
+        self.temp_max = Some(self.temp_max.map_or(temp, |p| p.max(temp)));
+        if util > 0 {
+            self.busy_util_sum += util;
+            self.busy_samples += 1;
+        }
+    }
 }
 
 /// Run one sweep cell: `games` self-play games, measuring throughput.
@@ -182,14 +230,16 @@ pub fn run_cell<B: AutodiffBackend>(
     cell_cfg.cpu_workers = cell.active_games as usize;
     cell_cfg.simulations_per_move = cell.simulations;
     let sampling = std::sync::atomic::AtomicBool::new(true);
-    let peak_vram = std::sync::Mutex::new(sample_vram_mb());
+    let gpu = std::sync::Mutex::new(GpuSamples::default());
+    if let Some(v) = sample_gpu() {
+        gpu.lock().expect("GPU sampler mutex").record(v);
+    }
     let collect_start = Instant::now();
     let records = std::thread::scope(|scope| {
         let monitor = scope.spawn(|| {
             while sampling.load(std::sync::atomic::Ordering::Relaxed) {
-                if let Some(v) = sample_vram_mb() {
-                    let mut peak = peak_vram.lock().expect("VRAM sampler mutex");
-                    *peak = Some(peak.map_or(v, |p| p.max(v)));
+                if let Some(v) = sample_gpu() {
+                    gpu.lock().expect("GPU sampler mutex").record(v);
                 }
                 std::thread::sleep(Duration::from_millis(500));
             }
@@ -200,31 +250,12 @@ pub fn run_cell<B: AutodiffBackend>(
         monitor.join().expect("VRAM sampler thread");
         result
     })?;
-    let positions = records.iter().map(|g| g.plies.len() as u64).sum::<u64>();
-    let mut terminations = std::collections::BTreeMap::new();
-    let mut entropy = 0.0;
-    let mut top1 = 0.0f64;
-    for game in &records {
-        *terminations.entry(game.termination.clone()).or_insert(0) += 1;
-        for ply in &game.plies {
-            entropy -= ply
-                .target
-                .iter()
-                .map(|(_, p)| {
-                    let p = *p as f64;
-                    if p > 0.0 { p * p.ln() } else { 0.0 }
-                })
-                .sum::<f64>();
-            top1 += ply
-                .target
-                .iter()
-                .map(|(_, p)| *p as f64)
-                .fold(0.0, f64::max);
-        }
-    }
     let collect_secs = collect_start.elapsed().as_secs_f64().max(1e-6);
     let m = owner.metrics().snapshot();
     owner.shutdown();
+    let selfplay = selfplay_metrics(&cell_cfg, &records, m.clone());
+    let positions = selfplay.plies;
+    let gpu = gpu.into_inner().expect("GPU sampler mutex");
 
     Ok(SweepCellResult {
         active_games: cell.active_games,
@@ -235,10 +266,12 @@ pub fn run_cell<B: AutodiffBackend>(
         requested_games: games,
         peak_in_flight: m.peak_in_flight,
         errors: m.errors,
-        terminations,
-        mean_target_entropy: entropy / positions.max(1) as f64,
-        mean_top1_visit_share: top1 / positions.max(1) as f64,
+        terminations: selfplay.terminations.clone(),
+        mean_target_entropy: selfplay.target_health.all.mean_entropy,
+        mean_top1_visit_share: selfplay.target_health.all.mean_top1_visit_share,
         positions,
+        trainable_positions: selfplay.trainable_positions,
+        trainable_positions_per_sec: selfplay.trainable_positions as f64 / collect_secs,
         requests: m.submitted,
         batches: m.batches,
         batch_mean: m.batch_size_mean,
@@ -252,6 +285,12 @@ pub fn run_cell<B: AutodiffBackend>(
         games_per_hour: records.len() as f64 / collect_secs * 3600.0,
         positions_per_sec: positions as f64 / collect_secs,
         evaluations_per_sec: m.completed as f64 / collect_secs,
-        peak_vram_mb: *peak_vram.lock().expect("VRAM sampler mutex"),
+        peak_vram_mb: gpu.peak_vram_mb,
+        gpu_util_busy_mean: (gpu.busy_samples > 0)
+            .then(|| gpu.busy_util_sum as f64 / gpu.busy_samples as f64),
+        gpu_util_max: gpu.util_max,
+        gpu_temp_max_c: gpu.temp_max,
+        gpu_samples: gpu.samples,
+        selfplay,
     })
 }

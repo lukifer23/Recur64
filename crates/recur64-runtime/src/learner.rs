@@ -49,6 +49,11 @@ pub struct LearnerConfig {
     pub recurrence: usize,
     pub seed: u64,
     pub deadline: Option<Instant>,
+    /// First replay game id generated in the current cycle. Game ids are
+    /// contiguous per cycle, so `source_game_id >= this` marks fresh data.
+    pub current_cycle_first_game_id: Option<u64>,
+    /// Games per cycle, used to express sample age in cycles.
+    pub games_per_cycle: u64,
 }
 
 impl Default for LearnerConfig {
@@ -64,6 +69,8 @@ impl Default for LearnerConfig {
             recurrence: 1,
             seed: 0,
             deadline: None,
+            current_cycle_first_game_id: None,
+            games_per_cycle: 0,
         }
     }
 }
@@ -110,10 +117,22 @@ fn mean_gradients<B: AutodiffBackend>(
 /// Report of a training run.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct TrainReport {
+    /// Distinct trainable positions available (sampleable/materialized).
     pub examples: usize,
     pub examples_consumed: u64,
+    /// Games whose plies could be trained on (they have a result).
     pub games_used: usize,
+    /// Result-less (truncated/aborted) games that were not sampleable.
     pub games_skipped: usize,
+    /// All games in the replay the learner read.
+    pub replay_total_games: usize,
+    /// Positions eligible for sampling (result games only).
+    pub sampleable_positions: usize,
+    /// Share of consumed examples from games generated this cycle. `None`
+    /// when the caller did not identify the current cycle.
+    pub current_cycle_sample_fraction: Option<f64>,
+    /// Mean age of consumed examples, in cycles (0 = this cycle).
+    pub mean_sample_age_cycles: Option<f64>,
     pub updates: usize,
     pub first_loss: f32,
     pub last_loss: f32,
@@ -156,10 +175,10 @@ pub fn build_examples(
         let mut state =
             GameState::from_fen(&game.start_fen).map_err(|e| format!("start FEN: {e}"))?;
         for (i, ply) in game.plies.iter().enumerate() {
-            examples.push(
-                example_for_ply(&state, outcome, ply)
-                    .map_err(|e| format!("game {} ply {i}: {e}", game.game_id))?,
-            );
+            let mut example = example_for_ply(&state, outcome, ply)
+                .map_err(|e| format!("game {} ply {i}: {e}", game.game_id))?;
+            example.source_game_id = game.game_id;
+            examples.push(example);
             let id = ActionId::from_index(ply.selected as u32)
                 .map_err(|e| format!("game {} ply {i}: {e}", game.game_id))?;
             let perspective = state.perspective();
@@ -245,6 +264,8 @@ where
     let mut loss_curve = Vec::new();
     let mut metrics = Vec::new();
     let mut consumed = 0u64;
+    let mut fresh = 0u64;
+    let mut age_sum = 0f64;
 
     for update in 0..cfg.max_updates {
         if cfg
@@ -268,6 +289,17 @@ where
             micro_count += 1;
             update_examples += examples.len();
             consumed += examples.len() as u64;
+            if let Some(first) = cfg.current_cycle_first_game_id {
+                for ex in &examples {
+                    if ex.source_game_id >= first {
+                        fresh += 1;
+                    } else if let Some(age) =
+                        (first - ex.source_game_id - 1).checked_div(cfg.games_per_cycle)
+                    {
+                        age_sum += (age + 1) as f64;
+                    }
+                }
+            }
             let refs: Vec<&TrainingExample> = examples.iter().collect();
             let (board, cands, targets) = build_batch_tensors::<B>(&refs, device);
             let out = model.forward_r(board, &cands, cfg.recurrence, false);
@@ -328,6 +360,16 @@ where
             examples_consumed: consumed,
             games_used,
             games_skipped,
+            replay_total_games: games_used + games_skipped,
+            sampleable_positions: total_examples,
+            current_cycle_sample_fraction: cfg
+                .current_cycle_first_game_id
+                .filter(|_| consumed > 0)
+                .map(|_| fresh as f64 / consumed as f64),
+            mean_sample_age_cycles: cfg
+                .current_cycle_first_game_id
+                .filter(|_| consumed > 0 && cfg.games_per_cycle > 0)
+                .map(|_| age_sum / consumed as f64),
             updates,
             first_loss,
             last_loss,
@@ -402,8 +444,8 @@ where
         cfg,
         device,
         store.sampleable(),
-        store.total_games(),
-        0,
+        store.trainable_games(),
+        store.total_games() - store.trainable_games(),
         |batch_size| store.sample_batch(batch_size, &mut rng),
     )
 }
