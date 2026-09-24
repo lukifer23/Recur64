@@ -1,45 +1,53 @@
-# Recur64 HP — F15 bounded pilot (Phase 3 multi-cycle controller, CUDA).
-#
-# Mirrors configs/f10-pilot.toml conventions (cycles, reuse target, accumulation,
-# opening suite, conservative snapshot policy) at the HP F15 geometry.
-# Scheduling is sized for the RTX 2050 (4 GB) and is provisional until the HP
-# batching sweep (recur64 bench-runtime) is re-run post-merge.
-run_id = "hp-f15-pilot"
+# Recur64 HP H2 — F15 qualification pilot.
+# Scientific fields are byte-for-byte matched to f15-smoke.toml. Only the run
+# identity and bounded execution limits differ.
+run_id = "hp-h2-f15-qualification"
 device = "cuda"
 precision = "fp32"
 recurrence = 1
 model_profile = "f15"
 hardware_profile = "hp-home"
-
-simulations_per_move = 64
-c_puct = 1.0
-temperature = 1.0
-active_games = 32
-cpu_workers = 8
-ply_cap = 400
 seed = 1
 
-max_inference_batch = 64
-batch_timeout_us = 2000
+# Scientific self-play contract.
+simulations_per_move = 8
+c_puct = 1.0
+temperature = 1.0
+ply_cap = 400
+games_per_cycle = 24
 
+# Frozen HP scheduling (excluded from scientific identity).
+concurrent_games = 16
+cpu_workers = 16
+max_inference_batch = 16
+batch_timeout_us = 1000
+
+# Replay and learner contract.
 shard_max_games = 128
 replay_max_positions = 100000
 replay_reuse_target = 2.0
-
 train_batch = 32
 accumulation_steps = 4
-max_updates = 200
+max_updates = 64
 lr = 3.0e-4
+warmup_updates = 25
+planned_updates = 256
 
-arena_games = 40
+# Evaluation and promotion contract.
+arena_games = 20
 opening_suite = "configs/openings-v1.toml"
-
-# Bounded multi-cycle pilot.
-cycles = 3
-position_budget = 40000
 snapshot_policy = "conservative"
 promotion_score_floor = 0.35
-run_budget_minutes = 60
+promotion_min_decisive_games = 4
+
+# Qualification bounds. Fourteen measured smoke-rate cycles target about
+# 45–50 minutes and remain under the 75-minute run budget.
+cycles = 14
+position_budget = 60000
+run_budget_minutes = 75
+
+reference_checkpoint = "runs/hp-h1-ref-f15"
+reference_model_id = "4271e19fbd6bc32f95017d7808ed14feb4e86d5ae8877193f0b8736139c9dda3"
 
 [model]
 width = 512

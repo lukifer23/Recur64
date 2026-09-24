@@ -284,12 +284,51 @@ The smoke workload formula is
 `clamp(round(600 s * 52.44 trainable positions/s / 167.7 mean plies), 8, 24)`,
 which freezes `games_per_cycle = 24`.
 
-## Next measured gates
+## H2 F15 learning smoke (MEASURED, gate: GO)
 
-1. Run the bounded two-cycle F15 smoke from `configs/hp/f15-smoke.toml`.
-2. Apply the smoke gate without extending or retuning the run.
-3. If and only if the smoke passes, run the bounded qualification pilot with
-   the identical scientific hash.
-4. Issue exactly one evidence-backed R15 GO / CONDITIONAL GO / NO-GO decision.
+Config `configs/hp/f15-smoke.toml`, commit `5fae2ba`, CUDA FP32 on the RTX
+2050, frozen reference `4271e19f…`, opening digest `66d6dcf5…`, scientific
+hash `23801713…`, resolved hash `3cc1a48e…`. The scientific identity is v3
+and records seed policy `base_seed_plus_global_game_id_v1`. The clean run is
+local at `runs/hp-h2-f15-smoke-rerun/`.
 
-No F15 training, qualification pilot, or R15 training has run in H1 yet.
+T0 raw policy vs random was 2/15/1 policy win/draw/random win, with two
+truncations and three decisive games. Suite policy entropy was 2.280 nats and
+mean top-1 probability 0.330. These are diagnostics, not strength or Elo.
+
+| cycle | games | positions | W/D/L | mate/insuf/3fold/50/trunc | entropy | top1 | reuse | current sample | mean age | updates | first/last loss | max preclip grad | searched cand/parent | raw cand/random | raw cand/parent | decision |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 0 | 24/24 | 4,152 | 4/20/0 | 4/12/5/2/0 | 0.911 | 0.562 | 1.973 | 1.000 | 0.000 | 64 | 2.220/1.782 | 73.78 | 2/16/2, decisive 4 | 1/18/0, trunc 1 | 1/19/0 | hold: score 0.500 |
+| 1 | 24/24 | 3,763 | 4/17/3 | 7/13/2/2/0 | 0.930 | 0.553 | 2.007 | 0.663 | 0.337 | 59 | 2.264/1.966 | 94.39 | 1/18/1, decisive 2 | 4/14/0, trunc 2 | 2/18/0 | hold: fewer than 4 decisive |
+
+Both cycles had all generated positions trainable, so all-position and
+trainable-position target health were identical. Inference completed
+62,678/62,678 requests with zero errors. Peak in-flight was 16; batch p50/p95
+was 15/16 in both cycles; queue p95 was 10.1/10.5 ms; mean forward latency was
+20.3/19.6 ms. Replay audit was clean, losses and gradients were finite, model
+IDs changed (`315b7b2e…`, `d93dbfa5…`), and no candidate was falsely
+promoted. Because both candidates were held, the accepted optimizer step
+correctly stayed at zero. Cycle 0's 1.973 reuse shortfall is the explicit
+64-update cap; cycle 1 achieved 2.007 without a shortfall. Total wall time was
+416.2 s for 7,915 trainable positions.
+
+**P0 found and corrected before accepting the smoke.** An earlier diagnostic
+run at `129f363` produced identical cycle aggregates and replay payloads
+because collection used `base_seed + cycle_local_index`; game IDs advanced
+but RNG seeds restarted each cycle. That run is invalid evidence. Commit
+`5fae2ba` derives seeds from the global game ID, versions the policy in the
+scientific hash, and adds both focused and two-cycle integration regression
+checks. The clean rerun has first game IDs 0 and 24, distinct position counts
+4,152 and 3,763, and distinct game seeds.
+
+**Smoke decision: GO.** The loop is interpretable: strict lineage and
+checkpoint identity held, replay freshness was measured, requested reuse was
+substantially achieved, targets did not collapse, repetition fell from 20.8%
+to 8.3%, raw and searched evaluations completed, and every hard-stop signal
+remained clear. This is not a claim that F15 is strong.
+
+## Next measured gate
+
+Run `configs/hp/f15-pilot.toml` with the same scientific hash, bounded to 14
+cycles, 60,000 positions, and 75 minutes. Then issue exactly one R15 entry
+decision and stop. R15 training remains NOT RUN.

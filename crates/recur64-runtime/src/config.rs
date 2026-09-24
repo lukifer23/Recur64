@@ -706,4 +706,27 @@ openings = ['{e4}']
         assert!(!cfg.scientific_config_hash().unwrap().is_empty());
         assert!(!cfg.resolved_config_hash().is_empty());
     }
+
+    #[test]
+    fn hp_f15_qualification_keeps_smoke_science() {
+        let load = |contents: &str| {
+            let mut cfg = RunConfig::from_toml_str(contents).unwrap();
+            cfg.opening_suite = Some(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../configs/openings-v1.toml")
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+            cfg
+        };
+        let smoke = load(include_str!("../../../configs/hp/f15-smoke.toml"));
+        let pilot = load(include_str!("../../../configs/hp/f15-pilot.toml"));
+        assert_eq!(
+            smoke.scientific_config_hash().unwrap(),
+            pilot.scientific_config_hash().unwrap()
+        );
+        assert_ne!(smoke.resolved_config_hash(), pilot.resolved_config_hash());
+        assert_eq!(pilot.cycles, 14);
+        assert_eq!(pilot.run_budget_minutes, 75);
+    }
 }
