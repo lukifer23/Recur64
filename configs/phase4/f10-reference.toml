@@ -1,0 +1,65 @@
+# Recur64 Phase 4 — frozen mainline F10 reference (seeded untrained weights).
+#
+# `recur64 freeze-reference --config configs/phase4/f10-reference.toml \
+#    --output runs/f10-reference` writes the ONE checkpoint that every Phase 4
+# scheduling cell, search-budget cell, T0 baseline, smoke and qualification run
+# starts from. Runs pin it by content hash (`reference_model_id`), and the
+# hashes recorded in the reference's own reference.json describe this freezing
+# config only. Do NOT regenerate random weights per benchmark cell.
+run_id = "f10-reference"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f10"
+hardware_profile = "workstation-main"
+seed = 1
+
+# Search contract (part of this config's scientific identity). The reference
+# itself is not searched; these are recorded for continuity with the runs that
+# pin it.
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+ply_cap = 512
+
+# Collection contract (explicit pair; cpu_workers caps worker threads).
+games_per_cycle = 32
+concurrent_games = 32
+cpu_workers = 24
+max_inference_batch = 64
+batch_timeout_us = 500
+
+# Replay / learner contract.
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+lr = 3.0e-4
+train_batch = 64
+accumulation_steps = 4
+planned_updates = 200
+warmup_updates = 20
+
+# Evaluation / promotion contract.
+arena_games = 100
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+promotion_score_floor = 0.35
+promotion_min_decisive_games = 4
+
+# Execution bounds (excluded from scientific identity).
+cycles = 1
+run_budget_minutes = 60
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

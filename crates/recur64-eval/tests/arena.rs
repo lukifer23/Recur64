@@ -12,6 +12,7 @@ fn cfg() -> ArenaConfig {
         ply_cap: 4,
         seed: 7,
         openings: Vec::new(),
+        concurrency: 1,
     }
 }
 
@@ -44,4 +45,48 @@ fn arena_is_reproducible_from_seed() {
     assert_eq!(a.draws, b.draws);
     assert_eq!(a.truncated, b.truncated);
     assert_eq!(a.terminations, b.terminations);
+}
+
+#[test]
+fn concurrent_arena_matches_sequential_and_flags_uninformative() {
+    let reference = FixedEvaluator::uniform(0.0);
+    let candidate = FixedEvaluator::uniform(0.0);
+    let mut c = cfg();
+    c.games = 6;
+    c.ply_cap = 60;
+    c.openings = vec![
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".into(),
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1".into(),
+    ];
+    let seq = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    c.concurrency = 4;
+    let par = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    assert_eq!(
+        serde_json_like(&seq),
+        serde_json_like(&par),
+        "concurrency must not change the report"
+    );
+    assert_eq!(seq.decisive_games, seq.candidate_wins + seq.reference_wins);
+    assert_eq!(seq.informative, seq.decisive_games > 0);
+
+    // Every game truncated at ply 4: numerically 0.5, but not informative.
+    let r = run_arena(&reference, &candidate, "ref", "cand", &cfg()).unwrap();
+    assert_eq!(r.truncated, 4);
+    assert_eq!(r.candidate_score, 0.5);
+    assert!(!r.informative);
+    assert_eq!(r.decisive_games, 0);
+}
+
+fn serde_json_like(r: &recur64_eval::ArenaResult) -> String {
+    format!(
+        "{} {} {} {} {:?} {} {} {}",
+        r.candidate_wins,
+        r.reference_wins,
+        r.draws,
+        r.truncated,
+        r.terminations,
+        r.candidate_score,
+        r.score_ci_low,
+        r.score_ci_high
+    )
 }

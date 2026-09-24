@@ -162,3 +162,102 @@ fn f10_resume_preserves_optimizer_and_schedule() {
     assert!(dw < 1e-5, "core weight drift {dw}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// The pilot reloads a promoted checkpoint into a *freshly built* module (new
+/// random weights, new `ParamId`s) and a fresh AdamW, then continues through
+/// the real learner. That path must reproduce the continuous trajectory.
+#[test]
+fn pilot_reload_into_fresh_module_preserves_optimizer_trajectory() {
+    use recur64_runtime::learner::{LearnerConfig, train_from_games};
+    let device = Default::default();
+    let cfg = ModelConfig {
+        width: 64,
+        heads: 4,
+        ffn: 128,
+        core_blocks: 2,
+        ..f10()
+    };
+    let games = [fools_mate(0), fools_mate(1)];
+    let learner = |max_updates: usize, start_update: u64| LearnerConfig {
+        batch_size: 4,
+        accumulation_steps: 2,
+        max_updates,
+        lr: 3e-4,
+        warmup_updates: 1,
+        planned_updates: 4,
+        start_update,
+        seed: 7,
+        ..LearnerConfig::default()
+    };
+
+    let model0 = ProbeModel::<B>::new(cfg.clone(), &device);
+    let (model_a, report_a) = train_from_games(
+        model0.clone(),
+        &mut adamw::<B, _>(),
+        &games,
+        &learner(4, 0),
+        &device,
+    )
+    .unwrap();
+
+    let mut optim_b = adamw::<B, _>();
+    let (model_b, report_b1) = train_from_games(
+        model0.clone(),
+        &mut optim_b,
+        &games,
+        &learner(2, 0),
+        &device,
+    )
+    .unwrap();
+    let dir = tmp("fresh_template");
+    let mut meta = CheckpointMeta::new(cfg.clone(), 1, false, 2, 3e-4, 0, 0, "cpu", "fp32");
+    meta.update_counter = 2;
+    meta.lr_schedule_step = 2;
+    save_training(&dir, &model_b, &optim_b, &meta).expect("save");
+    drop((model_b, optim_b, model0));
+
+    // Exactly what pilot.rs does: fresh build, fresh optimizer, load_training.
+    let fresh = ProbeModel::<B>::new(cfg.clone(), &device);
+    let (model_b2, mut optim_b2, loaded) =
+        load_training(&dir, fresh, adamw::<B, _>(), &device).expect("load");
+    assert_eq!(loaded.lr_schedule_step, 2);
+    let (model_b3, report_b2) =
+        train_from_games(model_b2, &mut optim_b2, &games, &learner(2, 2), &device).unwrap();
+
+    assert_eq!(report_a.updates, 4);
+    assert_eq!(report_b1.updates + report_b2.updates, 4);
+    for (a, b) in report_a.metrics[2..].iter().zip(&report_b2.metrics) {
+        assert_eq!(a.update, b.update, "global update index continues");
+        assert_eq!(a.lr, b.lr, "LR schedule continues");
+    }
+    let la = report_a.metrics[3].total_loss;
+    let lb = report_b2.metrics[1].total_loss;
+    let dl = (la - lb).abs();
+    let dw = (model_a.core_weight_scalar() - model_b3.core_weight_scalar()).abs();
+    println!(
+        "fresh-template resume: continuous loss={la} resumed loss={lb} |dl|={dl} |dw|={dw} bit_exact={}",
+        dl == 0.0 && dw == 0.0
+    );
+    assert!(dl < 1e-4, "resumed loss {lb} vs continuous {la}");
+    assert!(dw < 1e-5, "core weight drift {dw}");
+
+    // Negative control: a fresh AdamW with the *same* weights must diverge, or
+    // this test could not detect lost moments.
+    let fresh = ProbeModel::<B>::new(cfg, &device);
+    let (model_c, _, _) = load_training(&dir, fresh, adamw::<B, _>(), &device).unwrap();
+    let (model_c2, _) = train_from_games(
+        model_c,
+        &mut adamw::<B, _>(),
+        &games,
+        &learner(2, 2),
+        &device,
+    )
+    .unwrap();
+    let dw_reset = (model_a.core_weight_scalar() - model_c2.core_weight_scalar()).abs();
+    println!("reset-moments control |dw|={dw_reset}");
+    assert!(
+        dw_reset > dw,
+        "control must show moment loss ({dw_reset} vs {dw})"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

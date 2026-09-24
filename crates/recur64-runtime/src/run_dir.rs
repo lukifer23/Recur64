@@ -22,6 +22,18 @@ pub struct RunMetadata {
     pub run_id: String,
     pub status: RunStatus,
     pub git_revision: Option<String>,
+    /// Branch the binary was built from (HP experiment provenance).
+    #[serde(default)]
+    pub git_branch: Option<String>,
+    /// Self-play / learner seed recorded for this run.
+    #[serde(default)]
+    pub seed: u64,
+    /// Hardware scheduling profile label (e.g. "workstation-main").
+    #[serde(default)]
+    pub hardware_profile: Option<String>,
+    /// Model profile label (e.g. "f10", "r10").
+    #[serde(default)]
+    pub model_profile: Option<String>,
     pub recur64_version: String,
     pub observation_version: u32,
     pub action_version: u32,
@@ -38,7 +50,11 @@ impl RunMetadata {
         Self {
             run_id: cfg.run_id.clone(),
             status: RunStatus::Running,
-            git_revision: None,
+            git_revision: option_env!("RECUR64_GIT_SHA").map(|s| s.to_string()),
+            git_branch: option_env!("RECUR64_GIT_BRANCH").map(|s| s.to_string()),
+            seed: cfg.seed,
+            hardware_profile: cfg.hardware_profile.clone(),
+            model_profile: cfg.model_profile.clone(),
             recur64_version: crate::VERSION.to_string(),
             observation_version: v.observation,
             action_version: v.action,
@@ -144,8 +160,10 @@ pub struct LineageRecord {
     pub run_id: String,
     pub parent_model_id: String,
     pub candidate_model_id: String,
+    pub promoted_model_id: String,
     pub replay_model_ids: Vec<String>,
     pub new_positions: u64,
+    pub new_trainable_positions: u64,
     pub examples_consumed: u64,
     pub optimizer_step_start: u64,
     pub optimizer_step_end: u64,
@@ -153,7 +171,10 @@ pub struct LineageRecord {
     pub arena_candidate_score: Option<f64>,
     pub snapshot_decision: String,
     pub config_hash: String,
+    pub scientific_config_hash: String,
+    pub resolved_config_hash: String,
     pub git_revision: Option<String>,
+    pub git_branch: Option<String>,
     pub seed: u64,
 }
 
@@ -186,5 +207,63 @@ impl RunDir {
             out.push(serde_json::from_str(line)?);
         }
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cfg() -> RunConfig {
+        RunConfig::from_toml_str(
+            r#"
+run_id = "meta-test"
+device = "cpu"
+precision = "fp32"
+seed = 7
+hardware_profile = "workstation-main"
+model_profile = "f10"
+[model]
+width = 32
+heads = 4
+ffn = 64
+input_blocks = 0
+core_blocks = 1
+output_blocks = 0
+"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn metadata_records_seed_and_profiles() {
+        let meta = RunMetadata::new(&cfg());
+        assert_eq!(meta.seed, 7);
+        assert_eq!(meta.hardware_profile.as_deref(), Some("workstation-main"));
+        assert_eq!(meta.model_profile.as_deref(), Some("f10"));
+    }
+
+    #[test]
+    fn metadata_records_git_provenance_when_built_in_repo() {
+        let meta = RunMetadata::new(&cfg());
+        if option_env!("RECUR64_GIT_SHA").is_some() {
+            assert!(
+                meta.git_revision.is_some(),
+                "git revision must be recorded when built inside the repo"
+            );
+        }
+        if option_env!("RECUR64_GIT_BRANCH").is_some() {
+            assert!(meta.git_branch.is_some());
+        }
+    }
+
+    #[test]
+    fn metadata_round_trips_through_json() {
+        let meta = RunMetadata::new(&cfg());
+        let bytes = serde_json::to_vec(&meta).unwrap();
+        let back: RunMetadata = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(back.run_id, meta.run_id);
+        assert_eq!(back.seed, meta.seed);
+        assert_eq!(back.git_revision, meta.git_revision);
     }
 }

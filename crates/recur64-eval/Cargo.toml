@@ -11,3 +11,4 @@ recur64-search = { path = "../recur64-search" }
 serde = { workspace = true }
 toml = { workspace = true }
 anyhow = { workspace = true }
+sha2 = "0.10"

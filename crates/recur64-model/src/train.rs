@@ -16,14 +16,27 @@ use crate::model::{CandidateTensors, ProbeModel};
 /// CPU FP32 autodiff backend used for correctness work in Phase 0.
 pub type CpuTrainBackend = burn::backend::Autodiff<burn::backend::Flex>;
 
+/// Versioned description of the optimizer semantics [`adamw`] builds plus the
+/// learner's gradient reduction. It is part of the scientific config hash, so
+/// any change here must change this string. Burn clips each parameter tensor's
+/// L2 norm separately (not one global norm) before AdamW sees the gradient.
+pub const OPTIMIZER_CONTRACT: &str = "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,\
+weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,\
+grad_reduction=example_weighted_mean_over_effective_batch";
+
 /// AdamW with the initial Phase 0 settings (master spec §7.1). These are
-/// starting values to test, not claims of optimality.
+/// starting values to test, not claims of optimality. Betas and epsilon equal
+/// the Burn 0.21.0 defaults and are set explicitly to match
+/// [`OPTIMIZER_CONTRACT`].
 pub fn adamw<B, M>() -> OptimizerAdaptor<AdamW, M, B>
 where
     B: AutodiffBackend,
     M: AutodiffModule<B>,
 {
     AdamWConfig::new()
+        .with_beta_1(0.9)
+        .with_beta_2(0.999)
+        .with_epsilon(1e-5)
         .with_weight_decay(1e-4)
         .with_grad_clipping(Some(GradientClippingConfig::Norm(1.0)))
         .init::<B, M>()

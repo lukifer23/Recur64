@@ -277,6 +277,127 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **Why:** an honest negative/weak result is a valid research outcome; a
   contaminated or misleading long run is not.
 
+## D29 — Collection semantics: games, concurrency, workers
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** One authoritative `collect_parallel` serves `run`, `selfplay`,
+  `pilot`, and the runtime sweep. New configs set `games_per_cycle` (total
+  games) and `concurrent_games` (simultaneous games); `cpu_workers` caps the
+  worker threads and the game count caps concurrency. Legacy configs (neither
+  new field present) keep the Phase 3 D24 semantics exactly: `active_games` is
+  both the total and the concurrency and `cpu_workers` is not applied. Both
+  fields must be set together; invalid FENs and failed games are hard errors.
+- **Why:** removes three divergent collectors and a sequential-only
+  `collect_only`, while preserving the behavior of the historical
+  `configs/f10-*.toml` runs so their identities are not silently mutated.
+
+## D30 — Example-weighted mean gradient reduction
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** Each microbatch loss is scaled by its example count before
+  backward; the accumulated gradient is divided by the actual number of examples
+  in the update; reported loss/entropy are example-weighted aggregates.
+- **Why:** the Phase 3 learner summed microbatch gradients without normalizing
+  and reported only the final microbatch, which inflated gradient norms and made
+  loss readings misleading. The optimizer contract now states
+  `grad_reduction=example_weighted_mean_over_effective_batch`.
+
+## D31 — Optimizer continuation and accepted-trajectory promotion
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** The pilot loads the parent through `load_training` (weights,
+  Adam moments, schedule step) into a freshly built module and continues only if
+  the candidate is promoted. A held candidate leaves the accepted optimizer step
+  unchanged. The content hash proves the reload preserved `ParamId`s.
+- **Why:** a fresh AdamW per cycle loses the optimizer state and advances the
+  "accepted" trajectory on rejected candidates; neither is scientifically
+  defensible.
+
+## D32 — Conservative-v2 promotion
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** `PROMOTION_RULE_VERSION = conservative-v2`. Promotion requires
+  audit OK, zero inference errors, finite metrics, achieved reuse >= 0.8x target,
+  at least `promotion_min_decisive_games` decisive candidate-vs-parent games, and
+  a score strictly above 0.5 (and at least the configured floor). Decisions are
+  `promote` or `hold` with hold reasons.
+- **Why:** the old rule (score >= 0.35) could promote a draw-only 0.5 candidate.
+
+## D33 — Scientific vs resolved identity
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** Every run records a `scientific_config_hash` over the experiment
+  (model, recurrence, precision, reference id, seed and seed policy, search,
+  games per cycle, optimizer contract, effective batch, LR schedule, reuse
+  target, replay capacity and sampler, opening-suite content digest, arena
+  games, promotion rule) and a `resolved_config_hash` over the entire resolved
+  config. Operational scheduling (device, concurrency, cpu_workers, batch and
+  timeout, labels, run id, budgets, the `max_updates` safety cap) changes only
+  the resolved hash.
+- **Why:** a hardware re-tune must not look like a new experiment, and a science
+  change must never be hidden behind the same hash.
+
+## D34 — Frozen reference checkpoints
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** `recur64 freeze-reference` writes one seeded, untrained,
+  step-0 checkpoint plus `reference.json` (model id, seed, git, both hashes,
+  suite digest, optimizer contract). The pilot refuses a mismatched reference id
+  or config or a trained checkpoint. Scheduling cells, search cells, the T0
+  baseline, smoke and qualification all start from the same checkpoint.
+- **Why:** regenerating random weights per benchmark cell makes throughput and
+  data incomparable.
+
+## D35 — Build-time git provenance
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** `recur64-runtime/build.rs` bakes `RECUR64_GIT_SHA` /
+  `RECUR64_GIT_BRANCH`, appends `-dirty` when crates/manifests differ from HEAD,
+  and watches refs and sources. Run metadata and lineage record the SHA, branch
+  and seed.
+- **Why:** Phase 2 always wrote `git_revision: None`; a run must name its source.
+
+## D36 — CUDA NVRTC fail-fast
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** Every CUDA run path refuses to start when no NVRTC shared
+  library is present on `PATH` or `CUDA_PATH\bin`. The check matches any
+  `nvrtc*.dll` / `libnvrtc.so*` name (cudarc tries several versioned names).
+- **Why:** without NVRTC the JIT can panic on a worker thread and leave a
+  misleading checkpoint behind. Matching any version avoids refusing a valid
+  user-space runtime over an exact-name mismatch.
+
+## D37 — Crash-safe replay archival
+
+- **Status:** PENDING (required before any 24h run)
+- **Decision:** Capacity enforcement must order archive-copy, fsync, atomic
+  manifest replacement, directory fsync, then removal of old active files.
+- **Why:** the current rename-then-rewrite order can leave the manifest pointing
+  at moved shards after power loss. Does not block a short smoke.
+
+## D38 — Deadline semantics
+
+- **Status:** ACCEPTED (Phase 4, partial)
+- **Decision:** A configured wall budget has a soft deadline (stop starting new
+  work at a safe boundary and finish in-flight steps) and a hard maximum (stop
+  at a checkpointable boundary). The learner checks the deadline at update
+  boundaries. Evaluation phases must later check it at game boundaries; a
+  budget overrun is recorded, never hidden.
+- **Why:** the Phase 3 pilot checked deadlines only between cycles and could
+  exceed its nominal budget during a long evaluation phase.
+
+## D39 — Replay freshness control
+
+- **Status:** PROPOSED (Phase 5)
+- **Decision:** Replace the single ambiguous `replay_reuse_target` with a
+  `new_data_exposure_target` (how often each newly generated position is seen)
+  plus a `history_mixture_fraction`. The Phase 4 sampler recency weighting is
+  unchanged; only the measurement (`current_cycle_sample_fraction`,
+  `mean_sample_age_cycles`) ships now.
+- **Why:** `examples_consumed / new_positions inserted` near 2 does not prove
+  the new data was seen twice. Measure first, then change the sampler behind its
+  own experiment.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

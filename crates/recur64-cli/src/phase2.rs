@@ -20,12 +20,62 @@ fn load_config(path: &Path) -> anyhow::Result<RunConfig> {
     RunConfig::from_toml_str(&text)
 }
 
+/// Hardware-scheduling overrides. These let a sweep vary scheduling parameters
+/// from the command line without editing scientific config files. They override
+/// only hardware scheduling keys, never model geometry or search settings.
+#[derive(Args, Debug, Default, Clone)]
+pub struct ScheduleOverrides {
+    /// Number of self-play games to launch.
+    #[arg(long)]
+    pub active_games: Option<u32>,
+    /// Number of self-play worker threads.
+    #[arg(long)]
+    pub cpu_workers: Option<usize>,
+    /// Maximum inference batch size.
+    #[arg(long)]
+    pub max_inference_batch: Option<usize>,
+    /// Batch coalescing timeout in microseconds.
+    #[arg(long)]
+    pub batch_timeout_us: Option<u64>,
+    /// Simulations per move (search budget).
+    #[arg(long)]
+    pub simulations_per_move: Option<u32>,
+    /// Ply cap before a game is truncated.
+    #[arg(long)]
+    pub ply_cap: Option<u32>,
+}
+
+impl ScheduleOverrides {
+    fn apply(&self, cfg: &mut RunConfig) {
+        if let Some(v) = self.active_games {
+            cfg.active_games = v;
+        }
+        if let Some(v) = self.cpu_workers {
+            cfg.cpu_workers = v;
+        }
+        if let Some(v) = self.max_inference_batch {
+            cfg.max_inference_batch = v;
+        }
+        if let Some(v) = self.batch_timeout_us {
+            cfg.batch_timeout_us = v;
+        }
+        if let Some(v) = self.simulations_per_move {
+            cfg.simulations_per_move = v;
+        }
+        if let Some(v) = self.ply_cap {
+            cfg.ply_cap = v;
+        }
+    }
+}
+
 #[derive(Args, Debug)]
 pub struct SelfplayArgs {
     #[arg(long)]
     pub config: PathBuf,
     #[arg(long)]
     pub output: PathBuf,
+    #[command(flatten)]
+    pub schedule: ScheduleOverrides,
 }
 
 #[derive(Args, Debug)]
@@ -68,6 +118,8 @@ pub struct RunArgs {
     pub run_dir: PathBuf,
     #[arg(long, default_value_t = false)]
     pub force: bool,
+    #[command(flatten)]
+    pub schedule: ScheduleOverrides,
 }
 
 #[derive(Args, Debug)]
@@ -81,8 +133,14 @@ pub struct ReportArgs {
 fn selfplay_impl<B: AutodiffBackend>(cfg: &RunConfig, output: &Path) -> anyhow::Result<()> {
     std::fs::create_dir_all(output)?;
     let cancel = CancelToken::new();
-    let games = collect_only::<B>(cfg, output, &cancel)?;
-    println!("wrote {games} games to {}", output.display());
+    let metrics = collect_only::<B>(cfg, output, &cancel)?;
+    println!(
+        "wrote {} games ({} plies) to {}",
+        metrics.games,
+        metrics.plies,
+        output.display()
+    );
+    println!("{}", serde_json::to_string_pretty(&metrics)?);
     Ok(())
 }
 
@@ -106,6 +164,8 @@ fn train_impl<B: AutodiffBackend>(
         start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
+        deadline: None,
+        ..Default::default()
     };
     let (trained, report) =
         recur64_runtime::train_from_games(model, &mut optim, &games, &learner_cfg, &device)
@@ -141,9 +201,7 @@ fn arena_impl<B: AutodiffBackend>(
     let ref_ev = SyncEvaluator::new(ref_model, cfg.recurrence, device.clone());
     let cand_ev = SyncEvaluator::new(cand_model, cfg.recurrence, device);
     let openings = match &cfg.opening_suite {
-        Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))
-            .map(|s| s.openings)
-            .unwrap_or_default(),
+        Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))?.openings,
         None => Vec::new(),
     };
     let arena_cfg = ArenaConfig {
@@ -154,6 +212,7 @@ fn arena_impl<B: AutodiffBackend>(
         ply_cap: cfg.ply_cap,
         seed: cfg.seed,
         openings,
+        concurrency: 1,
     };
     let result = eval_run_arena(
         &ref_ev,
@@ -190,7 +249,9 @@ fn run_impl<B: AutodiffBackend>(
 // --- command entry points ---
 
 pub fn run_selfplay(args: SelfplayArgs) -> anyhow::Result<()> {
-    let cfg = load_config(&args.config)?;
+    let mut cfg = load_config(&args.config)?;
+    args.schedule.apply(&mut cfg);
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => selfplay_impl::<CpuTrain>(&cfg, &args.output),
         "cuda" => {
@@ -218,6 +279,7 @@ pub fn run_replay_audit(args: ReplayAuditArgs) -> anyhow::Result<()> {
 
 pub fn run_train(args: TrainArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => train_impl::<CpuTrain>(&cfg, &args.replay, &args.checkpoint, &args.output),
         "cuda" => {
@@ -241,6 +303,7 @@ pub fn run_train(args: TrainArgs) -> anyhow::Result<()> {
 
 pub fn run_arena(args: ArenaArgs) -> anyhow::Result<()> {
     let cfg = load_config(&args.config)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => arena_impl::<CpuTrain>(&cfg, &args.reference, &args.candidate, &args.output),
         "cuda" => {
@@ -263,7 +326,9 @@ pub fn run_arena(args: ArenaArgs) -> anyhow::Result<()> {
 }
 
 pub fn run_run(args: RunArgs) -> anyhow::Result<()> {
-    let cfg = load_config(&args.config)?;
+    let mut cfg = load_config(&args.config)?;
+    args.schedule.apply(&mut cfg);
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => run_impl::<CpuTrain>(&cfg, &args.run_dir, args.force),
         "cuda" => {

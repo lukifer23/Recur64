@@ -72,7 +72,13 @@ fn full_cycle_completes() {
     assert!(report.games_collected >= 1);
     assert!(report.audit_ok, "{:?}", report.audit_errors);
     let train = report.train.as_ref().expect("training should have run");
-    assert_eq!(train.updates, 2);
+    // Updates are now scheduled from new trainable positions x reuse target /
+    // effective batch, capped by `max_updates` (a safety cap, not the workload).
+    // The exact count is a function of how many trainable plies the two games
+    // produced, so assert the contract rather than a fixed number.
+    assert!(train.updates >= 1, "training must run at least one update");
+    assert!(train.updates <= cfg.max_updates);
+    assert!(train.examples_consumed > 0);
     assert!(train.first_loss.is_finite() && train.last_loss.is_finite());
     assert!(report.arena.is_some());
 

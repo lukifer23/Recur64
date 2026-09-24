@@ -23,6 +23,9 @@ pub struct ArenaConfig {
     pub seed: u64,
     /// Frozen opening FENs. Empty means the standard start only.
     pub openings: Vec<String>,
+    /// Games played at once. Results are aggregated in game-index order, so
+    /// the report does not depend on it (1 = sequential).
+    pub concurrency: usize,
 }
 
 impl Default for ArenaConfig {
@@ -35,6 +38,7 @@ impl Default for ArenaConfig {
             ply_cap: 256,
             seed: 0,
             openings: Vec::new(),
+            concurrency: 1,
         }
     }
 }
@@ -48,7 +52,13 @@ pub struct ArenaResult {
     pub draws: u32,
     pub truncated: u32,
     /// `(candidate_wins + 0.5 * draws) / decided` over non-truncated games.
+    /// Reported as 0.5 when nothing was decided; read `informative` first.
     pub candidate_score: f64,
+    /// Games won by either side.
+    pub decisive_games: u32,
+    /// `decisive_games > 0`. A 0.5 from all draws or all truncations is not a
+    /// measured tie.
+    pub informative: bool,
     /// 95% confidence interval on `candidate_score` (per-game outcomes 1/0.5/0).
     pub score_ci_low: f64,
     pub score_ci_high: f64,
@@ -95,15 +105,8 @@ pub fn run_arena(
         cfg.openings.clone()
     };
 
-    let mut candidate_wins = 0u32;
-    let mut reference_wins = 0u32;
-    let mut draws = 0u32;
-    let mut truncated = 0u32;
-    let mut scores: Vec<f64> = Vec::new();
-    let mut terminations: BTreeMap<String, u32> = BTreeMap::new();
-
-    for i in 0..cfg.games {
-        let candidate_is_white = i % 2 == 0;
+    let play_one = |i: u32| -> Result<recur64_search::SelfPlayGame, EvalError> {
+        let candidate_is_white = i.is_multiple_of(2);
         let router = if candidate_is_white {
             SideRouter {
                 white: candidate,
@@ -117,8 +120,21 @@ pub fn run_arena(
         };
         let seed = cfg.seed.wrapping_add(i as u64);
         let opening = &openings[(i as usize / 2) % openings.len()];
-        let start = GameState::from_fen(opening).unwrap_or_else(|_| GameState::startpos());
-        let game = play_game_from(&router, &sp, &mut Rng::new(seed), start)?;
+        let start = GameState::from_fen(opening)
+            .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
+        play_game_from(&router, &sp, &mut Rng::new(seed), start)
+    };
+    let games = play_indexed(cfg.games, cfg.concurrency, play_one)?;
+
+    let mut candidate_wins = 0u32;
+    let mut reference_wins = 0u32;
+    let mut draws = 0u32;
+    let mut truncated = 0u32;
+    let mut scores: Vec<f64> = Vec::new();
+    let mut terminations: BTreeMap<String, u32> = BTreeMap::new();
+
+    for (i, game) in games.into_iter().enumerate() {
+        let candidate_is_white = i % 2 == 0;
         *terminations
             .entry(game.termination.label().to_string())
             .or_insert(0) += 1;
@@ -166,6 +182,8 @@ pub fn run_arena(
         draws,
         truncated,
         candidate_score,
+        decisive_games: candidate_wins + reference_wins,
+        informative: candidate_wins + reference_wins > 0,
         score_ci_low: ci_low,
         score_ci_high: ci_high,
         opening_count: openings.len(),
@@ -173,4 +191,71 @@ pub fn run_arena(
         model_reference: reference_id.to_string(),
         model_candidate: candidate_id.to_string(),
     })
+}
+
+/// Play `games` independent games on up to `concurrency` threads and return
+/// them in game-index order. The first error aborts the evaluation.
+pub fn play_indexed<T, F>(games: u32, concurrency: usize, play: F) -> Result<Vec<T>, EvalError>
+where
+    T: Send,
+    F: Fn(u32) -> Result<T, EvalError> + Sync,
+{
+    let threads = concurrency.clamp(1, games.max(1) as usize);
+    if threads == 1 {
+        return (0..games).map(&play).collect();
+    }
+    let next = std::sync::atomic::AtomicU32::new(0);
+    let mut slots: Vec<Option<T>> = (0..games).map(|_| None).collect();
+    let mut first_error = None;
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..threads)
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut out = Vec::new();
+                    loop {
+                        let i = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        if i >= games {
+                            break;
+                        }
+                        let result = play(i);
+                        let failed = result.is_err();
+                        out.push((i, result));
+                        if failed {
+                            next.store(games, std::sync::atomic::Ordering::SeqCst);
+                            break;
+                        }
+                    }
+                    out
+                })
+            })
+            .collect();
+        for h in handles {
+            match h.join() {
+                Ok(results) => {
+                    for (i, r) in results {
+                        match r {
+                            Ok(v) => slots[i as usize] = Some(v),
+                            Err(e) => {
+                                first_error.get_or_insert(e);
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    first_error
+                        .get_or_insert(EvalError::Backend("evaluation worker panicked".into()));
+                }
+            }
+        }
+    });
+    if let Some(e) = first_error {
+        return Err(e);
+    }
+    slots
+        .into_iter()
+        .enumerate()
+        .map(|(i, v)| {
+            v.ok_or_else(|| EvalError::Backend(format!("evaluation game {i} did not run")))
+        })
+        .collect()
 }

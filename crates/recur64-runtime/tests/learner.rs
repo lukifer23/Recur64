@@ -162,6 +162,8 @@ fn accumulation_consumes_effective_batch_and_logs_metrics() {
         start_update: 0,
         recurrence: 1,
         seed: 3,
+        deadline: None,
+        ..Default::default()
     };
     let (_, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
     assert_eq!(report.updates, 2);
@@ -195,6 +197,8 @@ fn training_updates_parameters_and_loss_is_finite() {
         start_update: 0,
         recurrence: 1,
         seed: 7,
+        deadline: None,
+        ..Default::default()
     };
     let (trained, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
     assert_eq!(report.updates, 2);
@@ -206,4 +210,63 @@ fn training_updates_parameters_and_loss_is_finite() {
         (before - after).abs() > 0.0,
         "training must move parameters: {before} -> {after}"
     );
+}
+
+#[test]
+fn replay_accounting_and_sample_provenance_are_truthful() {
+    let device = Default::default();
+    let tiny = ModelConfig {
+        width: 32,
+        heads: 4,
+        ffn: 64,
+        core_blocks: 1,
+        ..micro()
+    };
+    let model = ProbeModel::<CpuTrainBackend>::new(tiny, &device);
+    let mut optim = adamw::<CpuTrainBackend, _>();
+    // Cycle 0 = games 0,1; cycle 1 (current) = games 2,3 and a truncated game 4.
+    let mut truncated = fools_mate(4);
+    truncated.outcome = None;
+    truncated.termination = "truncated".into();
+    let gs = vec![
+        fools_mate(0),
+        fools_mate(1),
+        fools_mate(2),
+        fools_mate(3),
+        truncated,
+    ];
+    let cfg = LearnerConfig {
+        batch_size: 8,
+        accumulation_steps: 1,
+        max_updates: 2,
+        planned_updates: 2,
+        current_cycle_first_game_id: Some(2),
+        games_per_cycle: 2,
+        ..LearnerConfig::default()
+    };
+    let (_, report) = train_from_games(model, &mut optim, &gs, &cfg, &device).unwrap();
+    assert_eq!(report.games_used, 4);
+    assert_eq!(report.games_skipped, 1);
+    assert_eq!(report.replay_total_games, 5);
+    assert_eq!(report.sampleable_positions, 16);
+    assert_eq!(report.examples_consumed, 16);
+    // Every distinct example was consumed once: half from each cycle.
+    assert_eq!(report.current_cycle_sample_fraction, Some(0.5));
+    assert_eq!(report.mean_sample_age_cycles, Some(0.5));
+}
+
+#[test]
+fn target_health_separates_trainable_plies() {
+    let mut truncated = fools_mate(1);
+    truncated.outcome = None;
+    for ply in &mut truncated.plies {
+        ply.target = vec![(ply.selected, 0.5), (ply.selected.wrapping_add(1), 0.5)];
+    }
+    let h = recur64_runtime::coordinator::target_health(&[fools_mate(0), truncated]);
+    assert_eq!(h.all.positions, 8);
+    assert_eq!(h.trainable.positions, 4);
+    assert_eq!(h.trainable.mean_entropy, 0.0);
+    assert_eq!(h.trainable.mean_top1_visit_share, 1.0);
+    assert!((h.all.mean_entropy - 0.5 * std::f64::consts::LN_2).abs() < 1e-12);
+    assert!((h.all.mean_top1_visit_share - 0.75).abs() < 1e-12);
 }

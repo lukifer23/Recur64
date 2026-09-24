@@ -249,3 +249,48 @@ proceed only after review of these artifacts.
 
 Phase 3 pilot is **CONDITIONAL GO**. See `docs/F10_BASELINE.md` for the decision
 package. No ~24h run without explicit owner approval.
+
+---
+
+# Phase 4 — Mainline harness convergence (in progress)
+
+The generic harness improvements proven on the experimental branch
+`experiment/hp-r15` are being brought onto main without importing HP scientific
+assumptions. Details and the porting boundary: `docs/PHASE4_CONVERGENCE.md`.
+
+## COMPLETED (P4.0/P4.1 on `main-integration`)
+
+- One authoritative parallel self-play collector used by `run`, `selfplay`,
+  `pilot`, and the sweep; explicit collection errors.
+- Global-game-id self-play seed policy (`base_seed_plus_global_game_id_v1`),
+  fixing the P0 where every pilot cycle replayed the first cycle's games.
+- Example-weighted mean gradient reduction with weighted metrics (fixes inflated
+  gradient norms and final-microbatch-only loss reporting).
+- Optimizer continuation through `load_training`; the accepted trajectory
+  advances only on promotion.
+- Conservative-v2 promotion (decisive games, strictly above 0.5, reuse floor)
+  with hold reasons.
+- Candidate-vs-parent and candidate-vs-reference arenas; raw policy vs parent.
+- Frozen reference checkpoints, `identity.json`, and a T0 baseline.
+- Scientific vs resolved config identity; build-time git provenance; NVRTC
+  fail-fast; precision gate on all run paths; concurrency gauge; GPU
+  instrumentation; strict opening-suite validation and digest.
+
+## VERIFIED
+
+- `cargo fmt`/`clippy` clean; `cargo test --workspace` passes; the CUDA feature
+  type-checks against the user-space CUDA 12.9.1 environment.
+- `f10_r10_parity`: F10 == R10 == 9,805,288 unique parameters; R10 executes
+  8/12/20 blocks at R=1/2/4.
+
+## NOT RUN (Phase 4 experiments)
+
+- P4.2 frozen F10 reference; P4.3 workstation scheduling sweep; P4.4 F10
+  search-budget requalification; P4.5 smoke; P4.6 bounded qualification; P4.7
+  R10 entry decision. These are hardware runs and require owner approval.
+
+## Historical evidence note
+
+The Phase 3 F10 result above predates the seed and gradient fixes and is not a
+clean modern baseline. The HP F15/R15 record lives on `experiment/hp-r15`; it is
+external evidence, not a mainline result.

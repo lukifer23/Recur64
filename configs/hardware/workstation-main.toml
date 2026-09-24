@@ -1,0 +1,29 @@
+# Recur64 main-workstation hardware scheduling profile.
+#
+# Template overlay, not a standalone run config: copy these values into a
+# mainline run config. They are HARDWARE SCHEDULING only and are excluded from
+# the scientific config hash; scientific parameters must be identical across
+# machines.
+#
+# STATUS: VALUES NOT YET MEASURED ON THE MAIN WORKSTATION.
+# The values below are priors only:
+#   - From Phase 3 Stage A (docs/BENCHMARKS.md): active 32/64/64/128 x batch
+#     32/64 gave 8.2k/9.0k/12.7k/22.8k games/h; batch coalesced (mean 20-34).
+#   - The values are NOT evidence and must be replaced by the P4.3
+#     `configs/hardware/workstation-main.toml` sweep result before a long run.
+#
+# Machine: Intel Core Ultra 9 285K (24c/24t), 64 GB RAM,
+#          NVIDIA RTX 2000 Ada 16 GB (compute capability 8.9).
+
+hardware_profile = "workstation-main"
+
+# --- Self-play scheduling (PRIOR — unmeasured) ---
+concurrent_games = 32
+cpu_workers = 24
+max_inference_batch = 64
+batch_timeout_us = 500
+
+# --- Learner scheduling (PRIOR — unmeasured) ---
+# Physical 64 x 4 = effective 256.
+train_batch = 64
+accumulation_steps = 4

@@ -25,6 +25,9 @@ pub struct TrainingExample {
     pub policy: Vec<f32>,
     /// WDL class from the side-to-move perspective: 0 win, 1 draw, 2 loss.
     pub wdl: i64,
+    /// Replay game id this example came from (in-memory provenance only; not
+    /// part of the replay schema).
+    pub source_game_id: u64,
 }
 
 /// WDL class from the side-to-move perspective.
@@ -69,6 +72,7 @@ pub fn example_for_ply(
         legal,
         policy,
         wdl: wdl_class(outcome, state.side_to_move()),
+        source_game_id: 0,
     })
 }
 
@@ -187,6 +191,14 @@ impl ReplayStore {
         self.games.len()
     }
 
+    /// Games with a result (their plies are sampleable).
+    pub fn trainable_games(&self) -> usize {
+        self.games
+            .iter()
+            .filter(|(_, g)| g.outcome.is_some())
+            .count()
+    }
+
     /// Positions available for sampling (result games only).
     pub fn sampleable(&self) -> usize {
         self.coords_by_shard.iter().map(|v| v.len()).sum()
@@ -205,7 +217,9 @@ impl ReplayStore {
         let mut state = GameState::from_fen(&game.start_fen).map_err(|e| e.to_string())?;
         for (i, ply) in game.plies.iter().enumerate() {
             if i == pi {
-                return example_for_ply(&state, outcome, ply);
+                let mut example = example_for_ply(&state, outcome, ply)?;
+                example.source_game_id = game.game_id;
+                return Ok(example);
             }
             let id = ActionId::from_index(ply.selected as u32).map_err(|e| e.to_string())?;
             let perspective = state.perspective();
