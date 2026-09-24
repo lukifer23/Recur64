@@ -224,11 +224,30 @@ fn simulate<G: PuctGame>(node: &mut Node<G>, cfg: &PuctConfig) -> Result<f32, Ev
     Ok(edge_value)
 }
 
+/// Exploration noise mixed into the root priors only:
+/// `prior' = (1 - epsilon) * prior + epsilon * noise[i]`, with `noise` aligned
+/// to the root's legal actions (their deterministic order).
+#[derive(Debug, Clone)]
+pub struct RootNoise {
+    pub epsilon: f32,
+    pub noise: Vec<f32>,
+}
+
 /// Run PUCT from `root`. Performs exactly `cfg.simulations` traversals for a
 /// non-terminal root; zero for a terminal root.
 pub fn search<G: PuctGame>(
     root: G,
     cfg: &PuctConfig,
+) -> Result<SearchResult<G::Action>, EvalError> {
+    search_with_root_noise(root, cfg, None)
+}
+
+/// [`search`] with optional root exploration noise (self-play only). The
+/// reported `RootEdge::prior` is the mixed prior the search used.
+pub fn search_with_root_noise<G: PuctGame>(
+    root: G,
+    cfg: &PuctConfig,
+    root_noise: Option<&RootNoise>,
 ) -> Result<SearchResult<G::Action>, EvalError> {
     let mut node = Node::new(root);
     if let Some(t) = node.terminal {
@@ -249,6 +268,18 @@ pub fn search<G: PuctGame>(
     }
 
     node.expand()?; // traversal 0
+    if let Some(n) = root_noise {
+        if n.noise.len() != node.edges.len() {
+            return Err(EvalError::Invalid(format!(
+                "root noise len {} != root edges {}",
+                n.noise.len(),
+                node.edges.len()
+            )));
+        }
+        for (e, x) in node.edges.iter_mut().zip(&n.noise) {
+            e.prior = (1.0 - n.epsilon) * e.prior + n.epsilon * x;
+        }
+    }
     for _ in 1..cfg.simulations {
         simulate(&mut node, cfg)?;
     }
@@ -408,6 +439,42 @@ mod tests {
         )
         .unwrap();
         assert!(r.edges[0].visits > r.edges[1].visits);
+    }
+
+    #[test]
+    fn root_noise_mixes_root_priors_only_and_checks_length() {
+        let nodes = vec![
+            TreeNode {
+                children: vec![1, 2],
+                terminal: None,
+                value: 0.0,
+                policy: Some(vec![0.8, 0.2]),
+            },
+            leaf(),
+            leaf(),
+        ];
+        let cfg = PuctConfig {
+            c_puct: 1.0,
+            simulations: 32,
+        };
+        let noise = RootNoise {
+            epsilon: 0.25,
+            noise: vec![0.0, 1.0],
+        };
+        let r = search_with_root_noise(TreeGame::new(nodes.clone()), &cfg, Some(&noise)).unwrap();
+        // (1 - 0.25) * 0.8 + 0.25 * 0 = 0.6; (1 - 0.25) * 0.2 + 0.25 * 1 = 0.4
+        assert!((r.edges[0].prior - 0.6).abs() < 1e-6);
+        assert!((r.edges[1].prior - 0.4).abs() < 1e-6);
+        let clean = search(TreeGame::new(nodes.clone()), &cfg).unwrap();
+        assert!(
+            (clean.edges[0].prior - 0.8).abs() < 1e-6,
+            "search() stays noise-free"
+        );
+        let bad = RootNoise {
+            epsilon: 0.25,
+            noise: vec![1.0],
+        };
+        assert!(search_with_root_noise(TreeGame::new(nodes), &cfg, Some(&bad)).is_err());
     }
 
     #[test]

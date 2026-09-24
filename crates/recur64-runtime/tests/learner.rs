@@ -107,6 +107,7 @@ fn truncated_games_are_excluded() {
         temperature: 1.0,
         ply_cap: 4,
         recurrence: 1,
+        ..SelfPlayConfig::default()
     };
     let g = play_game_seeded(&ev, &cfg, 1).unwrap();
     let mut rec = GameRecord::from_selfplay(

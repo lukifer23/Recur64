@@ -234,6 +234,9 @@ pub(crate) fn collect_parallel(
         temperature: cfg.temperature,
         ply_cap: cfg.ply_cap,
         recurrence: cfg.recurrence,
+        argmax_after_ply: cfg.argmax_after_ply,
+        root_dirichlet_alpha: cfg.root_dirichlet_alpha,
+        root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
     };
     let search_record = SearchRecord {
         simulations: cfg.simulations_per_move,

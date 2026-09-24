@@ -7,11 +7,23 @@
 //! This is a systems probe, not a chess model.
 
 use burn::module::{Module, ModuleVisitor, Param};
-use burn::nn::{Linear, LinearConfig, RmsNorm, RmsNormConfig};
+use burn::nn::{Initializer, Linear, LinearConfig, RmsNorm, RmsNormConfig};
 use burn::prelude::*;
 use burn::tensor::{Distribution, Int, TensorData, activation};
 
 use crate::config::ModelConfig;
+
+/// Version of the readout-head function. Checkpoints record it and a mismatch
+/// is refused, so weights trained under one head never silently run under
+/// another.
+///
+/// * v1 — Phase 0..P4.4-pre: heads read the raw residual stream; bilinear
+///   policy logits unscaled; default-initialized WDL and promotion heads.
+///   Measured on a fresh F10: prior entropy 0.50 x uniform, mean |value| 0.245.
+/// * v2 — final RMSNorm before the heads; policy logits scaled by
+///   `1/sqrt(policy_dim)`; zero-initialized WDL head, so a fresh network
+///   starts from a near-uniform policy and a neutral value.
+pub const HEAD_VERSION: u32 = 2;
 
 /// Number of relative displacement buckets for an 8x8 board: `(2*7+1)^2 = 225`.
 const REL_BUCKETS: usize = 225;
@@ -220,6 +232,9 @@ pub struct ProbeModel<B: Backend> {
     core_blocks: Vec<Block<B>>,
     output_blocks: Vec<Block<B>>,
     inject_norm: RmsNorm<B>,
+    /// Final pre-head normalization (head v2): both heads read a unit-RMS
+    /// stream regardless of block layout (F10 and R10 alike).
+    final_norm: RmsNorm<B>,
     alpha_logit: Param<Tensor<B, 1>>,
     source_proj: Linear<B>,
     dest_proj: Linear<B>,
@@ -253,6 +268,7 @@ impl<B: Backend> ProbeModel<B> {
             core_blocks: mk_blocks(cfg.core_blocks, device),
             output_blocks: mk_blocks(cfg.output_blocks, device),
             inject_norm: RmsNormConfig::new(d).with_epsilon(cfg.rms_eps).init(device),
+            final_norm: RmsNormConfig::new(d).with_epsilon(cfg.rms_eps).init(device),
             alpha_logit,
             source_proj: LinearConfig::new(d, cfg.policy_dim)
                 .with_bias(true)
@@ -266,8 +282,12 @@ impl<B: Backend> ProbeModel<B> {
             promo2: LinearConfig::new(cfg.policy_dim, cfg.promo_codes - 1)
                 .with_bias(true)
                 .init(device),
+            // Zero-init (head v2): the initial WDL is uniform (value 0), so a
+            // fresh network does not steer search with arbitrary values. The
+            // head's own weights receive gradient from the first update.
             wdl: LinearConfig::new(d, cfg.wdl_classes)
                 .with_bias(true)
+                .with_initializer(Initializer::Zeros)
                 .init(device),
             cfg,
         };
@@ -341,6 +361,7 @@ impl<B: Backend> ProbeModel<B> {
             "candidate batch contains no legal candidates; terminal-only batches \
              have no policy path and must bypass neural evaluation"
         );
+        let y = self.final_norm.forward(y);
         let [b, _s, d] = y.dims();
 
         // Pooled WDL.
@@ -350,7 +371,10 @@ impl<B: Backend> ProbeModel<B> {
         // Base 64x64 source/destination score grid.
         let source = self.source_proj.forward(y.clone()); // [b, s, pd]
         let dest = self.dest_proj.forward(y.clone());
-        let base_all = source.matmul(dest.swap_dims(1, 2)); // [b, s, s]
+        // Scaled like attention logits (head v2): unit-variance source/dest
+        // features give O(1) logits at init instead of O(sqrt(policy_dim)).
+        let policy_scale = 1.0 / (source.dims()[2] as f32).sqrt();
+        let base_all = source.matmul(dest.swap_dims(1, 2)).mul_scalar(policy_scale); // [b, s, s]
         let pd = base_all.dims()[2];
         let base_flat = base_all.clone().reshape([b, pd * pd]); // [b, 4096]
         let base = base_flat.gather(1, cands.base_idx.clone()); // [b, width]
@@ -490,6 +514,7 @@ impl<B: Backend> ProbeModel<B> {
             ("core_blocks (shared)", self.core_blocks.num_params()),
             ("output_blocks", self.output_blocks.num_params()),
             ("inject_norm", self.inject_norm.num_params()),
+            ("final_norm", self.final_norm.num_params()),
             ("alpha_logit", self.alpha_logit.num_params()),
             ("source_proj", self.source_proj.num_params()),
             ("dest_proj", self.dest_proj.num_params()),

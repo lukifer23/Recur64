@@ -17,7 +17,9 @@ use recur64_model::model::ProbeModel;
 
 /// Exact unique parameter count for the mainline F10/R10 geometry
 /// (width 384, heads 12, ffn 768, 8 unique blocks, policy_dim 128).
-const MAINLINE_UNIQUE_PARAMS: usize = 9_805_288;
+/// 9,805,288 under head v1; head v2 adds the final pre-head RMSNorm
+/// (width 384 scale parameters) to both architectures.
+const MAINLINE_UNIQUE_PARAMS: usize = 9_805_672;
 
 fn mainline_model(input: usize, core: usize, output: usize) -> ModelConfig {
     ModelConfig {

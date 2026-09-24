@@ -21,6 +21,11 @@ simulations_per_move = 64
 c_puct = 1.0
 temperature = 1.0
 ply_cap = 512
+# Self-play exploration contract (D41): sample the first 30 plies, then argmax;
+# AlphaZero-chess root Dirichlet noise. Arenas stay noise-free.
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
 
 # Collection contract (explicit pair; cpu_workers caps worker threads).
 games_per_cycle = 32

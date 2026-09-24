@@ -18,5 +18,7 @@ pub use play::{
     SelfPlayConfig, SelfPlayGame, SelfPlayPly, TargetEntry, play_game, play_game_from,
     play_game_seeded,
 };
-pub use puct::{PuctConfig, PuctGame, RootEdge, SearchResult, search};
+pub use puct::{
+    PuctConfig, PuctGame, RootEdge, RootNoise, SearchResult, search, search_with_root_noise,
+};
 pub use rng::Rng;

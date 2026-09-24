@@ -78,6 +78,9 @@ fn default_accumulation_steps() -> usize {
 fn default_min_decisive_games() -> u32 {
     4
 }
+fn default_root_dirichlet_alpha() -> f32 {
+    0.3
+}
 
 /// Version of the conservative promotion rule implemented in `pilot.rs`. Part
 /// of the scientific identity; bump it whenever the rule changes.
@@ -202,6 +205,14 @@ pub struct RunConfig {
     /// plies at `temperature` (the Phase 3 baseline convention).
     #[serde(default)]
     pub argmax_after_ply: Option<u32>,
+    /// Root Dirichlet noise concentration for self-play (AlphaZero chess:
+    /// 0.3). Only used when `root_dirichlet_epsilon > 0`. Arenas never apply
+    /// root noise.
+    #[serde(default = "default_root_dirichlet_alpha")]
+    pub root_dirichlet_alpha: f32,
+    /// Root noise mixing weight for self-play; `0.0` (default) disables it.
+    #[serde(default)]
+    pub root_dirichlet_epsilon: f32,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -357,8 +368,9 @@ impl RunConfig {
     pub fn scientific_identity(&self) -> anyhow::Result<serde_json::Value> {
         let (warmup, planned) = self.lr_schedule();
         Ok(serde_json::json!({
-            "identity_version": 3,
+            "identity_version": 4,
             "model": self.model,
+            "model_head_version": recur64_model::model::HEAD_VERSION,
             "recurrence": self.recurrence,
             "precision": self.precision,
             "reference_model_id": self.reference_model_id,
@@ -368,6 +380,8 @@ impl RunConfig {
                 "c_puct": self.c_puct,
                 "temperature": self.temperature,
                 "argmax_after_ply": self.argmax_after_ply,
+                "root_dirichlet_alpha": self.root_dirichlet_alpha,
+                "root_dirichlet_epsilon": self.root_dirichlet_epsilon,
                 "ply_cap": self.ply_cap,
                 "start_fen": self.start_fen,
             },
@@ -437,6 +451,15 @@ impl RunConfig {
         if self.device_kind()? == DeviceKind::Cuda {
             ensure_nvrtc_on_path()?;
         }
+        anyhow::ensure!(
+            (0.0..=1.0).contains(&self.root_dirichlet_epsilon),
+            "root_dirichlet_epsilon must be in [0, 1]"
+        );
+        anyhow::ensure!(
+            self.root_dirichlet_epsilon == 0.0
+                || (self.root_dirichlet_alpha > 0.0 && self.root_dirichlet_alpha.is_finite()),
+            "root_dirichlet_alpha must be finite and > 0 when root noise is enabled"
+        );
         Ok(())
     }
 }

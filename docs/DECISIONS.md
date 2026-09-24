@@ -398,6 +398,80 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   the new data was seen twice. Measure first, then change the sampler behind its
   own experiment.
 
+## D40 — Readout head v2 (near-uniform policy and neutral value at init)
+
+- **Status:** ACCEPTED (Phase 4, owner-approved 2026-09-24)
+- **Decision:**
+  - A final RMSNorm sits before the policy and WDL heads.
+  - The bilinear policy logits are scaled by `1/sqrt(policy_dim)`.
+  - The WDL head is zero-initialized.
+  - Versioning: `HEAD_VERSION = 2`, recorded in every checkpoint. Checkpoints
+    without the field are head v1. A mismatch is refused on every load path,
+    including `model_io::load`.
+  - Applies identically to F10 and R10. Unique parameters become 9,805,672
+    for both.
+- **Why:**
+  - A fresh F10 under head v1 had policy entropy 0.50 × uniform and mean
+    |value| 0.245 (MEASURED).
+  - PUCT with an uninformative value head reproduces the prior, so self-play
+    distilled the arbitrary initialization. Search gain fell from 8 to 64 sims
+    (MEASURED).
+  - The raw residual stream made the head-input scale depend on the block
+    layout, a potential F10-vs-R10 confound.
+  - Head v2 measures 0.999 × uniform and |value| 0.000
+    (`tests/t0_prior.rs`).
+- **Consequence:**
+  - The v1 reference (`7d1493b4…`) and all Phase 3 checkpoints are head v1
+    and are refused under v2.
+  - The v1 P4.4 curve is kept as superseded evidence.
+  - The P4.3 hardware schedule is kept, because it is hardware-only.
+
+## D41 — Self-play exploration: root Dirichlet noise and argmax after ply 30
+
+- **Status:** ACCEPTED (Phase 4, owner-approved 2026-09-24). This lifts the
+  earlier deferral of Dirichlet exploration for the mainline self-play
+  contract.
+- **Decision:**
+  - Self-play mixes `Dirichlet(alpha)` noise into the **root** priors:
+    `prior' = (1-eps)·prior + eps·noise`. The mainline F10 values are the
+    AlphaZero chess ones: `root_dirichlet_alpha = 0.3`,
+    `root_dirichlet_epsilon = 0.25`.
+  - Move selection samples at `temperature` until `argmax_after_ply`
+    (mainline: 30), then plays the highest-visit move.
+  - Arenas are noise-free and deterministic by contract.
+  - All three fields are part of scientific identity (v4).
+  - The noise is drawn from the project's deterministic RNG (D22).
+- **Why:** nothing broke the prior → target → prior loop (D40), and sampling
+  every ply at temperature 1.0 kept games noisy to the end.
+  `argmax_after_ply` also existed as a config/identity field that self-play
+  never read (a dead field); it is now implemented.
+
+## D42 — Search gain is a learning-progress metric, not a T0 gate
+
+- **Status:** ACCEPTED (Phase 4, owner amendment A2; post-hoc, recorded as
+  such)
+- **Decision:**
+  - `recur64 search-gain` re-evaluates replay positions with the generating
+    network and reports KL(target‖prior) and the argmax-change fraction.
+  - These are measured per learning cycle against that cycle's snapshot.
+  - They do not gate the budget selection on an untrained reference.
+- **Why:**
+  - On an untrained network, search cannot improve on the prior, so no budget
+    can pass such a gate.
+  - Visit-count quantization also inflates KL at low budgets.
+  - The metric remains the right signal once the value head learns.
+
+## D43 — Inference-only commands evaluate on the inner backend
+
+- **Status:** ACCEPTED (Phase 4)
+- **Decision:** Inference-only paths (`eval-policy`, arena, pilot owners,
+  sweep, search-gain) load models on `B::InnerBackend`, never on the
+  autodiff backend.
+- **Why:** `eval-policy` on `Autodiff<Cuda>` drove the 16 GB device to
+  16,005 MiB and grew host RSS by 1.5 GB in about a minute, because every
+  forward recorded graph state that no backward pass consumed (MEASURED).
+  After the fix it held a flat 485 MiB.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

@@ -31,6 +31,7 @@ fn cfg() -> SelfPlayConfig {
         temperature: 1.0,
         ply_cap: 8,
         recurrence: 1,
+        ..SelfPlayConfig::default()
     }
 }
 

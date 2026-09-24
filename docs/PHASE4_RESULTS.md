@@ -453,3 +453,106 @@ one-wave cells are tail-bound).**
 - Every budget uses the same game seeds (`first_game_id` 0) and the frozen
   reference and schedule (32 / 32 / 500 µs). Only `simulations_per_move`
   changes.
+
+### P4.4 curve on reference v1 (MEASURED; SUPERSEDED, not used for selection)
+
+Binary `39d744f`, frozen reference v1 `7d1493b4…` (head v1), schedule
+32 / 32 / 500 µs, 64 games per budget, same seeds. Search gain is from
+`recur64 search-gain` over trainable plies. Artifacts:
+`docs/evidence/phase4/search-v1/`.
+
+| sims | games | positions | trainable | trainable pos/s | ev/s | wall s | W/D/B/T | mean plies | threefold+fifty | target H (tr) | target top-1 (tr) | prior H | KL(target‖prior) | argmax changed |
+|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 64 | 12236 | 12236 | 110.1 | 869 | 111 | 3/57/4/0 | 191.2 | 0.516 | 0.589 | 0.729 | 1.209 | 0.217 | 9.0% |
+| 16 | 64 | 11113 | 11113 | 84.7 | 1325 | 131 | 6/52/6/0 | 173.6 | 0.562 | 0.786 | 0.683 | 1.229 | 0.136 | 6.2% |
+| 32 | 64 | 12398 | 12398 | 32.8 | 1029 | 378 | 4/53/7/0 | 193.7 | 0.422 | 0.946 | 0.650 | 1.235 | 0.079 | 4.1% |
+| 64 | 64 | 12865 | 12353 | 16.3 | 1064 | 756 | 9/41/13/1 | 201.0 | 0.281 | 1.041 | 0.633 | 1.209 | 0.057 | 4.0% |
+
+Checkmates were 7 / 12 / 11 / 22 and threefold repetitions 33 / 35 / 27 / 15
+across 8 / 16 / 32 / 64 sims. 128 and 256 were stopped by the owner
+(**NOT RUN** on v1) once the root cause below was found. Every cell had 0
+inference errors.
+
+**What the curve showed (MEASURED).** Search gain *fell* as the budget rose.
+The visit target converged back toward the network prior: the argmax changed
+on 9.0% → 4.0% of positions and KL fell 0.22 → 0.06. Deeper search still
+improved data health through terminal discovery: at 64 sims, checkmates
+doubled and threefold + fifty fell from ~0.52 to 0.28.
+
+**Schedule-transfer check (MEASURED).** ev/s was 869–1325 across budgets,
+against 1343–1723 in P4.3. At 8 sims, per-position CPU work dominates; at
+32–64, eval/s was ~1030–1065. INFERRED: part of the drop comes from
+terminal-node traversals that need no evaluation, and part from the
+per-process latency variance measured in P4.3E. Re-checked on reference v2.
+
+## Root-cause audit (MEASURED / code-reviewed)
+
+The owner asked for a deeper check of the model and configuration rather
+than further harness tuning.
+
+**Mechanism (INFERRED from the code and the measurements above):**
+
+1. The fresh network had an arbitrary, confident policy and a non-neutral
+   value.
+2. PUCT with an uninformative value head allocates visits roughly in
+   proportion to the prior (`q + c·P·√N/(1+n)` with near-equal q). More
+   simulations therefore reproduce that arbitrary prior more faithfully.
+3. The policy target becomes self-distillation of the initialization.
+4. Self-play follows those arbitrary preferences into repetition draws, so
+   value targets are mostly "draw" and the value head stays uninformative.
+5. With no root exploration noise, nothing breaks the loop.
+
+INFERRED: this very likely also underlies Phase 3's "repetition-dominated
+search, poor learning health".
+
+**T0 head measurement.** A fresh F10, 3 seeds × 13 positions (openings-v1
+plus startpos). Test: `crates/recur64-runtime/tests/t0_prior.rs`.
+
+| head | policy entropy / uniform | mean \|value\| | max \|value\| |
+|---|---:|---:|---:|
+| v1 (before) | **0.502** | **0.245** | 0.548 |
+| v2 (after) | **0.999** | **0.000** | 0.000 |
+
+| # | finding | evidence | action |
+|---|---|---|---|
+| M1 | No final normalization before the policy/WDL heads. The head-input scale depended on the block layout (F10: after 8 core blocks; R10: after 2 output blocks following R recurrent passes), which is also a potential F10-vs-R10 confound. | code (`model.rs` readout) | **Fixed (head v2):** final RMSNorm before both heads |
+| M2 | Unscaled bilinear policy logits: a dot product over `policy_dim` = 128 with no 1/√d, whereas attention in the same file is scaled | code + T0 entropy 0.50× uniform | **Fixed (head v2):** logits × 1/√policy_dim |
+| M3 | The value head was not neutral at init | mean \|value\| 0.245 | **Fixed (head v2):** zero-initialized WDL head |
+| M4 | No depth-scaled residual init | inferred only | Not changed. T0 passes without it. |
+| S1 | **`argmax_after_ply` was a dead field.** It was in the config and the scientific hash, but never passed to self-play, so setting it had no effect. | code (`coordinator.rs` built `SelfPlayConfig` without it) | **Fixed:** implemented (temperature 0 from that ply on, counted from the game's start) |
+| S2 | Temperature 1.0 on every ply; AlphaZero sampled only in the opening | config | **Owner decision:** sample the first 30 plies, then argmax |
+| S3 | No root exploration noise | code | **Owner decision:** root Dirichlet noise in self-play (α 0.3, ε 0.25, AlphaZero chess); arenas stay noise-free by contract |
+| T1 | Gradient clipping is per parameter tensor at 1.0, not global-norm. The pre-clip global norm was ~100 in P4.3F, so every tensor was clipped on every step. | code + P4.3F | **Owner-approved, conditional:** re-measure on v2 first; switch to global-norm clipping if norms stay large |
+| — | The observation encoding is normalized: binary planes, halfmove /150, repetition /5 | code | No change |
+
+**Contract changes that make drift impossible to miss:**
+
+- `recur64_model::model::HEAD_VERSION = 2`.
+- `CheckpointMeta.head_version`: metadata written before the field existed
+  reads as 1.
+- A mismatch is refused by `check_contracts`. `model_io::load` (used by
+  bench-runtime, eval-policy, search-gain and the pilot's inference owners)
+  now checks the checkpoint contracts. Previously it checked none.
+- `scientific_identity` is v4 and adds `model_head_version` plus
+  `root_dirichlet_alpha` / `root_dirichlet_epsilon`.
+- F10 and R10 unique parameters: 9,805,288 → **9,805,672**, both
+  architectures, from the 384 final-norm scale parameters. Parity holds.
+
+**One change reverted during the gate (MEASURED).** The promotion-delta head
+was first zero-initialized as well. That made the first-step gradient into
+`promo1` exactly zero, which the existing test
+`promotion_path_receives_gradient` caught. No measurement showed a promotion
+problem, so that change was reverted rather than editing the test.
+
+**Owner amendment A2 (post-hoc; the v1 data had been seen).** The search-gain
+gate from A1 cannot be passed by any budget on an untrained network. Search
+cannot improve on a prior when the value head carries no information, so
+this was a measurement-design error.
+
+- Search gain is removed as a T0 selection gate.
+- It is kept as a **per-cycle learning-progress metric**: measured on each
+  smoke cycle's replay against that cycle's generating snapshot. It should
+  rise once the value head learns.
+- Budget selection on reference v2: minimum eligible 64, degeneracy gates,
+  and highest trainable positions/s, with the 0.15 / 50% data-health
+  override.

@@ -97,6 +97,10 @@ pub fn run_arena(
         temperature: 0.0,
         ply_cap: cfg.ply_cap,
         recurrence: cfg.recurrence,
+        // Arena play is deterministic and noise-free by contract.
+        argmax_after_ply: None,
+        root_dirichlet_alpha: 0.0,
+        root_dirichlet_epsilon: 0.0,
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {

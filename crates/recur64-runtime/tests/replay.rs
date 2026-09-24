@@ -47,6 +47,7 @@ fn real_game(id: u64) -> GameRecord {
         temperature: 1.0,
         ply_cap: 4,
         recurrence: 1,
+        ..SelfPlayConfig::default()
     };
     let game = play_game_seeded(&ev, &cfg, id).unwrap();
     GameRecord::from_selfplay(

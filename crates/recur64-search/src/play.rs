@@ -8,7 +8,7 @@ use recur64_core::{ActionId, Color, GameState, Outcome, StandardMove, Terminatio
 
 use crate::evaluator::Evaluator;
 use crate::game_tree::ChessGame;
-use crate::puct::{PuctConfig, RootEdge, search};
+use crate::puct::{PuctConfig, RootEdge, RootNoise, search_with_root_noise};
 use crate::rng::Rng;
 
 /// Game-play configuration.
@@ -20,6 +20,15 @@ pub struct SelfPlayConfig {
     pub temperature: f32,
     pub ply_cap: u32,
     pub recurrence: usize,
+    /// Play the highest-visit move (temperature 0) from this ply on (counted
+    /// from the game's start position). `None` samples at `temperature` on
+    /// every ply.
+    pub argmax_after_ply: Option<u32>,
+    /// Root Dirichlet noise concentration; used only when
+    /// `root_dirichlet_epsilon > 0`.
+    pub root_dirichlet_alpha: f32,
+    /// Root noise mixing weight; `0.0` disables root noise.
+    pub root_dirichlet_epsilon: f32,
 }
 
 impl Default for SelfPlayConfig {
@@ -30,6 +39,19 @@ impl Default for SelfPlayConfig {
             temperature: 1.0,
             ply_cap: 256,
             recurrence: 1,
+            argmax_after_ply: None,
+            root_dirichlet_alpha: 0.3,
+            root_dirichlet_epsilon: 0.0,
+        }
+    }
+}
+
+impl SelfPlayConfig {
+    /// Move-selection temperature at `ply` (plies played since the start).
+    pub fn temperature_at(&self, ply: u32) -> f32 {
+        match self.argmax_after_ply {
+            Some(n) if ply >= n => 0.0,
+            _ => self.temperature,
         }
     }
 }
@@ -135,6 +157,7 @@ pub fn play_game_from(
     mut state: GameState,
 ) -> Result<SelfPlayGame, crate::EvalError> {
     let start_fen = state.to_fen();
+    let start_ply = state.ply();
     let mut plies = Vec::new();
     let termination;
 
@@ -149,20 +172,26 @@ pub fn play_game_from(
         }
 
         let side_to_move = state.side_to_move();
+        let root_noise = (cfg.root_dirichlet_epsilon > 0.0).then(|| RootNoise {
+            epsilon: cfg.root_dirichlet_epsilon,
+            noise: rng.dirichlet(cfg.root_dirichlet_alpha as f64, state.legal_actions().len()),
+        });
         let game = ChessGame::new(state.clone(), evaluator);
-        let result = search(
+        let result = search_with_root_noise(
             game,
             &PuctConfig {
                 c_puct: cfg.c_puct,
                 simulations: cfg.simulations_per_move,
             },
+            root_noise.as_ref(),
         )?;
         if result.edges.is_empty() {
             termination = Termination::Aborted;
             break;
         }
         let target = sparse_target(&result.edges, result.total_visits);
-        let selected = sample_action(&result.edges, cfg.temperature, rng);
+        let temperature = cfg.temperature_at(state.ply() - start_ply);
+        let selected = sample_action(&result.edges, temperature, rng);
         plies.push(SelfPlayPly {
             selected,
             target,
@@ -198,4 +227,24 @@ pub fn play_game_seeded(
     let mut g = play_game(evaluator, cfg, &mut rng)?;
     g.seed = seed;
     Ok(g)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn argmax_after_ply_switches_temperature_to_zero() {
+        let cfg = SelfPlayConfig {
+            temperature: 1.0,
+            argmax_after_ply: Some(30),
+            ..SelfPlayConfig::default()
+        };
+        assert_eq!(cfg.temperature_at(0), 1.0);
+        assert_eq!(cfg.temperature_at(29), 1.0);
+        assert_eq!(cfg.temperature_at(30), 0.0);
+        assert_eq!(cfg.temperature_at(200), 0.0);
+        let always = SelfPlayConfig::default();
+        assert_eq!(always.temperature_at(500), always.temperature);
+    }
 }

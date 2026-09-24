@@ -60,6 +60,14 @@ pub struct CheckpointMeta {
     /// Position of the LR schedule.
     #[serde(default)]
     pub lr_schedule_step: u64,
+    /// Readout-head function version ([`crate::model::HEAD_VERSION`]).
+    /// Metadata written before the field existed is head v1.
+    #[serde(default = "legacy_head_version")]
+    pub head_version: u32,
+}
+
+fn legacy_head_version() -> u32 {
+    1
 }
 
 impl CheckpointMeta {
@@ -98,11 +106,18 @@ impl CheckpointMeta {
             run_id: String::new(),
             update_counter: step,
             lr_schedule_step: step,
+            head_version: crate::model::HEAD_VERSION,
         }
     }
 
     /// Verify the recorded chess contract versions match the current ones.
     pub fn check_contracts(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.head_version == crate::model::HEAD_VERSION,
+            "checkpoint head version {} is not the current head version {}: its weights              were trained for a different readout function and are refused",
+            self.head_version,
+            crate::model::HEAD_VERSION
+        );
         let v = recur64_core::ContractVersions::V1;
         anyhow::ensure!(
             self.observation_version == v.observation
