@@ -438,3 +438,18 @@ Machine-readable evidence is in `docs/evidence/phase4/scheduling/`.
 **INFERRED transfer check for P4.4.** Every P4.4 cell runs this schedule and
 records eval/s. If eval/s at higher budgets departs materially from about
 1,400–1,700, the schedule is re-checked rather than assumed to transfer.
+
+## P4.4 — F10 search-budget requalification
+
+**Sample sizes (decided before any P4.4 run, from the P4.3 finding that
+one-wave cells are tail-bound).**
+
+- 8 / 16 / 32 / 64 / 128: 64 games each (2 waves at the frozen concurrency
+  32), so throughput is not dominated by the longest game.
+- 256 (measurement-only): 32 games, the fewest that realize the frozen
+  concurrency 32. The amendment's "~16 games" would need a different
+  schedule. Its throughput is therefore single-wave and tail-biased; it is
+  used for search gain and data health only.
+- Every budget uses the same game seeds (`first_game_id` 0) and the frozen
+  reference and schedule (32 / 32 / 500 µs). Only `simulations_per_move`
+  changes.
