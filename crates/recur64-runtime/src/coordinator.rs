@@ -38,6 +38,10 @@ use recur64_search::{Evaluator, SelfPlayConfig, play_game_from};
 /// replay audit re-verifies legality on read.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SelfPlayMetrics {
+    pub games_requested: u64,
+    pub games_completed: u64,
+    pub failed_games: u64,
+    pub concurrent_games: usize,
     pub requested_active_games: u32,
     pub cpu_workers: usize,
     pub games: u64,
@@ -54,11 +58,13 @@ pub struct SelfPlayMetrics {
     /// Games without a terminal result (truncated/aborted); excluded by the
     /// learner and never labelled as draws.
     pub truncated: u64,
+    pub draw_share: f64,
+    pub repetition_share: f64,
     pub inference: MetricsSnapshot,
 }
 
 /// Build self-play metrics from collected game records.
-fn selfplay_metrics(
+pub(crate) fn selfplay_metrics(
     cfg: &RunConfig,
     records: &[GameRecord],
     inference: MetricsSnapshot,
@@ -76,7 +82,16 @@ fn selfplay_metrics(
     }
     let plies: u64 = records.iter().map(|r| r.plies.len() as u64).sum();
     let games = records.len() as u64;
+    let repetition_share = terminations
+        .get("threefold_repetition")
+        .copied()
+        .unwrap_or(0) as f64
+        / games.max(1) as f64;
     SelfPlayMetrics {
+        games_requested: cfg.collection_shape().map(|s| s.0 as u64).unwrap_or(0),
+        games_completed: games,
+        failed_games: 0,
+        concurrent_games: cfg.collection_shape().map(|s| s.1).unwrap_or(0),
         requested_active_games: cfg.active_games,
         cpu_workers: cfg.cpu_workers,
         games,
@@ -92,6 +107,8 @@ fn selfplay_metrics(
         draws,
         black_wins,
         truncated,
+        draw_share: draws as f64 / games.max(1) as f64,
+        repetition_share,
         inference,
     }
 }
@@ -135,12 +152,13 @@ fn read_model_id(dir: &Path) -> String {
 /// concurrency value always means real concurrent execution. (The Phase 2
 /// `collect_only` played games sequentially, and the Phase 2 coordinator
 /// bounded concurrency by `cpu_workers`, producing tiny batches.)
-fn collect_parallel(
+pub(crate) fn collect_parallel(
     cfg: &RunConfig,
     evaluator: &dyn Evaluator,
     cancel: &CancelToken,
     deadline: Instant,
-) -> Vec<GameRecord> {
+    game_id_base: u64,
+) -> anyhow::Result<Vec<GameRecord>> {
     let sp = SelfPlayConfig {
         simulations_per_move: cfg.simulations_per_move,
         c_puct: cfg.c_puct,
@@ -155,8 +173,13 @@ fn collect_parallel(
         recurrence: cfg.recurrence,
     };
 
-    let concurrency = (cfg.active_games as usize).max(1);
-    let games_total = cfg.active_games as usize;
+    let (games_total, concurrency) = cfg.collection_shape()?;
+    let games_total = games_total as usize;
+    let start_state = match &cfg.start_fen {
+        Some(f) => GameState::from_fen(f)
+            .map_err(|e| anyhow::anyhow!("invalid configured start_fen: {e}"))?,
+        None => GameState::startpos(),
+    };
     let next = std::sync::atomic::AtomicU64::new(0);
     let mut records: Vec<GameRecord> = Vec::new();
 
@@ -167,10 +190,11 @@ fn collect_parallel(
             let cancel = cancel.clone();
             let search_record = search_record.clone();
             let seed = cfg.seed;
-            let start_fen = cfg.start_fen.clone();
+            let start_state = start_state.clone();
             let next = &next;
             handles.push(scope.spawn(move || {
                 let mut out = Vec::new();
+                let mut failures = Vec::new();
                 loop {
                     if cancel.is_cancelled() || Instant::now() > deadline {
                         break;
@@ -181,33 +205,49 @@ fn collect_parallel(
                         break;
                     }
                     let game_seed = seed.wrapping_add(game_index as u64);
-                    let start_state = match &start_fen {
-                        Some(f) => match GameState::from_fen(f) {
-                            Ok(s) => s,
-                            Err(_) => continue,
-                        },
-                        None => GameState::startpos(),
-                    };
                     let mut rng = recur64_search::Rng::new(game_seed);
-                    if let Ok(mut g) = play_game_from(ev, &sp, &mut rng, start_state) {
-                        g.seed = game_seed;
-                        out.push(GameRecord::from_selfplay(
-                            game_index as u64,
-                            &g,
-                            search_record.clone(),
-                        ));
+                    match play_game_from(ev, &sp, &mut rng, start_state.clone()) {
+                        Ok(mut g) => {
+                            g.seed = game_seed;
+                            out.push(GameRecord::from_selfplay(
+                                game_id_base + game_index as u64,
+                                &g,
+                                search_record.clone(),
+                            ));
+                        }
+                        Err(e) => {
+                            failures.push(format!("game {}: {e}", game_id_base + game_index as u64))
+                        }
                     }
                 }
-                out
+                (out, failures)
             }));
         }
+        let mut errors = Vec::new();
         for h in handles {
-            if let Ok(mut v) = h.join() {
-                records.append(&mut v);
+            match h.join() {
+                Ok((mut v, mut failures)) => {
+                    records.append(&mut v);
+                    errors.append(&mut failures);
+                }
+                Err(_) => errors.push("self-play worker panicked".to_string()),
             }
         }
-    });
-    records
+        if !errors.is_empty() {
+            return Err(anyhow::anyhow!(
+                "{} self-play games failed: {}",
+                errors.len(),
+                errors
+                    .iter()
+                    .take(4)
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            ));
+        }
+        Ok(())
+    })?;
+    Ok(records)
 }
 
 /// Run the bounded vertical slice.
@@ -239,6 +279,7 @@ pub fn run<B: AutodiffBackend>(
     );
     let mut meta = meta;
     meta.run_id = cfg.run_id.clone();
+    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
     save_training(
         &run_dir.reference_ckpt(),
         &reference_model,
@@ -257,12 +298,13 @@ pub fn run<B: AutodiffBackend>(
     }
 
     // --- COLLECT ---
-    let header = ReplayHeader::new(
+    let mut header = ReplayHeader::new(
         cfg.run_id.clone(),
         reference_model_id.clone(),
         format!("{} ({})", cfg.device, cfg.precision),
         cfg.precision.clone(),
     );
+    header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
     let inference_model =
         model_io::load::<B::InnerBackend>(&run_dir.reference_ckpt(), &cfg.model, &inner_device)?;
     let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
@@ -276,7 +318,7 @@ pub fn run<B: AutodiffBackend>(
     );
     let evaluator = owner.evaluator();
 
-    let records = collect_parallel(cfg, &evaluator, cancel, deadline);
+    let records = collect_parallel(cfg, &evaluator, cancel, deadline, 0)?;
 
     let inference_metrics = owner.metrics().snapshot();
     owner.shutdown();
@@ -313,18 +355,25 @@ pub fn run<B: AutodiffBackend>(
 
     // --- TRAIN ---
     let all_games = crate::replay::ReplayReader::open(&run_dir.replay())?.read_all_games()?;
+    let new_trainable_positions: u64 = all_games
+        .iter()
+        .filter(|g| g.outcome.is_some())
+        .map(|g| g.plies.len() as u64)
+        .sum();
+    let (scheduled_updates, _) = cfg.reuse_updates(new_trainable_positions)?;
     let train_model = model_io::load::<B>(&run_dir.reference_ckpt(), &cfg.model, &b_device)?;
     let mut optim = adamw::<B, _>();
     let learner_cfg = LearnerConfig {
         batch_size: cfg.train_batch,
         accumulation_steps: cfg.accumulation_steps,
-        max_updates: cfg.max_updates,
+        max_updates: scheduled_updates,
         lr: cfg.lr,
         warmup_updates: cfg.resolved_warmup(),
         planned_updates: cfg.resolved_planned_updates(),
         start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
+        deadline: Some(deadline),
     };
     let (train_report, candidate_model_id) =
         match train_from_games(train_model, &mut optim, &all_games, &learner_cfg, &b_device) {
@@ -341,6 +390,7 @@ pub fn run<B: AutodiffBackend>(
                     cfg.precision.clone(),
                 );
                 cand_meta.run_id = cfg.run_id.clone();
+                cand_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
                 cand_meta.update_counter = report.updates as u64;
                 save_training(&run_dir.candidate_ckpt(), &trained, &optim, &cand_meta)?;
                 (Some(report), read_model_id(&run_dir.candidate_ckpt()))
@@ -362,6 +412,7 @@ pub fn run<B: AutodiffBackend>(
                     cfg.precision.clone(),
                 );
                 cand_meta.run_id = cfg.run_id.clone();
+                cand_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
                 save_training(
                     &run_dir.candidate_ckpt(),
                     &reference_model,
@@ -381,9 +432,7 @@ pub fn run<B: AutodiffBackend>(
     let ref_ev = SyncEvaluator::new(ref_infer, cfg.recurrence, inner_device.clone());
     let cand_ev = SyncEvaluator::new(cand_infer, cfg.recurrence, inner_device);
     let openings = match &cfg.opening_suite {
-        Some(p) => OpeningSuite::load(std::path::Path::new(p))
-            .map(|s| s.openings)
-            .unwrap_or_default(),
+        Some(p) => OpeningSuite::load(std::path::Path::new(p))?.openings,
         None => Vec::new(),
     };
     let arena_cfg = ArenaConfig {
@@ -532,6 +581,7 @@ pub fn collect_only<B: AutodiffBackend>(
         cfg.precision.clone(),
     );
     meta.run_id = cfg.run_id.clone();
+    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
     let tmp_ckpt = replay_dir.join("_ref");
     save_training(&tmp_ckpt, &reference_model, &reference_optim, &meta)?;
     let model_id = read_model_id(&tmp_ckpt);
@@ -554,7 +604,7 @@ pub fn collect_only<B: AutodiffBackend>(
     );
     let ev = owner.evaluator();
     let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
-    let records = collect_parallel(cfg, &ev, cancel, deadline);
+    let records = collect_parallel(cfg, &ev, cancel, deadline, 0)?;
     let inference_metrics = owner.metrics().snapshot();
     owner.shutdown();
 
@@ -585,4 +635,32 @@ pub fn game_uci_moves(record: &GameRecord) -> anyhow::Result<Vec<String>> {
         state.apply(mv)?;
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod collection_tests {
+    use super::*;
+    use recur64_search::{EvalError, EvalRequest, EvalResult};
+    struct Failing;
+    impl Evaluator for Failing {
+        fn evaluate(&self, _: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
+            Err(EvalError::Backend("injected failure".into()))
+        }
+    }
+    fn cfg() -> RunConfig {
+        RunConfig::from_toml_str("run_id = 'test'\ngames_per_cycle = 2\nconcurrent_games = 2\n[model]\nwidth = 32\nheads = 4\nffn = 64\ninput_blocks = 0\ncore_blocks = 1\noutput_blocks = 0\n").unwrap()
+    }
+    #[test]
+    fn invalid_fen_and_failed_game_are_visible() {
+        let mut config = cfg();
+        config.start_fen = Some("not a FEN".into());
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let err =
+            collect_parallel(&config, &Failing, &CancelToken::new(), deadline, 0).unwrap_err();
+        assert!(err.to_string().contains("invalid configured start_fen"));
+        config.start_fen = None;
+        let err =
+            collect_parallel(&config, &Failing, &CancelToken::new(), deadline, 0).unwrap_err();
+        assert!(err.to_string().contains("2 self-play games failed"));
+    }
 }

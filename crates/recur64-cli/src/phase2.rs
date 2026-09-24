@@ -164,6 +164,7 @@ fn train_impl<B: AutodiffBackend>(
         start_update: 0,
         recurrence: cfg.recurrence,
         seed: cfg.seed,
+        deadline: None,
     };
     let (trained, report) =
         recur64_runtime::train_from_games(model, &mut optim, &games, &learner_cfg, &device)
@@ -199,9 +200,7 @@ fn arena_impl<B: AutodiffBackend>(
     let ref_ev = SyncEvaluator::new(ref_model, cfg.recurrence, device.clone());
     let cand_ev = SyncEvaluator::new(cand_model, cfg.recurrence, device);
     let openings = match &cfg.opening_suite {
-        Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))
-            .map(|s| s.openings)
-            .unwrap_or_default(),
+        Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))?.openings,
         None => Vec::new(),
     };
     let arena_cfg = ArenaConfig {

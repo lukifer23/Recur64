@@ -102,8 +102,17 @@ pub struct RunConfig {
     pub c_puct: f32,
     #[serde(default = "default_temperature")]
     pub temperature: f32,
+    /// Legacy total-game count and concurrency request. When the new pair is
+    /// absent, cpu_workers caps actual concurrency; migrate configs explicitly.
     #[serde(default = "default_active_games")]
     pub active_games: u32,
+    /// Total games to collect in one cycle. Must be paired with concurrent_games.
+    #[serde(default)]
+    pub games_per_cycle: Option<u32>,
+    /// Maximum simultaneous games. Must be paired with games_per_cycle.
+    #[serde(default)]
+    pub concurrent_games: Option<u32>,
+    /// Maximum self-play worker threads. Applies to legacy and new configs.
     #[serde(default = "default_cpu_workers")]
     pub cpu_workers: usize,
     #[serde(default = "default_ply_cap")]
@@ -204,6 +213,38 @@ impl RunConfig {
         self.train_batch.max(1) * self.accumulation_steps.max(1)
     }
 
+    /// Legacy configs use active_games for both counts. New configs must supply
+    /// both fields; cpu_workers is a cap on the actual worker thread count.
+    pub fn collection_shape(&self) -> anyhow::Result<(u32, usize)> {
+        let (games, concurrency) = match (self.games_per_cycle, self.concurrent_games) {
+            (Some(g), Some(c)) => (g, c),
+            (None, None) => (self.active_games, self.active_games),
+            _ => anyhow::bail!("games_per_cycle and concurrent_games must be set together"),
+        };
+        anyhow::ensure!(
+            games > 0 && concurrency > 0 && self.cpu_workers > 0,
+            "collection counts and cpu_workers must be positive"
+        );
+        Ok((
+            games,
+            (concurrency as usize)
+                .min(self.cpu_workers)
+                .min(games as usize),
+        ))
+    }
+
+    /// Reuse target schedules work from newly collected, completed-game plies.
+    /// max_updates is a safety cap, never the default requested workload.
+    pub fn reuse_updates(&self, new_trainable_positions: u64) -> anyhow::Result<(usize, f64)> {
+        anyhow::ensure!(
+            self.replay_reuse_target.is_finite() && self.replay_reuse_target > 0.0,
+            "replay_reuse_target must be finite and positive"
+        );
+        let requested_examples = new_trainable_positions as f64 * self.replay_reuse_target;
+        let requested = (requested_examples / self.effective_batch() as f64).ceil() as usize;
+        Ok((requested.min(self.max_updates), requested_examples))
+    }
+
     /// Resolved warmup updates for the schedule.
     pub fn resolved_warmup(&self) -> u64 {
         self.warmup_updates.unwrap_or_else(|| {
@@ -226,6 +267,39 @@ impl RunConfig {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
         format!("{:x}", hasher.finalize())
+    }
+
+    pub fn resolved_config_hash(&self) -> String {
+        self.config_hash()
+    }
+
+    /// Experiment identity excludes device scheduling, run naming, and limits.
+    pub fn scientific_config_hash(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let science = serde_json::json!({
+            "model": self.model,
+            "recurrence": self.recurrence,
+            "precision": self.precision,
+            "simulations_per_move": self.simulations_per_move,
+            "c_puct": self.c_puct,
+            "temperature": self.temperature,
+            "argmax_after_ply": self.argmax_after_ply,
+            "ply_cap": self.ply_cap,
+            "start_fen": self.start_fen,
+            "seed": self.seed,
+            "optimizer": "adamw-burn-0.21.0",
+            "lr": self.lr,
+            "effective_batch": self.effective_batch(),
+            "warmup_updates": self.resolved_warmup(),
+            "planned_updates": self.resolved_planned_updates(),
+            "replay_max_positions": self.replay_max_positions,
+            "replay_reuse_target": self.replay_reuse_target,
+            "opening_suite": self.opening_suite,
+        });
+        format!(
+            "{:x}",
+            Sha256::digest(serde_json::to_vec(&science).expect("serializable config"))
+        )
     }
 
     /// Parse the device string into a typed device kind.
@@ -354,5 +428,35 @@ output_blocks = 0
         assert_eq!(cfg.cpu_workers, 8);
         assert_eq!(cfg.max_inference_batch, 32);
         assert_eq!(cfg.batch_timeout_us, 500);
+    }
+
+    #[test]
+    fn collection_counts_and_scientific_hash_are_independent_of_scheduling() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        cfg.games_per_cycle = Some(64);
+        cfg.concurrent_games = Some(12);
+        cfg.cpu_workers = 12;
+        assert_eq!(cfg.collection_shape().unwrap(), (64, 12));
+        let scientific = cfg.scientific_config_hash();
+        let resolved = cfg.resolved_config_hash();
+        cfg.concurrent_games = Some(8);
+        cfg.max_inference_batch = 64;
+        cfg.batch_timeout_us = 2000;
+        assert_eq!(cfg.scientific_config_hash(), scientific);
+        assert_ne!(cfg.resolved_config_hash(), resolved);
+        cfg.concurrent_games = None;
+        assert!(cfg.collection_shape().is_err());
+    }
+
+    #[test]
+    fn reuse_target_schedules_updates_and_cap_is_explicit() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        cfg.train_batch = 8;
+        cfg.accumulation_steps = 4;
+        cfg.replay_reuse_target = 2.0;
+        cfg.max_updates = 100;
+        assert_eq!(cfg.reuse_updates(65).unwrap(), (5, 130.0));
+        cfg.max_updates = 3;
+        assert_eq!(cfg.reuse_updates(65).unwrap().0, 3);
     }
 }

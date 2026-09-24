@@ -22,7 +22,21 @@ pub struct OpeningSuite {
 
 impl OpeningSuite {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
-        Ok(toml::from_str(&std::fs::read_to_string(path)?)?)
+        let suite: Self = toml::from_str(&std::fs::read_to_string(path)?)?;
+        anyhow::ensure!(
+            suite.version == 1,
+            "unsupported opening suite version {}",
+            suite.version
+        );
+        anyhow::ensure!(
+            !suite.openings.is_empty(),
+            "configured opening suite is empty"
+        );
+        for (i, fen) in suite.openings.iter().enumerate() {
+            GameState::from_fen(fen)
+                .map_err(|e| anyhow::anyhow!("opening {i} has invalid FEN: {e}"))?;
+        }
+        Ok(suite)
     }
 
     pub fn save(&self, path: &Path) -> anyhow::Result<()> {
@@ -59,4 +73,22 @@ pub fn generate_openings(count: usize, plies: usize, seed: u64) -> Vec<String> {
         out.push(state.to_fen());
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn explicit_suite_must_exist_and_contain_valid_fens() {
+        let path =
+            std::env::temp_dir().join(format!("recur64-openings-test-{}.toml", std::process::id()));
+        assert!(OpeningSuite::load(&path).is_err());
+        std::fs::write(
+            &path,
+            "version = 1\nprovenance = 'test'\nopenings = ['bad fen']\n",
+        )
+        .unwrap();
+        assert!(OpeningSuite::load(&path).is_err());
+        std::fs::remove_file(path).unwrap();
+    }
 }

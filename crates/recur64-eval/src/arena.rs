@@ -117,7 +117,8 @@ pub fn run_arena(
         };
         let seed = cfg.seed.wrapping_add(i as u64);
         let opening = &openings[(i as usize / 2) % openings.len()];
-        let start = GameState::from_fen(opening).unwrap_or_else(|_| GameState::startpos());
+        let start = GameState::from_fen(opening)
+            .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
         let game = play_game_from(&router, &sp, &mut Rng::new(seed), start)?;
         *terminations
             .entry(game.termination.label().to_string())
