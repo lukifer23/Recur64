@@ -1,8 +1,9 @@
 # HP H1 measured results — 2026-09-23
 
-Status: **in progress; no R15 entry decision yet**. This is the authoritative
-measured H1 record. MEASURED, INFERRED, and NOT RUN are labelled. Do not infer
-F15 learning health from a section that does not say it measured learning.
+Status: **H2 complete; final entry decision recorded below**. This is the
+authoritative measured HP record. MEASURED, INFERRED, and NOT RUN are
+labelled. Do not infer F15 learning health from a section that does not say it
+measured learning.
 
 ## Completed and verified
 
