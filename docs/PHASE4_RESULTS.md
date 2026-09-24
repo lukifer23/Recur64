@@ -722,3 +722,82 @@ INFERRED:
   nearly uniformly except where search finds forced mates.
 - Purposeful targets require the value head to learn. That is exactly what
   the smoke's per-cycle `root_search` diagnostics are for.
+
+## Addendum B — bounded performance investigation (MEASURED)
+
+Rule: keep an engineering change only if it proves science parity AND gains
+≥ 10% real self-play eval/s or trainable pos/s, or ≥ 15% forward latency, or
+a substantial resource improvement (addendum D2/D3). Evidence:
+`docs/evidence/phase4/perf/`.
+
+**B3 — why v2 eval/s is lower than v1 (MEASURED from the sweep JSONs).**
+
+| cell | ev/s | mean forward ms | batch mean / p50 | owner busy in forward | queue p50 µs |
+|---|---:|---:|---|---:|---:|
+| v1 s16 | 1325 | 13.8 | 21.0 / 30 | 87% | 1082 |
+| v2 s16 | 948 | 15.6 | 19.8 / 24 | 75% | 4235 |
+| v1 s64 | 1064 | 14.8 | 20.4 / 25 | 77% | 2177 |
+| v2 s64 | 898 | 15.5 | 17.9 / 15 | 78% | 4133 |
+
+- The model forward is not materially slower: v2's 14.5–15.6 ms sits inside
+  v1's own run-to-run range of 13.8–17.4 ms.
+- Evaluations per position are unchanged (≈ sims), so the terminal-node mix is
+  not the cause.
+- **The drop is smaller mean batches.** Batch p95 is still 32 in every cell.
+- INFERRED: the likely cause is wave/tail structure. v2 games are longer and
+  more variable in length (mean 186–287 plies vs 174–201), so a larger share
+  of each cell runs with fewer than 32 live games.
+- B7 (below) rules out CPU tree work as the cause.
+
+**B4 — per-forward relative-index rebuild (MEASURED; NOT KEPT).** In-process
+A/B, synchronized per forward, 50 iterations, 3 fresh processes, F10 R1:
+
+| batch | rebuilt ms | cached ms |
+|---:|---|---|
+| 16 | 10.14 / 10.15 / 10.19 | 10.01 / 10.02 / 10.06 |
+| 32 | 14.17 / 14.28 / 15.80 | 14.11 / 14.17 / 15.78 |
+
+- The gain is ≈ 1% at batch 16 and ≈ 0–0.5% at batch 32, well below the
+  threshold.
+- The cache was implemented and its outputs were bit-identical (parity test),
+  but it was **reverted**: tiny gain, added complexity.
+
+**B9 — per-process forward variance (MEASURED).**
+
+- Same binary and shapes: batch-32 forward was 14.1–14.3 ms in two processes
+  and 15.8 ms in the third (+11%).
+- The first-call ("cold") time was 0.95–1.71 s.
+- INFERRED: this is consistent with CubeCL autotune choosing per process.
+- Methodology consequence: schedule comparisons need repeated processes, and
+  differences under ~10–15% are noise (P4.3 already treated < 5% as ties and
+  found ±8–15% run-to-run spread).
+- No framework change.
+
+**B7 — CPU search costs versus game length (MEASURED, `bench-core`).** Search
+clones the full `GameState`, including history, per expanded node.
+
+| ply | history | clone+apply /s | clone /s | legal_actions /s | encode /s |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 1 | 10.8 M | 46.6 M | 4.95 M | 3.07 M |
+| 50 | 51 | 3.18 M | 10.0 M | 4.38 M | 1.87 M |
+| 100 | 101 | 1.68 M | 5.11 M | 3.15 M | 1.97 M |
+| 200 | 201 | 1.31 M | 2.37 M | 14.9 M (3 legal) | 1.98 M |
+
+- Clone cost grows about 20× by ply 200.
+- In absolute terms, the per-tree-step CPU work (clone + apply + encode +
+  legal-move generation) is about 1.5–2 µs. Each network evaluation costs
+  about 0.75 ms of GPU time amortized over the batch (15 ms / batch ≈ 20).
+- **CPU tree work is not the throughput bottleneck.** No change was made; it
+  is recorded as a future memory and allocation item.
+
+**B6 — inference pipeline.** The owner is busy in forward for 75–87% of
+collection wall time (MEASURED). Pipelining could recover at most the
+remaining idle or assembly share, which is also where the tail effect lives.
+Instrumentation and implementation are deferred (backlog).
+
+**B8 — more OS threads.** Not revisited: P4.3 measured CPU oversubscription
+at 48–64 threads. Multi-leaf search / virtual loss changes search semantics
+and is deferred until after the corrected F10 baseline.
+
+**B5 — sparse legal-only policy scoring.** NOT RUN. Given B3/B9, the dense
+64×64 grid is not an identified bottleneck, and the smoke comes first (E1).

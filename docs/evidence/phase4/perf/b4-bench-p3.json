@@ -1,0 +1,118 @@
+{
+  "recur64_version": "0.1.0",
+  "burn_version": "0.21.0",
+  "config": "f10",
+  "precision": "fp32",
+  "device": "cuda (Burn 0.21.0)",
+  "synchronized": true,
+  "unique_params": 9805672,
+  "unique_blocks": 8,
+  "notes": [
+    "cuda (Burn 0.21.0), fp32 precision.",
+    "Cold = first invocation; warm = mean of steady-state iterations.",
+    "Not chess learning; synthetic fixtures only.",
+    "Device synchronized around each timed region."
+  ],
+  "cases": [
+    {
+      "kind": "inference",
+      "batch": 16,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 959.0484,
+      "warm_ms": 9.845328,
+      "examples_per_sec": 1625.1363083078593,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-rebuilt",
+      "batch": 16,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 10.192950000000002,
+      "examples_per_sec": 1569.7123992563486,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-cached",
+      "batch": 16,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 10.05495,
+      "examples_per_sec": 1591.2560480161512,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-rebuilt",
+      "batch": 16,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 10.13428,
+      "examples_per_sec": 1578.79987527481,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-cached",
+      "batch": 16,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 10.06913,
+      "examples_per_sec": 1589.0151383485963,
+      "finite": true
+    },
+    {
+      "kind": "inference",
+      "batch": 32,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 225.489,
+      "warm_ms": 14.429549999999999,
+      "examples_per_sec": 2217.671375753229,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-rebuilt",
+      "batch": 32,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 15.796166000000001,
+      "examples_per_sec": 2025.8080346838592,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-cached",
+      "batch": 32,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 15.832820000000002,
+      "examples_per_sec": 2021.1181583571338,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-rebuilt",
+      "batch": 32,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 15.863948,
+      "examples_per_sec": 2017.1523507263134,
+      "finite": true
+    },
+    {
+      "kind": "inference-sync-rel-cached",
+      "batch": 32,
+      "recurrence": 1,
+      "executed_blocks": 8,
+      "cold_ms": 0.0,
+      "warm_ms": 15.775640000000001,
+      "examples_per_sec": 2028.4438539419002,
+      "finite": true
+    }
+  ]
+}

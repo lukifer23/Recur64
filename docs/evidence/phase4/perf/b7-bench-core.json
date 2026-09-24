@@ -1,0 +1,92 @@
+{
+  "recur64_version": "0.1.0",
+  "profile": "release",
+  "notes": [
+    "Release mode required for meaningful numbers.",
+    "apply_clone = clone + apply one legal move (includes history clone).",
+    "Not chess learning; CPU rules/encoding throughput only."
+  ],
+  "positions": [
+    {
+      "name": "startpos",
+      "legal_moves": 20,
+      "movegen_actions_per_sec": 5724262.2856979305,
+      "apply_clone_per_sec": 10001000.100010002,
+      "encode_per_sec": 3131017.4241119656,
+      "perft_nodes_per_sec": 55189088.65468072
+    },
+    {
+      "name": "kiwipete",
+      "legal_moves": 48,
+      "movegen_actions_per_sec": 2403701.7006189534,
+      "apply_clone_per_sec": 10745755.426606491,
+      "encode_per_sec": 2769584.4238572004,
+      "perft_nodes_per_sec": 50475551.88776562
+    },
+    {
+      "name": "endgame_kp",
+      "legal_moves": 14,
+      "movegen_actions_per_sec": 9180628.873077806,
+      "apply_clone_per_sec": 10566914.989168912,
+      "encode_per_sec": 2803712.1148400484,
+      "perft_nodes_per_sec": 42222222.22222222
+    },
+    {
+      "name": "promotion",
+      "legal_moves": 7,
+      "movegen_actions_per_sec": 15379883.112888342,
+      "apply_clone_per_sec": 9423738.397022098,
+      "encode_per_sec": 3430884.825196418,
+      "perft_nodes_per_sec": 42222222.222222224
+    },
+    {
+      "name": "castling",
+      "legal_moves": 26,
+      "movegen_actions_per_sec": 4180602.006688963,
+      "apply_clone_per_sec": 10480532.41104648,
+      "encode_per_sec": 2666880.017068032,
+      "perft_nodes_per_sec": 45299934.08042189
+    }
+  ],
+  "game_length_sweep": [
+    {
+      "ply": 0,
+      "legal_moves": 20,
+      "history_len": 1,
+      "clone_apply_per_sec": 10806137.886319429,
+      "clone_only_per_sec": 46630916.297505245,
+      "legal_actions_per_sec": 4951107.810372571,
+      "encode_per_sec": 3069038.010035754
+    },
+    {
+      "ply": 50,
+      "legal_moves": 22,
+      "history_len": 51,
+      "clone_apply_per_sec": 3175258.3866512137,
+      "clone_only_per_sec": 9995502.02408916,
+      "legal_actions_per_sec": 4377900.35898783,
+      "encode_per_sec": 1873957.6110788372
+    },
+    {
+      "ply": 100,
+      "legal_moves": 31,
+      "history_len": 101,
+      "clone_apply_per_sec": 1684309.8119468093,
+      "clone_only_per_sec": 5106209.150326798,
+      "legal_actions_per_sec": 3145000.2358750175,
+      "encode_per_sec": 1965312.2389819683
+    },
+    {
+      "ply": 200,
+      "legal_moves": 3,
+      "history_len": 201,
+      "clone_apply_per_sec": 1309663.3510356164,
+      "clone_only_per_sec": 2368994.598692315,
+      "legal_actions_per_sec": 14889815.36628946,
+      "encode_per_sec": 1981924.845409862
+    }
+  ],
+  "game_state_size_bytes": 168,
+  "board_size_bytes": 104,
+  "standard_move_size_bytes": 4
+}
