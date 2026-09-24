@@ -327,8 +327,101 @@ substantially achieved, targets did not collapse, repetition fell from 20.8%
 to 8.3%, raw and searched evaluations completed, and every hard-stop signal
 remained clear. This is not a claim that F15 is strong.
 
-## Next measured gate
+## H2 F15 qualification pilot (MEASURED)
 
-Run `configs/hp/f15-pilot.toml` with the same scientific hash, bounded to 14
-cycles, 60,000 positions, and 75 minutes. Then issue exactly one R15 entry
-decision and stop. R15 training remains NOT RUN.
+Config `configs/hp/f15-pilot.toml`, commit `b594173`, CUDA FP32 on the RTX
+2050, frozen reference `4271e19f…`, scientific hash `23801713…` (exactly the
+smoke hash), resolved hash `458ebf85…`. The run ended cleanly with status
+`budget_exhausted` after 4,559.5 s (75.99 min), below the 90-minute hard
+maximum. It completed 10 cycles, 240/240 games, and 49,213 trainable
+positions. Raw artifacts are local at `runs/hp-h2-f15-qualification/`.
+
+| cycle | positions | W/D/L | 3fold share | entropy | top1 | reuse | current sample | mean age | parent score/decisive | decision | optimizer accepted | collect/train/eval s |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| 0 | 4,152 | 4/20/0 | .208 | .911 | .562 | 1.973 | 1.000 | 0.000 | .475/5 | hold | 0 | 69/61/65 |
+| 1 | 3,763 | 4/17/3 | .083 | .930 | .553 | 2.007 | .663 | .337 | .525/5 | promote | 59 | 63/51/74 |
+| 2 | 5,385 | 3/20/1 | .542 | .615 | .719 | 1.521 | .490 | .682 | .475/5 | hold: unhealthy | 59 | 89/56/127 |
+| 3 | 5,256 | 2/22/0 | .375 | .586 | .735 | 1.559 | .398 | 1.004 | .475/3 | hold | 59 | 94/56/126 |
+| 4 | 5,750 | 1/22/1 | .417 | .602 | .727 | 1.425 | .333 | 1.331 | .475/3 | hold | 59 | 99/56/120 |
+| 5 | 4,609 | 4/18/2 | .333 | .599 | .728 | 1.777 | .290 | 1.654 | .575/5 | promote | 123 | 81/56/122 |
+| 6 | 4,689 | 0/24/0 | .667 | .464 | .786 | 1.747 | .245 | 1.997 | .475/1 | hold | 123 | 74/56/125 |
+| 7 | 5,059 | 0/23/1 | .583 | .468 | .784 | 1.619 | .220 | 2.336 | .525/3 | hold | 123 | 86/56/122 |
+| 8 | 5,051 | 0/24/0 | .500 | .465 | .787 | 1.622 | .198 | 2.703 | .500/2 | hold | 123 | 87/56/887 |
+| 9 | 5,499 | 0/24/0 | .458 | .478 | .780 | 1.490 | .180 | 3.027 | .500/2 | hold: unhealthy | 123 | 655/56/822 |
+
+All positions were sampleable and all games were trainable. Across the run:
+26 checkmates, 10 stalemates, 38 insufficient-material draws, 100 threefold
+draws, 66 fifty-move draws, and zero truncations. Draws were 214/240 (89.2%);
+threefold plus fifty-move was 166/240 (69.2%). In cycles 6–9, that combined
+repetition share was 79.2%, 83.3%, 83.3%, and 79.2%, with three cycles at
+24/24 draws and trainable target top-1 near 0.78. The targets stayed finite
+and above the preregistered absolute-collapse thresholds, but the learned
+self-play distribution became repetition dominated.
+
+Reuse was not controlled at the 2.0 target. The 64-update safety cap bound in
+five cycles; achieved reuse ranged 1.425–2.007. Replay sampling also became
+progressively older: current-cycle share fell from 1.000 to 0.180 and mean age
+rose to 3.027 cycles. These values are truthful telemetry, and they do not
+support calling replay sufficiently fresh for recurrence entry.
+
+Training itself remained numerically stable. All losses, gradients, and
+learning rates were finite; maximum reported pre-clip gradient norm was
+94.59. Losses declined along the accepted trajectory, and raw-vs-random
+scores were 0.559–0.711 after cycle 0, but the samples were small and draw
+heavy, so this is only a possible learning signal. It is not a strength or
+Elo claim.
+
+Lineage and promotion behaved correctly. Cycles 1 and 5 promoted with five
+decisive games and scores 0.525 and 0.575. Accepted optimizer state advanced
+0 -> 59 -> 123; every held candidate left it unchanged. Cycle 7 scored 0.525
+but had only three decisive games and was correctly held. Candidate/parent
+and candidate/frozen-reference reports remained separate after the first
+promotion. Several arenas were uninformative; cycle 9's frozen-reference
+arena was 20 draws and explicitly `informative = false`.
+
+Systems correctness remained clean: zero failed games, inference errors,
+illegal moves, audit failures, NaN/Inf, OOM, checkpoint mismatches, optimizer
+mismatches, or lineage corruption. Live sampling during the late run measured
+3,909 MiB/4,096 MiB VRAM, 94–100% GPU utilization, and 59–62 C. The thermal
+behavior was stable, but performance was not. Cycle 8 evaluation rose from
+the prior 120–127 s range to 887 s. Cycle 9 then had mean self-play forward
+latency 156 ms versus 17–21 ms previously, collection 655 s, and evaluation
+822 s. The process remained responsive and compute active. Accumulation of
+CUDA allocations from repeatedly spawning multi-model owners is a plausible
+cause, but is INFERRED rather than measured. The current controller checks
+the wall deadline between phases, so cycle 9 ran to completion and the
+75-minute budget was exceeded by 59.5 s; it stayed within the 90-minute hard
+maximum.
+
+### Qualification answers
+
+1. Reuse controlled across cycles: **NO**; the cap bound five cycles.
+2. Replay sufficiently fresh: **NO** for recurrence entry; current share fell
+   to 18.0% and mean age reached 3.03 cycles.
+3. Policy and WDL losses interpretable: **YES**, finite and separately
+   reported.
+4. Gradients stable after mean reduction: **YES**, finite across 635 updates.
+5. Raw policy learning signal: **POSSIBLE BUT INCONCLUSIVE**, due small,
+   draw-heavy matches.
+6. Searched self-play repetition dominated: **YES** after the promotions.
+7. Candidates meaningfully different from parents: **YES** by model IDs and
+   evaluation outcomes, with high uncertainty.
+8. Arenas ever informative: **YES**, including two promotion arenas; many
+   later arenas were not.
+9. Promotions evidence based: **YES**; no false promotion was observed.
+10. Hour-scale GPU behavior stable: **NO**; thermal stability held but
+    throughput degraded sharply and VRAM margin was about 187 MiB.
+11. Optimizer/checkpoint lineage correct: **YES**, including two accepted
+    CUDA continuation transitions.
+
+## R15 entry decision
+
+**R15 NO-GO**
+
+The harness now provides trustworthy evidence, and that evidence says not to
+start recurrence yet. The blocking results are repetition-dominated learned
+self-play, uncontrolled reuse/freshness under the frozen cap, and repeatable
+late-run GPU throughput degradation with almost no VRAM margin. R15 training,
+multi-R schedules, and R1/R2/R4 experiments remain NOT RUN. The next phase
+must address these measured F15 issues without weakening promotion or data
+health gates, then repeat bounded qualification.
