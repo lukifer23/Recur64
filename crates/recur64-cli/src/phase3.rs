@@ -170,8 +170,13 @@ fn eval_policy_impl<B: AutodiffBackend>(
     output: &std::path::Path,
     games: u32,
 ) -> anyhow::Result<()> {
-    let device: B::Device = Default::default();
-    let model = model_io::load::<B>(checkpoint, &cfg.model, &device)?;
+    // Inference only: evaluate on the inner (non-autodiff) backend, as the
+    // arena and pilot do. On the autodiff backend every forward records graph
+    // state that no backward pass ever consumes; on CUDA a 100-game T0 filled
+    // the 16 GB device and kept growing host memory.
+    let device: <B::InnerBackend as burn::tensor::backend::BackendTypes>::Device =
+        Default::default();
+    let model = model_io::load::<B::InnerBackend>(checkpoint, &cfg.model, &device)?;
     let ev = SyncEvaluator::new(model, cfg.recurrence, device);
     let openings = match &cfg.opening_suite {
         Some(p) => OpeningSuite::load(std::path::Path::new(p))?.openings,
