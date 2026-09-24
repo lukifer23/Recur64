@@ -6,8 +6,10 @@ use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
 use recur64_eval::{OpeningSuite, generate_openings};
+use recur64_model::checkpoint::{CheckpointMeta, save_training};
+use recur64_model::train::adamw;
 use recur64_runtime::{
-    CancelToken, RunConfig, RunDir, SyncEvaluator, eval_policy, model_io, run_pilot,
+    CancelToken, RunConfig, RunDir, RunMetadata, SyncEvaluator, eval_policy, model_io, run_pilot,
 };
 
 type CpuTrain = burn::backend::Autodiff<burn::backend::Flex>;
@@ -45,6 +47,79 @@ pub struct PilotArgs {
     pub run_dir: PathBuf,
     #[arg(long, default_value_t = false)]
     pub force: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct FreezeReferenceArgs {
+    #[arg(long)]
+    pub config: PathBuf,
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+fn freeze_reference_impl<B: AutodiffBackend>(
+    cfg: &RunConfig,
+    output: &std::path::Path,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        !output.exists(),
+        "reference checkpoint already exists: {}",
+        output.display()
+    );
+    let device: B::Device = Default::default();
+    B::seed(&device, cfg.seed);
+    let model = model_io::build::<B>(&cfg.model, &device);
+    let optim = adamw::<B, _>();
+    let mut meta = CheckpointMeta::new(
+        cfg.model.clone(),
+        cfg.recurrence,
+        false,
+        0,
+        cfg.lr,
+        cfg.seed,
+        0,
+        format!("{} ({})", cfg.device, cfg.precision),
+        cfg.precision.clone(),
+    );
+    meta.run_id = cfg.run_id.clone();
+    meta.git_revision = RunMetadata::new(cfg).git_revision;
+    save_training(output, &model, &optim, &meta)?;
+    std::fs::write(output.join("config.toml"), toml::to_string_pretty(cfg)?)?;
+    let saved: CheckpointMeta = serde_json::from_slice(&std::fs::read(output.join("meta.json"))?)?;
+    println!(
+        "reference model_id={} seed={} git={:?} scientific_hash={} resolved_hash={}",
+        saved.model_id,
+        cfg.seed,
+        saved.git_revision,
+        cfg.scientific_config_hash(),
+        cfg.resolved_config_hash()
+    );
+    Ok(())
+}
+
+pub fn run_freeze_reference(args: FreezeReferenceArgs) -> anyhow::Result<()> {
+    let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(args.config)?)?;
+    cfg.ensure_supported()?;
+    if let Some(path) = &cfg.opening_suite {
+        OpeningSuite::load(std::path::Path::new(path))?;
+    }
+    match cfg.device.as_str() {
+        "cpu" => freeze_reference_impl::<CpuTrain>(&cfg, &args.output),
+        "cuda" => {
+            #[cfg(feature = "cuda")]
+            {
+                freeze_reference_impl::<burn::backend::Autodiff<burn::backend::Cuda>>(
+                    &cfg,
+                    &args.output,
+                )
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+            }
+        }
+        other => anyhow::bail!("unknown device '{other}'"),
+    }
 }
 
 pub fn run_gen_openings(args: GenOpeningsArgs) -> anyhow::Result<()> {

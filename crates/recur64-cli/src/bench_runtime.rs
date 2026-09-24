@@ -14,6 +14,9 @@ pub struct BenchRuntimeArgs {
     pub config: PathBuf,
     #[arg(long)]
     pub output: PathBuf,
+    /// Frozen inference/training checkpoint whose weights are reused in every cell.
+    #[arg(long)]
+    pub checkpoint: Option<PathBuf>,
     /// `small`, `full`, or `hp` (10 RTX 2050 candidates).
     #[arg(long, default_value = "small")]
     pub grid: String,
@@ -63,7 +66,7 @@ fn run_impl<B: AutodiffBackend>(
 
     let mut results: Vec<SweepCellResult> = Vec::new();
     for cell in cells {
-        let r = run_cell::<B>(cfg, cell, games_per_cell)?;
+        let r = run_cell::<B>(cfg, cell, games_per_cell, args.checkpoint.as_deref())?;
         println!(
             "active={:<4} batch={:<4} timeout={:<5}us sims={:<3} | games/h={:>7.1} pos/s={:>8.1} batch mean/p50/p95={:.2}/{}/{} wait p95={}us vram={:?}MB",
             r.active_games,
@@ -87,6 +90,7 @@ fn run_impl<B: AutodiffBackend>(
         "games_per_cell": games_per_cell,
         "model": cfg.model,
         "device": cfg.device,
+        "checkpoint": args.checkpoint,
         "cells": results,
     });
     std::fs::write(

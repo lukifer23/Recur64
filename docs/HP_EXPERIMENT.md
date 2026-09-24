@@ -1,5 +1,9 @@
 # Recur64 — HP experimental branch (`experiment/hp-r15`)
 
+Current H1 execution checkpoint and measured RTX 2050 cell:
+[`HP_H1_RESULTS.md`](HP_H1_RESULTS.md). The scheduling/search sweeps and F15
+learning gates remain in progress; no R15 entry decision has been issued.
+
 This document describes a **separate experimental lineage** of Recur64 that runs
 on a home HP machine. It is not the primary workstation branch and must never be
 merged into `main` without a separate architecture decision.

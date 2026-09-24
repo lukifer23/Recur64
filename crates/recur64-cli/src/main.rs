@@ -66,6 +66,8 @@ enum Commands {
     EvalPolicy(phase3::EvalPolicyArgs),
     /// Bounded multi-cycle F10 pilot (collect/train/evaluate).
     Pilot(phase3::PilotArgs),
+    /// Freeze a seeded initial full training checkpoint without self-play.
+    FreezeReference(phase3::FreezeReferenceArgs),
     /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
     #[cfg(feature = "cuda")]
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
@@ -91,6 +93,7 @@ fn main() -> anyhow::Result<()> {
         Commands::GenOpenings(args) => phase3::run_gen_openings(args),
         Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
         Commands::Pilot(args) => phase3::run_pilot_cmd(args),
+        Commands::FreezeReference(args) => phase3::run_freeze_reference(args),
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
     }

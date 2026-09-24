@@ -91,4 +91,15 @@ mod tests {
         assert!(OpeningSuite::load(&path).is_err());
         std::fs::remove_file(path).unwrap();
     }
+
+    #[test]
+    fn frozen_v1_suite_is_valid() {
+        let path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../configs/openings-v1.toml"
+        ));
+        let suite = OpeningSuite::load(path).unwrap();
+        assert_eq!(suite.version, 1);
+        assert!(!suite.openings.is_empty());
+    }
 }

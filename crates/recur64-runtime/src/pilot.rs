@@ -117,6 +117,7 @@ pub fn run_pilot<B: AutodiffBackend>(
 
     let b_device: B::Device = Default::default();
     let inner_device: Device<B::InnerBackend> = Default::default();
+    B::seed(&b_device, cfg.seed);
 
     // Reference checkpoint (random F10).
     let reference_model = model_io::build::<B>(&cfg.model, &b_device);

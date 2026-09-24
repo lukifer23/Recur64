@@ -120,6 +120,7 @@ pub fn warmup<B: AutodiffBackend>(
     device: &B::Device,
 ) -> anyhow::Result<f64> {
     let inner_device: Device<B::InnerBackend> = Default::default();
+    <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
     let model = model_io::build::<B::InnerBackend>(&cfg.model, &inner_device);
     let batched = BatchedModel::new(model, cfg.recurrence, inner_device);
     let legal: Vec<ActionId> = (0..20).map(|i| ActionId::from_index(i).unwrap()).collect();
@@ -157,9 +158,14 @@ pub fn run_cell<B: AutodiffBackend>(
     cfg: &RunConfig,
     cell: SweepCellSpec,
     games: u64,
+    checkpoint: Option<&std::path::Path>,
 ) -> anyhow::Result<SweepCellResult> {
     let inner_device: Device<B::InnerBackend> = Default::default();
-    let model = model_io::build::<B::InnerBackend>(&cfg.model, &inner_device);
+    <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
+    let model = match checkpoint {
+        Some(path) => model_io::load::<B::InnerBackend>(path, &cfg.model, &inner_device)?,
+        None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device),
+    };
     let batched = BatchedModel::new(model, cfg.recurrence, inner_device);
     let owner = InferenceOwner::spawn(
         batched,

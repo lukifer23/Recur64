@@ -12,18 +12,27 @@ chess contracts: observation V1, action V1, rules profile, perft), and **Phase 2
 audit → train → checkpoint → arena → report). It is **not** a chess engine and
 contains no UCI engine loop or strength claims.
 
+Phase 3 is merged into the HP experiment branch and adds streaming replay,
+multi-cycle pilots, raw-policy evaluation, and a warmup/cosine learner with
+gradient accumulation. The HP H1 harness is under qualification; no F15
+learning or R15 training result is claimed here.
+
 > **Experimental branch note.** This checkout is `experiment/hp-r15`, a separate
-> experimental lineage forked from Phase 2 (`78be205`). It explores a ~15M
+> experimental lineage forked from Phase 2 (`78be205`) and reconciled with
+> Phase 3 (`5ac291c`) in merge `fa66c32`. It explores a ~15M
 > matched-parameter F15/R15 recurrence-vs-search comparison on a home HP machine.
 > It is not mainline and must not be merged without a separate decision. See
 > `docs/HP_EXPERIMENT.md` and `docs/HP_CHANGES.md`; machine-specific detail stays
 > in those files.
 
+The current H1 measurements and unfinished gates are in
+[`docs/HP_H1_RESULTS.md`](docs/HP_H1_RESULTS.md).
+
 ## Requirements
 
 - Rust toolchain 1.97.1 (see `rust-toolchain.toml`).
-- Windows x86_64 with the configured linker (this machine uses `rust-lld` + a
-  bundled MSVC/SDK library set; see `docs/HARDWARE.md`).
+- Windows x86_64 with Visual Studio 2022 Build Tools on the HP machine.
+  Workstation linker details are recorded in `docs/HARDWARE.md`.
 - No CUDA runtime is required for the CPU path. The GPU path uses a user-space
   CUDA 12.9.1 runtime under `%LOCALAPPDATA%\Recur64\cuda\12.9.1` (see
   `docs/DECISIONS.md` D3); no admin rights or system changes are needed.

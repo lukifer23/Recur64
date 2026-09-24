@@ -130,6 +130,8 @@ re-measurement, F15 pilot / learning-health analysis, R15 training/evaluation.
 
 ## H1 harness implementation (in progress)
 
+The reboot-safe measured status is in [`HP_H1_RESULTS.md`](HP_H1_RESULTS.md).
+
 The current branch now shares one self-play collector across `run`, `selfplay`,
 `pilot`, and the runtime sweep. New configs can specify total games and maximum
 concurrent games separately; `cpu_workers` caps the actual worker threads.
