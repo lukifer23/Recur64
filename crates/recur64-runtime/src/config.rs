@@ -391,8 +391,41 @@ impl RunConfig {
     /// This is called on every run path (not only `bench`) so a BF16/FP16 request
     /// fails visibly instead of silently running something else.
     pub fn ensure_supported(&self) -> anyhow::Result<()> {
-        recur64_model::precision::ensure_supported(self.precision_kind()?, self.device_kind()?)
+        recur64_model::precision::ensure_supported(self.precision_kind()?, self.device_kind()?)?;
+        if self.device_kind()? == DeviceKind::Cuda {
+            ensure_nvrtc_on_path()?;
+        }
+        Ok(())
     }
+}
+
+/// cudarc loads NVRTC lazily on a worker thread. When it is missing, the
+/// panic is confined to that thread and JIT kernels silently do nothing, so a
+/// "CUDA" run can finish and write garbage. Refuse to start instead.
+fn ensure_nvrtc_on_path() -> anyhow::Result<()> {
+    const NAMES: [&str; 4] = [
+        "nvrtc64_12.dll",
+        "nvrtc.dll",
+        "libnvrtc.so.12",
+        "libnvrtc.so",
+    ];
+    let mut dirs: Vec<std::path::PathBuf> = std::env::var_os("PATH")
+        .map(|p| std::env::split_paths(&p).collect())
+        .unwrap_or_default();
+    if let Some(cuda) = std::env::var_os("CUDA_PATH") {
+        dirs.push(std::path::Path::new(&cuda).join("bin"));
+    }
+    let found = dirs
+        .iter()
+        .any(|d| NAMES.iter().any(|n| d.join(n).is_file()));
+    anyhow::ensure!(
+        found,
+        "CUDA requested but NVRTC ({}) is not on PATH or CUDA_PATH\\bin. Set CUDA_PATH \
+         and PATH for this process (docs/HP_EXPERIMENT.md, user-space CUDA 12.9.1). \
+         Refusing to run: without NVRTC the JIT kernels silently no-op.",
+        NAMES.join(", ")
+    );
+    Ok(())
 }
 
 #[cfg(test)]
