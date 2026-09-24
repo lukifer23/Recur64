@@ -26,7 +26,7 @@ ply_cap = 400
 
 # --- Learner scheduling ---
 train_batch = 32           # candidate; physical batch
-# gradient_accumulation = 4  # not yet implemented (ticket R1.3)
+accumulation_steps = 4     # implemented; effective batch = train_batch * accumulation_steps
 
 # --- Run budget ---
 run_budget_minutes = 30

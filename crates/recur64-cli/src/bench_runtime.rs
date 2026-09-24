@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
-use recur64_runtime::sweep::{SweepCellResult, grid, run_cell, warmup};
+use recur64_runtime::sweep::{SweepCellResult, grid, hp_grid, run_cell, warmup};
 use recur64_runtime::{RunConfig, SweepCellSpec};
 
 #[derive(Args, Debug)]
@@ -14,10 +14,10 @@ pub struct BenchRuntimeArgs {
     pub config: PathBuf,
     #[arg(long)]
     pub output: PathBuf,
-    /// `small` (6 cells) or `full` (16 cells).
+    /// `small`, `full`, or `hp` (10 RTX 2050 candidates).
     #[arg(long, default_value = "small")]
     pub grid: String,
-    #[arg(long, default_value_t = 8)]
+    #[arg(long, default_value_t = 32)]
     pub games_per_cell: u64,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
@@ -50,7 +50,11 @@ fn run_impl<B: AutodiffBackend>(
             simulations: args.simulations.unwrap_or(8),
         }]
     } else {
-        grid(!full)
+        if args.grid == "hp" {
+            hp_grid()
+        } else {
+            grid(!full)
+        }
     };
     let max_batch = cells.iter().map(|c| c.max_batch).max().unwrap_or(1);
 
@@ -122,6 +126,7 @@ fn run_impl<B: AutodiffBackend>(
 pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(&args.config)?;
     let cfg = RunConfig::from_toml_str(&text)?;
+    cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => {
             run_impl::<burn::backend::Autodiff<burn::backend::Flex>>(&cfg, &args.output, &args)

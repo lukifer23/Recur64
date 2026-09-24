@@ -11,7 +11,7 @@ merged into `main` without a separate architecture decision.
 | Canonical ancestor | `78be2052612236547f6b5232b417175c2ccdcfc9` — "Phase 2: first complete vertical slice (search, runtime, eval, coordinator)" |
 | Ancestor tag | `hp-phase2-base` |
 | Branch | `experiment/hp-r15` |
-| Depends on Phase 3? | **No.** Independently reproducible from `78be205`. |
+| Depends on Phase 3? | **Yes.** Phase 3 `5ac291c` was merged by `fa66c32`; the current branch cannot be reproduced from `78be205` alone. |
 
 The branch is deliberately more aggressive than the workstation's conservative
 progression: it targets a larger control model (F15, ~15M) and reaches the
@@ -66,8 +66,8 @@ or secrets are recorded.
 | Git | 2.55.0.windows.3 |
 | Linker | VS 2022 Build Tools with the C++ x86/x64 workload — **present** (no custom `~/.cargo/config.toml`) |
 | PowerShell | 5.1.26100.9444 |
-| CUDA toolkit | **absent** (`CUDA_PATH` empty, no `nvcc`, no user-space redist) |
-| CUDA user-space redist | not yet installed |
+| CUDA toolkit | No system-wide toolkit; user-space CUDA 12.9.1 is installed. |
+| CUDA user-space redist | Installed and tested with direct F15/R15 GPU graphs. |
 
 Toolchain decision for this machine: use the standard **MSVC** linker (VS Build
 Tools is installed), rather than replicating the workstation's `rust-lld` +
@@ -93,7 +93,7 @@ A system-wide CUDA Toolkit install was considered (admin is available) and is
 reproducibility goal. This is a deliberate divergence-in-tooling but not in
 framework version or numerics.
 
-Status: install + `cuda-smoke` on F15 are **in progress** (see status log).
+Status: CUDA 12.9.1, `cuda-smoke`, and direct F15/R15 FP32 GPU benchmarks are **TESTED**; see the measured results below. These direct-model figures do not qualify the post-merge self-play harness.
 
 ## F15 / R15 model family
 
@@ -118,6 +118,10 @@ input_blocks = 2, core_blocks = 4, output_blocks = 2   # 8 unique blocks
 
 Both store exactly eight unique transformer blocks of identical geometry, so
 their unique parameter counts are **identical by construction**.
+
+F15 is a matched-parameter feed-forward architecture control. R15 R1 is the
+recurrent-family baseline. They are not strictly functionally equivalent;
+the clean recurrence ladder is R15 R1 versus R2 versus R4.
 
 | Quantity | F15 | R15 |
 |---|---:|---:|

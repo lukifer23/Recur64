@@ -9,10 +9,11 @@ use std::time::{Duration, Instant};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
-use recur64_core::{ActionId, GameState, ObservationV1};
-use recur64_search::{Rng, SelfPlayConfig, play_game_from};
+use recur64_core::{ActionId, ObservationV1};
 
+use crate::cancel::CancelToken;
 use crate::config::RunConfig;
+use crate::coordinator::collect_parallel;
 use crate::inference::{BatchEvaluator, BatchedModel, InferenceConfig, InferenceOwner};
 use crate::model_io;
 
@@ -55,6 +56,32 @@ pub fn grid(small: bool) -> Vec<SweepCellSpec> {
     out
 }
 
+/// HP RTX 2050 schedule candidates; same game count for every cell.
+pub fn hp_grid() -> Vec<SweepCellSpec> {
+    [
+        (6, 8, 500),
+        (8, 16, 500),
+        (12, 16, 500),
+        (12, 32, 500),
+        (12, 32, 1000),
+        (12, 32, 2000),
+        (16, 32, 1000),
+        (16, 64, 1000),
+        (24, 32, 1000),
+        (24, 64, 2000),
+    ]
+    .into_iter()
+    .map(
+        |(active_games, max_batch, batch_timeout_us)| SweepCellSpec {
+            active_games,
+            max_batch,
+            batch_timeout_us,
+            simulations: 16,
+        },
+    )
+    .collect()
+}
+
 /// A measured sweep result.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SweepCellResult {
@@ -63,6 +90,12 @@ pub struct SweepCellResult {
     pub batch_timeout_us: u64,
     pub simulations: u32,
     pub games: u64,
+    pub requested_games: u64,
+    pub peak_in_flight: usize,
+    pub errors: u64,
+    pub terminations: std::collections::BTreeMap<String, u64>,
+    pub mean_target_entropy: f64,
+    pub mean_top1_visit_share: f64,
     pub positions: u64,
     pub requests: u64,
     pub batches: u64,
@@ -76,6 +109,7 @@ pub struct SweepCellResult {
     pub collect_secs: f64,
     pub games_per_hour: f64,
     pub positions_per_sec: f64,
+    pub evaluations_per_sec: f64,
     pub peak_vram_mb: Option<u64>,
 }
 
@@ -96,7 +130,9 @@ pub fn warmup<B: AutodiffBackend>(
     while size <= max_batch.max(1) {
         let observations: Vec<ObservationV1> = (0..size).map(|_| obs.clone()).collect();
         let legal_lists: Vec<Vec<ActionId>> = (0..size).map(|_| legal.clone()).collect();
-        let _ = batched.evaluate_batch(&observations, &legal_lists);
+        batched
+            .evaluate_batch(&observations, &legal_lists)
+            .map_err(|e| anyhow::anyhow!("GPU warmup failed at batch {size}: {e}"))?;
         size *= 2;
     }
     let _ = device;
@@ -134,56 +170,51 @@ pub fn run_cell<B: AutodiffBackend>(
         },
     );
     let ev = owner.evaluator();
-    let sp = SelfPlayConfig {
-        simulations_per_move: cell.simulations,
-        c_puct: cfg.c_puct,
-        temperature: cfg.temperature,
-        ply_cap: cfg.ply_cap,
-        recurrence: cfg.recurrence,
-    };
-
-    // `active_games` is the concurrency: one game per thread, so that many
-    // leaf-evaluation requests are in flight and the batcher can coalesce them.
-    let concurrency = (cell.active_games as usize).max(1);
-    let next = std::sync::atomic::AtomicU64::new(0);
-    let positions = std::sync::atomic::AtomicU64::new(0);
-
-    let mut peak_vram = sample_vram_mb();
+    let mut cell_cfg = cfg.clone();
+    cell_cfg.games_per_cycle = Some(u32::try_from(games)?);
+    cell_cfg.concurrent_games = Some(cell.active_games);
+    cell_cfg.cpu_workers = cell.active_games as usize;
+    cell_cfg.simulations_per_move = cell.simulations;
+    let sampling = std::sync::atomic::AtomicBool::new(true);
+    let peak_vram = std::sync::Mutex::new(sample_vram_mb());
     let collect_start = Instant::now();
-    std::thread::scope(|scope| {
-        for _ in 0..concurrency {
-            let ev = &ev;
-            let next = &next;
-            let positions = &positions;
-            let start_fen = cfg.start_fen.clone();
-            let seed = cfg.seed;
-            scope.spawn(move || {
-                loop {
-                    let i = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    if i >= games {
-                        break;
-                    }
-                    let mut rng = Rng::new(seed.wrapping_add(i));
-                    let start = match &start_fen {
-                        Some(f) => match GameState::from_fen(f) {
-                            Ok(s) => s,
-                            Err(_) => break,
-                        },
-                        None => GameState::startpos(),
-                    };
-                    if let Ok(game) = play_game_from(ev, &sp, &mut rng, start) {
-                        positions.fetch_add(
-                            game.plies.len() as u64,
-                            std::sync::atomic::Ordering::SeqCst,
-                        );
-                    }
+    let records = std::thread::scope(|scope| {
+        let monitor = scope.spawn(|| {
+            while sampling.load(std::sync::atomic::Ordering::Relaxed) {
+                if let Some(v) = sample_vram_mb() {
+                    let mut peak = peak_vram.lock().expect("VRAM sampler mutex");
+                    *peak = Some(peak.map_or(v, |p| p.max(v)));
                 }
-            });
+                std::thread::sleep(Duration::from_millis(500));
+            }
+        });
+        let deadline = Instant::now() + Duration::from_secs(cfg.run_budget_minutes.max(1) * 60);
+        let result = collect_parallel(&cell_cfg, &ev, &CancelToken::new(), deadline, 0);
+        sampling.store(false, std::sync::atomic::Ordering::Relaxed);
+        monitor.join().expect("VRAM sampler thread");
+        result
+    })?;
+    let positions = records.iter().map(|g| g.plies.len() as u64).sum::<u64>();
+    let mut terminations = std::collections::BTreeMap::new();
+    let mut entropy = 0.0;
+    let mut top1 = 0.0f64;
+    for game in &records {
+        *terminations.entry(game.termination.clone()).or_insert(0) += 1;
+        for ply in &game.plies {
+            entropy -= ply
+                .target
+                .iter()
+                .map(|(_, p)| {
+                    let p = *p as f64;
+                    if p > 0.0 { p * p.ln() } else { 0.0 }
+                })
+                .sum::<f64>();
+            top1 += ply
+                .target
+                .iter()
+                .map(|(_, p)| *p as f64)
+                .fold(0.0, f64::max);
         }
-    });
-    let positions = positions.load(std::sync::atomic::Ordering::SeqCst);
-    if let Some(v) = sample_vram_mb() {
-        peak_vram = Some(peak_vram.map_or(v, |p| p.max(v)));
     }
     let collect_secs = collect_start.elapsed().as_secs_f64().max(1e-6);
     let m = owner.metrics().snapshot();
@@ -194,7 +225,13 @@ pub fn run_cell<B: AutodiffBackend>(
         max_batch: cell.max_batch,
         batch_timeout_us: cell.batch_timeout_us,
         simulations: cell.simulations,
-        games,
+        games: records.len() as u64,
+        requested_games: games,
+        peak_in_flight: m.peak_in_flight,
+        errors: m.errors,
+        terminations,
+        mean_target_entropy: entropy / positions.max(1) as f64,
+        mean_top1_visit_share: top1 / positions.max(1) as f64,
         positions,
         requests: m.submitted,
         batches: m.batches,
@@ -206,8 +243,9 @@ pub fn run_cell<B: AutodiffBackend>(
         queue_wait_us_p95: m.queue_wait_us_p95,
         forward_us_mean: m.forward_us_mean,
         collect_secs,
-        games_per_hour: games as f64 / collect_secs * 3600.0,
+        games_per_hour: records.len() as f64 / collect_secs * 3600.0,
         positions_per_sec: positions as f64 / collect_secs,
-        peak_vram_mb: peak_vram,
+        evaluations_per_sec: m.completed as f64 / collect_secs,
+        peak_vram_mb: *peak_vram.lock().expect("VRAM sampler mutex"),
     })
 }

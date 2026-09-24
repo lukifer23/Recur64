@@ -127,3 +127,18 @@ DETECTED ≠ TESTED. Each entry states what was actually verified and how.
 
 HP batching sweep on the RTX 2050, freeze hardware profile, search-budget
 re-measurement, F15 pilot / learning-health analysis, R15 training/evaluation.
+
+## H1 harness implementation (in progress)
+
+The current branch now shares one self-play collector across `run`, `selfplay`,
+`pilot`, and the runtime sweep. New configs can specify total games and maximum
+concurrent games separately; `cpu_workers` caps the actual worker threads.
+Legacy `active_games` configs still parse, with `cpu_workers` as the thread cap.
+Collection and explicit evaluation opening errors are visible. Pilot training
+uses the existing full training checkpoint to continue Adam state and LR steps
+only after promotion. Reuse schedules updates from new completed-game plies,
+and candidate promotion requires informative parent results.
+
+The workstation F10 baseline in `docs/F10_BASELINE.md` is historical evidence
+from different hardware. It is not an HP F15 learning measurement. GPU systems,
+search-budget, smoke, and pilot results must be reported separately when run.
