@@ -544,6 +544,26 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - Owner residency (at most 2 resident owners) is a separate peak-memory
     item, scheduled after the smoke.
 
+## D46 - At most two resident models during candidate evaluation
+
+- **Status:** ACCEPTED (2026-09-25, owner-approved post-smoke item)
+- **Decision:** `evaluate_candidate` keeps the candidate resident and runs
+  two phases.
+  - **Phase A:** parent + candidate play the searched parent arena, raw vs
+    random and raw vs parent. The parent is then shut down.
+  - **Phase B:** only when reference != parent, the reference is loaded for
+    the longitudinal arena.
+  - When parent == reference, no third model is loaded and the parent arena
+    is reused (labelled).
+- **Why:**
+  - Three models were resident even when the third was identical to the
+    parent. After D44 this no longer leaked memory; it only wasted it.
+  - Each match is independent and deterministic given its seed and inputs, so
+    the schedule does not change any result.
+- **Test:** `two_owner_evaluation_matches_the_three_owner_sequence` checks
+  identical results against the original three-owner sequence, both with
+  parent == reference and with parent != reference.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

@@ -232,10 +232,11 @@ pub fn spawn_owner<B: Backend>(
 }
 
 /// Evaluate a candidate against its parent, the frozen reference, and random
-/// play. Match order and seeds are part of the evaluation contract:
-/// searched candidate-vs-parent, searched candidate-vs-reference (reused when
-/// parent == reference), raw candidate-vs-random, raw candidate-vs-parent, all
-/// seeded `cfg.seed + cycle`. With a `deadline` (D38) no evaluation game
+/// play: searched candidate-vs-parent, searched candidate-vs-reference (reused
+/// when parent == reference), raw candidate-vs-random and raw
+/// candidate-vs-parent, each seeded `cfg.seed + cycle`. Each match is
+/// independent and deterministic given its inputs, so the execution schedule
+/// (at most two resident models, D46) does not change any result. With a `deadline` (D38) no evaluation game
 /// starts after it, and an incomplete evaluation is an
 /// `EvalError::DeadlineExceeded` error, never a partial result.
 #[allow(clippy::too_many_arguments)]
@@ -248,17 +249,22 @@ pub fn evaluate_candidate<B: Backend>(
     device: &B::Device,
     deadline: Option<Instant>,
 ) -> anyhow::Result<EvalOutcome> {
-    let parent_owner = spawn_owner::<B>(models.parent_dir, cfg, device)?;
-    let cand_owner = spawn_owner::<B>(models.candidate_dir, cfg, device)?;
-    let ref_owner = spawn_owner::<B>(models.reference_dir, cfg, device)?;
-    let (owners_spawned, max_resident_owners) = (3, 3);
-    let (parent_ev, cand_ev, ref_ev) = (
-        parent_owner.evaluator(),
-        cand_owner.evaluator(),
-        ref_owner.evaluator(),
-    );
+    // At most two models are resident (D46). Phase A: parent + candidate play
+    // every parent comparison. Phase B (only when the reference differs from
+    // the parent): the parent is shut down and the reference loaded for the
+    // longitudinal arena. Each match keeps its own seed and inputs, so the
+    // results do not depend on this schedule.
     let mut arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
     arena_cfg.deadline = deadline;
+    let seed = cfg.seed.wrapping_add(cycle as u64);
+    let raw_games = cfg.arena_games.max(4);
+    let cand_owner = spawn_owner::<B>(models.candidate_dir, cfg, device)?;
+    let cand_ev = cand_owner.evaluator();
+    let mut inference = Vec::new();
+
+    // Phase A: parent comparisons.
+    let parent_owner = spawn_owner::<B>(models.parent_dir, cfg, device)?;
+    let parent_ev = parent_owner.evaluator();
     let arena = run_arena(
         &parent_ev,
         &cand_ev,
@@ -266,27 +272,12 @@ pub fn evaluate_candidate<B: Backend>(
         models.candidate_model_id,
         &arena_cfg,
     )?;
-    // Until the first promotion the parent *is* the frozen reference, so
-    // the longitudinal arena would replay the identical deterministic
-    // comparison. Reuse it and say so.
-    let reference_arena_is_parent_arena = models.parent_model_id == models.reference_model_id;
-    let reference_arena = if reference_arena_is_parent_arena {
-        arena.clone()
-    } else {
-        run_arena(
-            &ref_ev,
-            &cand_ev,
-            models.reference_model_id,
-            models.candidate_model_id,
-            &arena_cfg,
-        )?
-    };
     let raw = raw_policy_vs_random(
         &cand_ev,
-        cfg.arena_games.max(4),
+        raw_games,
         cfg.temperature,
         cfg.ply_cap,
-        cfg.seed.wrapping_add(cycle as u64),
+        seed,
         openings,
         eval_concurrency,
         deadline,
@@ -294,22 +285,42 @@ pub fn evaluate_candidate<B: Backend>(
     let raw_parent = raw_policy_vs_parent(
         &cand_ev,
         &parent_ev,
-        cfg.arena_games.max(4),
+        raw_games,
         cfg.ply_cap,
-        cfg.seed.wrapping_add(cycle as u64),
+        seed,
         openings,
         eval_concurrency,
         deadline,
     )?;
-    drop((parent_ev, cand_ev, ref_ev));
-    let inference = vec![
-        ("parent".to_string(), parent_owner.metrics().snapshot()),
-        ("candidate".to_string(), cand_owner.metrics().snapshot()),
-        ("reference".to_string(), ref_owner.metrics().snapshot()),
-    ];
+    drop(parent_ev);
+    inference.push(("parent".to_string(), parent_owner.metrics().snapshot()));
     parent_owner.shutdown();
+
+    // Phase B: until the first promotion the parent *is* the frozen
+    // reference, so the longitudinal arena would replay the identical
+    // deterministic comparison. Reuse it, say so, and load no third model.
+    let reference_arena_is_parent_arena = models.parent_model_id == models.reference_model_id;
+    let (reference_arena, owners_spawned) = if reference_arena_is_parent_arena {
+        (arena.clone(), 2)
+    } else {
+        let ref_owner = spawn_owner::<B>(models.reference_dir, cfg, device)?;
+        let ref_ev = ref_owner.evaluator();
+        let reference_arena = run_arena(
+            &ref_ev,
+            &cand_ev,
+            models.reference_model_id,
+            models.candidate_model_id,
+            &arena_cfg,
+        )?;
+        drop(ref_ev);
+        inference.push(("reference".to_string(), ref_owner.metrics().snapshot()));
+        ref_owner.shutdown();
+        (reference_arena, 3)
+    };
+    drop(cand_ev);
+    inference.push(("candidate".to_string(), cand_owner.metrics().snapshot()));
     cand_owner.shutdown();
-    ref_owner.shutdown();
+    let max_resident_owners = 2;
     Ok(EvalOutcome {
         inference,
         arena,
