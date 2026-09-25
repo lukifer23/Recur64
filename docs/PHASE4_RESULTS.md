@@ -1516,3 +1516,75 @@ arena contract, seed offset 1000 (disjoint from the cycle seeds).
 - arena score vs parent and vs reference
 - replay freshness
 - throughput, VRAM and temperature
+
+## P4.6 - stopped by the owner after 6 complete cycles (MEASURED)
+
+Binary `03e62f7`, `configs/phase4/f10-qual.toml`, started 11:45. The owner
+stopped the run at 14:10, during cycle 6's evaluation, to diagnose the draw
+drift first.
+
+- Cycles 0-5 are complete and recorded in `runs/phase4-f10-qual/report/`.
+- Cycle 6's self-play is in the replay, but its training and evaluation are
+  incomplete and discarded.
+- `metadata.json` still says `running` because the process was stopped
+  externally.
+- The pre-registered 128-game strength test was **NOT RUN**.
+
+| cycle | draw share | threefold + fifty | plies | mean abs net value | search-moved argmax | WDL loss (end) | policy loss (end) | vs parent (decisive) | vs frozen reference (decisive) | decision |
+|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|
+| 0 | 0.28 | 0.06 | 184 | 0.000 | 11.3% | 0.908 | 3.084 | 0.387 (21) | = parent | hold |
+| 1 | 0.25 | 0.06 | 168 | 0.000 | 11.4% | 0.847 | 3.096 | 0.422 (21) | = parent | hold |
+| 2 | 0.31 | 0.05 | 197 | 0.000 | 11.2% | 0.735 | 3.014 | 0.500 (16) | = parent | hold |
+| 3 | 0.23 | 0.05 | 162 | 0.000 | 11.5% | 0.822 | 3.098 | 0.609 (17) | = parent | promote |
+| 4 | 0.72 | 0.28 | 251 | 0.142 | 24.8% | 0.650 | 2.939 | 0.562 (8) | 0.578 (19) | promote |
+| 5 | 0.78 | 0.19 | 251 | 0.096 | 21.3% | 0.578 | 2.903 | 0.547 (9) | 0.594 (20) | promote |
+
+- **System:** 0 inference errors; `cap_bound` false in every cycle; VRAM
+  3.6-3.8 GB; no thermal slowdown.
+- **Trainer:** the step advanced continuously, 0 to 607.
+- **Determinism:** cycles 0-1 are identical to smoke v2 cycles 0-1 (same
+  reference, same seeds).
+
+### Draw diagnostic (MEASURED, `recur64 draw-report`)
+
+A **failed conversion** is a drawn game in which one side held a material
+advantage of at least a rook within the final 100 plies.
+
+| cycle | draws / 64 | failed conversions | main endings | mean draw plies | mean peak advantage |
+|---:|---:|---:|---|---:|---:|
+| 0 | 18 | 15 (83%) | insufficient 14, fifty 2, threefold 2 | 331 | +7.2 |
+| 1 | 16 | 12 (75%) | insufficient 11, fifty 4 | 342 | +7.2 |
+| 2 | 20 | 18 (90%) | insufficient 16, fifty 3 | 349 | +8.1 |
+| 3 | 15 | 12 (80%) | insufficient 11, fifty 3 | 337 | +8.4 |
+| 4 | 46 | 37 (80%) | insufficient 27, fifty 16 | 311 | +9.4 |
+| 5 | 50 | 38 (76%) | insufficient 36, fifty 9 | 298 | +7.4 |
+| 6 | 47 | 36 (77%) | insufficient 31, fifty 13 | 277 | +8.4 |
+
+**Reading.** Most draws are won games that were not converted, and this was
+already so with the untrained reference (83%). Trained self-play reaches
+such endgames far more often: draws went from about 16 to about 48 of 64,
+while the failed-conversion fraction stayed around 75-80%.
+
+INFERRED:
+
+- The root cause is that search at 64 simulations, with root noise on every
+  move, cannot convert winning endgames.
+- Those games are then labelled draws, which teaches the value head that
+  large material leads are draws: the self-reinforcing loop.
+
+## Search-depth comparison (pre-registration, written before the run)
+
+- Setup: the `f10-qual.toml` self-play contract (K = 2, root noise 0.25,
+  argmax after ply 30), 64 games, identical seeds (`first_game_id` 0), and
+  `draw-report` on each cell.
+
+| cell | network | sims |
+|---|---|---:|
+| A | `snapshot-005` (`3da3072d`, the latest promoted) | 64 |
+| B | `snapshot-005` | 128 |
+| C | reference v2 `d22c78bd` | 128 (the reference at 64 is qualification cycle 0: same seeds and contract) |
+
+**Rule.** 128 sims fixes the drift if, versus A, failed-conversion draws drop
+by >= 30% (relative) **and** the draw share drops by >= 0.15 (absolute), with
+0 inference errors. The throughput cost is reported. Adoption is an owner
+decision.
