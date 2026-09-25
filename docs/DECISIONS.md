@@ -544,6 +544,30 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - Owner residency (at most 2 resident owners) is a separate peak-memory
     item, scheduled after the smoke.
 
+## D45 - Searched-arena exploration contract
+
+- **Status:** ACCEPTED (2026-09-25; owner-approved Option A, selected by the
+  pre-registered rule)
+- **Decision:**
+  - Searched arenas sample from visit counts for the first 30 plies after
+    the opening (`arena_sample_plies = 30`).
+  - They apply root Dirichlet noise to every move (`arena_root_dirichlet_epsilon
+    = 0.25`, alpha as in self-play), with paired colours and seeded games.
+  - The defaults (none / 0) reproduce the original deterministic arena, and
+    the fields enter the scientific identity only when set, so earlier
+    hashes are unchanged.
+- **Why:**
+  - The deterministic, noise-free arena was 75% threefold between
+    near-identical networks, which starved conservative-v2 (3-5 decisive of
+    32; both smoke cycles held).
+  - Measured on the same model pair: V0 had 3 decisive and 24 threefold, V1
+    (sampling only) had 8 and 19, V2 had 24 and 0.
+- **Consequence:**
+  - Arena scores have wider intervals (±0.15 at 32 games), so promotion needs
+    a clear margin.
+  - Arena games no longer measure noise-free argmax play. Both sides get
+    identical exploration, so the comparison stays symmetric.
+
 ## D46 - At most two resident models during candidate evaluation
 
 - **Status:** ACCEPTED (2026-09-25, owner-approved post-smoke item)

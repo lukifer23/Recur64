@@ -1247,3 +1247,30 @@ scientific decision before P4.6.
 
 The identity of an adopted variant is new (see the config test):
 pre-D45 hashes stay reproducible.
+
+### D45 result (MEASURED): V2 adopted by the pre-registered rule
+
+Binary `f269140`, reference `d22c78bd` vs candidate `e8675fab`, 64 sims, 32
+games, seed offset 1, 0 inference errors in every variant. Artifacts:
+`docs/evidence/phase4/d45/`.
+
+| variant | W / D / L | decisive | threefold | fifty | truncated | score (95% CI) | secs |
+|---|---|---:|---:|---:|---:|---|---:|
+| V0 current | 1 / 29 / 2 | 3 (0.09) | 24 (0.75) | 5 | 0 | 0.484 (0.43-0.54) | 481 |
+| V1 sample 30 | 5 / 24 / 3 | 8 (0.25) | 19 (0.59) | 5 | 0 | 0.531 (0.44-0.62) | 438 |
+| **V2 sample 30 + root noise 0.25** | 12 / 8 / 12 | **24 (0.75)** | **0 (0.00)** | 3 | 0 | 0.500 (0.35-0.65) | 519 |
+
+- **V0 reproduced the smoke's cycle-1 arena exactly** (1 / 29 / 2; mate 3,
+  fifty 5, threefold 24). So `eval-arena` runs the pilot's arena path
+  deterministically.
+- **V1 fails the rule.** Sampling only the opening phase leaves the
+  deterministic argmax phase to collapse into repetition between
+  near-identical, near-zero-value networks.
+- **V2 passes both criteria** (decisive 0.75 >= 0.5; threefold 0.00 <= 0.3),
+  so **V2 is adopted**.
+- **What V2 shows:** with real decisive evidence (24 games), the 39-update
+  candidate scores exactly 0.500 against the untrained reference. It is not
+  measurably stronger, a conclusion the V0 arena could not reach.
+- **Trade-off (INFERRED):** per-move noise widens the score interval (±0.15
+  vs ±0.05 at 32 games). The conservative gate can now decide, but only on a
+  clear margin.

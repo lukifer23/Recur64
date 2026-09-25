@@ -1,0 +1,46 @@
+{
+  "arena": {
+    "concurrency": 32,
+    "games": 32,
+    "root_dirichlet_alpha": 0.30000001192092896,
+    "root_dirichlet_epsilon": 0.0,
+    "sample_plies": null,
+    "seed": 2,
+    "simulations": 64
+  },
+  "candidate_model_id": "e8675fab213a657de7531c1d4c043905660a1cd0c8e6b51461540b3d2f195bb8",
+  "git_revision": null,
+  "gpu": {
+    "last_vram_mb": 571,
+    "min_vram_mb": 404,
+    "peak_vram_mb": 571,
+    "samples": 882,
+    "temp_max_c": 66,
+    "util_busy_mean": 42.31065759637188,
+    "util_max": 65
+  },
+  "inference_errors": 0,
+  "reference_model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+  "result": {
+    "candidate_score": 0.484375,
+    "candidate_wins": 1,
+    "decisive_games": 3,
+    "draws": 29,
+    "games": 32,
+    "informative": true,
+    "model_candidate": "e8675fab213a657de7531c1d4c043905660a1cd0c8e6b51461540b3d2f195bb8",
+    "model_reference": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+    "opening_count": 12,
+    "reference_wins": 2,
+    "score_ci_high": 0.537986388226576,
+    "score_ci_low": 0.43076361177342404,
+    "terminations": {
+      "checkmate": 3,
+      "fifty_move_rule": 5,
+      "threefold_repetition": 24
+    },
+    "truncated": 0
+  },
+  "scientific_config_hash": "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3",
+  "secs": 480.6089669
+}
