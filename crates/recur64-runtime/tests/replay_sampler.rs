@@ -120,3 +120,82 @@ fn capacity_archives_oldest_shards() {
     assert_eq!(store.sampleable(), 4);
     assert_eq!(store.shard_count(), 1);
 }
+
+fn three_shard_replay(name: &str) -> std::path::PathBuf {
+    let dir = tmp(name);
+    let mut w = ReplayWriter::new(&dir, header(), 1).unwrap();
+    for id in 0..3 {
+        w.push(record_from_uci(
+            id,
+            &["f2f3", "e7e5", "g2g4", "d8h4"],
+            Some(2),
+            "checkmate",
+        ))
+        .unwrap();
+    }
+    w.finish().unwrap();
+    dir
+}
+
+fn shard_files(dir: &std::path::Path) -> Vec<String> {
+    let mut v: Vec<String> = std::fs::read_dir(dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.starts_with("shard-") && n.ends_with(".r64shard"))
+        .collect();
+    v.sort();
+    v
+}
+
+/// D37: archival copies before it commits the manifest and removes only
+/// afterwards, so each crash point leaves a readable replay, and recovery
+/// never deletes data that lacks a verified archive copy.
+#[test]
+fn capacity_archival_is_crash_safe_at_every_step() {
+    // Normal path: archived shards live only in archive/, all verified.
+    let dir = three_shard_replay("d37-normal");
+    let active_before = shard_files(&dir);
+    let report = enforce_capacity(&dir, 4).unwrap();
+    assert_eq!((report.kept_shards, report.archived_shards), (1, 2));
+    assert_eq!(shard_files(&dir), vec![active_before[2].clone()]);
+    assert_eq!(
+        shard_files(&dir.join("archive")),
+        active_before[..2].to_vec()
+    );
+    assert_eq!(ReplayStore::open(&dir).unwrap().sampleable(), 4);
+
+    // Crash after the manifest was replaced but before active removal: an
+    // unreferenced active copy remains. The next call removes it (a verified
+    // archive copy exists) and the replay stays readable.
+    std::fs::copy(
+        dir.join("archive").join(&active_before[0]),
+        dir.join(&active_before[0]),
+    )
+    .unwrap();
+    enforce_capacity(&dir, 4).unwrap();
+    assert_eq!(shard_files(&dir), vec![active_before[2].clone()]);
+    assert_eq!(ReplayStore::open(&dir).unwrap().sampleable(), 4);
+
+    // Recovery never deletes an unreferenced shard with no archive copy.
+    std::fs::rename(
+        dir.join("archive").join(&active_before[1]),
+        dir.join(&active_before[1]),
+    )
+    .unwrap();
+    enforce_capacity(&dir, 4).unwrap();
+    assert!(dir.join(&active_before[1]).exists(), "unarchived data kept");
+
+    // Crash after copying but before the manifest: the old manifest is
+    // intact and all its shards are still active; a later call completes the
+    // archival, reusing the verified copy.
+    let dir2 = three_shard_replay("d37-precommit");
+    let files = shard_files(&dir2);
+    std::fs::create_dir_all(dir2.join("archive")).unwrap();
+    std::fs::copy(dir2.join(&files[0]), dir2.join("archive").join(&files[0])).unwrap();
+    assert_eq!(ReplayStore::open(&dir2).unwrap().sampleable(), 12);
+    enforce_capacity(&dir2, 4).unwrap();
+    assert_eq!(shard_files(&dir2), vec![files[2].clone()]);
+    assert_eq!(shard_files(&dir2.join("archive")), files[..2].to_vec());
+    assert_eq!(ReplayStore::open(&dir2).unwrap().sampleable(), 4);
+}

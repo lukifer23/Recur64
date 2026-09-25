@@ -367,13 +367,29 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   misleading checkpoint behind. Matching any version avoids refusing a valid
   user-space runtime over an exact-name mismatch.
 
-## D37 — Crash-safe replay archival
+## D37 - Crash-safe replay archival
 
-- **Status:** PENDING (required before any 24h run)
-- **Decision:** Capacity enforcement must order archive-copy, fsync, atomic
-  manifest replacement, directory fsync, then removal of old active files.
-- **Why:** the current rename-then-rewrite order can leave the manifest pointing
-  at moved shards after power loss. Does not block a short smoke.
+- **Status:** ACCEPTED (implemented 2026-09-25)
+- **Decision:** capacity enforcement runs in this order:
+  1. Copy each shard to `archive/` (write `.tmp`, fsync through a writable
+     handle, rename). An existing archive copy is reused only if it passes the
+     checksum.
+  2. Fsync the archive directory (Unix; NTFS journals metadata).
+  3. Replace the manifest atomically (temp + fsync + rename), then fsync the
+     directory.
+  4. Only then remove the old active files.
+  - A shard that fails the checksum is never archived.
+  - Recovery removes an unreferenced active shard only when a verified archive
+    copy exists. Archived data is never deleted.
+- **Why:** the previous rename-then-rewrite order could leave the manifest
+  pointing at moved shards after a power loss. This is required before any
+  long run.
+- **Test:** `capacity_archival_is_crash_safe_at_every_step` simulates a crash
+  after copying (before the manifest) and a crash after the manifest (before
+  removal), and checks that unarchived data is never deleted.
+- **Found while testing:** on Windows, `sync_all` requires write access
+  (`FlushFileBuffers`), so a file opened read-only failed with "Access is
+  denied".
 
 ## D38 - Deadline semantics
 
