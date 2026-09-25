@@ -115,6 +115,54 @@ pub enum TrainerPolicy {
     Continuous,
 }
 
+/// Self-play health thresholds that stop a pilot at a cycle boundary (D49).
+/// `None` disables a check. These bound execution; they never change what a
+/// cycle does, so they are excluded from the scientific identity.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+pub struct HealthStops {
+    /// Stop when the self-play draw share reaches this in two consecutive
+    /// cycles.
+    #[serde(default)]
+    pub draw_share_two_cycles: Option<f64>,
+    /// Stop when (threefold + fifty-move) / games reaches this in any cycle.
+    #[serde(default)]
+    pub threefold_fifty: Option<f64>,
+    /// Stop when truncated / games reaches this in any cycle.
+    #[serde(default)]
+    pub truncation: Option<f64>,
+}
+
+impl HealthStops {
+    /// The reason to stop after a cycle, given this cycle's shares and
+    /// whether the previous cycle's draw share already crossed the threshold.
+    pub fn check(
+        &self,
+        draw_share: f64,
+        threefold_fifty: f64,
+        truncation: f64,
+        previous_draw_share_high: bool,
+    ) -> Option<String> {
+        if let Some(t) = self.threefold_fifty.filter(|t| threefold_fifty >= *t) {
+            return Some(format!("threefold_fifty {threefold_fifty:.3} >= {t}"));
+        }
+        if let Some(t) = self.truncation.filter(|t| truncation >= *t) {
+            return Some(format!("truncation {truncation:.3} >= {t}"));
+        }
+        if let Some(t) = self
+            .draw_share_two_cycles
+            .filter(|t| draw_share >= *t && previous_draw_share_high)
+        {
+            return Some(format!("draw_share {draw_share:.3} >= {t} for two cycles"));
+        }
+        None
+    }
+
+    /// Whether this cycle's draw share crosses the two-cycle threshold.
+    pub fn draw_share_high(&self, draw_share: f64) -> bool {
+        self.draw_share_two_cycles.is_some_and(|t| draw_share >= t)
+    }
+}
+
 /// One cycle's learner workload derived from the reuse target.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct UpdatePlan {
@@ -247,6 +295,10 @@ pub struct RunConfig {
     /// Learner continuity across held cycles (D48). The default keeps D31.
     #[serde(default)]
     pub trainer_policy: TrainerPolicy,
+    /// Pilot health stops (execution bounds, not scientific identity): stop
+    /// at a cycle boundary when self-play drifts into an attractor.
+    #[serde(default)]
+    pub health_stops: HealthStops,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -843,6 +895,54 @@ openings = ['{e4}']
     }
 
     #[test]
+    fn health_stops_trigger_on_the_preregistered_conditions() {
+        let h = HealthStops {
+            draw_share_two_cycles: Some(0.85),
+            threefold_fifty: Some(0.60),
+            truncation: Some(0.25),
+        };
+        assert_eq!(
+            h.check(0.73, 0.33, 0.01, false),
+            None,
+            "smoke v2 cycle 3 is healthy"
+        );
+        assert_eq!(
+            h.check(0.90, 0.10, 0.0, false),
+            None,
+            "one high-draw cycle is not enough"
+        );
+        assert!(
+            h.check(0.90, 0.10, 0.0, true)
+                .unwrap()
+                .contains("two cycles")
+        );
+        assert!(
+            h.check(0.5, 0.61, 0.0, false)
+                .unwrap()
+                .contains("threefold_fifty")
+        );
+        assert!(
+            h.check(0.5, 0.1, 0.30, false)
+                .unwrap()
+                .contains("truncation")
+        );
+        assert!(h.draw_share_high(0.85) && !h.draw_share_high(0.84));
+        assert_eq!(
+            HealthStops::default().check(1.0, 1.0, 1.0, true),
+            None,
+            "off by default"
+        );
+        // Health stops are execution bounds: they never enter the identity.
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        let mut with = base.clone();
+        with.health_stops = h;
+        assert_eq!(
+            base.scientific_config_hash().unwrap(),
+            with.scientific_config_hash().unwrap()
+        );
+    }
+
+    #[test]
     fn update_plan_reports_a_binding_cap() {
         let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
         cfg.train_batch = 8;
@@ -945,6 +1045,36 @@ openings = ['{e4}']
         assert!(!plan.cap_bound && !cfg.update_plan(3 * 11_370).unwrap().cap_bound);
         let arena = cfg.arena_config(0, Vec::new(), 32);
         assert_eq!(arena.leaves_in_flight, 2);
+    }
+
+    /// P4.6 qualification: the smoke v2 contract over 10 cycles with the
+    /// pre-registered health stops parsed and a non-binding cap.
+    #[test]
+    fn f10_qual_config_is_smoke_v2_contract_with_health_stops() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../configs/phase4");
+        let qual =
+            RunConfig::from_toml_str(&std::fs::read_to_string(dir.join("f10-qual.toml")).unwrap())
+                .unwrap();
+        let smoke = RunConfig::from_toml_str(
+            &std::fs::read_to_string(dir.join("f10-smoke-v2.toml")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(qual.cycles, 10);
+        assert_eq!(qual.health_stops.draw_share_two_cycles, Some(0.85));
+        assert_eq!(qual.health_stops.threefold_fifty, Some(0.60));
+        assert_eq!(qual.health_stops.truncation, Some(0.25));
+        assert_eq!(qual.lr_schedule(), (110, 1100));
+        assert!(!qual.update_plan(3 * 16_215).unwrap().cap_bound);
+        // Same search, arena, learner and trainer contract as smoke v2.
+        assert_eq!(qual.search_leaves_in_flight, smoke.search_leaves_in_flight);
+        assert_eq!(qual.trainer_policy, smoke.trainer_policy);
+        assert_eq!(qual.arena_sample_plies, smoke.arena_sample_plies);
+        assert_eq!(qual.simulations_per_move, smoke.simulations_per_move);
+        assert_eq!(
+            qual.collection_shape().unwrap(),
+            smoke.collection_shape().unwrap()
+        );
+        assert_eq!(qual.reference_model_id, smoke.reference_model_id);
     }
 
     /// D45 must not change any identity recorded before it: the original

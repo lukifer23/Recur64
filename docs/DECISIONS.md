@@ -653,6 +653,26 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   and the accepted step stay at the reference, and the trainer state
   persists.
 
+## D49 - Pilot health stops
+
+- **Status:** ACCEPTED (2026-09-25)
+- **Decision:** the pilot checks `[health_stops]` at every cycle boundary,
+  after the cycle report has been written. It stops, with status
+  `stopped_health: <reason>`, when any of these hold:
+  - the self-play draw share reaches `draw_share_two_cycles` in two
+    consecutive cycles;
+  - (threefold + fifty-move) / games reaches `threefold_fifty` in any cycle;
+  - truncated / games reaches `truncation` in any cycle.
+  - Every check is off by default.
+  - These are execution bounds, excluded from the scientific identity
+    (tested).
+- **Why:**
+  - Smoke v2's third cycle raised the self-play draw share from 0.25 to 0.73
+    once a trained value head guided search.
+  - A longer run must not silently spend hours inside a draw attractor. It
+    has to stop with the evidence recorded.
+- **Test:** `health_stops_trigger_on_the_preregistered_conditions`.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

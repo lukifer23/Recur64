@@ -482,6 +482,8 @@ pub fn run_pilot<B: AutodiffBackend>(
     let continuous = cfg.trainer_policy == TrainerPolicy::Continuous;
     let mut trainer_dir: PathBuf = run_dir.reference_ckpt();
     let mut trainer_updates = 0u64;
+    // D49: the previous cycle's draw share crossed the two-cycle threshold.
+    let mut draw_share_was_high = false;
     let mut total_positions = 0u64;
     let mut total_games_collected = 0u64;
     let mut cycles = Vec::new();
@@ -906,7 +908,30 @@ pub fn run_pilot<B: AutodiffBackend>(
             run_dir.report().join(format!("cycle-{cycle:03}.json")),
             serde_json::to_vec_pretty(&cycle_report)?,
         )?;
+        // D49 health stops, checked at the cycle boundary after the report is
+        // persisted, so the stopping cycle is fully recorded.
+        let sp = &cycle_report.selfplay;
+        let games_f = sp.games.max(1) as f64;
+        let threefold_fifty =
+            (sp.terminations
+                .get("threefold_repetition")
+                .copied()
+                .unwrap_or(0)
+                + sp.terminations.get("fifty_move_rule").copied().unwrap_or(0)) as f64
+                / games_f;
+        let health = cfg.health_stops.check(
+            sp.draw_share,
+            threefold_fifty,
+            sp.truncated as f64 / games_f,
+            draw_share_was_high,
+        );
+        draw_share_was_high = cfg.health_stops.draw_share_high(sp.draw_share);
         cycles.push(cycle_report);
+        if let Some(reason) = health {
+            println!("cycle {cycle}: health stop: {reason}");
+            status = format!("stopped_health: {reason}");
+            break;
+        }
     }
     let elapsed_secs = started.elapsed().as_secs_f64();
     let run_budget_secs = (cfg.run_budget_minutes.max(1) * 60) as f64;

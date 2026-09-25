@@ -1467,3 +1467,52 @@ Every system, data and training gate passes:
 - Strength over T0 is not yet shown.
 - Self-play draw share is a live risk for any longer run.
 - **STOP:** no P4.6, R10 or 24h run was started.
+
+## P4.6 - bounded F10 qualification (pre-registration, written before the run)
+
+`configs/phase4/f10-qual.toml` (frozen) keeps the smoke v2 contract
+unchanged: reference v2, 64 sims, D41 self-play exploration, D45 arena
+exploration, D47 K = 2, D48 continuous trainer, and the measured schedule.
+The config test asserts that it matches smoke v2.
+
+**Execution:**
+
+- 10 cycles of 64 games.
+- LR schedule planned over the whole run: 1100 updates with 110 warmup (about
+  110 per cycle from the smoke v2 measurements).
+- max_updates 400.
+- 300 min budget and a 250k position budget. Not a 24h run.
+- Replay capacity is 100k positions, so D37 archival is exercised from about
+  cycle 7.
+
+**Health stops (D49), checked at each cycle boundary:**
+
+- self-play draw share >= 0.85 in two consecutive cycles;
+- threefold + fifty-move >= 0.60 in any cycle;
+- truncation >= 0.25 in any cycle.
+
+**Per-cycle gate:** as in smoke v2. `cap_bound` must be false, the trainer
+step must advance continuously, and any system failure (inference error,
+audit failure, NaN, checkpoint or optimizer mismatch, CUDA error) stops the
+run.
+
+**Strength test after the run.** `eval-arena` runs the final promoted
+snapshot against the frozen reference `d22c78bd`: 128 games, the same D45
+arena contract, seed offset 1000 (disjoint from the cycle seeds).
+
+- A strength claim requires the 95% CI lower bound on the score to be above
+  0.5.
+- Otherwise the result is "no measurable strength over T0", recorded as
+  such.
+
+**Tracked across cycles (not gates):**
+
+- WDL and policy loss
+- search movement beyond noise
+- mean absolute network value
+- target entropy
+- draw share and termination mix
+- raw policy vs random
+- arena score vs parent and vs reference
+- replay freshness
+- throughput, VRAM and temperature

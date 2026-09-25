@@ -24,7 +24,7 @@ pub mod search_gain;
 pub mod sweep;
 
 pub use cancel::CancelToken;
-pub use config::{RunConfig, TrainerPolicy};
+pub use config::{HealthStops, RunConfig, TrainerPolicy};
 pub use coordinator::{
     RunReport, SelfPlayMetrics, collect_only, game_uci_moves, run, write_report,
 };
