@@ -29,6 +29,8 @@ pub struct SelfPlayConfig {
     pub root_dirichlet_alpha: f32,
     /// Root noise mixing weight; `0.0` disables root noise.
     pub root_dirichlet_epsilon: f32,
+    /// Leaves evaluated together per search round (D47); `1` = original search.
+    pub search_leaves_in_flight: u32,
 }
 
 impl Default for SelfPlayConfig {
@@ -42,6 +44,7 @@ impl Default for SelfPlayConfig {
             argmax_after_ply: None,
             root_dirichlet_alpha: 0.3,
             root_dirichlet_epsilon: 0.0,
+            search_leaves_in_flight: 1,
         }
     }
 }
@@ -250,6 +253,7 @@ pub fn play_game_from(
             &PuctConfig {
                 c_puct: cfg.c_puct,
                 simulations: cfg.simulations_per_move,
+                leaves_in_flight: cfg.search_leaves_in_flight,
             },
             root_noise.as_ref(),
         )?;

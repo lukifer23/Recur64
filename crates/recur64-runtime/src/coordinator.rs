@@ -295,6 +295,7 @@ pub(crate) fn collect_parallel_diag(
         argmax_after_ply: cfg.argmax_after_ply,
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
+        search_leaves_in_flight: cfg.search_leaves_in_flight,
     };
     let search_record = SearchRecord {
         simulations: cfg.simulations_per_move,

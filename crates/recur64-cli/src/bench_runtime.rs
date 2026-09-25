@@ -33,6 +33,9 @@ pub struct BenchRuntimeArgs {
     /// Override the config's ply cap for every cell.
     #[arg(long)]
     pub ply_cap: Option<u32>,
+    /// Override search_leaves_in_flight (D47 multi-leaf search) for every cell.
+    #[arg(long)]
+    pub leaves_in_flight: Option<u32>,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
     pub active: Option<u32>,
@@ -179,6 +182,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     let mut cfg = RunConfig::from_toml_str(&text)?;
     if let Some(ply_cap) = args.ply_cap {
         cfg.ply_cap = ply_cap;
+    }
+    if let Some(k) = args.leaves_in_flight {
+        cfg.search_leaves_in_flight = k;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {

@@ -564,6 +564,39 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   identical results against the original three-owner sequence, both with
   parent == reference and with parent != reference.
 
+## D47 - Multi-leaf PUCT with virtual loss (throughput)
+
+- **Status:** IMPLEMENTED, OFF by default (`search_leaves_in_flight = 1`).
+  Adoption waits on measurement and an owner decision; it is a
+  search-execution (science) change.
+- **Decision:**
+  - Each search round selects up to K leaves. Every edge on a selected path
+    gets a provisional visit and a virtual loss (w -= 1), so later selections
+    in the round prefer other lines.
+  - All K leaves go to the evaluator as one `evaluate_many` submission. The
+    batcher queues all of them before waiting, and the arena router splits
+    them by side. They are then expanded and backed up, and each virtual visit
+    becomes the real visit with the virtual loss removed.
+  - An edge that is visited but has no child can only be a leaf pending in the
+    same round; hitting one ends the round (collision).
+  - The traversal budget is exact.
+  - K = 1 runs the original recursive search unchanged.
+  - K > 1 enters the scientific identity (`search_execution`) only when
+    enabled, so every earlier identity stays reproducible.
+- **Why:**
+  - Each search thread had one evaluation in flight, so batches were capped
+    by the number of games.
+  - More OS threads oversubscribe the 24 cores (P4.3).
+  - The forward is launch-bound (~13-15 ms almost independent of batch
+    size), so larger batches should raise eval/s substantially.
+- **Tests:**
+  - `multi_leaf_search_keeps_budget_batches_and_clears_virtual_loss`: exact
+    budget; batched submissions of at most K; all virtual loss removed; one
+    evaluation per non-terminal node.
+  - `multi_leaf_search_still_prefers_mate_in_one`.
+  - `evaluate_many_shares_a_batch_and_answers_in_order`.
+  - The pre-D47 smoke hash is still reproduced.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

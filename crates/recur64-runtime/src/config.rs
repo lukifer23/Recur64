@@ -81,6 +81,9 @@ fn default_min_decisive_games() -> u32 {
 fn default_root_dirichlet_alpha() -> f32 {
     0.3
 }
+fn default_leaves_in_flight() -> u32 {
+    1
+}
 
 /// Version of the conservative promotion rule implemented in `pilot.rs`. Part
 /// of the scientific identity; bump it whenever the rule changes.
@@ -222,6 +225,11 @@ pub struct RunConfig {
     /// `0.0` (default) = noise-free, the original arena contract.
     #[serde(default)]
     pub arena_root_dirichlet_epsilon: f32,
+    /// Leaves selected with virtual loss and evaluated together per search
+    /// round (D47), for self-play and arenas alike. `1` (default) is the
+    /// original one-leaf search; values above 1 are a new identity.
+    #[serde(default = "default_leaves_in_flight")]
+    pub search_leaves_in_flight: u32,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -345,6 +353,7 @@ impl RunConfig {
             root_dirichlet_alpha: self.root_dirichlet_alpha,
             root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
             deadline: None,
+            leaves_in_flight: self.search_leaves_in_flight,
         }
     }
 
@@ -418,7 +427,7 @@ impl RunConfig {
     /// safety cap (a binding cap is reported as a reuse shortfall).
     pub fn scientific_identity(&self) -> anyhow::Result<serde_json::Value> {
         let (warmup, planned) = self.lr_schedule();
-        Ok(serde_json::json!({
+        let mut identity = serde_json::json!({
             "identity_version": 4,
             "model": self.model,
             "model_head_version": recur64_model::model::HEAD_VERSION,
@@ -460,7 +469,16 @@ impl RunConfig {
                 "score_floor": self.promotion_score_floor,
                 "min_decisive_games": self.promotion_min_decisive_games,
             },
-        }))
+        });
+        // Multi-leaf search (D47) enters the identity only when enabled, so
+        // every pre-D47 identity stays reproducible.
+        if self.search_leaves_in_flight > 1 {
+            identity["search_execution"] = serde_json::json!({
+                "leaves_in_flight": self.search_leaves_in_flight,
+                "virtual_loss": 1.0,
+            });
+        }
+        Ok(identity)
     }
 
     /// Experiment identity hash (see [`Self::scientific_identity`]).
@@ -499,6 +517,10 @@ impl RunConfig {
         if self.device_kind()? == DeviceKind::Cuda {
             ensure_nvrtc_on_path()?;
         }
+        anyhow::ensure!(
+            self.search_leaves_in_flight >= 1,
+            "search_leaves_in_flight must be >= 1"
+        );
         anyhow::ensure!(
             (0.0..=1.0).contains(&self.root_dirichlet_epsilon)
                 && (0.0..=1.0).contains(&self.arena_root_dirichlet_epsilon),

@@ -195,3 +195,41 @@ fn metrics_are_recorded() {
     assert!(m.forward_us_mean >= 0.0);
     owner.shutdown();
 }
+
+/// D47: `evaluate_many` submits every request before waiting, so one caller's
+/// leaves share a batch, and every request gets exactly one result in order.
+#[test]
+fn evaluate_many_shares_a_batch_and_answers_in_order() {
+    let (model, _calls, sizes) = fake();
+    let owner = InferenceOwner::spawn(model, config());
+    let ev = owner.evaluator();
+    let obs = ObservationV1::zeroed();
+    let legals: Vec<Vec<ActionId>> = (1..=5)
+        .map(|n| (0..n).map(|i| ActionId::from_index(i).unwrap()).collect())
+        .collect();
+    let requests: Vec<EvalRequest<'_>> = legals
+        .iter()
+        .map(|legal| EvalRequest {
+            observation: &obs,
+            legal,
+            side_to_move: recur64_core::Color::White,
+        })
+        .collect();
+    let out = ev.evaluate_many(&requests);
+    assert_eq!(out.len(), 5);
+    for (r, legal) in out.iter().zip(&legals) {
+        assert_eq!(
+            r.as_ref().unwrap().policy.len(),
+            legal.len(),
+            "results in request order"
+        );
+    }
+    assert!(
+        sizes.lock().unwrap().iter().any(|&n| n > 1),
+        "one caller's requests coalesced: {:?}",
+        sizes.lock().unwrap()
+    );
+    let m = owner.metrics().snapshot();
+    assert_eq!(m.completed, 5);
+    assert!(m.peak_in_flight >= 5);
+}

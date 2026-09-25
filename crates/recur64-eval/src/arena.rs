@@ -38,6 +38,8 @@ pub struct ArenaConfig {
     pub root_dirichlet_epsilon: f32,
     /// Soft wall-clock deadline (D38): no game starts after it.
     pub deadline: Option<std::time::Instant>,
+    /// Leaves per search round (D47); `1` = original search.
+    pub leaves_in_flight: u32,
 }
 
 impl Default for ArenaConfig {
@@ -55,6 +57,7 @@ impl Default for ArenaConfig {
             root_dirichlet_alpha: 0.3,
             root_dirichlet_epsilon: 0.0,
             deadline: None,
+            leaves_in_flight: 1,
         }
     }
 }
@@ -97,6 +100,28 @@ impl Evaluator for SideRouter<'_> {
             Color::Black => self.black.evaluate(request),
         }
     }
+
+    /// Split a multi-leaf round by side so each model still receives its
+    /// leaves as one submission; results are returned in request order.
+    fn evaluate_many(&self, requests: &[EvalRequest<'_>]) -> Vec<Result<EvalResult, EvalError>> {
+        let (white, black): (Vec<_>, Vec<_>) = requests
+            .iter()
+            .enumerate()
+            .partition(|(_, r)| r.side_to_move == Color::White);
+        let white_req: Vec<EvalRequest<'_>> = white.iter().map(|(_, r)| **r).collect();
+        let black_req: Vec<EvalRequest<'_>> = black.iter().map(|(_, r)| **r).collect();
+        let mut out: Vec<Option<Result<EvalResult, EvalError>>> =
+            (0..requests.len()).map(|_| None).collect();
+        for ((i, _), r) in white.iter().zip(self.white.evaluate_many(&white_req)) {
+            out[*i] = Some(r);
+        }
+        for ((i, _), r) in black.iter().zip(self.black.evaluate_many(&black_req)) {
+            out[*i] = Some(r);
+        }
+        out.into_iter()
+            .map(|r| r.unwrap_or_else(|| Err(EvalError::Backend("unrouted request".into()))))
+            .collect()
+    }
 }
 
 /// Run a paired-color arena between `candidate` and `reference`.
@@ -118,6 +143,7 @@ pub fn run_arena(
         argmax_after_ply: cfg.sample_plies,
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
+        search_leaves_in_flight: cfg.leaves_in_flight,
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {

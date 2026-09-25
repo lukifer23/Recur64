@@ -40,6 +40,7 @@ impl std::error::Error for EvalError {}
 ///
 /// The observation is canonical (current side to move). `legal` is the canonical
 /// legal action list in a deterministic (sorted) order.
+#[derive(Clone, Copy)]
 pub struct EvalRequest<'a> {
     pub observation: &'a ObservationV1,
     pub legal: &'a [ActionId],
@@ -87,6 +88,13 @@ pub fn value_to_wdl(value: f32) -> [f32; 3] {
 /// The evaluation interface consumed by search.
 pub trait Evaluator: Send + Sync {
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError>;
+
+    /// Evaluate several independent requests. Implementations may submit them
+    /// together so they share a batch (multi-leaf search, D47); results are in
+    /// request order. The default evaluates them one by one.
+    fn evaluate_many(&self, requests: &[EvalRequest<'_>]) -> Vec<Result<EvalResult, EvalError>> {
+        requests.iter().map(|r| self.evaluate(*r)).collect()
+    }
 }
 
 /// A deterministic evaluator with a constant value and either uniform or
