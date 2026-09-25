@@ -101,6 +101,20 @@ pub enum SnapshotPolicy {
     FrozenReference,
 }
 
+/// What happens to the learner state when a candidate is held (D48).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TrainerPolicy {
+    /// D31: a held candidate is discarded; the next cycle trains again from
+    /// the last promoted snapshot's weights and optimizer state.
+    #[default]
+    DiscardHeld,
+    /// AlphaGo Zero style: the learner keeps its weights and optimizer state
+    /// across cycles whether or not the candidate is promoted. Promotion only
+    /// decides which network generates self-play and is the arena parent.
+    Continuous,
+}
+
 /// One cycle's learner workload derived from the reuse target.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct UpdatePlan {
@@ -230,6 +244,9 @@ pub struct RunConfig {
     /// original one-leaf search; values above 1 are a new identity.
     #[serde(default = "default_leaves_in_flight")]
     pub search_leaves_in_flight: u32,
+    /// Learner continuity across held cycles (D48). The default keeps D31.
+    #[serde(default)]
+    pub trainer_policy: TrainerPolicy,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -477,6 +494,11 @@ impl RunConfig {
                 "leaves_in_flight": self.search_leaves_in_flight,
                 "virtual_loss": 1.0,
             });
+        }
+        // Continuous training (D48) is recorded only when enabled, so every
+        // pre-D48 identity stays reproducible.
+        if self.trainer_policy != TrainerPolicy::DiscardHeld {
+            identity["trainer_policy"] = serde_json::to_value(self.trainer_policy)?;
         }
         Ok(identity)
     }
@@ -902,6 +924,27 @@ openings = ['{e4}']
         assert!(!plan.cap_bound);
         // Even a 3x larger cycle would still fit under the cap.
         assert!(!cfg.update_plan(3 * 5685).unwrap().cap_bound);
+    }
+
+    /// Smoke v2 realizes the adopted post-smoke contract (D45 arena, D47
+    /// K = 2, D48 continuous trainer) and its safety cap does not bind.
+    #[test]
+    fn f10_smoke_v2_config_is_the_adopted_contract() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/phase4/f10-smoke-v2.toml");
+        let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(cfg.collection_shape().unwrap(), (64, 32));
+        assert_eq!(cfg.search_leaves_in_flight, 2);
+        assert_eq!(cfg.max_inference_batch, 64);
+        assert_eq!(cfg.trainer_policy, TrainerPolicy::Continuous);
+        assert_eq!(cfg.arena_sample_plies, Some(30));
+        assert_eq!(cfg.arena_root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.lr_schedule(), (27, 267));
+        let plan = cfg.update_plan(11_370).unwrap();
+        assert_eq!(plan.requested_updates, 89);
+        assert!(!plan.cap_bound && !cfg.update_plan(3 * 11_370).unwrap().cap_bound);
+        let arena = cfg.arena_config(0, Vec::new(), 32);
+        assert_eq!(arena.leaves_in_flight, 2);
     }
 
     /// D45 must not change any identity recorded before it: the original

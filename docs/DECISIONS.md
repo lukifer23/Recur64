@@ -590,9 +590,13 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 
 ## D47 - Multi-leaf PUCT with virtual loss (throughput)
 
-- **Status:** IMPLEMENTED, OFF by default (`search_leaves_in_flight = 1`).
-  Adoption waits on measurement and an owner decision; it is a
-  search-execution (science) change.
+- **Status:** ACCEPTED at K = 2 for the mainline F10 contract (owner
+  decision 2026-09-25, after measurement).
+  - The code default stays K = 1, which reproduces every earlier identity.
+  - Measured on the same seeds: K = 2 gave +83% trainable positions/s
+    (12.4 to 22.8), and K = 4 gave +115%, with unchanged data health.
+  - K = 2 is the pre-registered pick (the smallest K clearing +10% with
+    healthy data).
 - **Decision:**
   - Each search round selects up to K leaves. Every edge on a selected path
     gets a provisional visit and a virtual loss (w -= 1), so later selections
@@ -620,6 +624,34 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - `multi_leaf_search_still_prefers_mate_in_one`.
   - `evaluate_many_shares_a_batch_and_answers_in_order`.
   - The pre-D47 smoke hash is still reproduced.
+
+## D48 - Continuous trainer across held cycles
+
+- **Status:** ACCEPTED (owner decision 2026-09-25).
+  - Config: `trainer_policy = "continuous"`.
+  - The default `discard_held` keeps D31, and the field enters the scientific
+    identity only when set to continuous.
+- **Decision:**
+  - The learner trains each cycle from its own previous state
+    (`checkpoints/trainer`: weights plus Adam state), whether or not the
+    previous candidate was promoted.
+  - The optimizer step and the LR schedule advance continuously, and the
+    trajectory check follows the trainer's step.
+  - Conservative-v2 promotion still decides which network generates
+    self-play and serves as the arena parent. On promotion, the accepted
+    step becomes the trainer's step.
+- **Why:**
+  - Under D31 a held candidate was discarded, and every cycle retrained from
+    the last accepted model.
+  - With about 40-90 updates per cycle, a single cycle rarely beats its
+    parent. The D45 arena showed the 39-update candidate at exactly 0.500
+    over 24 decisive games, so nothing could ever accumulate.
+  - AlphaGo Zero separates the continuously trained optimizer from the gated
+    self-play generator in the same way.
+- **Test:** `continuous_trainer_carries_learning_across_held_cycles`. With
+  every cycle forced to hold, cycle 1 starts at cycle 0's step, the parent
+  and the accepted step stay at the reference, and the trainer state
+  persists.
 
 ## Rejected / deferred
 

@@ -1331,3 +1331,47 @@ seeds, 0 inference errors in every cell. Artifacts:
 
 **Adoption is an owner decision** (a search-execution change and a new
 identity).
+
+## F10 smoke v2 - pre-registration (written before the run)
+
+`configs/phase4/f10-smoke-v2.toml` (frozen) is the P4.5 contract plus the
+owner-adopted post-smoke decisions:
+
+- **D45 arena:** sample 30 plies, then root noise 0.25 on every move.
+- **D47 search:** K = 2 leaves per round, batch cap 64.
+- **D48 trainer:** continuous.
+
+Everything else is unchanged: reference v2, 64 sims, c_puct 1.0, self-play
+exploration, measured schedule (32 concurrency, cpu_workers 32, 500 us,
+learner 64x4), lr 3e-4, reuse 2.0, openings-v1, conservative-v2 with a 0.5
+floor and at least 4 decisive games.
+
+**Workload, re-derived from the measured D47 K = 2 cell:**
+
+| item | value |
+|---|---|
+| games per cycle | 64 (two waves, about 9 min) |
+| expected trainable positions per cycle | about 11,370 |
+| requested updates per cycle | about 89 |
+| max_updates | 300 (about 3.4x) |
+| cycles | 3 |
+| planned / warmup updates | 267 / 27 |
+| arena | 32 games |
+| budget | 60 min |
+| position budget | 90,000 |
+
+**Gate:** the same system, data, training and evaluation gates as P4.5.
+With D48, `max_updates_cap_bound` must be false every cycle, and the trainer
+step must advance continuously (cycle n starts at cycle n-1's end step).
+
+**Learning questions (answered afterwards, not gates):**
+
+- Does the WDL and policy loss keep falling across cycles as training
+  accumulates?
+- Is any candidate promoted, meaning the arena gives decisive evidence
+  above 0.5?
+- After a promotion, does search movement beyond the noise
+  (`argmax_changed_by_search`, KL(target || noisy)) rise, with a non-zero
+  network value in self-play?
+- Does raw policy strength against random or the parent move off chance?
+- Does self-play and arena repetition stay low?

@@ -137,3 +137,43 @@ fn pilot_from_frozen_reference_keeps_identity_and_lineage() {
     }
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// D48: with a continuous trainer, held candidates keep training: each cycle
+/// starts from the previous cycle's optimizer step, while the self-play
+/// parent and the accepted trajectory stay at the last promotion.
+#[test]
+fn continuous_trainer_carries_learning_across_held_cycles() {
+    let root = std::env::temp_dir().join(format!("recur64-pilot-d48-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    let mut c = cfg(&root);
+    let reference_id = freeze(&c, &root.join("frozen"));
+    c.reference_model_id = Some(reference_id.clone());
+    c.trainer_policy = recur64_runtime::TrainerPolicy::Continuous;
+    // Force every cycle to hold: promotion needs more decisive games than exist.
+    c.promotion_min_decisive_games = 1_000;
+    let dir = RunDir::create(&root.join("run"), false).unwrap();
+    let report = run_pilot::<CpuTrainBackend>(&c, &dir, &CancelToken::new()).unwrap();
+    assert_eq!(report.cycles.len(), 2);
+    let (c0, c1) = (&report.cycles[0], &report.cycles[1]);
+    assert_eq!(c0.decision, "hold");
+    assert_eq!(c1.decision, "hold");
+    let u0 = c0.train.as_ref().unwrap().updates as u64;
+    assert!(u0 > 0);
+    assert_eq!(c0.optimizer_step_start, 0);
+    assert_eq!(
+        c1.optimizer_step_start, u0,
+        "learning carried across a held cycle"
+    );
+    assert_eq!(
+        c1.parent_model_id, reference_id,
+        "self-play parent unchanged"
+    );
+    assert_eq!(c1.accepted_optimizer_step_after, 0, "nothing promoted");
+    assert!(dir.checkpoints().join("trainer").join("meta.json").exists());
+    assert_ne!(
+        c1.candidate_model_id, c0.candidate_model_id,
+        "the second candidate continues from the first"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -1,0 +1,88 @@
+# Recur64 Phase 4 — F10 smoke v2 (3 cycles). The P4.5 smoke contract plus the
+# owner-adopted post-smoke decisions: D45 searched-arena exploration (sample 30
+# plies + root noise), D47 multi-leaf search (K = 2), and D48 continuous
+# trainer. New identity; frozen before the run (PHASE4_RESULTS, smoke v2
+# pre-registration). Workload re-derived from the measured D47 K = 2 cell.
+#
+# Frozen before the run (docs/PHASE4_RESULTS.md, "P4.5 pre-registration").
+# Starts from the frozen head-v2 reference; every value below is derived from
+# measured Phase 4 evidence, not historical inertia. Do not edit after the
+# smoke starts. Historical configs/f10-*.toml are Phase 3 artifacts.
+run_id = "phase4-f10-smoke-v2"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f10"
+hardware_profile = "workstation-main"
+seed = 1
+
+reference_checkpoint = "runs/phase4-f10-reference-v2"
+reference_model_id = "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448"
+
+# --- Search / self-play contract (P4.4 frozen budget; D41 exploration) ---
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
+ply_cap = 512
+# D47 (adopted): 2 leaves per search round with virtual loss.
+search_leaves_in_flight = 2
+
+# --- Collection (scientific: total games; scheduling: the rest) ---
+# 64 games = two waves at concurrency 32 (D47 K=2 cell: 518 s for 64 games).
+games_per_cycle = 64
+
+# --- Hardware schedule (configs/hardware/workstation-main.toml, MEASURED) ---
+concurrent_games = 32
+cpu_workers = 32
+# K = 2 leaves x 32 games -> batch cap 64 (the D47 K=2 cell).
+max_inference_batch = 64
+batch_timeout_us = 500
+train_batch = 64
+accumulation_steps = 4
+
+# --- Replay / learner ---
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+lr = 3.0e-4
+# Expected ~11,370 new trainable positions/cycle (64 x 177.6 per game)
+# -> ceil(11370 * 2.0 / 256) = 89 requested updates/cycle; 3 cycles = 267.
+planned_updates = 267
+warmup_updates = 27
+# Safety cap ~3.4x the expected request; a binding cap is a health warning.
+max_updates = 300
+
+# --- Evaluation / promotion ---
+arena_games = 32
+# D45 (adopted): sample 30 plies after the opening, root noise on every move.
+arena_sample_plies = 30
+arena_root_dirichlet_epsilon = 0.25
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+# D48 (adopted): the learner keeps its state across held cycles.
+trainer_policy = "continuous"
+promotion_score_floor = 0.5
+promotion_min_decisive_games = 4
+
+# --- Execution bounds (excluded from scientific identity) ---
+cycles = 3
+run_budget_minutes = 60
+# ~2.5x the expected 2 x 32 x 186 = 11,900 positions.
+position_budget = 90000
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

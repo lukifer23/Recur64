@@ -17,7 +17,7 @@ use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 
 use crate::cancel::CancelToken;
-use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy};
+use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy, TrainerPolicy};
 use crate::coordinator::{
     RootSearchSummary, SelfPlayMetrics, collect_parallel_diag, selfplay_metrics,
 };
@@ -477,6 +477,11 @@ pub fn run_pilot<B: AutodiffBackend>(
     let mut snapshot_dir: PathBuf = run_dir.reference_ckpt();
     let mut snapshot_model_id = reference_model_id.clone();
     let mut cumulative_updates = 0u64;
+    // D48: under `Continuous` the learner trains from its own last state
+    // (checkpoints/trainer), promoted or not; otherwise from the snapshot.
+    let continuous = cfg.trainer_policy == TrainerPolicy::Continuous;
+    let mut trainer_dir: PathBuf = run_dir.reference_ckpt();
+    let mut trainer_updates = 0u64;
     let mut total_positions = 0u64;
     let mut total_games_collected = 0u64;
     let mut cycles = Vec::new();
@@ -498,7 +503,17 @@ pub fn run_pilot<B: AutodiffBackend>(
 
         let cycle_start = Instant::now();
         let parent_model_id = snapshot_model_id.clone();
-        let optimizer_step_start = cumulative_updates;
+        // The optimizer step this cycle's training starts from.
+        let optimizer_step_start = if continuous {
+            trainer_updates
+        } else {
+            cumulative_updates
+        };
+        let train_from: PathBuf = if continuous {
+            trainer_dir.clone()
+        } else {
+            snapshot_dir.clone()
+        };
 
         // COLLECT
         let mut gpu = CycleGpu {
@@ -567,15 +582,17 @@ pub fn run_pilot<B: AutodiffBackend>(
         let replay_positions = store.total_positions();
         let replay_total_games = store.total_games() as u64;
         let (train_model, mut optim, parent_meta) = load_training(
-            &snapshot_dir,
+            &train_from,
             model_io::build::<B>(&cfg.model, &b_device),
             adamw::<B, _>(),
             &b_device,
         )?;
         anyhow::ensure!(
-            parent_meta.update_counter == cumulative_updates
-                && parent_meta.lr_schedule_step == cumulative_updates,
-            "accepted optimizer trajectory mismatch at cycle {cycle}"
+            parent_meta.update_counter == optimizer_step_start
+                && parent_meta.lr_schedule_step == optimizer_step_start,
+            "optimizer trajectory mismatch at cycle {cycle}: checkpoint at step {} / schedule {}, expected {optimizer_step_start}",
+            parent_meta.update_counter,
+            parent_meta.lr_schedule_step
         );
         let plan = cfg.update_plan(new_trainable_positions)?;
         let (scheduled_updates, requested_examples, requested_updates) = (
@@ -593,7 +610,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             lr: cfg.lr,
             warmup_updates: warmup,
             planned_updates: planned,
-            start_update: cumulative_updates,
+            start_update: optimizer_step_start,
             recurrence: cfg.recurrence,
             seed: cfg.seed.wrapping_add(cycle as u64),
             deadline: Some(deadline),
@@ -610,7 +627,7 @@ pub fn run_pilot<B: AutodiffBackend>(
                     cfg.model.clone(),
                     cfg.recurrence,
                     false,
-                    cumulative_updates + report.updates as u64,
+                    optimizer_step_start + report.updates as u64,
                     cfg.lr,
                     cfg.seed,
                     0,
@@ -619,14 +636,21 @@ pub fn run_pilot<B: AutodiffBackend>(
                 );
                 meta.run_id = cfg.run_id.clone();
                 meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
-                meta.update_counter = cumulative_updates + report.updates as u64;
-                meta.lr_schedule_step = cumulative_updates + report.updates as u64;
+                meta.update_counter = optimizer_step_start + report.updates as u64;
+                meta.lr_schedule_step = optimizer_step_start + report.updates as u64;
                 save_training(&run_dir.candidate_ckpt(), &trained, &optim, &meta)?;
+                if continuous {
+                    let trainer = run_dir.checkpoints().join("trainer");
+                    let _ = std::fs::remove_dir_all(&trainer);
+                    copy_dir(&run_dir.candidate_ckpt(), &trainer)?;
+                    trainer_dir = trainer;
+                    trainer_updates = optimizer_step_start + report.updates as u64;
+                }
                 (read_model_id(&run_dir.candidate_ckpt()), Some(report))
             }
             Err(e) if e.contains("no trainable") => {
-                copy_dir(&snapshot_dir, &run_dir.candidate_ckpt())?;
-                (snapshot_model_id.clone(), None)
+                copy_dir(&train_from, &run_dir.candidate_ckpt())?;
+                (read_model_id(&train_from), None)
             }
             Err(e) => return Err(anyhow::anyhow!(e)),
         };
