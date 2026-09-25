@@ -18,7 +18,7 @@ Phase 4 results.
 | 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
 | 2 | first vertical slice (Micro model) | GO |
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
-| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; F10 smoke CONDITIONAL (arena/promotion contract decision before P4.6) |
+| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; post-smoke fixes; F10 smoke v2 GO for the learning mechanism (strength not yet shown) |
 
 Phase 4 so far:
 
@@ -30,11 +30,19 @@ Phase 4 so far:
 - The F10 search budget is requalified at **64 simulations/move**.
 - A GPU memory defect in the inference-owner lifecycle was found and fixed
   (D44).
-- **First corrected F10 smoke: CONDITIONAL.**
-  - The learning loop is interpretable, and the value head learns.
-  - Searched evaluation arenas are repetition-dominated, so no candidate is
-    promoted yet.
-  - The evaluation / promotion contract is the next scientific decision.
+- **First corrected F10 smoke: CONDITIONAL.** The loop was interpretable,
+  but the arena was repetition-dominated and never promoted a candidate.
+- **Post-smoke fixes:**
+  - arena exploration (D45)
+  - multi-leaf PUCT with virtual loss, +83% throughput (D47)
+  - a continuous trainer (D48)
+  - an evaluation deadline, crash-safe replay archival, and at most two
+    resident models (D38 / D37 / D46)
+- **F10 smoke v2: GO for the learning mechanism.**
+  - Training compounds across cycles and candidates are promoted.
+  - Once the promoted value head guides self-play, search moves the policy
+    target on 37% of positions (11% before).
+  - Playing strength over the untrained reference is not yet demonstrated.
 
 This is a research laboratory, **not** a chess engine. It has no UCI engine
 loop and makes no strength claims.
@@ -238,7 +246,7 @@ Established, with evidence in `docs/STATUS.md` and
 **Not** established:
 
 - any chess strength
-- that F10 learns well at this scale. The corrected smoke shows the value
-  head learning, but no promotion yet: the searched arena is
-  repetition-dominated.
+- that F10 gains playing strength at this scale. Smoke v2 shows the
+  learning mechanism working (value learning, promotions, value-guided
+  search), but 0.500 against the untrained reference.
 - that recurrence helps (the R10 R1/R2/R4 experiments have not started)

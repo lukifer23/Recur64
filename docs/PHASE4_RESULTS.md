@@ -10,7 +10,7 @@ Compact copies of the machine-readable artifacts live in
 `docs/evidence/phase4/`; the full run directories are under `runs/phase4-*`
 (gitignored, local to the workstation).
 
-## Current status (2026-09-24): P4.2–P4.5 complete; STOP before P4.6
+## Current status (2026-09-25): P4.2–P4.5, post-smoke fixes and F10 smoke v2 complete; STOP before P4.6
 
 | step | status |
 |---|---|
@@ -20,6 +20,8 @@ Compact copies of the machine-readable artifacts live in
 | P4.4 search budget | **GO: 64 sims** (pre-registered rule; v2 curve 8–256) |
 | P4.4L lifecycle probe | **GO after fix D44**: an owner-memory defect was found and fixed |
 | P4.5 F10 smoke | **CONDITIONAL**: every system, data and training gate passes and the value head learns, but the searched arena is repetition-dominated, so no promotion occurs and learning cannot compound (see P4.5) |
+| Post-smoke fixes | D45 arena exploration (decisive 3 → 24 of 32), D47 multi-leaf search (K=2, +83% trainable pos/s), D48 continuous trainer, D38 evaluation deadline, D37 crash-safe archival, D46 at most two resident models |
+| F10 smoke v2 | **GO for the learning mechanism**: training compounds (WDL 1.10 → 0.63), two promotions, and search movement over the prior rises 11% → 37% once the promoted value head guides self-play. Strength over T0 not yet shown (0.500 vs reference). Watch item: self-play draw share 0.25 → 0.73 in cycle 3 |
 
 Major findings (details below):
 
@@ -1375,3 +1377,93 @@ step must advance continuously (cycle n starts at cycle n-1's end step).
   network value in self-play?
 - Does raw policy strength against random or the parent move off chance?
 - Does self-play and arena repetition stay low?
+
+## F10 smoke v2 (MEASURED)
+
+`recur64 pilot --config configs/phase4/f10-smoke-v2.toml --run-dir runs/phase4-f10-smoke-v2`
+
+- **Binary:** `97d58eb` (clean, `main`).
+- **Hashes:** scientific `4f4969f850bd3eef5f924ea4d749f2e126b84caf583a444be58a0dceb47a1709`,
+  resolved `5d43653d6aac4311c2c821a46203565738a6ad4cf6760c1958a81facd937c1dd`.
+- **Reference:** `d22c78bd`.
+- **Outcome:** completed, 3 cycles in 61.0 min against a 60 min budget.
+  - Overrun 60 s: in-flight evaluation games finished after the soft
+    deadline (D38). Recorded, not hidden.
+- **Replay audit:** 192 games, 39,336 plies, 0 errors.
+- **Inference:** 0 errors in every cycle.
+- **GPU:**
+  - VRAM 3.2-3.6 GB, stable across cycles.
+  - Maximum temperature 80 C.
+  - Evaluation used at most 2 resident models (D46).
+- **Artifacts:** `docs/evidence/phase4/smoke-v2/`.
+
+| cycle | plies / trainable | W/D/B/T | draw share | threefold+fifty | mean plies | trainable H / top-1 | mean abs net value | search-moved argmax / KL(target‖noisy) | trainer step | WDL loss | policy loss |
+|---:|---|---|---:|---:|---:|---|---:|---|---|---|---|
+| 0 | 11802 / 11802 | 21/18/25/0 | 0.281 | 0.062 | 184.4 | 2.951 / 0.141 | 0.000 | 11.3% / 0.022 | 0 to 93 | 1.099 to 0.902 | 3.055 to 3.095 |
+| 1 | 10807 / 10807 | 25/16/23/0 | 0.250 | 0.062 | 168.9 | 2.971 / 0.140 | 0.000 | 11.4% / 0.023 | 93 to 178 | 0.920 to 0.805 | 3.192 to 3.088 |
+| 2 | 16727 / 16215 | 8/47/8/1 | **0.734** | **0.328** | **261.4** | **2.220 / 0.265** | **0.194** | **36.9% / 0.398** | 178 to 305 | **0.677 to 0.629** | 2.976 to 2.923 |
+
+| cycle | searched vs parent (W/D/L, score, decisive, 95% CI) | searched vs frozen reference | decision | raw vs random / raw vs parent | fresh-sample fraction / mean age | collect / train / eval s |
+|---:|---|---|---|---|---|---|
+| 0 | 14/3/15, 0.484, 29, 0.32-0.65 | = parent arena | hold (score_not_above_parent) | 0.548 / 0.484 | 1.00 / 0.00 | 552 / 59 / 398 |
+| 1 | 10/13/7, 0.550, 17, 0.41-0.69 | = parent arena | **promote** | 0.562 / 0.453 | 0.67 / 0.33 | 455 / 47 / 456 |
+| 2 | 7/22/3, 0.562, 10, 0.47-0.66 | **8/16/8, 0.500, 16 decisive** | **promote** | 0.531 / 0.484 | 0.50 / 0.67 | 688 / 82 / 909 |
+
+- **Updates** requested/completed: 93/93, 85/85, 127/127. `cap_bound` was
+  false in every cycle (cap 300).
+- **Reuse** achieved: 2.02, 2.01, 2.01.
+- **Lineage:**
+  - reference `d22c78bd` (held) → `29516d8e` (promoted, cycle 1) →
+    `bc33a27d` (promoted, cycle 2)
+  - accepted step 0 → 178 → 305
+  - the trainer step advanced continuously: 0 → 93 → 178 → 305
+
+### Gate: PASS
+
+Every system, data and training gate passes:
+
+- 0 illegal moves or inference errors; replay audit clean; all values finite.
+- No checkpoint or optimizer mismatch.
+- Continuous trainer steps; cap never bound; reuse on target.
+- Every requested evaluation completed; no degenerate budget.
+
+### Learning questions (MEASURED unless marked)
+
+1. **Does training accumulate?** Yes.
+   - WDL loss: 1.10 → 0.90 → 0.80 → 0.63 across cycles.
+   - Policy loss started to fall in cycles 1-2.
+   - This is the D48 effect: nothing is reset on a hold.
+2. **Are candidates promoted?** Yes, twice (cycles 1 and 2), on the
+   pre-registered conservative-v2 rule. Both intervals include 0.5, so the
+   evidence is weak.
+3. **Does search improve on the policy once the value head guides it?**
+   **Yes.** This is the central question behind the whole redesign. With
+   the promoted network generating self-play (cycle 2):
+   - mean abs network value went from 0.000 to **0.19**;
+   - the search-moved argmax rose from 11% to **37%**;
+   - KL(target ‖ noisy prior) rose from 0.02 to **0.40**;
+   - targets became purposeful: entropy 2.95 → 2.22, top-1 0.14 → 0.27.
+4. **Is playing strength above T0?** **Not demonstrated.**
+   - Against the frozen reference: 0.500 over 16 decisive games.
+   - Raw policy vs random: 0.53 (T0 0.48).
+   - The gains are in the mechanics (value learning and search guidance),
+     not yet in measurable strength.
+5. **Watch item: a draw-weighted drift in cycle 2.**
+   - Self-play draw share rose from 0.25 to 0.73, mostly insufficient
+     material (26) and fifty-move (16) endings, with longer games (261
+     plies).
+   - Threefold + fifty is 0.33, still below the 0.80 degeneracy line.
+   - INFERRED: a value head trained on a draw-heavy mix now steers search
+     toward safe draws. This could be a second form of the draw attractor.
+     A longer run must track it per cycle.
+6. **Throughput:** self-play ran at 21-24 positions/s, up from 9.6 in the
+   first smoke (D47 K=2 plus two-wave cycles).
+
+### Verdict: **F10 SMOKE v2 GO**, for the learning mechanism
+
+- The corrected loop now learns and compounds: the value head trains
+  continuously, promotions occur, and search improves on the policy once
+  the value head guides it.
+- Strength over T0 is not yet shown.
+- Self-play draw share is a live risk for any longer run.
+- **STOP:** no P4.6, R10 or 24h run was started.

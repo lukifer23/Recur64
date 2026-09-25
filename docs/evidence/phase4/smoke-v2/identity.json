@@ -1,0 +1,80 @@
+{
+  "run_id": "phase4-f10-smoke-v2",
+  "scientific_config_hash": "4f4969f850bd3eef5f924ea4d749f2e126b84caf583a444be58a0dceb47a1709",
+  "resolved_config_hash": "5d43653d6aac4311c2c821a46203565738a6ad4cf6760c1958a81facd937c1dd",
+  "scientific_identity": {
+    "collection": {
+      "games_per_cycle": 64,
+      "seed_policy": "base_seed_plus_global_game_id_v1"
+    },
+    "evaluation": {
+      "arena_exploration": {
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "sample_plies": 30
+      },
+      "arena_games": 32,
+      "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c"
+    },
+    "identity_version": 4,
+    "model": {
+      "core_blocks": 8,
+      "ffn": 768,
+      "heads": 12,
+      "in_features": 119,
+      "input_blocks": 0,
+      "output_blocks": 0,
+      "policy_dim": 128,
+      "promo_codes": 5,
+      "rms_eps": 0.00001,
+      "squares": 64,
+      "wdl_classes": 3,
+      "width": 384
+    },
+    "model_head_version": 2,
+    "optimizer": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "precision": "fp32",
+    "promotion": {
+      "min_decisive_games": 4,
+      "rule": "conservative-v2:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,decisive>=min_decisive,parent_score>0.5,parent_score>=floor",
+      "score_floor": 0.5,
+      "snapshot_policy": "conservative"
+    },
+    "recurrence": 1,
+    "reference_model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+    "replay": {
+      "max_positions": 100000,
+      "sampler": "shard_recency_weight_index_plus_1_v1",
+      "shard_max_games": 256
+    },
+    "search": {
+      "argmax_after_ply": 30,
+      "c_puct": 1.0,
+      "ply_cap": 512,
+      "root_dirichlet_alpha": 0.30000001192092896,
+      "root_dirichlet_epsilon": 0.25,
+      "simulations_per_move": 64,
+      "start_fen": null,
+      "temperature": 1.0
+    },
+    "search_execution": {
+      "leaves_in_flight": 2,
+      "virtual_loss": 1.0
+    },
+    "seed": 1,
+    "trainer_policy": "continuous",
+    "training": {
+      "effective_batch": 256,
+      "lr": 0.0003,
+      "planned_updates": 267,
+      "replay_reuse_target": 2.0,
+      "warmup_updates": 27
+    }
+  },
+  "reference_model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+  "reference_source": "runs/phase4-f10-reference-v2",
+  "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c",
+  "promotion_rule": "conservative-v2:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,decisive>=min_decisive,parent_score>0.5,parent_score>=floor",
+  "git_revision": "97d58ebd1948d67c4f8b9c0c2f730a9e5d7a45dc",
+  "git_branch": "main"
+}

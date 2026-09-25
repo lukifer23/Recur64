@@ -9,6 +9,11 @@ on `main`). The GPU steps P4.2+ are tracked in `docs/PHASE4_RESULTS.md`:
 - P4.4L: GO after the D44 owner-memory fix.
 - P4.5 F10 smoke: CONDITIONAL. The loop is interpretable, but the searched
   arena is repetition-dominated, so no promotion occurs.
+- Post-smoke fixes: D45 arena exploration, D47 multi-leaf search, D48
+  continuous trainer, D38, D37, D46.
+- F10 smoke v2: GO for the learning mechanism. Promotions occur and search
+  improves on the prior once the value head guides it; strength over T0 is
+  not yet shown.
 
 The integration branch (`main-integration`, now merged to `main`) transplanted the proven generic harness
 improvements from the experimental branch `experiment/hp-r15`

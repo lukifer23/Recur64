@@ -323,16 +323,32 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
   - The searched arena is 75% threefold, leaving 3-5 decisive games of 32.
     Both cycles held, so learning does not compound.
 
-## NEXT (owner decision first)
+## POST-SMOKE (2026-09-25; details in docs/PHASE4_RESULTS.md)
 
-- The searched-arena / promotion contract, a science change, must be
-  decided before P4.6.
-- Then, in owner-approved order:
-  1. throughput (virtual loss, plus confirming the 48-way lead)
-  2. cross-cycle tail waste
-  3. D38 evaluation deadline
-  4. D37 crash-safe archival
-  5. owner residency
+- **D45 arena exploration (adopted by the pre-registered rule):** sample 30
+  plies, then root noise 0.25. On the same model pair, decisive games rose
+  from 3 to 24 of 32 and threefold fell from 24 to 0.
+- **D47 multi-leaf PUCT with virtual loss (adopted at K=2):** +83% trainable
+  pos/s with unchanged data health.
+- **D48 continuous trainer (adopted):** held candidates keep training.
+- **D38 evaluation deadline, D37 crash-safe archival, D46 at most two
+  resident models:** implemented and tested.
+- **F10 smoke v2: GO for the learning mechanism.**
+  - Training compounds: WDL loss 1.10 to 0.63 over 3 cycles.
+  - Two promotions.
+  - Once a promoted value head generates self-play, search movement over the
+    prior rises from 11% to 37% (KL 0.02 to 0.40).
+  - Strength over T0 is not yet shown (0.500 vs the frozen reference).
+  - Watch item: self-play draw share 0.25 to 0.73 in cycle 3.
+- Gate: fmt/clippy clean; 207 tests passed, 0 failed, 1 ignored.
+
+## NEXT (owner decision)
+
+- P4.6 bounded qualification, with the self-play draw share as an explicit
+  monitored health metric.
+- Remaining owner-approved item: cross-cycle tail waste.
+- The 48-way concurrency lead is unconfirmed; K=2 now gives 64 leaves in
+  flight.
 
 ## NOT RUN
 
