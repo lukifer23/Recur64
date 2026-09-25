@@ -12,6 +12,7 @@ pub mod action;
 pub mod error;
 pub mod fixtures;
 pub mod game;
+pub mod material;
 pub mod observation;
 pub mod perft;
 pub mod rules;
@@ -26,6 +27,7 @@ pub use action::{
 pub use cozy_chess::Board;
 pub use error::CoreError;
 pub use game::GameState;
+pub use material::{material, material_balance};
 pub use observation::{OBS_LEN, ObservationV1, encode_observation_v1};
 pub use rules::{Outcome, Termination, is_insufficient_material};
 pub use schema::{

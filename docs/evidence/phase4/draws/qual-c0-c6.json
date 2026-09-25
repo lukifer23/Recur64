@@ -1,0 +1,153 @@
+{
+  "cycles": {
+    "0": {
+      "decisive_games": 46,
+      "draws": 18,
+      "draws_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 14,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 15,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 12,
+        "threefold_repetition": 2
+      },
+      "games": 64,
+      "mean_decisive_plies": 126.93478260869566,
+      "mean_draw_plies": 331.27777777777777,
+      "mean_final_material_draws": 3.5,
+      "mean_peak_advantage_draws": 7.166666666666667
+    },
+    "1": {
+      "decisive_games": 48,
+      "draws": 16,
+      "draws_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 11,
+        "stalemate": 1
+      },
+      "failed_conversions": 12,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 10,
+        "stalemate": 1
+      },
+      "games": 64,
+      "mean_decisive_plies": 111.02083333333333,
+      "mean_draw_plies": 342.375,
+      "mean_final_material_draws": 4.25,
+      "mean_peak_advantage_draws": 7.25
+    },
+    "2": {
+      "decisive_games": 43,
+      "draws": 20,
+      "draws_by_termination": {
+        "fifty_move_rule": 3,
+        "insufficient_material": 16,
+        "stalemate": 1
+      },
+      "failed_conversions": 18,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 3,
+        "insufficient_material": 14,
+        "stalemate": 1
+      },
+      "games": 64,
+      "mean_decisive_plies": 120.06976744186046,
+      "mean_draw_plies": 348.85,
+      "mean_final_material_draws": 3.4,
+      "mean_peak_advantage_draws": 8.05
+    },
+    "3": {
+      "decisive_games": 49,
+      "draws": 15,
+      "draws_by_termination": {
+        "fifty_move_rule": 3,
+        "insufficient_material": 11,
+        "stalemate": 1
+      },
+      "failed_conversions": 12,
+      "failed_conversions_by_termination": {
+        "insufficient_material": 11,
+        "stalemate": 1
+      },
+      "games": 64,
+      "mean_decisive_plies": 109.26530612244898,
+      "mean_draw_plies": 337.4,
+      "mean_final_material_draws": 4.266666666666667,
+      "mean_peak_advantage_draws": 8.4
+    },
+    "4": {
+      "decisive_games": 18,
+      "draws": 46,
+      "draws_by_termination": {
+        "fifty_move_rule": 16,
+        "insufficient_material": 27,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 37,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 10,
+        "insufficient_material": 24,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "games": 64,
+      "mean_decisive_plies": 99.11111111111111,
+      "mean_draw_plies": 311.0652173913044,
+      "mean_final_material_draws": 5.217391304347826,
+      "mean_peak_advantage_draws": 9.369565217391305
+    },
+    "5": {
+      "decisive_games": 14,
+      "draws": 50,
+      "draws_by_termination": {
+        "fifty_move_rule": 9,
+        "insufficient_material": 36,
+        "stalemate": 2,
+        "threefold_repetition": 3
+      },
+      "failed_conversions": 38,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 32,
+        "stalemate": 2,
+        "threefold_repetition": 2
+      },
+      "games": 64,
+      "mean_decisive_plies": 87.07142857142857,
+      "mean_draw_plies": 297.56,
+      "mean_final_material_draws": 3.42,
+      "mean_peak_advantage_draws": 7.44
+    },
+    "6": {
+      "decisive_games": 17,
+      "draws": 47,
+      "draws_by_termination": {
+        "fifty_move_rule": 13,
+        "insufficient_material": 31,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 36,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 6,
+        "insufficient_material": 27,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "games": 64,
+      "mean_decisive_plies": 109.52941176470588,
+      "mean_draw_plies": 276.70212765957444,
+      "mean_final_material_draws": 3.893617021276596,
+      "mean_peak_advantage_draws": 8.382978723404255
+    }
+  },
+  "decisive_advantage": 5,
+  "games_per_cycle": 64,
+  "replay": "runs/phase4-f10-qual/replay",
+  "window": 100
+}
