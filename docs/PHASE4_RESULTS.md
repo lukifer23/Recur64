@@ -1300,3 +1300,34 @@ trainable positions/s over K = 1 **and** keeps data health, meaning all of:
 
 Adoption itself is an owner decision: K > 1 is a search-execution change and a
 new identity.
+
+### D47 result (MEASURED)
+
+Binary `848bce7`, reference v2, 64 sims, 64 games, concurrency 32, same
+seeds, 0 inference errors in every cell. Artifacts:
+`docs/evidence/phase4/d47/`.
+
+| K | batch cap | trainable pos/s | vs K=1 | ev/s | batch mean/p50/p95 | queue p50 / p95 ms | fwd ms | wall s | VRAM MiB | max C |
+|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
+| 1 | 32 | 12.43 | - | 827 | 17.9 / 15 / 32 | 4.1 / 14.5 | 16.8 | 915 | 731 | 79 |
+| **2** | 64 | **22.79** | **+83%** | 1451 | 26.5 / 33 / 42 | 18.1 / 30.6 | 15.8 | 518 | 746 | 79 |
+| 4 | 128 | 26.76 | +115% | 1703 | 32.2 / 33 / 47 | 40.8 / 58.9 | 16.9 | 397 | 746 | 80 |
+
+| K | decisive | threefold + fifty | truncated | mean plies | trainable H | top-1 | search-moved argmax | KL(target ‖ noisy) |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.703 | 0.062 | 1 | 185.6 | 2.965 | 0.139 | 11.4% | 0.0219 |
+| 2 | 0.719 | 0.062 | 0 | 184.4 | 2.951 | 0.141 | 11.3% | 0.0220 |
+| 4 | 0.750 | 0.047 | 0 | 165.9 | 2.991 | 0.134 | 12.1% | 0.0246 |
+
+**Rule outcome:**
+
+- **K = 2 recommended**: the smallest K with at least +10% trainable pos/s
+  (+83%) whose data health stays within every bound.
+- K = 4 is also healthy, but it adds only +17% over K = 2, doubles queue
+  p95, and leaves batch p50 at 33 (diminishing returns).
+- INFERRED: this confirms the throughput root cause. Batches were capped by
+  one evaluation in flight per search thread, and the forward cost per batch
+  barely changes (15.8-16.9 ms) as batches grow.
+
+**Adoption is an owner decision** (a search-execution change and a new
+identity).
