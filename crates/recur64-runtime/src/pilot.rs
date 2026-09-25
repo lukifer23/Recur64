@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
-use recur64_eval::{ArenaConfig, ArenaResult, OpeningSuite, run_arena};
+use recur64_eval::{ArenaResult, OpeningSuite, run_arena};
 use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 
@@ -253,16 +253,7 @@ pub fn evaluate_candidate<B: Backend>(
         cand_owner.evaluator(),
         ref_owner.evaluator(),
     );
-    let arena_cfg = ArenaConfig {
-        games: cfg.arena_games,
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        recurrence: cfg.recurrence,
-        ply_cap: cfg.ply_cap,
-        seed: cfg.seed.wrapping_add(cycle as u64),
-        openings: openings.to_vec(),
-        concurrency: eval_concurrency,
-    };
+    let arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
     let arena = run_arena(
         &parent_ev,
         &cand_ev,

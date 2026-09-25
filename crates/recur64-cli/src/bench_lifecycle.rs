@@ -22,7 +22,7 @@ use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
-use recur64_eval::{ArenaConfig, OpeningSuite, run_arena};
+use recur64_eval::{OpeningSuite, run_arena};
 use recur64_runtime::eval_policy::{raw_policy_vs_parent, raw_policy_vs_random};
 use recur64_runtime::gpu_telemetry::{self, GpuSamples};
 use recur64_runtime::{EvalModels, MetricsSnapshot, RunConfig, evaluate_candidate, spawn_owner};
@@ -113,16 +113,7 @@ fn run_mode<B: Backend>(
 ) -> anyhow::Result<(Vec<MetricsSnapshot>, u32, u32)> {
     let concurrency = cfg.collection_shape()?.1;
     let seed = cfg.seed.wrapping_add(rep as u64);
-    let arena_cfg = ArenaConfig {
-        games: cfg.arena_games,
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        recurrence: cfg.recurrence,
-        ply_cap: cfg.ply_cap,
-        seed,
-        openings: openings.to_vec(),
-        concurrency,
-    };
+    let arena_cfg = cfg.arena_config(rep as u64, openings.to_vec(), concurrency);
     let raw_games = cfg.arena_games.max(4);
     match mode {
         "one" => {

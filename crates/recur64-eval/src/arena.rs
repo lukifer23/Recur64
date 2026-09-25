@@ -1,9 +1,11 @@
 //! Internal systems arena: candidate vs reference, paired colors.
 //!
 //! This is a systems comparison, not an Elo claim. Both sides use the same rules
-//! profile, search budget, and recurrence; only the evaluator differs. Moves are
-//! chosen deterministically (temperature 0) so results are reproducible from a
-//! recorded seed.
+//! profile, search budget, and recurrence; only the evaluator differs. By
+//! default moves are chosen deterministically (temperature 0). An optional
+//! sampled opening phase (`sample_plies`) and root noise diversify games that
+//! would otherwise collapse into repetition between near-identical networks;
+//! every game is still reproducible from the recorded seed.
 
 use std::collections::BTreeMap;
 
@@ -26,6 +28,14 @@ pub struct ArenaConfig {
     /// Games played at once. Results are aggregated in game-index order, so
     /// the report does not depend on it (1 = sequential).
     pub concurrency: usize,
+    /// Sample moves from visit counts (temperature 1) for this many plies
+    /// after the opening position, then play argmax. `None` = argmax from
+    /// the first ply (the original contract).
+    pub sample_plies: Option<u32>,
+    /// Root Dirichlet noise for arena search (`0.0` = none, the original
+    /// contract).
+    pub root_dirichlet_alpha: f32,
+    pub root_dirichlet_epsilon: f32,
 }
 
 impl Default for ArenaConfig {
@@ -39,6 +49,9 @@ impl Default for ArenaConfig {
             seed: 0,
             openings: Vec::new(),
             concurrency: 1,
+            sample_plies: None,
+            root_dirichlet_alpha: 0.3,
+            root_dirichlet_epsilon: 0.0,
         }
     }
 }
@@ -94,13 +107,14 @@ pub fn run_arena(
     let sp = SelfPlayConfig {
         simulations_per_move: cfg.simulations,
         c_puct: cfg.c_puct,
-        temperature: 0.0,
+        // Default contract: argmax from ply 0, no noise. With `sample_plies`
+        // the first plies sample at temperature 1, then argmax.
+        temperature: if cfg.sample_plies.is_some() { 1.0 } else { 0.0 },
         ply_cap: cfg.ply_cap,
         recurrence: cfg.recurrence,
-        // Arena play is deterministic and noise-free by contract.
-        argmax_after_ply: None,
-        root_dirichlet_alpha: 0.0,
-        root_dirichlet_epsilon: 0.0,
+        argmax_after_ply: cfg.sample_plies,
+        root_dirichlet_alpha: cfg.root_dirichlet_alpha,
+        root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {

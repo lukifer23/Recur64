@@ -213,6 +213,15 @@ pub struct RunConfig {
     /// Root noise mixing weight for self-play; `0.0` (default) disables it.
     #[serde(default)]
     pub root_dirichlet_epsilon: f32,
+    /// Searched-arena opening phase (D45): sample from visit counts at
+    /// temperature 1 for this many plies after the opening, then argmax.
+    /// `None` (default) = argmax from ply 0, the original arena contract.
+    #[serde(default)]
+    pub arena_sample_plies: Option<u32>,
+    /// Searched-arena root noise weight (alpha = `root_dirichlet_alpha`).
+    /// `0.0` (default) = noise-free, the original arena contract.
+    #[serde(default)]
+    pub arena_root_dirichlet_epsilon: f32,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -295,6 +304,47 @@ impl RunConfig {
         let requested_examples = new_trainable_positions as f64 * self.replay_reuse_target;
         let requested = (requested_examples / self.effective_batch() as f64).ceil() as usize;
         Ok((requested.min(self.max_updates), requested_examples))
+    }
+
+    /// Evaluation identity. The arena exploration fields (D45) appear only
+    /// when they differ from the original deterministic, noise-free arena, so
+    /// every configuration recorded before D45 keeps a reproducible hash.
+    fn evaluation_identity(&self) -> anyhow::Result<serde_json::Value> {
+        let mut v = serde_json::json!({
+            "opening_suite_digest": self.opening_suite_digest()?,
+            "arena_games": self.arena_games,
+        });
+        if self.arena_sample_plies.is_some() || self.arena_root_dirichlet_epsilon != 0.0 {
+            v["arena_exploration"] = serde_json::json!({
+                "sample_plies": self.arena_sample_plies,
+                "root_dirichlet_alpha": self.root_dirichlet_alpha,
+                "root_dirichlet_epsilon": self.arena_root_dirichlet_epsilon,
+            });
+        }
+        Ok(v)
+    }
+
+    /// The searched-arena configuration for one evaluation (seed offset
+    /// `offset`, e.g. the cycle), from this run's search and arena contract.
+    pub fn arena_config(
+        &self,
+        offset: u64,
+        openings: Vec<String>,
+        concurrency: usize,
+    ) -> recur64_eval::ArenaConfig {
+        recur64_eval::ArenaConfig {
+            games: self.arena_games,
+            simulations: self.simulations_per_move,
+            c_puct: self.c_puct,
+            recurrence: self.recurrence,
+            ply_cap: self.ply_cap,
+            seed: self.seed.wrapping_add(offset),
+            openings,
+            concurrency,
+            sample_plies: self.arena_sample_plies,
+            root_dirichlet_alpha: self.root_dirichlet_alpha,
+            root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
+        }
     }
 
     /// The full per-cycle update plan, including whether the `max_updates`
@@ -402,10 +452,7 @@ impl RunConfig {
                 "shard_max_games": self.shard_max_games,
                 "sampler": "shard_recency_weight_index_plus_1_v1",
             },
-            "evaluation": {
-                "opening_suite_digest": self.opening_suite_digest()?,
-                "arena_games": self.arena_games,
-            },
+            "evaluation": self.evaluation_identity()?,
             "promotion": {
                 "snapshot_policy": self.snapshot_policy,
                 "rule": PROMOTION_RULE_VERSION,
@@ -452,11 +499,12 @@ impl RunConfig {
             ensure_nvrtc_on_path()?;
         }
         anyhow::ensure!(
-            (0.0..=1.0).contains(&self.root_dirichlet_epsilon),
-            "root_dirichlet_epsilon must be in [0, 1]"
+            (0.0..=1.0).contains(&self.root_dirichlet_epsilon)
+                && (0.0..=1.0).contains(&self.arena_root_dirichlet_epsilon),
+            "root_dirichlet_epsilon and arena_root_dirichlet_epsilon must be in [0, 1]"
         );
         anyhow::ensure!(
-            self.root_dirichlet_epsilon == 0.0
+            (self.root_dirichlet_epsilon == 0.0 && self.arena_root_dirichlet_epsilon == 0.0)
                 || (self.root_dirichlet_alpha > 0.0 && self.root_dirichlet_alpha.is_finite()),
             "root_dirichlet_alpha must be finite and > 0 when root noise is enabled"
         );
@@ -831,6 +879,39 @@ openings = ['{e4}']
         assert!(!plan.cap_bound);
         // Even a 3x larger cycle would still fit under the cap.
         assert!(!cfg.update_plan(3 * 5685).unwrap().cap_bound);
+    }
+
+    /// D45 must not change any identity recorded before it: the original
+    /// deterministic, noise-free arena reproduces the smoke's recorded
+    /// scientific hash exactly, while an arena exploration variant is a new
+    /// identity.
+    #[test]
+    fn arena_exploration_is_a_new_identity_and_default_is_unchanged() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut cfg = RunConfig::from_toml_str(
+            &std::fs::read_to_string(root.join("configs/phase4/f10-smoke.toml")).unwrap(),
+        )
+        .unwrap();
+        cfg.opening_suite = Some(
+            root.join("configs/openings-v1.toml")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        assert_eq!(
+            cfg.scientific_config_hash().unwrap(),
+            "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3",
+            "recorded P4.5 smoke identity must be reproducible"
+        );
+        let mut sampled = cfg.clone();
+        sampled.arena_sample_plies = Some(8);
+        assert_ne!(
+            sampled.scientific_config_hash().unwrap(),
+            cfg.scientific_config_hash().unwrap()
+        );
+        let arena = sampled.arena_config(3, Vec::new(), 32);
+        assert_eq!(arena.sample_plies, Some(8));
+        assert_eq!(arena.seed, cfg.seed + 3);
+        assert_eq!(arena.root_dirichlet_epsilon, 0.0);
     }
 
     /// The CUDA fail-fast must accept every versioned NVRTC shared library name

@@ -12,6 +12,7 @@ mod bench_train;
 #[cfg(feature = "cuda")]
 mod cuda_smoke;
 mod doctor;
+mod eval_arena;
 mod inspect;
 mod model_info;
 mod perft;
@@ -69,6 +70,8 @@ enum Commands {
     BenchLifecycle(bench_lifecycle::BenchLifecycleArgs),
     /// Prior vs visit-target divergence of a replay (search policy improvement).
     SearchGain(search_gain::SearchGainArgs),
+    /// Batched searched arena between two checkpoints (evaluation-contract probe).
+    EvalArena(eval_arena::EvalArenaArgs),
     /// Generate the frozen evaluation opening suite.
     GenOpenings(phase3::GenOpeningsArgs),
     /// Evaluate a checkpoint's raw policy (no search) vs random legal play.
@@ -102,6 +105,7 @@ fn main() -> anyhow::Result<()> {
         Commands::BenchTrain(args) => bench_train::run(args),
         Commands::BenchLifecycle(args) => bench_lifecycle::run(args),
         Commands::SearchGain(args) => search_gain::run(args),
+        Commands::EvalArena(args) => eval_arena::run(args),
         Commands::GenOpenings(args) => phase3::run_gen_openings(args),
         Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
         Commands::Pilot(args) => phase3::run_pilot_cmd(args),

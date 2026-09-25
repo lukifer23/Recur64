@@ -1219,3 +1219,31 @@ residency) stand. The arena / promotion contract is added as the first
 scientific decision before P4.6.
 
 **STOP.** No P4.6, R10 or 24h run was started.
+
+## D45 — arena evaluation contract (post-smoke; owner-approved Option A)
+
+**Pre-registration (written before any run).**
+
+- Model pair from the smoke: reference `d22c78bd` vs cycle-1 candidate
+  `e8675fab`.
+- `configs/phase4/f10-smoke.toml` science: 64 sims, 32 games, openings-v1,
+  paired colours, measured 32 / 32 / 500 µs schedule.
+- Tool: `recur64 eval-arena`, which runs the pilot's own batched arena path.
+
+| variant | contract |
+|---|---|
+| V0 | current: argmax from ply 0, no noise, seed offset 1 (= smoke cycle 1). Deterministic, so it must reproduce the smoke's cycle-1 arena exactly (1 / 29 / 2, threefold 24), which also validates the tool path. |
+| V1 | sample (T = 1) for the first 30 plies after the opening, then argmax; no noise |
+| V2 | V1 plus root Dirichlet α 0.3, ε 0.25 (the full self-play exploration contract) |
+
+**Rule.**
+
+1. Adopt the least-perturbing variant (V1 before V2) with decisive share
+   ≥ 0.5 **and** threefold share ≤ 0.3, 0 inference errors and truncation
+   ≤ 0.1.
+2. If neither qualifies, adopt the variant with the highest decisive share,
+   provided it cuts the threefold share by ≥ 0.3 absolute vs V0.
+3. Otherwise, adopt nothing and return the decision to the owner.
+
+The identity of an adopted variant is new (see the config test):
+pre-D45 hashes stay reproducible.

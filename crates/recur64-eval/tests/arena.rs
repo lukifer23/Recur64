@@ -13,6 +13,7 @@ fn cfg() -> ArenaConfig {
         seed: 7,
         openings: Vec::new(),
         concurrency: 1,
+        ..ArenaConfig::default()
     }
 }
 
@@ -89,4 +90,22 @@ fn serde_json_like(r: &recur64_eval::ArenaResult) -> String {
         r.score_ci_low,
         r.score_ci_high
     )
+}
+
+/// D45: a sampled arena opening phase is reproducible from the seed and
+/// independent of concurrency, like the deterministic arena.
+#[test]
+fn sampled_arena_is_reproducible_and_concurrency_independent() {
+    let reference = FixedEvaluator::uniform(0.0);
+    let candidate = FixedEvaluator::uniform(0.0);
+    let mut c = cfg();
+    c.games = 6;
+    c.ply_cap = 60;
+    c.sample_plies = Some(8);
+    let a = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    let b = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    assert_eq!(serde_json_like(&a), serde_json_like(&b));
+    c.concurrency = 3;
+    let par = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    assert_eq!(serde_json_like(&a), serde_json_like(&par));
 }

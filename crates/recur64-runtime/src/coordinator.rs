@@ -13,7 +13,7 @@ use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
 use recur64_core::{GameState, StandardMove};
-use recur64_eval::{ArenaConfig, ArenaResult, OpeningSuite, run_arena};
+use recur64_eval::{ArenaResult, OpeningSuite, run_arena};
 use recur64_model::checkpoint::{CheckpointMeta, save_training};
 use recur64_model::train::adamw;
 
@@ -584,16 +584,7 @@ pub fn run<B: AutodiffBackend>(
         Some(p) => OpeningSuite::load(std::path::Path::new(p))?.openings,
         None => Vec::new(),
     };
-    let arena_cfg = ArenaConfig {
-        games: cfg.arena_games,
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        recurrence: cfg.recurrence,
-        ply_cap: cfg.ply_cap,
-        seed: cfg.seed,
-        openings,
-        concurrency: 1,
-    };
+    let arena_cfg = cfg.arena_config(0, openings, 1);
     let arena = run_arena(
         &ref_ev,
         &cand_ev,
