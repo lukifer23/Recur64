@@ -235,7 +235,10 @@ pub fn spawn_owner<B: Backend>(
 /// play. Match order and seeds are part of the evaluation contract:
 /// searched candidate-vs-parent, searched candidate-vs-reference (reused when
 /// parent == reference), raw candidate-vs-random, raw candidate-vs-parent, all
-/// seeded `cfg.seed + cycle`.
+/// seeded `cfg.seed + cycle`. With a `deadline` (D38) no evaluation game
+/// starts after it, and an incomplete evaluation is an
+/// `EvalError::DeadlineExceeded` error, never a partial result.
+#[allow(clippy::too_many_arguments)]
 pub fn evaluate_candidate<B: Backend>(
     cfg: &RunConfig,
     models: &EvalModels<'_>,
@@ -243,6 +246,7 @@ pub fn evaluate_candidate<B: Backend>(
     openings: &[String],
     eval_concurrency: usize,
     device: &B::Device,
+    deadline: Option<Instant>,
 ) -> anyhow::Result<EvalOutcome> {
     let parent_owner = spawn_owner::<B>(models.parent_dir, cfg, device)?;
     let cand_owner = spawn_owner::<B>(models.candidate_dir, cfg, device)?;
@@ -253,7 +257,8 @@ pub fn evaluate_candidate<B: Backend>(
         cand_owner.evaluator(),
         ref_owner.evaluator(),
     );
-    let arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
+    let mut arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
+    arena_cfg.deadline = deadline;
     let arena = run_arena(
         &parent_ev,
         &cand_ev,
@@ -284,6 +289,7 @@ pub fn evaluate_candidate<B: Backend>(
         cfg.seed.wrapping_add(cycle as u64),
         openings,
         eval_concurrency,
+        deadline,
     )?;
     let raw_parent = raw_policy_vs_parent(
         &cand_ev,
@@ -293,6 +299,7 @@ pub fn evaluate_candidate<B: Backend>(
         cfg.seed.wrapping_add(cycle as u64),
         openings,
         eval_concurrency,
+        deadline,
     )?;
     drop((parent_ev, cand_ev, ref_ev));
     let inference = vec![
@@ -440,6 +447,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             cfg.seed,
             &openings,
             eval_concurrency,
+            Some(deadline),
         )?;
         let policy = policy_diagnostics(&ev, &openings)?;
         drop(ev);
@@ -633,9 +641,56 @@ pub fn run_pilot<B: AutodiffBackend>(
                 &openings,
                 eval_concurrency,
                 &inner_device,
+                Some(deadline),
             )
         });
         gpu.eval = eval_gpu;
+        // D38: an evaluation cut off by the run deadline decides nothing. The
+        // candidate is held, the partial cycle is recorded, and the run stops.
+        let outcome = match outcome {
+            Err(e)
+                if e.downcast_ref::<recur64_search::EvalError>()
+                    .is_some_and(|x| {
+                        matches!(x, recur64_search::EvalError::DeadlineExceeded(_))
+                    }) =>
+            {
+                status = "budget_exhausted_during_eval".into();
+                let partial = serde_json::json!({
+                    "cycle": cycle,
+                    "evaluation": "incomplete",
+                    "reason": e.to_string(),
+                    "decision": "hold",
+                    "hold_reasons": ["evaluation_deadline"],
+                    "games": games,
+                    "positions": positions,
+                    "new_trainable_positions": new_trainable_positions,
+                    "first_game_id": first_game_id,
+                    "plan": plan,
+                    "selfplay": selfplay,
+                    "root_search": root_search,
+                    "train": train_report,
+                    "parent_model_id": parent_model_id,
+                    "candidate_model_id": candidate_model_id,
+                    "optimizer_step_start": optimizer_step_start,
+                    "accepted_optimizer_step_after": cumulative_updates,
+                    "gpu": gpu,
+                    "collect_secs": collect_secs,
+                    "train_secs": train_secs,
+                    "eval_secs": eval_start.elapsed().as_secs_f64(),
+                    "wall_secs": cycle_start.elapsed().as_secs_f64(),
+                });
+                std::fs::create_dir_all(run_dir.report())?;
+                std::fs::write(
+                    run_dir.report().join(format!("cycle-{cycle:03}.json")),
+                    serde_json::to_vec_pretty(&partial)?,
+                )?;
+                println!(
+                    "cycle {cycle}: evaluation stopped by the run deadline ({e}); candidate held"
+                );
+                break;
+            }
+            other => other,
+        };
         let EvalOutcome {
             arena,
             reference_arena,

@@ -109,3 +109,27 @@ fn sampled_arena_is_reproducible_and_concurrency_independent() {
     let par = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
     assert_eq!(serde_json_like(&a), serde_json_like(&par));
 }
+
+/// D38: no evaluation game starts after the deadline, and an incomplete
+/// evaluation is an explicit error, never a partial (misleading) result.
+#[test]
+fn arena_past_deadline_is_an_explicit_incomplete_error() {
+    let reference = FixedEvaluator::uniform(0.0);
+    let candidate = FixedEvaluator::uniform(0.0);
+    for concurrency in [1usize, 3] {
+        let mut c = cfg();
+        c.concurrency = concurrency;
+        c.deadline = Some(std::time::Instant::now() - std::time::Duration::from_secs(1));
+        let err = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap_err();
+        assert!(
+            matches!(err, recur64_search::EvalError::DeadlineExceeded(_)),
+            "{err}"
+        );
+    }
+    // A future deadline changes nothing.
+    let mut c = cfg();
+    c.deadline = Some(std::time::Instant::now() + std::time::Duration::from_secs(3600));
+    let with = run_arena(&reference, &candidate, "ref", "cand", &c).unwrap();
+    let without = run_arena(&reference, &candidate, "ref", "cand", &cfg()).unwrap();
+    assert_eq!(serde_json_like(&with), serde_json_like(&without));
+}

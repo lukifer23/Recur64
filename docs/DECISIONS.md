@@ -375,16 +375,33 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **Why:** the current rename-then-rewrite order can leave the manifest pointing
   at moved shards after power loss. Does not block a short smoke.
 
-## D38 — Deadline semantics
+## D38 - Deadline semantics
 
-- **Status:** ACCEPTED (Phase 4, partial)
-- **Decision:** A configured wall budget has a soft deadline (stop starting new
-  work at a safe boundary and finish in-flight steps) and a hard maximum (stop
-  at a checkpointable boundary). The learner checks the deadline at update
-  boundaries. Evaluation phases must later check it at game boundaries; a
-  budget overrun is recorded, never hidden.
-- **Why:** the Phase 3 pilot checked deadlines only between cycles and could
-  exceed its nominal budget during a long evaluation phase.
+- **Status:** ACCEPTED (complete for learner and evaluation, 2026-09-25).
+- **Decision:**
+  - A configured wall budget has a soft deadline: stop starting new work at a
+    safe boundary and let in-flight steps finish.
+  - The learner checks the deadline at update boundaries. Self-play
+    collection checks it between games.
+  - Every evaluation game scheduler (`play_indexed_until`: searched arenas,
+    raw-vs-random, raw-vs-parent, the pilot's T0) checks it at game
+    boundaries. Once it passes, no new evaluation game starts and in-flight
+    games finish.
+  - An incomplete evaluation is an explicit `EvalError::DeadlineExceeded`,
+    never a partial result.
+  - The pilot turns it into a held cycle: reason `evaluation_deadline`,
+    status `budget_exhausted_during_eval`, a partial cycle report is written,
+    and the run stops.
+  - A budget overrun is recorded (`budget_overrun_secs`), never hidden.
+- **Why:**
+  - The Phase 3 pilot checked deadlines only between cycles and could exceed
+    its nominal budget during a long evaluation phase.
+  - A partial arena must never inform promotion.
+- **Tests:**
+  - `arena_past_deadline_is_an_explicit_incomplete_error` (sequential and
+    threaded schedulers)
+  - `evaluation_past_the_deadline_is_a_typed_incomplete_error` (pilot
+    evaluation path)
 
 ## D39 — Replay freshness control
 

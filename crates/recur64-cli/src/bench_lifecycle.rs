@@ -128,6 +128,7 @@ fn run_mode<B: Backend>(
                 seed,
                 openings,
                 concurrency,
+                None,
             )?;
             drop(ev);
             let snap = owner.metrics().snapshot();
@@ -147,6 +148,7 @@ fn run_mode<B: Backend>(
                 seed,
                 openings,
                 concurrency,
+                None,
             )?;
             drop((ea, eb));
             let snaps = vec![a.metrics().snapshot(), b.metrics().snapshot()];
@@ -168,7 +170,8 @@ fn run_mode<B: Backend>(
                 reference_dir: ckpt,
                 reference_model_id: model_id,
             };
-            let out = evaluate_candidate::<B>(cfg, &models, rep, openings, concurrency, device)?;
+            let out =
+                evaluate_candidate::<B>(cfg, &models, rep, openings, concurrency, device, None)?;
             anyhow::ensure!(
                 out.reference_arena_is_parent_arena == (mode == "pilot"),
                 "unexpected reference-arena reuse for mode {mode}"

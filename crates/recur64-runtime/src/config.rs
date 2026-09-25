@@ -344,6 +344,7 @@ impl RunConfig {
             sample_plies: self.arena_sample_plies,
             root_dirichlet_alpha: self.root_dirichlet_alpha,
             root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
+            deadline: None,
         }
     }
 

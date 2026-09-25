@@ -190,6 +190,7 @@ fn eval_policy_impl<B: AutodiffBackend>(
         cfg.seed,
         &openings,
         1,
+        None,
     )?;
     let policy = eval_policy::policy_diagnostics(&ev, &openings)?;
     let meta: CheckpointMeta =

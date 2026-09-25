@@ -188,6 +188,7 @@ fn play_raw(
 }
 
 /// Play `games` raw-policy-vs-random games over the opening suite, paired colors.
+#[allow(clippy::too_many_arguments)]
 pub fn raw_policy_vs_random(
     ev: &dyn Evaluator,
     games: u32,
@@ -196,6 +197,7 @@ pub fn raw_policy_vs_random(
     seed: u64,
     openings: &[String],
     concurrency: usize,
+    deadline: Option<std::time::Instant>,
 ) -> Result<RawMatchResult, EvalError> {
     let openings: Vec<String> = if openings.is_empty() {
         vec![GameState::startpos().to_fen()]
@@ -203,7 +205,7 @@ pub fn raw_policy_vs_random(
         openings.to_vec()
     };
 
-    let results = recur64_eval::play_indexed(games, concurrency, |i| {
+    let results = recur64_eval::play_indexed_until(games, concurrency, deadline, |i| {
         let policy_is_white = i % 2 == 0;
         let opening = &openings[(i as usize / 2) % openings.len()];
         let start = GameState::from_fen(opening)
@@ -263,6 +265,7 @@ pub fn raw_policy_vs_random(
 }
 
 /// Deterministic raw policy head-to-head, paired by color and opening.
+#[allow(clippy::too_many_arguments)]
 pub fn raw_policy_vs_parent(
     candidate: &dyn Evaluator,
     parent: &dyn Evaluator,
@@ -271,6 +274,7 @@ pub fn raw_policy_vs_parent(
     seed: u64,
     openings: &[String],
     concurrency: usize,
+    deadline: Option<std::time::Instant>,
 ) -> Result<RawParentResult, EvalError> {
     let fallback = [GameState::startpos().to_fen()];
     let openings = if openings.is_empty() {
@@ -278,7 +282,7 @@ pub fn raw_policy_vs_parent(
     } else {
         openings
     };
-    let results = recur64_eval::play_indexed(games, concurrency, |i| {
+    let results = recur64_eval::play_indexed_until(games, concurrency, deadline, |i| {
         let candidate_is_white = i % 2 == 0;
         let start = GameState::from_fen(&openings[(i as usize / 2) % openings.len()])
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;

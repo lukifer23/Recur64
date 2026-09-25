@@ -17,6 +17,10 @@ pub enum EvalError {
     Backend(String),
     /// The request was malformed (e.g. empty candidate list, wrong policy len).
     Invalid(String),
+    /// A wall-clock deadline passed before every requested game could start
+    /// (D38). No partial result is returned: an incomplete evaluation must
+    /// never inform a decision.
+    DeadlineExceeded(String),
 }
 
 impl std::fmt::Display for EvalError {
@@ -25,6 +29,7 @@ impl std::fmt::Display for EvalError {
             EvalError::Shutdown => write!(f, "evaluator is shutting down"),
             EvalError::Backend(m) => write!(f, "evaluator backend error: {m}"),
             EvalError::Invalid(m) => write!(f, "invalid evaluation request: {m}"),
+            EvalError::DeadlineExceeded(m) => write!(f, "evaluation deadline exceeded: {m}"),
         }
     }
 }

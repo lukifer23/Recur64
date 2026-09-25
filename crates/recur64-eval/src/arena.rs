@@ -36,6 +36,8 @@ pub struct ArenaConfig {
     /// contract).
     pub root_dirichlet_alpha: f32,
     pub root_dirichlet_epsilon: f32,
+    /// Soft wall-clock deadline (D38): no game starts after it.
+    pub deadline: Option<std::time::Instant>,
 }
 
 impl Default for ArenaConfig {
@@ -52,6 +54,7 @@ impl Default for ArenaConfig {
             sample_plies: None,
             root_dirichlet_alpha: 0.3,
             root_dirichlet_epsilon: 0.0,
+            deadline: None,
         }
     }
 }
@@ -142,7 +145,7 @@ pub fn run_arena(
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
         play_game_from(&router, &sp, &mut Rng::new(seed), start)
     };
-    let games = play_indexed(cfg.games, cfg.concurrency, play_one)?;
+    let games = play_indexed_until(cfg.games, cfg.concurrency, cfg.deadline, play_one)?;
 
     let mut candidate_wins = 0u32;
     let mut reference_wins = 0u32;
@@ -218,9 +221,38 @@ where
     T: Send,
     F: Fn(u32) -> Result<T, EvalError> + Sync,
 {
+    play_indexed_until(games, concurrency, None, play)
+}
+
+/// [`play_indexed`] with a soft deadline (D38): once `deadline` passes, no
+/// new game starts; games already in flight finish. If any game did not run,
+/// the whole evaluation is [`EvalError::DeadlineExceeded`] (no partial result).
+pub fn play_indexed_until<T, F>(
+    games: u32,
+    concurrency: usize,
+    deadline: Option<std::time::Instant>,
+    play: F,
+) -> Result<Vec<T>, EvalError>
+where
+    T: Send,
+    F: Fn(u32) -> Result<T, EvalError> + Sync,
+{
+    let expired = || deadline.is_some_and(|d| std::time::Instant::now() > d);
+    let incomplete = |done: usize| {
+        EvalError::DeadlineExceeded(format!(
+            "{done} of {games} evaluation games completed before the deadline"
+        ))
+    };
     let threads = concurrency.clamp(1, games.max(1) as usize);
     if threads == 1 {
-        return (0..games).map(&play).collect();
+        let mut out = Vec::with_capacity(games as usize);
+        for i in 0..games {
+            if expired() {
+                return Err(incomplete(out.len()));
+            }
+            out.push(play(i)?);
+        }
+        return Ok(out);
     }
     let next = std::sync::atomic::AtomicU32::new(0);
     let mut slots: Vec<Option<T>> = (0..games).map(|_| None).collect();
@@ -231,6 +263,9 @@ where
                 scope.spawn(|| {
                     let mut out = Vec::new();
                     loop {
+                        if expired() {
+                            break;
+                        }
                         let i = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         if i >= games {
                             break;
@@ -268,6 +303,10 @@ where
     });
     if let Some(e) = first_error {
         return Err(e);
+    }
+    let done = slots.iter().filter(|s| s.is_some()).count();
+    if done < games as usize && deadline.is_some() {
+        return Err(incomplete(done));
     }
     slots
         .into_iter()
