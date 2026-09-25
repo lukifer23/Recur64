@@ -1274,3 +1274,29 @@ games, seed offset 1, 0 inference errors in every variant. Artifacts:
 - **Trade-off (INFERRED):** per-move noise widens the score interval (±0.15
   vs ±0.05 at 32 games). The conservative gate can now decide, but only on a
   clear margin.
+
+## D47 - multi-leaf search throughput (pre-registration, written before any run)
+
+**Setup.** Reference v2 `d22c78bd`, `configs/phase4/f10-reference.toml`
+self-play contract (argmax after 30, root noise 0.25), 64 sims, 64 games
+(2 waves), concurrency 32, timeout 500 us, same seeds.
+
+| cell | leaves_in_flight K | batch cap |
+|---|---:|---:|
+| baseline | 1 | 32 |
+| D47 | 2 | 64 |
+| D47 | 4 | 128 |
+
+K = 1 is re-measured in the same batch because of the ±10-15% per-process
+variance (B9).
+
+**Rule.** Recommend adoption of the smallest K > 1 that gains >= 10%
+trainable positions/s over K = 1 **and** keeps data health, meaning all of:
+
+- decisive share within 0.10 of K = 1
+- threefold + fifty not higher by more than 0.05
+- trainable target entropy within 10%
+- 0 inference errors
+
+Adoption itself is an owner decision: K > 1 is a search-execution change and a
+new identity.
