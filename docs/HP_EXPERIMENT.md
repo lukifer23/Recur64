@@ -358,4 +358,11 @@ outcomes on the RTX 2050:
 - Historical head-v1 evidence is preserved, not rewritten, and labelled
   HISTORICAL in `HP_H1_RESULTS.md`.
 
+- **H3.5B red team:**
+  - D50 corrected: weights reproduce, and only ParamIds differ.
+  - Paired-common arena RNG adopted (self-vs-self exactly 0.500).
+  - The H3.5 arenas ran at K = 1 (hash-verified; identical at K = 2 at T0).
+  - Smoke config fixed: schedule headroom 370/37, cap 256, D49 restored, and
+    a schedule guard added.
+
 R15 training, multi-R schedules, and R1/R2/R4 experiments remain **NOT RUN**.

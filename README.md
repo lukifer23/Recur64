@@ -62,6 +62,20 @@ unique params; the D44 owner-memory fix holds (496 MB plateau vs the historical
 and self-play draws fell to 22–28% from the historical 89.2%. R15 training
 remains **not run**.
 
+**H3.5B pre-smoke red team (2026-09-26):**
+- **Weights reproduce.** `model_id` hashes the `.mpk` artifact, which embeds
+  random ParamIds. Weights reproduce exactly per backend, measured with
+  `recur64 model-digest` (D50 amended).
+- **Paired arena.** The arena now pairs colour-swapped games on a common
+  random stream (`arena_rng_policy = "paired_common_v1"`). The reference vs
+  itself scores exactly 0.500, where it scored 0.362 before.
+- **Smoke config fixed.** The LR schedule has headroom (370/37), D49 health
+  stops are restored, and an LR-exhaustion guard is added.
+- **Hardening.** Misplaced config keys are now refused (D51), and CLI evidence
+  records the git SHA.
+
+Pre-flight: `recur64 config-info --config configs/hp/f15-smoke-v2.toml`.
+
 - Historical head-v1 HP evidence (frozen): [`docs/HP_H1_RESULTS.md`](docs/HP_H1_RESULTS.md).
 - H3 pre-registration: [`docs/HP_H3_PREREG.md`](docs/HP_H3_PREREG.md).
 - H3 measured results: [`docs/HP_H3_RESULTS.md`](docs/HP_H3_RESULTS.md).

@@ -172,8 +172,39 @@ search-budget, smoke, and pilot results must be reported separately when run.
 - **Adopted measured decisions on the RTX 2050:** K = 2 (D47), concurrency 8,
   training 32x4 (effective 128), search budget 32, D44 lifecycle **GO**,
   D46 ≤2 resident verified.
-- **Measured system fact (new):** weight initialisation is *nearly* deterministic
+- **(Superseded by H3.5B; see below.)** Original text: weight initialisation is *nearly* deterministic
   but a small subset of parameters varies between processes, so the frozen
   reference's `model_id` (a file content hash) is not reproducible from
   config+seed. Freeze once and pin `reference_model_id`. Evidence in
   `docs/HP_H3_RESULTS.md`.
+
+## H3.5B — pre-smoke red team (2026-09-26)
+
+- **D50 corrected (MEASURED).**
+  - Generated ParamIds, not weights, make the `.mpk` artifact hash differ.
+    Weights reproduce exactly per backend.
+  - New tool `recur64 model-digest`. `freeze-reference` now also writes
+    `semantic_weights_digest`.
+  - Evidence: `docs/evidence/hp-h3/init-repro/`.
+- **Arena RNG (D45 addendum).**
+  - `arena_rng_policy = "paired_common_v1"` (`seed = base + i/2`), adopted
+    under the pre-registered gate.
+  - Arena JSON gains per-game records and pair diagnostics.
+  - Evidence: `docs/evidence/hp-h3/arena-paired/`.
+- **Provenance:** `recur64_runtime::provenance`. CLI JSON no longer records
+  a null `git_revision`.
+- **D51.**
+  - `ModelConfig` and `HealthStops` refuse unknown keys. The H3.5 arenas had
+    silently run at K = 1.
+  - Cycle reports gain an `lr_schedule` block, and the
+    `lr_schedule_end` health stop is added.
+- **Smoke config:**
+  - planned/warmup 370/37 and a per-cycle cap of 256;
+  - D49 health stops restored, plus the schedule guard;
+  - the paired arena RNG;
+  - pinned by `f15_smoke_v2_config_is_the_h3_contract`.
+- **Tools:** `recur64 config-info` gives a pre-flight record of identities,
+  schedule and workload bounds.
+- **Test harness:** Flex's seeded RNG is process-global, so the pilot tests
+  are serialized. In parallel they flaked about 1 run in 3 with every game
+  truncated.

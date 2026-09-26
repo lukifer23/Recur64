@@ -568,6 +568,18 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - Arena games no longer measure noise-free argmax play. Both sides get
     identical exploration, so the comparison stays symmetric.
 
+- **H3.5B addendum (HP, 2026-09-26):** "paired colours and seeded games"
+  originally meant a shared opening only. Game `i` used `seed = base + i`, so
+  under sampling and noise the two games of a pair drew different random
+  streams. Reference vs itself scored 0.362.
+  - `arena_rng_policy = "paired_common_v1"` (`seed = base + i/2`) gives the
+    pair common random numbers. Measured on HP: the reference vs itself scored
+    exactly 0.500, with 16/16 pairs replayed move-for-move.
+  - The default `per_game_v1` keeps every earlier identity. The policy enters
+    the scientific identity only when paired.
+  - Pair diagnostics (`ArenaResult.pairs`) are reported, not used for
+    promotion.
+
 ## D46 - At most two resident models during candidate evaluation
 
 - **Status:** ACCEPTED (2026-09-25, owner-approved post-smoke item)
@@ -741,6 +753,31 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   >   a deterministic initialization path (a fixed per-tensor RNG or a serial init)
   >   and verify with a two-process freeze test. That is a **mainline** change with
   >   its own measurement; it is out of scope for HP H3.
+
+## D51 - Config strictness and LR-schedule exhaustion guard (H3.5B)
+
+- **Status:** ACCEPTED (HP H3.5B, 2026-09-26).
+- **Decision:**
+  - `ModelConfig` and `HealthStops` refuse unknown keys
+    (`deny_unknown_fields`). `RunConfig` top level is unchanged.
+  - Every cycle report carries `lr_schedule`: `step_start`, `step_end`,
+    `planned_updates`, `fraction_end`, `lr_first`, `lr_last` and
+    `updates_at_zero_lr`.
+  - `[health_stops] lr_schedule_end = true` stops the pilot at the cycle
+    boundary once the trainer step reaches `planned_updates`.
+  - The new fields are skip-serialized when unset. Resolved and scientific
+    hashes of existing configs are unchanged.
+- **Why:**
+  - A run-level key written below `[model]` was silently ignored. The H3.5
+    arenas ran at K = 1 (hash-verified).
+  - A missing `[health_stops]` silently disabled D49 in the smoke config.
+  - Mainline smoke v2 spent 38 updates at LR = 0 with no signal in the
+    report.
+- **Tests:**
+  - `f15_smoke_v2_config_is_the_h3_contract`.
+  - `health_stops_trigger_on_the_preregistered_conditions` (extended),
+    covering the misplaced `[model]` key and the misspelled stop.
+  - `lr_schedule_status_counts_zero_lr_updates`.
 
 ## Rejected / deferred
 

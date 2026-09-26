@@ -217,6 +217,62 @@ uninformativeness). Truncation 0.094 is close to the 0.10 limit → **watch item
 for the smoke. V2 is a **new** HP scientific identity; historical HP arenas are
 not relabelled.
 
+## H3.5B — pre-smoke red team (MEASURED)
+
+Rules were fixed in `HP_H3_PREREG.md` §H3.5B (commit `78e0743`) before the run.
+Binary `78e0743` (clean, CUDA). Both arms: frozen `d89b408f…` vs **itself**,
+`configs/hp/f15-smoke-v2.toml` @ `e798889` (32 sims, **K = 2**, c8, batch 16, 32 games,
+openings-v1, D45 V2). Run sequentially on the RTX 2050 with nothing else on the GPU.
+Evidence: `docs/evidence/hp-h3/arena-paired/{v2-old,v2-paired}/eval-arena.json`.
+
+| | V2-old (`per_game_v1`) | **V2-paired (`paired_common_v1`)** | pre-registered rule |
+|---|---|---|---|
+| inference errors | 0 | **0** | 0 |
+| W / D / L (candidate) | 7 / 7 / 15 | **14 / 4 / 14** | — |
+| decisive fraction | 0.688 | **0.875** | ≥ 0.50 |
+| threefold | 0.031 | **0.000** | ≤ 0.30 |
+| truncation | 0.094 | **0.000** | ≤ 0.10 |
+| candidate score (self vs self) | 0.362 | **0.500 exactly** | \|s − 0.5\| ≤ 0.05 |
+| per-game 95% CI | [0.209, 0.515] | [0.335, 0.665] | — |
+| complete / mirrored / identical-move pairs | 13 / 5 / 0 of 16 | **16 / 16 / 16 of 16** | recorded |
+| pair-score histogram | 0.00: 2, 0.25: 6, 0.50: 5 | 0.50: 16 | — |
+| peak VRAM / wall | 426 MB / 458 s | 426 MB / 328 s | — |
+
+**Decision: ADOPTED `paired_common_v1`** for H3.6. It passed every criterion,
+and the new scientific identity is frozen in the smoke config.
+
+MEASURED observations:
+- **CRN is exact here.** With identical evaluators, every pair replayed
+  move-for-move on CUDA (16/16 identical move digests), batching included.
+  The null comparison scores exactly 0.5. This makes the self-vs-self check
+  tautological, as intended: arena variance now comes from differences
+  between the models, not from random streams.
+  - Per-game marginals are unchanged by CRN. The paired arm's higher decisive
+    fraction (0.875 vs 0.688) is a different draw of the same per-game
+    distribution, not an effect of pairing.
+- **V2-old at K = 2 reproduced H3.5 (K = 1) game for game:** the same
+  7/7/15/3 and the same terminations.
+  - At T0 the head-v2 value is exactly 0 and priors are near-uniform, so
+    multi-leaf selection with virtual loss visits leaves in the same order as
+    sequential search.
+  - So the H3.5 K misconfiguration (`arena-paired/H35-K-AUDIT.md`) did not
+    change its result.
+  - The CUDA arena is also run-to-run deterministic for this setup. K is
+    expected to matter once the value head learns.
+- **The pair-level Wald CI is anti-conservative at n = 13 to 16.** V2-old's
+  pair CI [0.209, 0.406] excludes 0.5 for a model against itself. Pair
+  intervals remain diagnostic only and must not drive promotion. A
+  statistically stronger promotion rule is deferred to R15 entry, as
+  pre-registered.
+- The frozen reference won 11 of 14 decisive pairs as Black (paired arm).
+  This is a T0 property of this network and openings, not a claim.
+
+### D50 correction (MEASURED; see the reproducibility section above)
+
+The artifact `model_id` differs per process because of generated ParamIds.
+The weights reproduce exactly per backend, and `d89b408f…` equals fresh CUDA
+freezes semantically (`semantic_weights_digest f81938a2…`).
+
 ## H3.6 — corrected F15-v2 smoke
 
 **NOT RUN at the time of writing**; frozen as `configs/hp/f15-smoke-v2.toml`.

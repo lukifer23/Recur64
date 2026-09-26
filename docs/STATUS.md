@@ -370,6 +370,19 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
   32**, arena V2.
 - **Repetition attractor resolved:** self-play draws 22–28% vs the historical
   89.2%.
+- **H3.5B red team (MEASURED):**
+  - **D50 corrected.** ParamIds, not weights, make `model_id` differ.
+    Weights reproduce per backend, and `d89b408f…` is semantically identical
+    to fresh CUDA freezes.
+  - **Paired arena adopted** under the pre-registered gate: self-vs-self
+    0.500, 16/16 pairs replayed, decisive 0.875.
+  - **H3.5 arenas actually ran at K = 1.** The key sat below `[model]`
+    (hash-verified), but the result is identical at K = 2 at T0.
+  - **Smoke config fixed:** schedule 370/37, per-cycle cap 256, D49 restored,
+    and a schedule guard added.
+  - **Provenance:** CLI `git_revision` is no longer null.
+  - **Disclosure:** an abandoned 1-cycle smoke attempt exists at
+    `runs/hp-h3-smoke-v2` (pre-H3.2 build). It is not evidence.
 - Historical head-v1 HP evidence preserved and labelled HISTORICAL in
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.
