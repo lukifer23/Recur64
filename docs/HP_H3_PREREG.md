@@ -101,3 +101,111 @@ Always record: trainer step, cap_bound, reuse, fresh replay fraction, mean
 sample age, lineage. `max_updates` is a safety cap only; if it binds and
 controls reuse, the smoke is CONDITIONAL/NO-GO and the cap is **not** raised
 mid-run.
+
+## H3.5B — pre-smoke red team (fixed before any H3.5B GPU measurement)
+
+### Disclosures found during the red team
+
+- **Abandoned smoke attempt.** `runs/hp-h3-smoke-v2/` (gitignored, never reported)
+  is a partial pilot built at `9889c17`. That is H3.1, *before* the H3.2
+  lifecycle requalification and before this pre-registration was committed.
+  - It completed cycle 0 only, and `metadata.json` still says `running`.
+  - It was run with an empty `[health_stops]`.
+  - Cycle 0: 5,247 trainable positions, 82/82 updates, reuse 2.00, hold at
+    arena score 0.468, 978 s wall. Scientific hash `510d9bb4…`.
+  - It is **not** H3.6 evidence and is left untouched. H3.6 uses a fresh run
+    directory.
+- **H3.5 arena ran at K = 1, not K = 2.** In `runs/hp-h3-arena.toml` (the config behind
+  `docs/evidence/hp-h3/arena/v{0,2}`), `search_leaves_in_flight = 2` and
+  `run_budget_minutes` sit **below** the `[model]` header. TOML assigns them to
+  the model table, and serde ignores unknown keys, so the arena used the default
+  K = 1 and the default budget.
+  - The H3.5 text "32 sims, K = 2" is therefore wrong for the arena cells.
+  - The eval-arena JSON never recorded K. It now records `leaves_in_flight`.
+  - The H3.5B arms below use `configs/hp/f15-smoke-v2.toml`, where K = 2 is a
+    top-level key.
+- `configs/hp/f15-smoke-v2.toml` had **no `[health_stops]`**, so D49 was off
+  despite being documented as frozen.
+- CLI JSON (`eval-arena`, `bench-train`, `bench-lifecycle`) recorded
+  `git_revision: null`, because build-script env is crate-scoped. Fixed
+  centrally (`recur64_runtime::provenance`). Historical JSON is unchanged.
+
+### H3.5B arena RNG gate
+
+Fixed setup:
+- The frozen reference `d89b408f…` vs **itself**.
+- `configs/hp/f15-smoke-v2.toml`: 32 sims, K = 2, concurrency 8, batch 16, 32
+  games, openings-v1, seed offset 0.
+- D45 V2 (sample 30 plies, root ε 0.25).
+
+Two arms, run sequentially on the RTX 2050 with nothing else on the GPU:
+- **V2-old:** `--rng-policy per_game_v1` (historical `seed = base + i`). This
+  re-run gives pair diagnostics that the H3.5 JSON lacks. The score is recorded
+  as measured and not expected to equal 0.362, because H3.5 ran at K = 1.
+- **V2-paired:** `--rng-policy paired_common_v1` (`seed = base + i/2`).
+
+Adopt `paired_common_v1` for H3.6 **iff all** of these hold for V2-paired:
+
+1. 0 inference errors;
+2. decisive fraction ≥ 0.50;
+3. threefold ≤ 0.30;
+4. truncation ≤ 0.10;
+5. |candidate_score − 0.5| ≤ **0.05** ("materially closer to 0.5" than
+   H3.5's |0.362 − 0.5| = 0.138).
+
+Record exact 0.5, mirrored and identical-move pairs, and any non-mirrored pair.
+CUDA batching composition differs between the two games of a pair, so exact
+mirroring is not guaranteed and is not a criterion.
+
+Per-game marginal distributions are unchanged by common random numbers. If
+criteria 2–4 fail for V2-paired, the arena is not informative at this budget:
+**STOP before the smoke** and analyse, without silently falling back. Promotion
+stays conservative-v2 on the per-game point estimate. Pair diagnostics are
+reported, not used for promotion (no promotion-v3 in this pass).
+
+### H3.6 LR schedule amendment
+
+- **T0 volume (HP measured):** 5,247 trainable positions per cycle at 32 sims, K = 2
+  (H3.4 s32). The abandoned attempt's cycle 0 reproduced it exactly. That gives
+  ceil(5,247 × 2.0 / 128) = **82** updates.
+- **Lengthening priors:**
+  - Mainline F10 smoke v2 (external prior, not HP evidence): mean plies 184 →
+    261 (×1.42), updates 93 → 127, and 38 updates at LR 0.
+  - Historical HP F15 head-v1: mean plies 173 → 240 (×1.39).
+- **Stress factor 1.75** for the learned cycles 1–2 (≈ ×1.4 observed plus 25 %
+  margin): 5,247 × 1.75 = 9,183 positions → **144** updates per cycle.
+- **`planned_updates = 82 + 144 + 144 = 370`, `warmup_updates = 37`** (the 10 %
+  convention of every earlier schedule).
+  - At the expected 246 steps the cosine LR is still about 0.3 × base.
+  - It reaches 0 only at step ≥ 370.
+- **No extension after the run starts.**
+
+### H3.6 safety cap
+
+- Truncated games are untrainable (cycle 0: 6,047 − 5,247 = 2 × 400). So
+  trainable positions per cycle stay below 32 × 400 = 12,800, and the
+  theoretical maximum request is ceil(12,800 × 2 / 128) = **200** updates per
+  cycle.
+- `max_updates` is **per cycle**. It is set to **256**, which cannot bind unless
+  accounting is wrong.
+  - If it binds, the smoke is CONDITIONAL/NO-GO.
+  - It is never raised mid-run.
+
+### H3.6 schedule-exhaustion guard
+
+- Every cycle report carries an `lr_schedule` block with `step_start`,
+  `step_end`, `planned_updates`, `fraction_end`, `lr_first`, `lr_last` and
+  `updates_at_zero_lr`.
+- `[health_stops] lr_schedule_end = true` stops the pilot at the cycle boundary
+  once `step_end ≥ planned_updates`.
+- `updates_at_zero_lr > 0` in any cycle makes the smoke **CONDITIONAL**, not
+  normal learning.
+
+### H3.6 budgets (execution bounds, unchanged)
+
+- `position_budget = 45,000`, above the theoretical 3 × 12,800 = 38,400.
+- `run_budget_minutes = 180`: the abandoned attempt's cycle 0 took 978 s
+  with parent == reference, and the stress estimate is ~35 min per cycle.
+
+D49 `[health_stops]` is restored with the pre-registered values
+`draw_share_two_cycles = 0.85`, `threefold_fifty = 0.60` and `truncation = 0.25`.
