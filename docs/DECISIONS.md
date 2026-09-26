@@ -673,6 +673,28 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     has to stop with the evidence recorded.
 - **Test:** `health_stops_trigger_on_the_preregistered_conditions`.
 
+## D50 - Weight initialization is not bit-reproducible across processes
+
+- **Status:** DOCUMENTED (2026-09-26). Reported by the HP H3 requalification.
+- **Finding:** freezing the same config with the same seed and the same binary
+  produced **different `model_id`s on every process**, on both CPU (`Flex`) and
+  CUDA. Two CPU `model.mpk` files were the same size (60,628,164 B) but differed
+  in **1,699 bytes, scattered uniformly across all 30 x 2 MB regions**.
+  - A gross seeding bug would change whole tensors; a near-identical file with
+    sparse low-order differences across essentially every tensor is consistent
+    with backend-inherent nondeterminism (parallel reduction / RNG ordering),
+    not a missing `Backend::seed`.
+- **Consequence:** the frozen reference is an **opaque, content-addressed,
+  single-sample artifact**. Runs pin it through `reference_model_id` and must
+  not regenerate it. "Reference is reproducible from config + seed" is **not**
+  claimed on this stack.
+- **Not blocking:** every HP H3 cell uses the same pinned reference, so the
+  comparison is unaffected. Recorded in `docs/HP_H3_RESULTS.md`.
+- **Follow-up (not scheduled):** if reproducible references are required, force
+  a deterministic initialization path (a fixed per-tensor RNG or a serial init)
+  and verify with a two-process freeze test. That is a **mainline** change with
+  its own measurement; it is out of scope for HP H3.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
