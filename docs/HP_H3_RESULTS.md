@@ -58,17 +58,34 @@ refuse head-v1 / pre-field (legacy) checkpoints.
   entropy/uniform **0.999**, mean top-1 prob **0.043**, raw-vs-random score
   **0.567** (5 W / 1 L / 24 D; small, draw-heavy sample — not a strength claim).
 
-### Reference reproducibility (MEASURED — important)
+### Reference reproducibility (CORRECTED in H3.5B; see D50)
 
-Freezing the same config with the same seed and the same binary produced
-**different `model_id`s on every run** (CUDA `247e03…`, `b23597…`, `d89b408…`;
-CPU `ded3b7…`, `42a7d9…`). Byte comparison of two CPU `model.mpk` files: same
-size (60,628,164 B), **1,699 differing bytes scattered across the whole file**.
-So initialisation on this stack is *nearly* deterministic but a small subset of
-parameters varies between processes. **Consequence:** the frozen reference is an
-opaque, content-addressed, single-sample artifact. Runs must pin
-`reference_model_id`; it is not reproducible from config+seed. This is a
-systems fact about the stack, not an F15 property.
+**H3.5B correction (MEASURED, `docs/evidence/hp-h3/init-repro/`):**
+- The different `model_id`s below are **artifact** differences. The `.mpk`
+  record stores a random, OS-entropy `ParamId` per tensor.
+- The weight values are **reproducible**. Ten separate-process freezes of the
+  reference config gave 10 distinct `model_id`s but only 2
+  `semantic_weights_digest`s, one per backend:
+  - CPU: `81b02bcd…`
+  - CUDA: `f81938a2…`
+- 0 of 15,154,632 elements differ within a backend.
+- The frozen reference `d89b408f…` is semantically identical to fresh CUDA
+  freezes.
+- CPU and CUDA initializations differ (different backend RNGs); that is
+  expected.
+- `model_id` remains the pinned artifact identity.
+
+Original H3.1 text, whose inference is superseded:
+
+> Freezing the same config with the same seed and the same binary produced
+> **different `model_id`s on every run** (CUDA `247e03…`, `b23597…`, `d89b408…`;
+> CPU `ded3b7…`, `42a7d9…`). Byte comparison of two CPU `model.mpk` files: same
+> size (60,628,164 B), **1,699 differing bytes scattered across the whole file**.
+> So initialisation on this stack is *nearly* deterministic but a small subset of
+> parameters varies between processes. **Consequence:** the frozen reference is an
+> opaque, content-addressed, single-sample artifact. Runs must pin
+> `reference_model_id`; it is not reproducible from config+seed. This is a
+> systems fact about the stack, not an F15 property.
 
 ## H3.2 — RTX 2050 GPU lifecycle requalification (MEASURED — GO)
 

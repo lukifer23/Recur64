@@ -673,27 +673,74 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     has to stop with the evidence recorded.
 - **Test:** `health_stops_trigger_on_the_preregistered_conditions`.
 
-## D50 - Weight initialization is not bit-reproducible across processes
+## D50 - Checkpoint artifact identity is not reproducible across fresh construction (weights are)
 
-- **Status:** DOCUMENTED (2026-09-26). Reported by the HP H3 requalification.
-- **Finding:** freezing the same config with the same seed and the same binary
-  produced **different `model_id`s on every process**, on both CPU (`Flex`) and
-  CUDA. Two CPU `model.mpk` files were the same size (60,628,164 B) but differed
-  in **1,699 bytes, scattered uniformly across all 30 x 2 MB regions**.
-  - A gross seeding bug would change whole tensors; a near-identical file with
-    sparse low-order differences across essentially every tensor is consistent
-    with backend-inherent nondeterminism (parallel reduction / RNG ordering),
-    not a missing `Backend::seed`.
-- **Consequence:** the frozen reference is an **opaque, content-addressed,
-  single-sample artifact**. Runs pin it through `reference_model_id` and must
-  not regenerate it. "Reference is reproducible from config + seed" is **not**
-  claimed on this stack.
-- **Not blocking:** every HP H3 cell uses the same pinned reference, so the
-  comparison is unaffected. Recorded in `docs/HP_H3_RESULTS.md`.
-- **Follow-up (not scheduled):** if reproducible references are required, force
-  a deterministic initialization path (a fixed per-tensor RNG or a serial init)
-  and verify with a two-process freeze test. That is a **mainline** change with
-  its own measurement; it is out of scope for HP H3.
+- **Status:** AMENDED (H3.5B, 2026-09-26). First recorded as "weight
+  initialization is not bit-reproducible across processes". That title and
+  inference were wrong. The original text is kept below.
+- **Corrected finding:**
+  - The serialized checkpoint artifact identity (`model_id`, the SHA-256 of
+    `model.mpk`) is not reproducible across fresh model construction. The Burn
+    record stores a generated `ParamId` with every tensor.
+  - `ParamId::new()` calls `IdGenerator::generate()`, which draws a random u64
+    from OS entropy (`burn-core-0.21.0/src/module/param/id.rs`,
+    `burn-std-0.21.0/src/id.rs`). `Backend::seed` does not control it.
+  - Semantic tensor values **are** reproducible across processes on the same
+    backend (MEASURED; `docs/evidence/hp-h3/init-repro/`):
+    - 10 freezes of `configs/hp/f15-reference-v2.toml` (seed 1) gave 10
+      distinct `model_id`s but only 2 `semantic_weights_digest`s, one per
+      backend.
+    - Same backend, separate processes: 0 of 15,154,632 elements differ.
+    - The frozen reference `d89b408f…` is semantically identical to fresh
+      CUDA freezes.
+  - CPU (Flex) and CUDA use different seeded RNGs, so their weights differ.
+    Only the constant-initialized tensors are equal. This is expected.
+- **Why the earlier inference was too strong:**
+  - It read "sparse byte differences in every tensor" as low-order numeric
+    nondeterminism, but nothing decoded the tensor values.
+  - Sparse bytes in every tensor is exactly the signature of a per-tensor
+    random ID. The diff forms 136 clusters, one per parameter tensor, all
+    within the base32 alphabet that `ParamId::serialize` uses (INFERRED from
+    the byte layout).
+  - The new element-wise comparison measured identical values.
+- **Consequence:**
+  - `model_id` stays the **artifact/checkpoint identity** and is not
+    replaced, because too much evidence pins it. Runs still pin
+    `reference_model_id`.
+  - `recur64 model-digest` and the `semantic_weights_digest` field in
+    `reference.json` (from `freeze-reference`) are a separate **semantic
+    weight identity**. The digest covers the version tag, `HEAD_VERSION`, the
+    `ModelConfig` JSON and every float parameter's name, rank, dims and FP32
+    little-endian values, in an explicit named order. It excludes `ParamId`s
+    and recorder bytes.
+  - Tests: `crates/recur64-model/tests/semantic_digest.rs`.
+  - "Reference reproducible from config + seed on the same backend" is now
+    MEASURED for F15 v2 on Flex and on CUDA (RTX 2050). It is not claimed
+    across backends.
+  - The in-process Flex seeded RNG is process-global. Constructions that race
+    on other threads interleave draws (a test needed a lock). Every freeze
+    path builds serially in one process.
+- **Original observation (2026-09-26, superseded interpretation):**
+
+  > - **Status:** DOCUMENTED (2026-09-26). Reported by the HP H3 requalification.
+  > - **Finding:** freezing the same config with the same seed and the same binary
+  >   produced **different `model_id`s on every process**, on both CPU (`Flex`) and
+  >   CUDA. Two CPU `model.mpk` files were the same size (60,628,164 B) but differed
+  >   in **1,699 bytes, scattered uniformly across all 30 x 2 MB regions**.
+  >   - A gross seeding bug would change whole tensors; a near-identical file with
+  >     sparse low-order differences across essentially every tensor is consistent
+  >     with backend-inherent nondeterminism (parallel reduction / RNG ordering),
+  >     not a missing `Backend::seed`.
+  > - **Consequence:** the frozen reference is an **opaque, content-addressed,
+  >   single-sample artifact**. Runs pin it through `reference_model_id` and must
+  >   not regenerate it. "Reference is reproducible from config + seed" is **not**
+  >   claimed on this stack.
+  > - **Not blocking:** every HP H3 cell uses the same pinned reference, so the
+  >   comparison is unaffected. Recorded in `docs/HP_H3_RESULTS.md`.
+  > - **Follow-up (not scheduled):** if reproducible references are required, force
+  >   a deterministic initialization path (a fixed per-tensor RNG or a serial init)
+  >   and verify with a two-process freeze test. That is a **mainline** change with
+  >   its own measurement; it is out of scope for HP H3.
 
 ## Rejected / deferred
 

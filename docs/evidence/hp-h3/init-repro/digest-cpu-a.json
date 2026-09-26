@@ -1,0 +1,24 @@
+{
+  "checkpoint": "runs/cpu-a",
+  "head_version": 2,
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "model_id_file_sha256": "ded3b796b8a22770ad623302ba49ab73379ace5a7356ab395b2eb49f835c4801",
+  "model_id_recorded": "ded3b796b8a22770ad623302ba49ab73379ace5a7356ab395b2eb49f835c4801",
+  "param_count": 15154632,
+  "semantic_digest_version": "recur64-semantic-weights-v1",
+  "semantic_weights_digest": "81b02bcd2e2dba46e2baad87f0faec56389d35be5e5eb6322acf678beea700f8",
+  "tensor_count": 136
+}

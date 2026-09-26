@@ -1,0 +1,24 @@
+{
+  "checkpoint": "runs/det-b",
+  "head_version": 2,
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "model_id_file_sha256": "b23597f5c8ed9d71562bae4ad76bd93d7404a67a81cd9c90ea28846f42fce439",
+  "model_id_recorded": "b23597f5c8ed9d71562bae4ad76bd93d7404a67a81cd9c90ea28846f42fce439",
+  "param_count": 15154632,
+  "semantic_digest_version": "recur64-semantic-weights-v1",
+  "semantic_weights_digest": "f81938a213a23855d04cbf8f0e20ff985c9851363f69c4fba154649fdfdeb724",
+  "tensor_count": 136
+}

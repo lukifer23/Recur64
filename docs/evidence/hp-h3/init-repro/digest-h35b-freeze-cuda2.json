@@ -1,0 +1,24 @@
+{
+  "checkpoint": "runs/h35b-freeze-cuda2",
+  "head_version": 2,
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "model_id_file_sha256": "5315f6b14a4c3f44a8f8c8b2860229f3ad6ab34ad280055811f4bc2aa5168538",
+  "model_id_recorded": "5315f6b14a4c3f44a8f8c8b2860229f3ad6ab34ad280055811f4bc2aa5168538",
+  "param_count": 15154632,
+  "semantic_digest_version": "recur64-semantic-weights-v1",
+  "semantic_weights_digest": "f81938a213a23855d04cbf8f0e20ff985c9851363f69c4fba154649fdfdeb724",
+  "tensor_count": 136
+}
