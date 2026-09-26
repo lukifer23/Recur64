@@ -1,0 +1,36 @@
+{
+  "model_id": "7d1493b47f9e2159f4b8d419ee7d237129d8405b0b551f66c4e61eaf18574263",
+  "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c",
+  "policy": {
+    "mean_entropy": 1.7895484019837162,
+    "mean_top1_prob": 0.4355193090935548,
+    "mean_uniform_entropy": 3.2909775678618787,
+    "positions": 12,
+    "top_moves": {
+      "a2a4": 4,
+      "b5a7": 1,
+      "e4f5": 1,
+      "e5d6": 1,
+      "g2g3": 1,
+      "g4f5": 1,
+      "h2h3": 3
+    }
+  },
+  "raw_vs_random": {
+    "decisive_games": 23,
+    "draws": 77,
+    "games": 100,
+    "informative": true,
+    "policy_score": 0.535,
+    "policy_wins": 15,
+    "random_wins": 8,
+    "terminations": {
+      "checkmate": 23,
+      "fifty_move_rule": 14,
+      "insufficient_material": 52,
+      "stalemate": 8,
+      "threefold_repetition": 3
+    },
+    "truncated": 0
+  }
+}

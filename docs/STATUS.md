@@ -249,3 +249,115 @@ proceed only after review of these artifacts.
 
 Phase 3 pilot is **CONDITIONAL GO**. See `docs/F10_BASELINE.md` for the decision
 package. No ~24h run without explicit owner approval.
+
+---
+
+# Phase 4 — Mainline harness convergence (in progress)
+
+The generic harness improvements proven on the experimental branch
+`experiment/hp-r15` were brought onto main without importing HP scientific
+assumptions (P4.0/P4.1; `docs/PHASE4_CONVERGENCE.md`). The GPU phase (P4.2+)
+is recorded in **`docs/PHASE4_RESULTS.md`**.
+
+## COMPLETED
+
+- P4.0/P4.1: collection semantics, seed policy, gradient reduction, optimizer
+  continuation, conservative-v2 promotion, frozen references, identity/hashes,
+  provenance, NVRTC and precision gates (see `PHASE4_CONVERGENCE.md`).
+- CUDA runtime proven on the RTX 2000 Ada (cuda-smoke PASS; the NVRTC guard
+  accepts `nvrtc64_120_0.dll`).
+- Sweep methodology: requested vs effective concurrency, refusal of
+  unrealizable cells, and a multi-wave comparison. Shared GPU telemetry.
+  `bench-train`, `bench-lifecycle` and `search-gain` probes.
+- **P4.3 hardware schedule MEASURED** (`configs/hardware/workstation-main.toml`):
+  - self-play: 32 concurrent, cap 32, 500 µs, cpu_workers 32
+  - learner: 64 × 4 (effective 256)
+- **Root-cause fixes (D40–D43):**
+  - head v2: final pre-head RMSNorm, 1/√d policy logits, zero-init WDL
+  - checkpoints carry `head_version` and every load path checks contracts
+  - root Dirichlet noise and argmax after ply 30 in self-play (arenas
+    noise-free)
+  - `argmax_after_ply`, previously a dead identity field, is implemented
+  - inference-only commands run on the inner backend
+- Frozen F10 reference **v2** `d22c78bd…` (head v2) and its T0.
+
+## VERIFIED
+
+- fmt/clippy clean; `cargo test --workspace --release` 196 passed, 0 failed,
+  1 ignored, at the smoke binary (`7a8b492`).
+- Every load path refuses a checkpoint with a model-config or head-version
+  mismatch.
+- A fresh R10 at R1/R2/R4 also starts at 1.000 × uniform with value 0.000.
+- A fresh F10 prior is 0.999 × uniform entropy with value 0.000 (was 0.502 /
+  0.245) — `tests/t0_prior.rs`.
+- F10 == R10 == 9,805,672 unique parameters under head v2.
+- Changing only the schedule left data aggregates identical in every P4.3
+  cell.
+- Head v1 checkpoints are refused under head v2.
+
+## FAILED / FOUND
+
+- `eval-policy` on the autodiff backend filled 16 GB of VRAM (fixed, D43).
+- Head v1 made self-play distill an arbitrary initial prior. Search gain fell
+  with budget, and games were repetition-dominated (fixed, D40/D41). The v1
+  reference and the v1 P4.4 curve are superseded evidence.
+- The T0 search-gain gate was a design error. It is now a learning-progress
+  metric (D42).
+
+## PHASE 4 GPU RESULTS (details in docs/PHASE4_RESULTS.md)
+
+- P4.4 search budget: **64 simulations/move**, frozen by the pre-registered
+  rule on reference v2 (curve 8-256; 128 failed both override conditions).
+- P4.4L lifecycle: **GO after fix D44.**
+  - Inference-owner VRAM grew 453 MiB to 10.5 GB over 32 lifecycles, because
+    CubeCL's per-thread stream pools were orphaned.
+  - After the fix it plateaus at about 1 GB.
+- Science parity was proven for the addendum code (identical data
+  aggregates and scientific hash).
+- **P4.5 F10 smoke: CONDITIONAL.**
+  - Every system, data and training gate passed: 0 inference errors across
+    756k requests, audit clean, reuse 2.00/2.01, cap never bound, VRAM
+    stable, 44.4 min wall.
+  - The WDL head learns (loss 1.10 to 0.83). The policy target is still
+    near-uniform.
+  - The searched arena is 75% threefold, leaving 3-5 decisive games of 32.
+    Both cycles held, so learning does not compound.
+
+## POST-SMOKE (2026-09-25; details in docs/PHASE4_RESULTS.md)
+
+- **D45 arena exploration (adopted by the pre-registered rule):** sample 30
+  plies, then root noise 0.25. On the same model pair, decisive games rose
+  from 3 to 24 of 32 and threefold fell from 24 to 0.
+- **D47 multi-leaf PUCT with virtual loss (adopted at K=2):** +83% trainable
+  pos/s with unchanged data health.
+- **D48 continuous trainer (adopted):** held candidates keep training.
+- **D38 evaluation deadline, D37 crash-safe archival, D46 at most two
+  resident models:** implemented and tested.
+- **F10 smoke v2: GO for the learning mechanism.**
+  - Training compounds: WDL loss 1.10 to 0.63 over 3 cycles.
+  - Two promotions.
+  - Once a promoted value head generates self-play, search movement over the
+    prior rises from 11% to 37% (KL 0.02 to 0.40).
+  - Strength over T0 is not yet shown (0.500 vs the frozen reference).
+  - Watch item: self-play draw share 0.25 to 0.73 in cycle 3.
+- Gate: fmt/clippy clean; 207 tests passed, 0 failed, 1 ignored.
+
+## NEXT (owner decision)
+
+- P4.6 bounded qualification, with the self-play draw share as an explicit
+  monitored health metric.
+- Remaining owner-approved item: cross-cycle tail waste.
+- The 48-way concurrency lead is unconfirmed; K=2 now gives 64 leaves in
+  flight.
+
+## NOT RUN
+
+- P4.6 bounded qualification and the P4.7 R10 entry decision.
+- No 24h run is authorized.
+
+## Historical evidence note
+
+The Phase 3 F10 result above predates the seed and gradient fixes and head v2.
+It is not a clean modern baseline, and its checkpoints are head v1. The HP
+F15/R15 record lives on `experiment/hp-r15`; it is external evidence, not a
+mainline result.

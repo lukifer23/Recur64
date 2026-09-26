@@ -81,6 +81,21 @@ impl<B: Backend> BatchedModel<B> {
     }
 }
 
+/// Release the device memory pool of the thread that ran this model.
+///
+/// CubeCL keys device streams (and their memory pools) by OS thread. An
+/// `InferenceOwner` runs its model on a dedicated thread that exits at
+/// shutdown, so without this its stream's pool is never reused or released,
+/// and VRAM grows by hundreds of MiB per owner lifecycle (measured, P4.4L).
+/// `Drop` runs on the thread that owns the model, so the cleanup targets that
+/// thread's stream. Parameter buffers belong to the loading thread's stream
+/// and are unaffected.
+impl<B: Backend> Drop for BatchedModel<B> {
+    fn drop(&mut self) {
+        B::memory_cleanup(&self.device);
+    }
+}
+
 impl<B: Backend> BatchEvaluator for BatchedModel<B> {
     fn evaluate_batch(
         &self,
@@ -470,10 +485,36 @@ impl Evaluator for BatchedEvaluator {
         self.metrics.in_flight.fetch_sub(1, Ordering::SeqCst);
         result
     }
+
+    /// Submit every request before waiting on any, so a multi-leaf round
+    /// (D47) can share one inference batch. Results are in request order.
+    fn evaluate_many(&self, requests: &[EvalRequest<'_>]) -> Vec<Result<EvalResult, EvalError>> {
+        let n = requests.len();
+        let now = self.metrics.in_flight.fetch_add(n, Ordering::SeqCst) + n;
+        self.metrics.peak_in_flight.fetch_max(now, Ordering::SeqCst);
+        let pending: Vec<Result<Receiver<Result<EvalResult, EvalError>>, EvalError>> =
+            requests.iter().map(|r| self.submit(r)).collect();
+        let out = pending
+            .into_iter()
+            .map(|p| p.and_then(|rx| rx.recv().unwrap_or(Err(EvalError::Shutdown))))
+            .collect();
+        self.metrics.in_flight.fetch_sub(n, Ordering::SeqCst);
+        out
+    }
 }
 
 impl BatchedEvaluator {
     fn evaluate_inner(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
+        self.submit(&request)?
+            .recv()
+            .unwrap_or(Err(EvalError::Shutdown))
+    }
+
+    /// Queue one request for the owner; returns its response channel.
+    fn submit(
+        &self,
+        request: &EvalRequest<'_>,
+    ) -> Result<Receiver<Result<EvalResult, EvalError>>, EvalError> {
         let (respond, response_rx) = sync_channel(1);
         let msg = Request {
             observation: request.observation.clone(),
@@ -493,6 +534,6 @@ impl BatchedEvaluator {
             }
         }
         self.metrics.submitted.fetch_add(1, Ordering::Relaxed);
-        response_rx.recv().unwrap_or(Err(EvalError::Shutdown))
+        Ok(response_rx)
     }
 }

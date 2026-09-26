@@ -12,16 +12,19 @@ pub mod config;
 pub mod coordinator;
 pub mod eval_policy;
 pub mod evaluator;
+pub mod gpu_telemetry;
 pub mod inference;
 pub mod learner;
 pub mod model_io;
 pub mod pilot;
 pub mod replay;
+pub mod replay_identity;
 pub mod run_dir;
+pub mod search_gain;
 pub mod sweep;
 
 pub use cancel::CancelToken;
-pub use config::RunConfig;
+pub use config::{HealthStops, RunConfig, TrainerPolicy};
 pub use coordinator::{
     RunReport, SelfPlayMetrics, collect_only, game_uci_moves, run, write_report,
 };
@@ -35,7 +38,10 @@ pub use learner::{
     LearnerConfig, TrainReport, build_batch_tensors, build_examples, lr_at, train_from_games,
     train_from_store,
 };
-pub use pilot::{CycleReport, PilotReport, run_pilot};
+pub use pilot::{
+    CycleGpu, CycleReport, EvalModels, EvalOutcome, PilotReport, evaluate_candidate, run_pilot,
+    spawn_owner,
+};
 pub use replay::{ReplayStore, TrainingExample};
 pub use run_dir::{LineageRecord, RunDir, RunMetadata, RunStatus, read_metadata, write_metadata};
 pub use sweep::{SweepCellResult, SweepCellSpec};

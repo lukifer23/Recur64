@@ -1,0 +1,93 @@
+# Recur64 Phase 4 P4.6 — bounded F10 qualification (10 cycles).
+#
+# The F10 smoke v2 contract unchanged (reference v2, 64 sims, D41 self-play
+# exploration, D45 arena exploration, D47 K = 2, D48 continuous trainer,
+# measured schedule), run for 10 cycles with the LR schedule planned across
+# the whole run, plus D49 health stops (execution bounds). Frozen before the
+# run (PHASE4_RESULTS, P4.6 pre-registration). Not a 24h run.
+run_id = "phase4-f10-qual"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f10"
+hardware_profile = "workstation-main"
+seed = 1
+
+reference_checkpoint = "runs/phase4-f10-reference-v2"
+reference_model_id = "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448"
+
+# --- Search / self-play contract (P4.4 frozen budget; D41 exploration) ---
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
+ply_cap = 512
+# D47 (adopted): 2 leaves per search round with virtual loss.
+search_leaves_in_flight = 2
+
+# --- Collection (scientific: total games; scheduling: the rest) ---
+# 64 games = two waves at concurrency 32 (D47 K=2 cell: 518 s for 64 games).
+games_per_cycle = 64
+
+# --- Hardware schedule (configs/hardware/workstation-main.toml, MEASURED) ---
+concurrent_games = 32
+cpu_workers = 32
+# K = 2 leaves x 32 games -> batch cap 64 (the D47 K=2 cell).
+max_inference_batch = 64
+batch_timeout_us = 500
+train_batch = 64
+accumulation_steps = 4
+
+# --- Replay / learner ---
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+lr = 3.0e-4
+# Smoke v2 measured 93 / 85 / 127 updates per cycle (games lengthened as the
+# value head learned); plan ~110 per cycle over 10 cycles.
+planned_updates = 1100
+warmup_updates = 110
+# Safety cap ~3.6x the expected request (and above the 127 seen when games
+# lengthened); a binding cap is a health warning.
+max_updates = 400
+
+# --- Evaluation / promotion ---
+arena_games = 32
+# D45 (adopted): sample 30 plies after the opening, root noise on every move.
+arena_sample_plies = 30
+arena_root_dirichlet_epsilon = 0.25
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+# D48 (adopted): the learner keeps its state across held cycles.
+trainer_policy = "continuous"
+promotion_score_floor = 0.5
+promotion_min_decisive_games = 4
+
+# --- Execution bounds (excluded from scientific identity) ---
+cycles = 10
+run_budget_minutes = 300
+# ~2.5x the expected 2 x 32 x 186 = 11,900 positions.
+position_budget = 250000
+
+# D49 health stops (pre-registered; execution bounds, not scientific
+# identity): stop at a cycle boundary on a self-play attractor.
+[health_stops]
+draw_share_two_cycles = 0.85
+threefold_fifty = 0.60
+truncation = 0.25
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

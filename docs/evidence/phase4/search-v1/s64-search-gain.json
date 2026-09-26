@@ -1,0 +1,31 @@
+{
+  "gain": {
+    "all": {
+      "argmax_changed_fraction": 0.03987563155849203,
+      "mean_kl_target_prior": 0.05567579590724187,
+      "mean_prior_entropy": 1.2155048498596661,
+      "mean_prior_top1": 0.6067111888326331,
+      "mean_target_entropy": 1.0484046466298482,
+      "mean_target_top1": 0.6306467128851698,
+      "positions": 12865
+    },
+    "trainable": {
+      "argmax_changed_fraction": 0.04023314174694406,
+      "mean_kl_target_prior": 0.05651922432986954,
+      "mean_prior_entropy": 1.2094317109326727,
+      "mean_prior_top1": 0.6094919926468287,
+      "mean_target_entropy": 1.041340523401249,
+      "mean_target_top1": 0.6333375829872473,
+      "positions": 12353
+    }
+  },
+  "games": 64,
+  "model_id": "7d1493b47f9e2159f4b8d419ee7d237129d8405b0b551f66c4e61eaf18574263",
+  "replay": "runs/phase4-search-s64/replay",
+  "search": {
+    "c_puct": 1.0,
+    "recurrence": 1,
+    "simulations": 64,
+    "temperature": 1.0
+  }
+}

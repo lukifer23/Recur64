@@ -6,9 +6,9 @@ use burn::backend::Flex;
 use recur64_model::config::ProbeConfig;
 use recur64_model::model::ProbeModel;
 
-/// Executed transformer blocks for the feed-forward R=1 control. Both F15 and
-/// R15 execute 8 blocks at R=1, so this is the neural-compute baseline for the
-/// multiplier column on this branch.
+/// Executed transformer blocks for the feed-forward R=1 control. Both the
+/// feed-forward family and its matched recurrent family execute 8 blocks at
+/// R=1, so this is the neural-compute baseline for the multiplier column.
 const CONTROL_R1_BLOCKS: f64 = 8.0;
 
 pub fn run_model_info(path: &Path) -> anyhow::Result<()> {

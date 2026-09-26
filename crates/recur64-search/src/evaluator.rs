@@ -17,6 +17,10 @@ pub enum EvalError {
     Backend(String),
     /// The request was malformed (e.g. empty candidate list, wrong policy len).
     Invalid(String),
+    /// A wall-clock deadline passed before every requested game could start
+    /// (D38). No partial result is returned: an incomplete evaluation must
+    /// never inform a decision.
+    DeadlineExceeded(String),
 }
 
 impl std::fmt::Display for EvalError {
@@ -25,6 +29,7 @@ impl std::fmt::Display for EvalError {
             EvalError::Shutdown => write!(f, "evaluator is shutting down"),
             EvalError::Backend(m) => write!(f, "evaluator backend error: {m}"),
             EvalError::Invalid(m) => write!(f, "invalid evaluation request: {m}"),
+            EvalError::DeadlineExceeded(m) => write!(f, "evaluation deadline exceeded: {m}"),
         }
     }
 }
@@ -35,6 +40,7 @@ impl std::error::Error for EvalError {}
 ///
 /// The observation is canonical (current side to move). `legal` is the canonical
 /// legal action list in a deterministic (sorted) order.
+#[derive(Clone, Copy)]
 pub struct EvalRequest<'a> {
     pub observation: &'a ObservationV1,
     pub legal: &'a [ActionId],
@@ -82,6 +88,13 @@ pub fn value_to_wdl(value: f32) -> [f32; 3] {
 /// The evaluation interface consumed by search.
 pub trait Evaluator: Send + Sync {
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError>;
+
+    /// Evaluate several independent requests. Implementations may submit them
+    /// together so they share a batch (multi-leaf search, D47); results are in
+    /// request order. The default evaluates them one by one.
+    fn evaluate_many(&self, requests: &[EvalRequest<'_>]) -> Vec<Result<EvalResult, EvalError>> {
+        requests.iter().map(|r| self.evaluate(*r)).collect()
+    }
 }
 
 /// A deterministic evaluator with a constant value and either uniform or

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
-use recur64_eval::{ArenaConfig, run_arena as eval_run_arena};
+use recur64_eval::run_arena as eval_run_arena;
 use recur64_model::train::adamw;
 use recur64_runtime::replay::{ReplayReader, audit_dir};
 use recur64_runtime::{
@@ -204,16 +204,7 @@ fn arena_impl<B: AutodiffBackend>(
         Some(p) => recur64_eval::OpeningSuite::load(std::path::Path::new(p))?.openings,
         None => Vec::new(),
     };
-    let arena_cfg = ArenaConfig {
-        games: cfg.arena_games,
-        simulations: cfg.simulations_per_move,
-        c_puct: cfg.c_puct,
-        recurrence: cfg.recurrence,
-        ply_cap: cfg.ply_cap,
-        seed: cfg.seed,
-        openings,
-        concurrency: 1,
-    };
+    let arena_cfg = cfg.arena_config(0, openings, 1);
     let result = eval_run_arena(
         &ref_ev,
         &cand_ev,

@@ -86,11 +86,22 @@ pub struct CapacityReport {
 
 /// Archive oldest shards until the active replay is within `max_positions`.
 ///
-/// Archived shards are moved to `replay/archive/` (never deleted), and the
-/// manifest is rewritten atomically to reference only the kept shards.
+/// Crash-safe ordering (D37): every step leaves the replay readable.
+/// 1. Copy each shard to be archived into `replay/archive/` (write `.tmp`,
+///    fsync, rename); an existing archive copy is reused only if it verifies.
+/// 2. Fsync the archive directory (Unix; NTFS journals metadata).
+/// 3. Atomically replace the manifest (temp + fsync + rename), fsync the dir.
+/// 4. Only then remove the archived shards from the active directory.
+///
+/// A crash before step 3 leaves the old manifest, whose shards are all still
+/// active. A crash after it leaves unreferenced active copies, which the next
+/// call removes, but only when a verified archive copy exists. Archived data
+/// is never deleted.
 pub fn enforce_capacity(dir: &Path, max_positions: u64) -> anyhow::Result<CapacityReport> {
     let reader = ReplayReader::open(dir)?;
     let manifest = reader.manifest().clone();
+    let archive = dir.join("archive");
+    remove_archived_orphans(dir, &archive, &manifest)?;
 
     let mut kept_rev: Vec<ShardInfo> = Vec::new();
     let mut positions = 0u64;
@@ -103,34 +114,98 @@ pub fn enforce_capacity(dir: &Path, max_positions: u64) -> anyhow::Result<Capaci
         }
     }
     kept_rev.reverse();
-    let archived = manifest.shards.len() - kept_rev.len();
+    let to_archive: Vec<&ShardInfo> = manifest
+        .shards
+        .iter()
+        .filter(|info| !kept_rev.iter().any(|k| k.file == info.file))
+        .collect();
 
-    if archived > 0 {
-        let archive = dir.join("archive");
+    if !to_archive.is_empty() {
         std::fs::create_dir_all(&archive)?;
-        for info in &manifest.shards {
-            if !kept_rev.iter().any(|k| k.file == info.file) {
-                let from = dir.join(&info.file);
-                if from.exists() {
-                    std::fs::rename(from, archive.join(&info.file))?;
-                }
+        for info in &to_archive {
+            archive_copy(&dir.join(&info.file), &archive.join(&info.file))?;
+        }
+        sync_dir(&archive)?;
+        let new_manifest = Manifest {
+            header: manifest.header.clone(),
+            games: kept_rev.iter().map(|s| s.games).sum(),
+            bytes: kept_rev.iter().map(|s| s.bytes).sum(),
+            shards: kept_rev.clone(),
+        };
+        write_manifest_atomic(dir, &new_manifest)?;
+        sync_dir(dir)?;
+        for info in &to_archive {
+            let active = dir.join(&info.file);
+            if active.exists() {
+                std::fs::remove_file(active)?;
             }
         }
     }
 
-    let new_manifest = Manifest {
-        header: manifest.header.clone(),
-        games: kept_rev.iter().map(|s| s.games).sum(),
-        bytes: kept_rev.iter().map(|s| s.bytes).sum(),
-        shards: kept_rev.clone(),
-    };
-    write_manifest_atomic(dir, &new_manifest)?;
-
     Ok(CapacityReport {
         kept_shards: kept_rev.len(),
-        archived_shards: archived,
+        archived_shards: to_archive.len(),
         positions,
     })
+}
+
+/// True when `path` holds a complete, checksum-valid shard.
+fn shard_verifies(path: &Path) -> bool {
+    std::fs::read(path)
+        .ok()
+        .is_some_and(|bytes| super::reader::parse_shard_bytes(&bytes).is_ok())
+}
+
+/// Durably copy an active shard into the archive (reusing a verified copy).
+fn archive_copy(from: &Path, to: &Path) -> anyhow::Result<()> {
+    if to.exists() && shard_verifies(to) {
+        return Ok(());
+    }
+    anyhow::ensure!(
+        shard_verifies(from),
+        "refusing to archive an unreadable shard: {}",
+        from.display()
+    );
+    let tmp = to.with_extension("r64shard.tmp");
+    std::fs::copy(from, &tmp)?;
+    // Flushing needs a writable handle on Windows (FlushFileBuffers).
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&tmp)?
+        .sync_all()?;
+    std::fs::rename(&tmp, to)?;
+    Ok(())
+}
+
+/// Remove active shard files the manifest no longer references (left by a
+/// crash between manifest replacement and removal), only when a verified
+/// archive copy exists.
+fn remove_archived_orphans(dir: &Path, archive: &Path, manifest: &Manifest) -> anyhow::Result<()> {
+    if !archive.exists() {
+        return Ok(());
+    }
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let is_shard = name.starts_with("shard-") && name.ends_with(".r64shard");
+        if !is_shard || manifest.shards.iter().any(|s| s.file == name) {
+            continue;
+        }
+        if shard_verifies(&archive.join(&name)) {
+            std::fs::remove_file(entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+/// Fsync a directory so renames inside it are durable (Unix). On Windows a
+/// directory cannot be opened as a file by `std`; NTFS journals metadata.
+fn sync_dir(dir: &Path) -> anyhow::Result<()> {
+    #[cfg(unix)]
+    std::fs::File::open(dir)?.sync_all()?;
+    #[cfg(not(unix))]
+    let _ = dir;
+    Ok(())
 }
 
 /// A loaded replay store with on-demand sampling.

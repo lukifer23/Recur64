@@ -1,0 +1,32 @@
+{
+  "device": "cuda",
+  "git_branch": "main",
+  "git_revision": "3cf7408f86d54091cc2aaeb54ff01d1fed561330",
+  "kind": "recur64-frozen-reference-v1",
+  "lr_schedule_step": 0,
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 12,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 384
+  },
+  "model_id": "7d1493b47f9e2159f4b8d419ee7d237129d8405b0b551f66c4e61eaf18574263",
+  "opening_suite": "configs/openings-v1.toml",
+  "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c",
+  "optimizer_contract": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+  "precision": "fp32",
+  "recur64_version": "0.1.0",
+  "recurrence": 1,
+  "resolved_config_hash": "de431b0ed15a326da679d0abe9e4de67e9f77756819fd82c58a16f1daf16d5ab",
+  "scientific_config_hash": "ca4f5ce82f66002a157ac217ea6bd8496e4ff238a75577f8d12860d474dd8d01",
+  "seed": 1,
+  "update_counter": 0
+}

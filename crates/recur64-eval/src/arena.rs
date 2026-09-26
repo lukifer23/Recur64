@@ -1,9 +1,11 @@
 //! Internal systems arena: candidate vs reference, paired colors.
 //!
 //! This is a systems comparison, not an Elo claim. Both sides use the same rules
-//! profile, search budget, and recurrence; only the evaluator differs. Moves are
-//! chosen deterministically (temperature 0) so results are reproducible from a
-//! recorded seed.
+//! profile, search budget, and recurrence; only the evaluator differs. By
+//! default moves are chosen deterministically (temperature 0). An optional
+//! sampled opening phase (`sample_plies`) and root noise diversify games that
+//! would otherwise collapse into repetition between near-identical networks;
+//! every game is still reproducible from the recorded seed.
 
 use std::collections::BTreeMap;
 
@@ -26,6 +28,18 @@ pub struct ArenaConfig {
     /// Games played at once. Results are aggregated in game-index order, so
     /// the report does not depend on it (1 = sequential).
     pub concurrency: usize,
+    /// Sample moves from visit counts (temperature 1) for this many plies
+    /// after the opening position, then play argmax. `None` = argmax from
+    /// the first ply (the original contract).
+    pub sample_plies: Option<u32>,
+    /// Root Dirichlet noise for arena search (`0.0` = none, the original
+    /// contract).
+    pub root_dirichlet_alpha: f32,
+    pub root_dirichlet_epsilon: f32,
+    /// Soft wall-clock deadline (D38): no game starts after it.
+    pub deadline: Option<std::time::Instant>,
+    /// Leaves per search round (D47); `1` = original search.
+    pub leaves_in_flight: u32,
 }
 
 impl Default for ArenaConfig {
@@ -39,6 +53,11 @@ impl Default for ArenaConfig {
             seed: 0,
             openings: Vec::new(),
             concurrency: 1,
+            sample_plies: None,
+            root_dirichlet_alpha: 0.3,
+            root_dirichlet_epsilon: 0.0,
+            deadline: None,
+            leaves_in_flight: 1,
         }
     }
 }
@@ -81,6 +100,28 @@ impl Evaluator for SideRouter<'_> {
             Color::Black => self.black.evaluate(request),
         }
     }
+
+    /// Split a multi-leaf round by side so each model still receives its
+    /// leaves as one submission; results are returned in request order.
+    fn evaluate_many(&self, requests: &[EvalRequest<'_>]) -> Vec<Result<EvalResult, EvalError>> {
+        let (white, black): (Vec<_>, Vec<_>) = requests
+            .iter()
+            .enumerate()
+            .partition(|(_, r)| r.side_to_move == Color::White);
+        let white_req: Vec<EvalRequest<'_>> = white.iter().map(|(_, r)| **r).collect();
+        let black_req: Vec<EvalRequest<'_>> = black.iter().map(|(_, r)| **r).collect();
+        let mut out: Vec<Option<Result<EvalResult, EvalError>>> =
+            (0..requests.len()).map(|_| None).collect();
+        for ((i, _), r) in white.iter().zip(self.white.evaluate_many(&white_req)) {
+            out[*i] = Some(r);
+        }
+        for ((i, _), r) in black.iter().zip(self.black.evaluate_many(&black_req)) {
+            out[*i] = Some(r);
+        }
+        out.into_iter()
+            .map(|r| r.unwrap_or_else(|| Err(EvalError::Backend("unrouted request".into()))))
+            .collect()
+    }
 }
 
 /// Run a paired-color arena between `candidate` and `reference`.
@@ -94,9 +135,15 @@ pub fn run_arena(
     let sp = SelfPlayConfig {
         simulations_per_move: cfg.simulations,
         c_puct: cfg.c_puct,
-        temperature: 0.0,
+        // Default contract: argmax from ply 0, no noise. With `sample_plies`
+        // the first plies sample at temperature 1, then argmax.
+        temperature: if cfg.sample_plies.is_some() { 1.0 } else { 0.0 },
         ply_cap: cfg.ply_cap,
         recurrence: cfg.recurrence,
+        argmax_after_ply: cfg.sample_plies,
+        root_dirichlet_alpha: cfg.root_dirichlet_alpha,
+        root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
+        search_leaves_in_flight: cfg.leaves_in_flight,
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {
@@ -124,7 +171,7 @@ pub fn run_arena(
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
         play_game_from(&router, &sp, &mut Rng::new(seed), start)
     };
-    let games = play_indexed(cfg.games, cfg.concurrency, play_one)?;
+    let games = play_indexed_until(cfg.games, cfg.concurrency, cfg.deadline, play_one)?;
 
     let mut candidate_wins = 0u32;
     let mut reference_wins = 0u32;
@@ -200,9 +247,38 @@ where
     T: Send,
     F: Fn(u32) -> Result<T, EvalError> + Sync,
 {
+    play_indexed_until(games, concurrency, None, play)
+}
+
+/// [`play_indexed`] with a soft deadline (D38): once `deadline` passes, no
+/// new game starts; games already in flight finish. If any game did not run,
+/// the whole evaluation is [`EvalError::DeadlineExceeded`] (no partial result).
+pub fn play_indexed_until<T, F>(
+    games: u32,
+    concurrency: usize,
+    deadline: Option<std::time::Instant>,
+    play: F,
+) -> Result<Vec<T>, EvalError>
+where
+    T: Send,
+    F: Fn(u32) -> Result<T, EvalError> + Sync,
+{
+    let expired = || deadline.is_some_and(|d| std::time::Instant::now() > d);
+    let incomplete = |done: usize| {
+        EvalError::DeadlineExceeded(format!(
+            "{done} of {games} evaluation games completed before the deadline"
+        ))
+    };
     let threads = concurrency.clamp(1, games.max(1) as usize);
     if threads == 1 {
-        return (0..games).map(&play).collect();
+        let mut out = Vec::with_capacity(games as usize);
+        for i in 0..games {
+            if expired() {
+                return Err(incomplete(out.len()));
+            }
+            out.push(play(i)?);
+        }
+        return Ok(out);
     }
     let next = std::sync::atomic::AtomicU32::new(0);
     let mut slots: Vec<Option<T>> = (0..games).map(|_| None).collect();
@@ -213,6 +289,9 @@ where
                 scope.spawn(|| {
                     let mut out = Vec::new();
                     loop {
+                        if expired() {
+                            break;
+                        }
                         let i = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         if i >= games {
                             break;
@@ -250,6 +329,10 @@ where
     });
     if let Some(e) = first_error {
         return Err(e);
+    }
+    let done = slots.iter().filter(|s| s.is_some()).count();
+    if done < games as usize && deadline.is_some() {
+        return Err(incomplete(done));
     }
     slots
         .into_iter()

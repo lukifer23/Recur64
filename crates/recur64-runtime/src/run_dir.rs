@@ -28,10 +28,10 @@ pub struct RunMetadata {
     /// Self-play / learner seed recorded for this run.
     #[serde(default)]
     pub seed: u64,
-    /// Hardware scheduling profile label (e.g. "hp-home").
+    /// Hardware scheduling profile label (e.g. "workstation-main").
     #[serde(default)]
     pub hardware_profile: Option<String>,
-    /// Model profile label (e.g. "f15", "r15").
+    /// Model profile label (e.g. "f10", "r10").
     #[serde(default)]
     pub model_profile: Option<String>,
     pub recur64_version: String,
@@ -221,8 +221,8 @@ run_id = "meta-test"
 device = "cpu"
 precision = "fp32"
 seed = 7
-hardware_profile = "hp-home"
-model_profile = "f15"
+hardware_profile = "workstation-main"
+model_profile = "f10"
 [model]
 width = 32
 heads = 4
@@ -239,8 +239,8 @@ output_blocks = 0
     fn metadata_records_seed_and_profiles() {
         let meta = RunMetadata::new(&cfg());
         assert_eq!(meta.seed, 7);
-        assert_eq!(meta.hardware_profile.as_deref(), Some("hp-home"));
-        assert_eq!(meta.model_profile.as_deref(), Some("f15"));
+        assert_eq!(meta.hardware_profile.as_deref(), Some("workstation-main"));
+        assert_eq!(meta.model_profile.as_deref(), Some("f10"));
     }
 
     #[test]

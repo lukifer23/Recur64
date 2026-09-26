@@ -33,6 +33,18 @@ pub trait PuctGame: Sized {
     fn apply(&self, action: Self::Action) -> Self;
     /// Evaluate a non-terminal position. `policy` must align to `legal`.
     fn evaluate(&self, legal: &[Self::Action]) -> Result<EvalResult, EvalError>;
+    /// Evaluate several positions of one search tree together (multi-leaf
+    /// search, D47). Results are in input order. Default: one by one.
+    fn evaluate_many(
+        games: &[&Self],
+        legal: &[Vec<Self::Action>],
+    ) -> Vec<Result<EvalResult, EvalError>> {
+        games
+            .iter()
+            .zip(legal)
+            .map(|(g, l)| g.evaluate(l))
+            .collect()
+    }
 }
 
 /// Search configuration. `c_puct` is explicit and configurable; the Phase 2
@@ -41,6 +53,9 @@ pub trait PuctGame: Sized {
 pub struct PuctConfig {
     pub c_puct: f32,
     pub simulations: u32,
+    /// Leaves selected per round with virtual loss and evaluated together
+    /// (D47). `1` is the original one-leaf-at-a-time search, unchanged.
+    pub leaves_in_flight: u32,
 }
 
 impl Default for PuctConfig {
@@ -48,6 +63,7 @@ impl Default for PuctConfig {
         Self {
             c_puct: 1.0,
             simulations: 16,
+            leaves_in_flight: 1,
         }
     }
 }
@@ -69,6 +85,9 @@ pub struct SearchResult<A> {
     pub traversals: u32,
     /// Mean value estimate from the root's side-to-move perspective.
     pub root_value: f32,
+    /// The network's own value at the root (before search), side-to-move
+    /// perspective; 0 for terminal/empty roots.
+    pub root_network_value: f32,
 }
 
 impl<A: Copy + Ord> SearchResult<A> {
@@ -137,6 +156,11 @@ impl<G: PuctGame> Node<G> {
     fn expand(&mut self) -> Result<(), EvalError> {
         let legal = self.game.legal_actions();
         let eval = self.game.evaluate(&legal)?;
+        self.install(legal, eval)
+    }
+
+    /// Attach an evaluation (priors and value) to this node's legal edges.
+    fn install(&mut self, legal: Vec<G::Action>, eval: EvalResult) -> Result<(), EvalError> {
         if eval.policy.len() != legal.len() {
             return Err(EvalError::Invalid(format!(
                 "policy len {} != legal len {}",
@@ -224,11 +248,193 @@ fn simulate<G: PuctGame>(node: &mut Node<G>, cfg: &PuctConfig) -> Result<f32, Ev
     Ok(edge_value)
 }
 
+/// Virtual loss per pending traversal (D47): each edge on a pending path
+/// counts one provisional visit with value -1 for the side choosing it, so
+/// later selections in the same round prefer other lines. Removed on backup.
+const VIRTUAL_LOSS: f32 = 1.0;
+
+/// How one selected path ended.
+enum PathEnd<G: PuctGame> {
+    /// Known value, from the perspective of the node at the end of the path.
+    Value(f32),
+    /// A new non-terminal leaf to evaluate.
+    Leaf(G),
+    /// The selected edge is already pending in this round.
+    Collision,
+}
+
+/// The outcome of one selection in a multi-leaf round.
+enum Descent<G: PuctGame> {
+    /// A new leaf to evaluate; its path carries virtual loss.
+    Leaf(Vec<usize>, G),
+    /// The traversal reached a known value and was already backed up.
+    Resolved,
+    /// Collision with a pending leaf; the partial path was reverted.
+    Collision,
+}
+
+/// Select one path from `root`, applying virtual loss to every chosen edge.
+fn descend<G: PuctGame>(root: &mut Node<G>, cfg: &PuctConfig) -> Descent<G> {
+    let mut path = Vec::new();
+    let end = {
+        let mut node: &mut Node<G> = root;
+        loop {
+            if node.edges.is_empty() {
+                break PathEnd::Value(0.0);
+            }
+            let idx = select(node, cfg);
+            // A visited edge without a child can only be a leaf that is
+            // pending in this round (sequential search always creates it).
+            if node.edges[idx].child.is_none() && node.edges[idx].n > 0 {
+                break PathEnd::Collision;
+            }
+            node.edges[idx].n += 1;
+            node.edges[idx].w -= VIRTUAL_LOSS;
+            node.visits_total += 1;
+            path.push(idx);
+            if node.edges[idx].child.is_none() {
+                let child = Node::new(node.game.apply(node.edges[idx].action));
+                match child.terminal {
+                    Some(t) => {
+                        node.edges[idx].child = Some(Box::new(child));
+                        break PathEnd::Value(t);
+                    }
+                    None => break PathEnd::Leaf(child.game),
+                }
+            }
+            let child = node.edges[idx].child.as_deref_mut().expect("checked");
+            if let Some(t) = child.terminal {
+                break PathEnd::Value(t);
+            }
+            node = child;
+        }
+    };
+    match end {
+        PathEnd::Value(v) => {
+            backup(root, &path, v);
+            Descent::Resolved
+        }
+        PathEnd::Leaf(game) => Descent::Leaf(path, game),
+        PathEnd::Collision => {
+            revert(root, &path);
+            Descent::Collision
+        }
+    }
+}
+
+/// Back up `leaf_value` (from the perspective of the node at the end of
+/// `path`) along `path`, turning each virtual visit into a real one.
+fn backup<G: PuctGame>(root: &mut Node<G>, path: &[usize], leaf_value: f32) {
+    let len = path.len();
+    let mut node: &mut Node<G> = root;
+    for (d, &idx) in path.iter().enumerate() {
+        // Each ply flips the perspective: an edge value is the negated value
+        // of the child it leads to.
+        let edge_value = if (len - d) % 2 == 1 {
+            -leaf_value
+        } else {
+            leaf_value
+        };
+        node.edges[idx].w += edge_value + VIRTUAL_LOSS;
+        if d + 1 < len {
+            node = node.edges[idx]
+                .child
+                .as_deref_mut()
+                .expect("path child exists");
+        }
+    }
+}
+
+/// Undo the virtual visits of a partial path (collision).
+fn revert<G: PuctGame>(root: &mut Node<G>, path: &[usize]) {
+    let mut node: &mut Node<G> = root;
+    for (d, &idx) in path.iter().enumerate() {
+        node.edges[idx].n -= 1;
+        node.edges[idx].w += VIRTUAL_LOSS;
+        node.visits_total -= 1;
+        if d + 1 < path.len() {
+            node = node.edges[idx]
+                .child
+                .as_deref_mut()
+                .expect("path child exists");
+        }
+    }
+}
+
+/// Attach an evaluated leaf at the end of `path`.
+fn insert<G: PuctGame>(root: &mut Node<G>, path: &[usize], leaf: Node<G>) {
+    let (last, prefix) = path.split_last().expect("non-empty leaf path");
+    let mut node: &mut Node<G> = root;
+    for &idx in prefix {
+        node = node.edges[idx]
+            .child
+            .as_deref_mut()
+            .expect("path child exists");
+    }
+    node.edges[*last].child = Some(Box::new(leaf));
+}
+
+/// Multi-leaf search (D47): repeatedly select up to `leaves_in_flight`
+/// leaves with virtual loss, evaluate them in one submission, then expand and
+/// back up. Performs exactly `simulations - 1` traversals after the root
+/// expansion, like the sequential search.
+fn search_rounds<G: PuctGame>(root: &mut Node<G>, cfg: &PuctConfig) -> Result<(), EvalError> {
+    let mut done = 1u32;
+    while done < cfg.simulations {
+        let mut leaves: Vec<(Vec<usize>, G)> = Vec::new();
+        while (leaves.len() as u32) < cfg.leaves_in_flight
+            && done + (leaves.len() as u32) < cfg.simulations
+        {
+            match descend(root, cfg) {
+                Descent::Leaf(path, game) => leaves.push((path, game)),
+                Descent::Resolved => done += 1,
+                Descent::Collision => break,
+            }
+        }
+        if leaves.is_empty() {
+            continue;
+        }
+        let legal: Vec<Vec<G::Action>> = leaves.iter().map(|(_, g)| g.legal_actions()).collect();
+        let evals = {
+            let games: Vec<&G> = leaves.iter().map(|(_, g)| g).collect();
+            G::evaluate_many(&games, &legal)
+        };
+        for (((path, game), legal), eval) in leaves.into_iter().zip(legal).zip(evals) {
+            let mut leaf = Node::new(game);
+            leaf.install(legal, eval?)?;
+            let value = leaf.eval_value;
+            insert(root, &path, leaf);
+            backup(root, &path, value);
+            done += 1;
+        }
+    }
+    Ok(())
+}
+
+/// Exploration noise mixed into the root priors only:
+/// `prior' = (1 - epsilon) * prior + epsilon * noise[i]`, with `noise` aligned
+/// to the root's legal actions (their deterministic order).
+#[derive(Debug, Clone)]
+pub struct RootNoise {
+    pub epsilon: f32,
+    pub noise: Vec<f32>,
+}
+
 /// Run PUCT from `root`. Performs exactly `cfg.simulations` traversals for a
 /// non-terminal root; zero for a terminal root.
 pub fn search<G: PuctGame>(
     root: G,
     cfg: &PuctConfig,
+) -> Result<SearchResult<G::Action>, EvalError> {
+    search_with_root_noise(root, cfg, None)
+}
+
+/// [`search`] with optional root exploration noise (self-play only). The
+/// reported `RootEdge::prior` is the mixed prior the search used.
+pub fn search_with_root_noise<G: PuctGame>(
+    root: G,
+    cfg: &PuctConfig,
+    root_noise: Option<&RootNoise>,
 ) -> Result<SearchResult<G::Action>, EvalError> {
     let mut node = Node::new(root);
     if let Some(t) = node.terminal {
@@ -237,6 +443,7 @@ pub fn search<G: PuctGame>(
             total_visits: 0,
             traversals: 0,
             root_value: t,
+            root_network_value: 0.0,
         });
     }
     if cfg.simulations == 0 {
@@ -245,12 +452,29 @@ pub fn search<G: PuctGame>(
             total_visits: 0,
             traversals: 0,
             root_value: 0.0,
+            root_network_value: 0.0,
         });
     }
 
     node.expand()?; // traversal 0
-    for _ in 1..cfg.simulations {
-        simulate(&mut node, cfg)?;
+    if let Some(n) = root_noise {
+        if n.noise.len() != node.edges.len() {
+            return Err(EvalError::Invalid(format!(
+                "root noise len {} != root edges {}",
+                n.noise.len(),
+                node.edges.len()
+            )));
+        }
+        for (e, x) in node.edges.iter_mut().zip(&n.noise) {
+            e.prior = (1.0 - n.epsilon) * e.prior + n.epsilon * x;
+        }
+    }
+    if cfg.leaves_in_flight <= 1 {
+        for _ in 1..cfg.simulations {
+            simulate(&mut node, cfg)?;
+        }
+    } else {
+        search_rounds(&mut node, cfg)?;
     }
 
     let total = node.visits_total;
@@ -274,6 +498,7 @@ pub fn search<G: PuctGame>(
         total_visits: total,
         traversals: cfg.simulations,
         root_value,
+        root_network_value: node.eval_value,
     })
 }
 
@@ -375,6 +600,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 8,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -404,10 +630,48 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 32,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
         assert!(r.edges[0].visits > r.edges[1].visits);
+    }
+
+    #[test]
+    fn root_noise_mixes_root_priors_only_and_checks_length() {
+        let nodes = vec![
+            TreeNode {
+                children: vec![1, 2],
+                terminal: None,
+                value: 0.0,
+                policy: Some(vec![0.8, 0.2]),
+            },
+            leaf(),
+            leaf(),
+        ];
+        let cfg = PuctConfig {
+            c_puct: 1.0,
+            simulations: 32,
+            leaves_in_flight: 1,
+        };
+        let noise = RootNoise {
+            epsilon: 0.25,
+            noise: vec![0.0, 1.0],
+        };
+        let r = search_with_root_noise(TreeGame::new(nodes.clone()), &cfg, Some(&noise)).unwrap();
+        // (1 - 0.25) * 0.8 + 0.25 * 0 = 0.6; (1 - 0.25) * 0.2 + 0.25 * 1 = 0.4
+        assert!((r.edges[0].prior - 0.6).abs() < 1e-6);
+        assert!((r.edges[1].prior - 0.4).abs() < 1e-6);
+        let clean = search(TreeGame::new(nodes.clone()), &cfg).unwrap();
+        assert!(
+            (clean.edges[0].prior - 0.8).abs() < 1e-6,
+            "search() stays noise-free"
+        );
+        let bad = RootNoise {
+            epsilon: 0.25,
+            noise: vec![1.0],
+        };
+        assert!(search_with_root_noise(TreeGame::new(nodes), &cfg, Some(&bad)).is_err());
     }
 
     #[test]
@@ -434,6 +698,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 4,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -472,6 +737,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 32,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -495,6 +761,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 16,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -524,6 +791,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 10,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -575,6 +843,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: sims,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -602,6 +871,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 9,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -624,6 +894,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 9,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();
@@ -651,6 +922,7 @@ mod tests {
             &PuctConfig {
                 c_puct: 1.0,
                 simulations: 16,
+                leaves_in_flight: 1,
             },
         )
         .unwrap();

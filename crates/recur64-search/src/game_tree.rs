@@ -64,6 +64,32 @@ impl PuctGame for ChessGame<'_> {
             side_to_move: self.state.side_to_move(),
         })
     }
+
+    /// Submit all leaves of one multi-leaf round to the tree's evaluator at
+    /// once, so they can share an inference batch.
+    fn evaluate_many(
+        games: &[&Self],
+        legal: &[Vec<ActionId>],
+    ) -> Vec<Result<EvalResult, EvalError>> {
+        let Some(first) = games.first() else {
+            return Vec::new();
+        };
+        let observations: Vec<_> = games
+            .iter()
+            .map(|g| encode_observation_v1(&g.state))
+            .collect();
+        let requests: Vec<EvalRequest<'_>> = games
+            .iter()
+            .zip(&observations)
+            .zip(legal)
+            .map(|((g, observation), legal)| EvalRequest {
+                observation,
+                legal,
+                side_to_move: g.state.side_to_move(),
+            })
+            .collect();
+        first.evaluator.evaluate_many(&requests)
+    }
 }
 
 #[cfg(test)]
@@ -77,11 +103,86 @@ mod tests {
         PuctConfig {
             c_puct: 1.0,
             simulations: sims,
+            leaves_in_flight: 1,
         }
     }
 
     fn white_action(from: Square, to: Square) -> ActionId {
         ActionId::from_physical(from, to, PromotionCode::NONE, Perspective::white())
+    }
+
+    /// Uniform policy, value 0; records the size of every batched submission.
+    struct BatchRecorder {
+        sizes: std::sync::Mutex<Vec<usize>>,
+    }
+
+    impl Evaluator for BatchRecorder {
+        fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
+            self.sizes.lock().unwrap().push(1);
+            Ok(EvalResult::uniform(request.legal.len(), 0.0))
+        }
+        fn evaluate_many(
+            &self,
+            requests: &[EvalRequest<'_>],
+        ) -> Vec<Result<EvalResult, EvalError>> {
+            self.sizes.lock().unwrap().push(requests.len());
+            requests
+                .iter()
+                .map(|r| Ok(EvalResult::uniform(r.legal.len(), 0.0)))
+                .collect()
+        }
+    }
+
+    /// D47: multi-leaf search keeps the exact traversal budget, submits leaves
+    /// in batches, and removes every virtual loss (with value 0 everywhere and
+    /// no terminal reached, all edge values must return to exactly 0).
+    #[test]
+    fn multi_leaf_search_keeps_budget_batches_and_clears_virtual_loss() {
+        let ev = BatchRecorder {
+            sizes: std::sync::Mutex::new(Vec::new()),
+        };
+        let game = ChessGame::new(GameState::startpos(), &ev);
+        let cfg = PuctConfig {
+            c_puct: 1.0,
+            simulations: 64,
+            leaves_in_flight: 8,
+        };
+        let r = search(game, &cfg).unwrap();
+        assert_eq!(r.traversals, 64);
+        assert_eq!(
+            r.total_visits, 63,
+            "every traversal after the root expansion"
+        );
+        assert_eq!(r.edges.iter().map(|e| e.visits).sum::<u32>(), 63);
+        assert_eq!(r.root_value, 0.0, "virtual loss fully removed");
+        let sizes = ev.sizes.lock().unwrap();
+        assert!(
+            sizes.iter().any(|&n| n > 1),
+            "leaves were batched: {sizes:?}"
+        );
+        assert!(sizes.iter().all(|&n| n <= 8));
+        assert_eq!(
+            sizes.iter().sum::<usize>(),
+            64,
+            "one evaluation per non-terminal node"
+        );
+    }
+
+    /// D47: virtual loss does not stop the search from finding a forced mate.
+    #[test]
+    fn multi_leaf_search_still_prefers_mate_in_one() {
+        let state = GameState::from_fen("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1").unwrap();
+        let ev = ScriptedEvaluator::new(vec![0.0]);
+        let game = ChessGame::new(state, &ev);
+        let cfg = PuctConfig {
+            c_puct: 1.0,
+            simulations: 64,
+            leaves_in_flight: 4,
+        };
+        let r = search(game, &cfg).unwrap();
+        assert_eq!(r.best_action(), Some(white_action(Square::A1, Square::A8)));
+        assert!(r.root_value > 0.0);
+        assert_eq!(r.total_visits, 63);
     }
 
     #[test]

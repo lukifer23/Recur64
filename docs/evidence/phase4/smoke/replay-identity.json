@@ -1,0 +1,45 @@
+{
+  "kind": "recur64-replay-identity-v1",
+  "entries": [
+    {
+      "first_game_id": 0,
+      "games": 32,
+      "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+      "head_version": 2,
+      "scientific_config_hash": "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3",
+      "resolved_config_hash": "63b446c4ee428e34b5c3bc0c2061b7e9d729e1ffffce4f86d6473e9504fec428",
+      "seed_policy": "base_seed_plus_global_game_id_v1",
+      "seed": 1,
+      "simulations": 64,
+      "c_puct": 1.0,
+      "temperature": 1.0,
+      "argmax_after_ply": 30,
+      "root_dirichlet_alpha": 0.3,
+      "root_dirichlet_epsilon": 0.25,
+      "recurrence": 1,
+      "ply_cap": 512,
+      "start_fen": null,
+      "git_revision": "7a8b49254148fff61d8106bf0186ffedb679ff08"
+    },
+    {
+      "first_game_id": 32,
+      "games": 32,
+      "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+      "head_version": 2,
+      "scientific_config_hash": "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3",
+      "resolved_config_hash": "63b446c4ee428e34b5c3bc0c2061b7e9d729e1ffffce4f86d6473e9504fec428",
+      "seed_policy": "base_seed_plus_global_game_id_v1",
+      "seed": 1,
+      "simulations": 64,
+      "c_puct": 1.0,
+      "temperature": 1.0,
+      "argmax_after_ply": 30,
+      "root_dirichlet_alpha": 0.3,
+      "root_dirichlet_epsilon": 0.25,
+      "recurrence": 1,
+      "ply_cap": 512,
+      "start_fen": null,
+      "git_revision": "7a8b49254148fff61d8106bf0186ffedb679ff08"
+    }
+  ]
+}

@@ -78,6 +78,12 @@ fn default_accumulation_steps() -> usize {
 fn default_min_decisive_games() -> u32 {
     4
 }
+fn default_root_dirichlet_alpha() -> f32 {
+    0.3
+}
+fn default_leaves_in_flight() -> u32 {
+    1
+}
 
 /// Version of the conservative promotion rule implemented in `pilot.rs`. Part
 /// of the scientific identity; bump it whenever the rule changes.
@@ -93,6 +99,81 @@ pub enum SnapshotPolicy {
     Conservative,
     /// Always keep the initial reference as the self-play snapshot.
     FrozenReference,
+}
+
+/// What happens to the learner state when a candidate is held (D48).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TrainerPolicy {
+    /// D31: a held candidate is discarded; the next cycle trains again from
+    /// the last promoted snapshot's weights and optimizer state.
+    #[default]
+    DiscardHeld,
+    /// AlphaGo Zero style: the learner keeps its weights and optimizer state
+    /// across cycles whether or not the candidate is promoted. Promotion only
+    /// decides which network generates self-play and is the arena parent.
+    Continuous,
+}
+
+/// Self-play health thresholds that stop a pilot at a cycle boundary (D49).
+/// `None` disables a check. These bound execution; they never change what a
+/// cycle does, so they are excluded from the scientific identity.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+pub struct HealthStops {
+    /// Stop when the self-play draw share reaches this in two consecutive
+    /// cycles.
+    #[serde(default)]
+    pub draw_share_two_cycles: Option<f64>,
+    /// Stop when (threefold + fifty-move) / games reaches this in any cycle.
+    #[serde(default)]
+    pub threefold_fifty: Option<f64>,
+    /// Stop when truncated / games reaches this in any cycle.
+    #[serde(default)]
+    pub truncation: Option<f64>,
+}
+
+impl HealthStops {
+    /// The reason to stop after a cycle, given this cycle's shares and
+    /// whether the previous cycle's draw share already crossed the threshold.
+    pub fn check(
+        &self,
+        draw_share: f64,
+        threefold_fifty: f64,
+        truncation: f64,
+        previous_draw_share_high: bool,
+    ) -> Option<String> {
+        if let Some(t) = self.threefold_fifty.filter(|t| threefold_fifty >= *t) {
+            return Some(format!("threefold_fifty {threefold_fifty:.3} >= {t}"));
+        }
+        if let Some(t) = self.truncation.filter(|t| truncation >= *t) {
+            return Some(format!("truncation {truncation:.3} >= {t}"));
+        }
+        if let Some(t) = self
+            .draw_share_two_cycles
+            .filter(|t| draw_share >= *t && previous_draw_share_high)
+        {
+            return Some(format!("draw_share {draw_share:.3} >= {t} for two cycles"));
+        }
+        None
+    }
+
+    /// Whether this cycle's draw share crosses the two-cycle threshold.
+    pub fn draw_share_high(&self, draw_share: f64) -> bool {
+        self.draw_share_two_cycles.is_some_and(|t| draw_share >= t)
+    }
+}
+
+/// One cycle's learner workload derived from the reuse target.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct UpdatePlan {
+    pub requested_examples: f64,
+    /// Updates the reuse target asks for (uncapped).
+    pub requested_updates: usize,
+    /// Updates actually scheduled (`min(requested, max_updates)`).
+    pub scheduled_updates: usize,
+    pub max_updates: usize,
+    /// True when the `max_updates` safety cap reduced the requested work.
+    pub cap_bound: bool,
 }
 
 /// A complete, resolved Phase 2 run configuration.
@@ -189,6 +270,35 @@ pub struct RunConfig {
     /// plies at `temperature` (the Phase 3 baseline convention).
     #[serde(default)]
     pub argmax_after_ply: Option<u32>,
+    /// Root Dirichlet noise concentration for self-play (AlphaZero chess:
+    /// 0.3). Only used when `root_dirichlet_epsilon > 0`. Arenas never apply
+    /// root noise.
+    #[serde(default = "default_root_dirichlet_alpha")]
+    pub root_dirichlet_alpha: f32,
+    /// Root noise mixing weight for self-play; `0.0` (default) disables it.
+    #[serde(default)]
+    pub root_dirichlet_epsilon: f32,
+    /// Searched-arena opening phase (D45): sample from visit counts at
+    /// temperature 1 for this many plies after the opening, then argmax.
+    /// `None` (default) = argmax from ply 0, the original arena contract.
+    #[serde(default)]
+    pub arena_sample_plies: Option<u32>,
+    /// Searched-arena root noise weight (alpha = `root_dirichlet_alpha`).
+    /// `0.0` (default) = noise-free, the original arena contract.
+    #[serde(default)]
+    pub arena_root_dirichlet_epsilon: f32,
+    /// Leaves selected with virtual loss and evaluated together per search
+    /// round (D47), for self-play and arenas alike. `1` (default) is the
+    /// original one-leaf search; values above 1 are a new identity.
+    #[serde(default = "default_leaves_in_flight")]
+    pub search_leaves_in_flight: u32,
+    /// Learner continuity across held cycles (D48). The default keeps D31.
+    #[serde(default)]
+    pub trainer_policy: TrainerPolicy,
+    /// Pilot health stops (execution bounds, not scientific identity): stop
+    /// at a cycle boundary when self-play drifts into an attractor.
+    #[serde(default)]
+    pub health_stops: HealthStops,
     /// Path to a frozen opening suite used only for evaluation.
     #[serde(default)]
     pub opening_suite: Option<String>,
@@ -213,12 +323,12 @@ pub struct RunConfig {
 
     // --- HP experiment ---
     /// Label for the hardware scheduling profile this run resolved to
-    /// (e.g. "hp-home"). Scheduling parameters may differ per machine; the
+    /// (e.g. "workstation-main"). Scheduling parameters may differ per machine; the
     /// scientific parameters above must not.
     #[serde(default)]
     pub hardware_profile: Option<String>,
 
-    /// Label for the model profile this run used (e.g. "f15", "r15").
+    /// Label for the model profile this run used (e.g. "f10", "r10").
     #[serde(default)]
     pub model_profile: Option<String>,
 }
@@ -237,24 +347,28 @@ impl RunConfig {
         self.train_batch.max(1) * self.accumulation_steps.max(1)
     }
 
-    /// Legacy configs use active_games for both counts. New configs must supply
-    /// both fields; cpu_workers is a cap on the actual worker thread count.
+    /// Resolved `(games_total, concurrency)` for one collection.
+    ///
+    /// New configs supply `games_per_cycle` (total games) and `concurrent_games`
+    /// (desired simultaneous games); `cpu_workers` caps the worker threads and
+    /// the game count caps the concurrency.
+    ///
+    /// Legacy configs (both fields absent) keep the Phase 3 D24 semantics
+    /// exactly: `active_games` is both the total and the concurrency, and
+    /// `cpu_workers` is *not* applied. This preserves the behavior of the
+    /// historical `configs/f10-*.toml` runs. Migrate a config explicitly by
+    /// setting both new fields.
     pub fn collection_shape(&self) -> anyhow::Result<(u32, usize)> {
         let (games, concurrency) = match (self.games_per_cycle, self.concurrent_games) {
-            (Some(g), Some(c)) => (g, c),
-            (None, None) => (self.active_games, self.active_games),
+            (Some(g), Some(c)) => (g, (c as usize).min(self.cpu_workers).min(g as usize)),
+            (None, None) => (self.active_games, self.active_games as usize),
             _ => anyhow::bail!("games_per_cycle and concurrent_games must be set together"),
         };
         anyhow::ensure!(
             games > 0 && concurrency > 0 && self.cpu_workers > 0,
             "collection counts and cpu_workers must be positive"
         );
-        Ok((
-            games,
-            (concurrency as usize)
-                .min(self.cpu_workers)
-                .min(games as usize),
-        ))
+        Ok((games, concurrency))
     }
 
     /// Reuse target schedules work from newly collected, completed-game plies.
@@ -267,6 +381,66 @@ impl RunConfig {
         let requested_examples = new_trainable_positions as f64 * self.replay_reuse_target;
         let requested = (requested_examples / self.effective_batch() as f64).ceil() as usize;
         Ok((requested.min(self.max_updates), requested_examples))
+    }
+
+    /// Evaluation identity. The arena exploration fields (D45) appear only
+    /// when they differ from the original deterministic, noise-free arena, so
+    /// every configuration recorded before D45 keeps a reproducible hash.
+    fn evaluation_identity(&self) -> anyhow::Result<serde_json::Value> {
+        let mut v = serde_json::json!({
+            "opening_suite_digest": self.opening_suite_digest()?,
+            "arena_games": self.arena_games,
+        });
+        if self.arena_sample_plies.is_some() || self.arena_root_dirichlet_epsilon != 0.0 {
+            v["arena_exploration"] = serde_json::json!({
+                "sample_plies": self.arena_sample_plies,
+                "root_dirichlet_alpha": self.root_dirichlet_alpha,
+                "root_dirichlet_epsilon": self.arena_root_dirichlet_epsilon,
+            });
+        }
+        Ok(v)
+    }
+
+    /// The searched-arena configuration for one evaluation (seed offset
+    /// `offset`, e.g. the cycle), from this run's search and arena contract.
+    pub fn arena_config(
+        &self,
+        offset: u64,
+        openings: Vec<String>,
+        concurrency: usize,
+    ) -> recur64_eval::ArenaConfig {
+        recur64_eval::ArenaConfig {
+            games: self.arena_games,
+            simulations: self.simulations_per_move,
+            c_puct: self.c_puct,
+            recurrence: self.recurrence,
+            ply_cap: self.ply_cap,
+            seed: self.seed.wrapping_add(offset),
+            openings,
+            concurrency,
+            sample_plies: self.arena_sample_plies,
+            root_dirichlet_alpha: self.root_dirichlet_alpha,
+            root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
+            deadline: None,
+            leaves_in_flight: self.search_leaves_in_flight,
+        }
+    }
+
+    /// The full per-cycle update plan, including whether the `max_updates`
+    /// safety cap binds. A binding cap means the cycle cannot reach the
+    /// intended reuse target, so it must be reported, never hidden.
+    pub fn update_plan(&self, new_trainable_positions: u64) -> anyhow::Result<UpdatePlan> {
+        let (scheduled_updates, requested_examples) =
+            self.reuse_updates(new_trainable_positions)?;
+        let requested_updates =
+            (requested_examples / self.effective_batch() as f64).ceil() as usize;
+        Ok(UpdatePlan {
+            requested_examples,
+            requested_updates,
+            scheduled_updates,
+            max_updates: self.max_updates,
+            cap_bound: requested_updates > scheduled_updates,
+        })
     }
 
     /// Resolved warmup updates for the schedule.
@@ -322,9 +496,10 @@ impl RunConfig {
     /// safety cap (a binding cap is reported as a reuse shortfall).
     pub fn scientific_identity(&self) -> anyhow::Result<serde_json::Value> {
         let (warmup, planned) = self.lr_schedule();
-        Ok(serde_json::json!({
-            "identity_version": 3,
+        let mut identity = serde_json::json!({
+            "identity_version": 4,
             "model": self.model,
+            "model_head_version": recur64_model::model::HEAD_VERSION,
             "recurrence": self.recurrence,
             "precision": self.precision,
             "reference_model_id": self.reference_model_id,
@@ -334,6 +509,8 @@ impl RunConfig {
                 "c_puct": self.c_puct,
                 "temperature": self.temperature,
                 "argmax_after_ply": self.argmax_after_ply,
+                "root_dirichlet_alpha": self.root_dirichlet_alpha,
+                "root_dirichlet_epsilon": self.root_dirichlet_epsilon,
                 "ply_cap": self.ply_cap,
                 "start_fen": self.start_fen,
             },
@@ -354,17 +531,28 @@ impl RunConfig {
                 "shard_max_games": self.shard_max_games,
                 "sampler": "shard_recency_weight_index_plus_1_v1",
             },
-            "evaluation": {
-                "opening_suite_digest": self.opening_suite_digest()?,
-                "arena_games": self.arena_games,
-            },
+            "evaluation": self.evaluation_identity()?,
             "promotion": {
                 "snapshot_policy": self.snapshot_policy,
                 "rule": PROMOTION_RULE_VERSION,
                 "score_floor": self.promotion_score_floor,
                 "min_decisive_games": self.promotion_min_decisive_games,
             },
-        }))
+        });
+        // Multi-leaf search (D47) enters the identity only when enabled, so
+        // every pre-D47 identity stays reproducible.
+        if self.search_leaves_in_flight > 1 {
+            identity["search_execution"] = serde_json::json!({
+                "leaves_in_flight": self.search_leaves_in_flight,
+                "virtual_loss": 1.0,
+            });
+        }
+        // Continuous training (D48) is recorded only when enabled, so every
+        // pre-D48 identity stays reproducible.
+        if self.trainer_policy != TrainerPolicy::DiscardHeld {
+            identity["trainer_policy"] = serde_json::to_value(self.trainer_policy)?;
+        }
+        Ok(identity)
     }
 
     /// Experiment identity hash (see [`Self::scientific_identity`]).
@@ -403,6 +591,20 @@ impl RunConfig {
         if self.device_kind()? == DeviceKind::Cuda {
             ensure_nvrtc_on_path()?;
         }
+        anyhow::ensure!(
+            self.search_leaves_in_flight >= 1,
+            "search_leaves_in_flight must be >= 1"
+        );
+        anyhow::ensure!(
+            (0.0..=1.0).contains(&self.root_dirichlet_epsilon)
+                && (0.0..=1.0).contains(&self.arena_root_dirichlet_epsilon),
+            "root_dirichlet_epsilon and arena_root_dirichlet_epsilon must be in [0, 1]"
+        );
+        anyhow::ensure!(
+            (self.root_dirichlet_epsilon == 0.0 && self.arena_root_dirichlet_epsilon == 0.0)
+                || (self.root_dirichlet_alpha > 0.0 && self.root_dirichlet_alpha.is_finite()),
+            "root_dirichlet_alpha must be finite and > 0 when root noise is enabled"
+        );
         Ok(())
     }
 }
@@ -410,28 +612,35 @@ impl RunConfig {
 /// cudarc loads NVRTC lazily on a worker thread. When it is missing, the
 /// panic is confined to that thread and JIT kernels silently do nothing, so a
 /// "CUDA" run can finish and write garbage. Refuse to start instead.
+/// True when a file name is any NVRTC shared library, across the versioned
+/// names cudarc may try (`nvrtc.dll`, `nvrtc64_12.dll`, `nvrtc64_120_0.dll`,
+/// `libnvrtc.so.12`, ...). Matching any NVRTC library avoids refusing a valid
+/// user-space runtime over an exact-name mismatch.
+fn is_nvrtc_library_name(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    name.contains("nvrtc") && (name.ends_with(".dll") || name.contains(".so"))
+}
+
 fn ensure_nvrtc_on_path() -> anyhow::Result<()> {
-    const NAMES: [&str; 4] = [
-        "nvrtc64_12.dll",
-        "nvrtc.dll",
-        "libnvrtc.so.12",
-        "libnvrtc.so",
-    ];
     let mut dirs: Vec<std::path::PathBuf> = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
     if let Some(cuda) = std::env::var_os("CUDA_PATH") {
         dirs.push(std::path::Path::new(&cuda).join("bin"));
     }
-    let found = dirs
-        .iter()
-        .any(|d| NAMES.iter().any(|n| d.join(n).is_file()));
+    let found = dirs.iter().any(|d| {
+        std::fs::read_dir(d).is_ok_and(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .any(|e| is_nvrtc_library_name(&e.file_name().to_string_lossy()))
+        })
+    });
     anyhow::ensure!(
         found,
-        "CUDA requested but NVRTC ({}) is not on PATH or CUDA_PATH\\bin. Set CUDA_PATH \
-         and PATH for this process (docs/HP_EXPERIMENT.md, user-space CUDA 12.9.1). \
-         Refusing to run: without NVRTC the JIT kernels silently no-op.",
-        NAMES.join(", ")
+        "CUDA requested but NVRTC (nvrtc*.dll / libnvrtc.so*) is not on PATH or \
+         CUDA_PATH\\bin. Set CUDA_PATH and PATH for this process (see \
+         docs/HARDWARE.md and docs/DECISIONS.md D3, user-space CUDA 12.9.1). \
+         Refusing to run: without NVRTC the JIT kernels silently no-op."
     );
     Ok(())
 }
@@ -686,47 +895,233 @@ openings = ['{e4}']
     }
 
     #[test]
-    fn hp_f15_smoke_config_is_frozen_and_valid() {
-        let mut cfg = RunConfig::from_toml_str(include_str!("../../../configs/hp/f15-smoke.toml"))
-            .expect("parse HP F15 smoke config");
+    fn health_stops_trigger_on_the_preregistered_conditions() {
+        let h = HealthStops {
+            draw_share_two_cycles: Some(0.85),
+            threefold_fifty: Some(0.60),
+            truncation: Some(0.25),
+        };
+        assert_eq!(
+            h.check(0.73, 0.33, 0.01, false),
+            None,
+            "smoke v2 cycle 3 is healthy"
+        );
+        assert_eq!(
+            h.check(0.90, 0.10, 0.0, false),
+            None,
+            "one high-draw cycle is not enough"
+        );
+        assert!(
+            h.check(0.90, 0.10, 0.0, true)
+                .unwrap()
+                .contains("two cycles")
+        );
+        assert!(
+            h.check(0.5, 0.61, 0.0, false)
+                .unwrap()
+                .contains("threefold_fifty")
+        );
+        assert!(
+            h.check(0.5, 0.1, 0.30, false)
+                .unwrap()
+                .contains("truncation")
+        );
+        assert!(h.draw_share_high(0.85) && !h.draw_share_high(0.84));
+        assert_eq!(
+            HealthStops::default().check(1.0, 1.0, 1.0, true),
+            None,
+            "off by default"
+        );
+        // Health stops are execution bounds: they never enter the identity.
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        let mut with = base.clone();
+        with.health_stops = h;
+        assert_eq!(
+            base.scientific_config_hash().unwrap(),
+            with.scientific_config_hash().unwrap()
+        );
+    }
+
+    #[test]
+    fn update_plan_reports_a_binding_cap() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        cfg.train_batch = 8;
+        cfg.accumulation_steps = 4;
+        cfg.replay_reuse_target = 2.0;
+        cfg.max_updates = 5;
+        let fits = cfg.update_plan(65).unwrap();
+        assert_eq!((fits.requested_updates, fits.scheduled_updates), (5, 5));
+        assert!(!fits.cap_bound, "cap equal to the request does not bind");
+        cfg.max_updates = 3;
+        let capped = cfg.update_plan(65).unwrap();
+        assert_eq!((capped.requested_updates, capped.scheduled_updates), (5, 3));
+        assert!(capped.cap_bound);
+        assert_eq!(capped.requested_examples, 130.0);
+    }
+
+    /// Legacy configs (no explicit pair) keep the Phase 3 D24 behavior:
+    /// `active_games` is both the total and the concurrency, and `cpu_workers`
+    /// is not applied. New explicit pairs are capped by `cpu_workers`.
+    #[test]
+    fn legacy_collection_shape_preserves_d24_and_new_pair_is_capped() {
+        let mut cfg = RunConfig::from_toml_str(base_toml()).unwrap();
+        cfg.active_games = 64;
+        cfg.cpu_workers = 8;
+        assert_eq!(
+            cfg.collection_shape().unwrap(),
+            (64, 64),
+            "legacy configs must not be silently shrunk to cpu_workers"
+        );
+        cfg.games_per_cycle = Some(64);
+        cfg.concurrent_games = Some(64);
+        assert_eq!(
+            cfg.collection_shape().unwrap(),
+            (64, 8),
+            "explicit concurrency is capped by cpu_workers"
+        );
+    }
+
+    /// The frozen mainline reference config must parse and freeze its science.
+    #[test]
+    fn f10_reference_config_is_frozen_and_valid() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/phase4/f10-reference.toml");
+        let mut cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         cfg.opening_suite = Some(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../configs/openings-v1.toml")
                 .to_string_lossy()
                 .into_owned(),
         );
-        assert_eq!(cfg.collection_shape().unwrap(), (24, 16));
-        assert_eq!(cfg.simulations_per_move, 8);
-        assert_eq!(cfg.effective_batch(), 128);
-        assert_eq!(cfg.lr_schedule(), (25, 256));
+        assert_eq!(cfg.model.unique_blocks(), 8);
+        assert_eq!(cfg.recurrence, 1);
         assert_eq!(
-            cfg.reference_model_id.as_deref(),
-            Some("4271e19fbd6bc32f95017d7808ed14feb4e86d5ae8877193f0b8736139c9dda3")
+            cfg.collection_shape().unwrap().0,
+            cfg.games_per_cycle.unwrap()
         );
         assert!(!cfg.scientific_config_hash().unwrap().is_empty());
         assert!(!cfg.resolved_config_hash().is_empty());
     }
 
+    /// The corrected Phase 4 smoke realizes the measured 32-way schedule
+    /// (cpu_workers must not silently cap it) and its max_updates safety cap
+    /// does not bind at the pre-registered expected workload.
     #[test]
-    fn hp_f15_qualification_keeps_smoke_science() {
-        let load = |contents: &str| {
-            let mut cfg = RunConfig::from_toml_str(contents).unwrap();
-            cfg.opening_suite = Some(
-                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("../../configs/openings-v1.toml")
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-            cfg
-        };
-        let smoke = load(include_str!("../../../configs/hp/f15-smoke.toml"));
-        let pilot = load(include_str!("../../../configs/hp/f15-pilot.toml"));
+    fn f10_smoke_config_realizes_schedule_and_cap_does_not_bind() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/phase4/f10-smoke.toml");
+        let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(cfg.collection_shape().unwrap(), (32, 32));
+        assert_eq!(cfg.effective_batch(), 256);
+        assert_eq!(cfg.simulations_per_move, 64);
+        assert_eq!(cfg.argmax_after_ply, Some(30));
+        assert_eq!(cfg.root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.lr_schedule(), (10, 90));
+        assert!(cfg.reference_model_id.is_some() && cfg.reference_checkpoint.is_some());
+        // Pre-registered expectation: ~5,685 new trainable positions/cycle.
+        let plan = cfg.update_plan(5685).unwrap();
+        assert_eq!(plan.requested_updates, 45);
+        assert!(!plan.cap_bound);
+        // Even a 3x larger cycle would still fit under the cap.
+        assert!(!cfg.update_plan(3 * 5685).unwrap().cap_bound);
+    }
+
+    /// Smoke v2 realizes the adopted post-smoke contract (D45 arena, D47
+    /// K = 2, D48 continuous trainer) and its safety cap does not bind.
+    #[test]
+    fn f10_smoke_v2_config_is_the_adopted_contract() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/phase4/f10-smoke-v2.toml");
+        let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(cfg.collection_shape().unwrap(), (64, 32));
+        assert_eq!(cfg.search_leaves_in_flight, 2);
+        assert_eq!(cfg.max_inference_batch, 64);
+        assert_eq!(cfg.trainer_policy, TrainerPolicy::Continuous);
+        assert_eq!(cfg.arena_sample_plies, Some(30));
+        assert_eq!(cfg.arena_root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.lr_schedule(), (27, 267));
+        let plan = cfg.update_plan(11_370).unwrap();
+        assert_eq!(plan.requested_updates, 89);
+        assert!(!plan.cap_bound && !cfg.update_plan(3 * 11_370).unwrap().cap_bound);
+        let arena = cfg.arena_config(0, Vec::new(), 32);
+        assert_eq!(arena.leaves_in_flight, 2);
+    }
+
+    /// P4.6 qualification: the smoke v2 contract over 10 cycles with the
+    /// pre-registered health stops parsed and a non-binding cap.
+    #[test]
+    fn f10_qual_config_is_smoke_v2_contract_with_health_stops() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../configs/phase4");
+        let qual =
+            RunConfig::from_toml_str(&std::fs::read_to_string(dir.join("f10-qual.toml")).unwrap())
+                .unwrap();
+        let smoke = RunConfig::from_toml_str(
+            &std::fs::read_to_string(dir.join("f10-smoke-v2.toml")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(qual.cycles, 10);
+        assert_eq!(qual.health_stops.draw_share_two_cycles, Some(0.85));
+        assert_eq!(qual.health_stops.threefold_fifty, Some(0.60));
+        assert_eq!(qual.health_stops.truncation, Some(0.25));
+        assert_eq!(qual.lr_schedule(), (110, 1100));
+        assert!(!qual.update_plan(3 * 16_215).unwrap().cap_bound);
+        // Same search, arena, learner and trainer contract as smoke v2.
+        assert_eq!(qual.search_leaves_in_flight, smoke.search_leaves_in_flight);
+        assert_eq!(qual.trainer_policy, smoke.trainer_policy);
+        assert_eq!(qual.arena_sample_plies, smoke.arena_sample_plies);
+        assert_eq!(qual.simulations_per_move, smoke.simulations_per_move);
         assert_eq!(
-            smoke.scientific_config_hash().unwrap(),
-            pilot.scientific_config_hash().unwrap()
+            qual.collection_shape().unwrap(),
+            smoke.collection_shape().unwrap()
         );
-        assert_ne!(smoke.resolved_config_hash(), pilot.resolved_config_hash());
-        assert_eq!(pilot.cycles, 14);
-        assert_eq!(pilot.run_budget_minutes, 75);
+        assert_eq!(qual.reference_model_id, smoke.reference_model_id);
+    }
+
+    /// D45 must not change any identity recorded before it: the original
+    /// deterministic, noise-free arena reproduces the smoke's recorded
+    /// scientific hash exactly, while an arena exploration variant is a new
+    /// identity.
+    #[test]
+    fn arena_exploration_is_a_new_identity_and_default_is_unchanged() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut cfg = RunConfig::from_toml_str(
+            &std::fs::read_to_string(root.join("configs/phase4/f10-smoke.toml")).unwrap(),
+        )
+        .unwrap();
+        cfg.opening_suite = Some(
+            root.join("configs/openings-v1.toml")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        assert_eq!(
+            cfg.scientific_config_hash().unwrap(),
+            "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3",
+            "recorded P4.5 smoke identity must be reproducible"
+        );
+        let mut sampled = cfg.clone();
+        sampled.arena_sample_plies = Some(8);
+        assert_ne!(
+            sampled.scientific_config_hash().unwrap(),
+            cfg.scientific_config_hash().unwrap()
+        );
+        let arena = sampled.arena_config(3, Vec::new(), 32);
+        assert_eq!(arena.sample_plies, Some(8));
+        assert_eq!(arena.seed, cfg.seed + 3);
+        assert_eq!(arena.root_dirichlet_epsilon, 0.0);
+    }
+
+    /// The CUDA fail-fast must accept every versioned NVRTC shared library name
+    /// cudarc may try, not just one exact name.
+    #[test]
+    fn nvrtc_library_names_are_recognized_across_versions() {
+        assert!(is_nvrtc_library_name("nvrtc.dll"));
+        assert!(is_nvrtc_library_name("nvrtc64.dll"));
+        assert!(is_nvrtc_library_name("nvrtc64_12.dll"));
+        assert!(is_nvrtc_library_name("nvrtc64_120_0.dll"));
+        assert!(is_nvrtc_library_name("libnvrtc.so.12"));
+        assert!(is_nvrtc_library_name("libnvrtc.so"));
+        assert!(!is_nvrtc_library_name("cudart64_12.dll"));
+        assert!(!is_nvrtc_library_name("cublas64_12.dll"));
+        assert!(!is_nvrtc_library_name("nvJitLink_120_0.dll"));
     }
 }

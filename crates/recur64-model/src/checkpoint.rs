@@ -60,6 +60,14 @@ pub struct CheckpointMeta {
     /// Position of the LR schedule.
     #[serde(default)]
     pub lr_schedule_step: u64,
+    /// Readout-head function version ([`crate::model::HEAD_VERSION`]).
+    /// Metadata written before the field existed is head v1.
+    #[serde(default = "legacy_head_version")]
+    pub head_version: u32,
+}
+
+fn legacy_head_version() -> u32 {
+    1
 }
 
 impl CheckpointMeta {
@@ -98,11 +106,36 @@ impl CheckpointMeta {
             run_id: String::new(),
             update_counter: step,
             lr_schedule_step: step,
+            head_version: crate::model::HEAD_VERSION,
         }
     }
 
-    /// Verify the recorded chess contract versions match the current ones.
+    /// Refuse a checkpoint whose recorded model configuration differs from
+    /// the configuration it is being loaded into. Tensor shapes alone do not
+    /// prove compatibility: same-shape settings such as `rms_eps` change the
+    /// function. Recurrence is deliberately NOT checked: it is a runtime
+    /// choice, and the same R10 weights are evaluated at R1/R2/R4.
+    pub fn check_model(&self, requested: &ModelConfig) -> anyhow::Result<()> {
+        let recorded = serde_json::to_value(&self.model)?;
+        let wanted = serde_json::to_value(requested)?;
+        anyhow::ensure!(
+            recorded == wanted,
+            "checkpoint model config {recorded} differs from the requested model config {wanted}"
+        );
+        Ok(())
+    }
+
+    /// Verify the model-function contracts: head version and the chess
+    /// observation / action / rules versions. `replay_schema_version` is
+    /// training-data provenance, not part of the network's function, so it
+    /// is recorded but does not block loading.
     pub fn check_contracts(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.head_version == crate::model::HEAD_VERSION,
+            "checkpoint head version {} is not the current head version {}: its weights were trained for a different readout function and are refused",
+            self.head_version,
+            crate::model::HEAD_VERSION
+        );
         let v = recur64_core::ContractVersions::V1;
         anyhow::ensure!(
             self.observation_version == v.observation
@@ -196,6 +229,7 @@ where
         SCHEMA_VERSION
     );
     meta.check_contracts()?;
+    meta.check_model(template.config())?;
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     let model = template.load_file(model_path, &recorder, device)?;
     let optim_record = recorder.load(optim_path, device)?;

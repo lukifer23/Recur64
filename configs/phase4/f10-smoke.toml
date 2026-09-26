@@ -1,0 +1,76 @@
+# Recur64 Phase 4 P4.5 — corrected F10 learning smoke (2 cycles).
+#
+# Frozen before the run (docs/PHASE4_RESULTS.md, "P4.5 pre-registration").
+# Starts from the frozen head-v2 reference; every value below is derived from
+# measured Phase 4 evidence, not historical inertia. Do not edit after the
+# smoke starts. Historical configs/f10-*.toml are Phase 3 artifacts.
+run_id = "phase4-f10-smoke"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "f10"
+hardware_profile = "workstation-main"
+seed = 1
+
+reference_checkpoint = "runs/phase4-f10-reference-v2"
+reference_model_id = "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448"
+
+# --- Search / self-play contract (P4.4 frozen budget; D41 exploration) ---
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
+ply_cap = 512
+
+# --- Collection (scientific: total games; scheduling: the rest) ---
+# 32 games = one wave at the measured concurrency 32 (~9-10 min at 64 sims).
+games_per_cycle = 32
+
+# --- Hardware schedule (configs/hardware/workstation-main.toml, MEASURED) ---
+concurrent_games = 32
+cpu_workers = 32
+max_inference_batch = 32
+batch_timeout_us = 500
+train_batch = 64
+accumulation_steps = 4
+
+# --- Replay / learner ---
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+lr = 3.0e-4
+# Expected ~5,685 new trainable positions/cycle (v2 s64: 177.6 per game)
+# -> ceil(5685 * 2.0 / 256) = 45 requested updates/cycle.
+planned_updates = 90
+warmup_updates = 10
+# Safety cap ~3.3x the expected request; a binding cap is a health warning.
+max_updates = 150
+
+# --- Evaluation / promotion ---
+arena_games = 32
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+promotion_score_floor = 0.5
+promotion_min_decisive_games = 4
+
+# --- Execution bounds (excluded from scientific identity) ---
+cycles = 2
+run_budget_minutes = 50
+# ~2.5x the expected 2 x 32 x 186 = 11,900 positions.
+position_budget = 30000
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

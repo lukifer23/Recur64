@@ -12,18 +12,21 @@ use std::time::{Duration, Instant};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
-use recur64_eval::{ArenaConfig, ArenaResult, OpeningSuite, run_arena};
+use recur64_eval::{ArenaResult, OpeningSuite, run_arena};
 use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 
 use crate::cancel::CancelToken;
-use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy};
-use crate::coordinator::{SelfPlayMetrics, collect_parallel, selfplay_metrics};
+use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy, TrainerPolicy};
+use crate::coordinator::{
+    RootSearchSummary, SelfPlayMetrics, collect_parallel_diag, selfplay_metrics,
+};
 use crate::eval_policy::{
     PolicyDiagnostics, RawMatchResult, RawParentResult, policy_diagnostics, raw_policy_vs_parent,
     raw_policy_vs_random,
 };
-use crate::inference::{BatchedModel, InferenceConfig, InferenceOwner};
+use crate::gpu_telemetry::{self, GpuSamples};
+use crate::inference::{BatchedModel, InferenceConfig, InferenceOwner, MetricsSnapshot};
 use crate::learner::{LearnerConfig, TrainReport, train_from_store};
 use crate::model_io;
 use crate::replay::{ReplayHeader, ReplayStore, ReplayWriter, audit_dir, enforce_capacity};
@@ -41,7 +44,14 @@ pub struct CycleReport {
     pub requested_examples: f64,
     pub requested_updates: usize,
     pub scheduled_updates: usize,
+    /// Updates the learner actually completed.
+    pub completed_updates: usize,
+    pub max_updates: usize,
+    /// The `max_updates` safety cap reduced the requested work this cycle.
+    pub max_updates_cap_bound: bool,
     pub selfplay: SelfPlayMetrics,
+    /// Exact root-prior diagnostics against the generating snapshot.
+    pub root_search: RootSearchSummary,
     pub audit_ok: bool,
     pub train: Option<TrainReport>,
     pub arena: Option<ArenaResult>,
@@ -67,10 +77,51 @@ pub struct CycleReport {
     pub optimizer_step_start: u64,
     /// Accepted-trajectory optimizer step after this cycle's decision.
     pub accepted_optimizer_step_after: u64,
+    /// Inference owners created / simultaneously resident during EVALUATE.
+    pub eval_owners_spawned: u32,
+    pub eval_max_resident_owners: u32,
+    pub eval_inference: Vec<(String, MetricsSnapshot)>,
+    pub gpu: CycleGpu,
     pub collect_secs: f64,
     pub train_secs: f64,
     pub eval_secs: f64,
     pub wall_secs: f64,
+}
+
+/// Per-phase GPU telemetry for one cycle (empty on CPU runs).
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct CycleGpu {
+    pub vram_at_cycle_start_mb: Option<u64>,
+    pub collect: GpuSamples,
+    pub train: GpuSamples,
+    pub eval: GpuSamples,
+}
+
+/// The three logical models compared in one cycle's evaluation.
+#[derive(Debug, Clone, Copy)]
+pub struct EvalModels<'a> {
+    pub parent_dir: &'a Path,
+    pub parent_model_id: &'a str,
+    pub candidate_dir: &'a Path,
+    pub candidate_model_id: &'a str,
+    pub reference_dir: &'a Path,
+    pub reference_model_id: &'a str,
+}
+
+/// Every evaluation of one candidate, plus owner-lifecycle accounting.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct EvalOutcome {
+    pub arena: ArenaResult,
+    pub reference_arena: ArenaResult,
+    /// True when the parent was the frozen reference, so `reference_arena` is
+    /// the parent arena (same models, same deterministic games), not rerun.
+    pub reference_arena_is_parent_arena: bool,
+    pub raw: RawMatchResult,
+    pub raw_parent: RawParentResult,
+    pub owners_spawned: u32,
+    pub max_resident_owners: u32,
+    /// Inference metrics per spawned owner (role, snapshot).
+    pub inference: Vec<(String, MetricsSnapshot)>,
 }
 
 /// Experiment identity written to `identity.json` before cycle 0.
@@ -106,6 +157,10 @@ pub struct PilotReport {
     pub cycles: Vec<CycleReport>,
     pub total_positions: u64,
     pub elapsed_secs: f64,
+    /// Soft wall budget and how far the run went past it (evaluation does not
+    /// yet check the deadline, so an overrun is recorded, never hidden).
+    pub run_budget_secs: f64,
+    pub budget_overrun_secs: f64,
 }
 
 fn backend_label(cfg: &RunConfig) -> String {
@@ -160,7 +215,7 @@ fn promotion_holds(cfg: &RunConfig, healthy: bool, arena: &ArenaResult) -> Vec<S
 }
 
 /// Spawn a batched inference owner for a checkpoint using the run schedule.
-fn spawn_owner<B: Backend>(
+pub fn spawn_owner<B: Backend>(
     dir: &Path,
     cfg: &RunConfig,
     device: &B::Device,
@@ -174,6 +229,108 @@ fn spawn_owner<B: Backend>(
             ..InferenceConfig::default()
         },
     ))
+}
+
+/// Evaluate a candidate against its parent, the frozen reference, and random
+/// play: searched candidate-vs-parent, searched candidate-vs-reference (reused
+/// when parent == reference), raw candidate-vs-random and raw
+/// candidate-vs-parent, each seeded `cfg.seed + cycle`. Each match is
+/// independent and deterministic given its inputs, so the execution schedule
+/// (at most two resident models, D46) does not change any result. With a `deadline` (D38) no evaluation game
+/// starts after it, and an incomplete evaluation is an
+/// `EvalError::DeadlineExceeded` error, never a partial result.
+#[allow(clippy::too_many_arguments)]
+pub fn evaluate_candidate<B: Backend>(
+    cfg: &RunConfig,
+    models: &EvalModels<'_>,
+    cycle: u32,
+    openings: &[String],
+    eval_concurrency: usize,
+    device: &B::Device,
+    deadline: Option<Instant>,
+) -> anyhow::Result<EvalOutcome> {
+    // At most two models are resident (D46). Phase A: parent + candidate play
+    // every parent comparison. Phase B (only when the reference differs from
+    // the parent): the parent is shut down and the reference loaded for the
+    // longitudinal arena. Each match keeps its own seed and inputs, so the
+    // results do not depend on this schedule.
+    let mut arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
+    arena_cfg.deadline = deadline;
+    let seed = cfg.seed.wrapping_add(cycle as u64);
+    let raw_games = cfg.arena_games.max(4);
+    let cand_owner = spawn_owner::<B>(models.candidate_dir, cfg, device)?;
+    let cand_ev = cand_owner.evaluator();
+    let mut inference = Vec::new();
+
+    // Phase A: parent comparisons.
+    let parent_owner = spawn_owner::<B>(models.parent_dir, cfg, device)?;
+    let parent_ev = parent_owner.evaluator();
+    let arena = run_arena(
+        &parent_ev,
+        &cand_ev,
+        models.parent_model_id,
+        models.candidate_model_id,
+        &arena_cfg,
+    )?;
+    let raw = raw_policy_vs_random(
+        &cand_ev,
+        raw_games,
+        cfg.temperature,
+        cfg.ply_cap,
+        seed,
+        openings,
+        eval_concurrency,
+        deadline,
+    )?;
+    let raw_parent = raw_policy_vs_parent(
+        &cand_ev,
+        &parent_ev,
+        raw_games,
+        cfg.ply_cap,
+        seed,
+        openings,
+        eval_concurrency,
+        deadline,
+    )?;
+    drop(parent_ev);
+    inference.push(("parent".to_string(), parent_owner.metrics().snapshot()));
+    parent_owner.shutdown();
+
+    // Phase B: until the first promotion the parent *is* the frozen
+    // reference, so the longitudinal arena would replay the identical
+    // deterministic comparison. Reuse it, say so, and load no third model.
+    let reference_arena_is_parent_arena = models.parent_model_id == models.reference_model_id;
+    let (reference_arena, owners_spawned) = if reference_arena_is_parent_arena {
+        (arena.clone(), 2)
+    } else {
+        let ref_owner = spawn_owner::<B>(models.reference_dir, cfg, device)?;
+        let ref_ev = ref_owner.evaluator();
+        let reference_arena = run_arena(
+            &ref_ev,
+            &cand_ev,
+            models.reference_model_id,
+            models.candidate_model_id,
+            &arena_cfg,
+        )?;
+        drop(ref_ev);
+        inference.push(("reference".to_string(), ref_owner.metrics().snapshot()));
+        ref_owner.shutdown();
+        (reference_arena, 3)
+    };
+    drop(cand_ev);
+    inference.push(("candidate".to_string(), cand_owner.metrics().snapshot()));
+    cand_owner.shutdown();
+    let max_resident_owners = 2;
+    Ok(EvalOutcome {
+        inference,
+        arena,
+        reference_arena,
+        reference_arena_is_parent_arena,
+        raw,
+        raw_parent,
+        owners_spawned,
+        max_resident_owners,
+    })
 }
 
 /// Install the frozen reference (if configured) or a fresh seeded one, and
@@ -255,6 +412,7 @@ pub fn run_pilot<B: AutodiffBackend>(
     let inner_device: Device<B::InnerBackend> = Default::default();
     B::seed(&b_device, cfg.seed);
     let (games_per_cycle, eval_concurrency) = cfg.collection_shape()?;
+    let gpu_on = cfg.device == "cuda";
 
     let reference_model_id = install_reference::<B>(cfg, run_dir, &b_device)?;
     let scientific_config_hash = cfg.scientific_config_hash()?;
@@ -300,6 +458,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             cfg.seed,
             &openings,
             eval_concurrency,
+            Some(deadline),
         )?;
         let policy = policy_diagnostics(&ev, &openings)?;
         drop(ev);
@@ -318,6 +477,13 @@ pub fn run_pilot<B: AutodiffBackend>(
     let mut snapshot_dir: PathBuf = run_dir.reference_ckpt();
     let mut snapshot_model_id = reference_model_id.clone();
     let mut cumulative_updates = 0u64;
+    // D48: under `Continuous` the learner trains from its own last state
+    // (checkpoints/trainer), promoted or not; otherwise from the snapshot.
+    let continuous = cfg.trainer_policy == TrainerPolicy::Continuous;
+    let mut trainer_dir: PathBuf = run_dir.reference_ckpt();
+    let mut trainer_updates = 0u64;
+    // D49: the previous cycle's draw share crossed the two-cycle threshold.
+    let mut draw_share_was_high = false;
     let mut total_positions = 0u64;
     let mut total_games_collected = 0u64;
     let mut cycles = Vec::new();
@@ -339,19 +505,39 @@ pub fn run_pilot<B: AutodiffBackend>(
 
         let cycle_start = Instant::now();
         let parent_model_id = snapshot_model_id.clone();
-        let optimizer_step_start = cumulative_updates;
+        // The optimizer step this cycle's training starts from.
+        let optimizer_step_start = if continuous {
+            trainer_updates
+        } else {
+            cumulative_updates
+        };
+        let train_from: PathBuf = if continuous {
+            trainer_dir.clone()
+        } else {
+            snapshot_dir.clone()
+        };
 
         // COLLECT
+        let mut gpu = CycleGpu {
+            vram_at_cycle_start_mb: gpu_on
+                .then(gpu_telemetry::sample_gpu)
+                .flatten()
+                .map(|s| s.0),
+            ..CycleGpu::default()
+        };
         let first_game_id = total_games_collected;
         let owner = spawn_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
         let evaluator = owner.evaluator();
-        let collect_start = Instant::now();
-        let collected = collect_parallel(cfg, &evaluator, cancel, deadline, first_game_id);
-        let collect_secs = collect_start.elapsed().as_secs_f64();
+        let ((collected, collect_secs), collect_gpu) = gpu_telemetry::monitor(gpu_on, || {
+            let collect_start = Instant::now();
+            let collected = collect_parallel_diag(cfg, &evaluator, cancel, deadline, first_game_id);
+            (collected, collect_start.elapsed().as_secs_f64())
+        });
+        gpu.collect = collect_gpu;
         let inference_metrics = owner.metrics().snapshot();
         drop(evaluator);
         owner.shutdown();
-        let records = collected?;
+        let (records, root_search) = collected?;
         let selfplay = selfplay_metrics(cfg, &records, inference_metrics);
         let games = records.len() as u64;
         total_games_collected += games_per_cycle as u64;
@@ -373,6 +559,15 @@ pub fn run_pilot<B: AutodiffBackend>(
             writer.push(r)?;
         }
         writer.finish()?;
+        crate::replay_identity::append(
+            &run_dir.replay(),
+            crate::replay_identity::ReplayIdentityEntry::from_config(
+                cfg,
+                &snapshot_model_id,
+                first_game_id,
+                games,
+            )?,
+        )?;
         enforce_capacity(&run_dir.replay(), cfg.replay_max_positions)?;
         total_positions += positions;
 
@@ -389,18 +584,24 @@ pub fn run_pilot<B: AutodiffBackend>(
         let replay_positions = store.total_positions();
         let replay_total_games = store.total_games() as u64;
         let (train_model, mut optim, parent_meta) = load_training(
-            &snapshot_dir,
+            &train_from,
             model_io::build::<B>(&cfg.model, &b_device),
             adamw::<B, _>(),
             &b_device,
         )?;
         anyhow::ensure!(
-            parent_meta.update_counter == cumulative_updates
-                && parent_meta.lr_schedule_step == cumulative_updates,
-            "accepted optimizer trajectory mismatch at cycle {cycle}"
+            parent_meta.update_counter == optimizer_step_start
+                && parent_meta.lr_schedule_step == optimizer_step_start,
+            "optimizer trajectory mismatch at cycle {cycle}: checkpoint at step {} / schedule {}, expected {optimizer_step_start}",
+            parent_meta.update_counter,
+            parent_meta.lr_schedule_step
         );
-        let (scheduled_updates, requested_examples) = cfg.reuse_updates(new_trainable_positions)?;
-        let requested_updates = (requested_examples / cfg.effective_batch() as f64).ceil() as usize;
+        let plan = cfg.update_plan(new_trainable_positions)?;
+        let (scheduled_updates, requested_examples, requested_updates) = (
+            plan.scheduled_updates,
+            plan.requested_examples,
+            plan.requested_updates,
+        );
         // One schedule for the whole trajectory; the same function feeds the
         // scientific hash, so the hash names the schedule actually trained.
         let (warmup, planned) = cfg.lr_schedule();
@@ -411,108 +612,132 @@ pub fn run_pilot<B: AutodiffBackend>(
             lr: cfg.lr,
             warmup_updates: warmup,
             planned_updates: planned,
-            start_update: cumulative_updates,
+            start_update: optimizer_step_start,
             recurrence: cfg.recurrence,
             seed: cfg.seed.wrapping_add(cycle as u64),
             deadline: Some(deadline),
             current_cycle_first_game_id: Some(first_game_id),
             games_per_cycle: games_per_cycle as u64,
         };
-        let (candidate_model_id, train_report) =
-            match train_from_store(&store, train_model, &mut optim, &learner_cfg, &b_device) {
-                Ok((trained, report)) => {
-                    let mut meta = CheckpointMeta::new(
-                        cfg.model.clone(),
-                        cfg.recurrence,
-                        false,
-                        cumulative_updates + report.updates as u64,
-                        cfg.lr,
-                        cfg.seed,
-                        0,
-                        backend_label(cfg),
-                        cfg.precision.clone(),
-                    );
-                    meta.run_id = cfg.run_id.clone();
-                    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
-                    meta.update_counter = cumulative_updates + report.updates as u64;
-                    meta.lr_schedule_step = cumulative_updates + report.updates as u64;
-                    save_training(&run_dir.candidate_ckpt(), &trained, &optim, &meta)?;
-                    (read_model_id(&run_dir.candidate_ckpt()), Some(report))
+        let (trained, train_gpu) = gpu_telemetry::monitor(gpu_on, || {
+            train_from_store(&store, train_model, &mut optim, &learner_cfg, &b_device)
+        });
+        gpu.train = train_gpu;
+        let (candidate_model_id, train_report) = match trained {
+            Ok((trained, report)) => {
+                let mut meta = CheckpointMeta::new(
+                    cfg.model.clone(),
+                    cfg.recurrence,
+                    false,
+                    optimizer_step_start + report.updates as u64,
+                    cfg.lr,
+                    cfg.seed,
+                    0,
+                    backend_label(cfg),
+                    cfg.precision.clone(),
+                );
+                meta.run_id = cfg.run_id.clone();
+                meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+                meta.update_counter = optimizer_step_start + report.updates as u64;
+                meta.lr_schedule_step = optimizer_step_start + report.updates as u64;
+                save_training(&run_dir.candidate_ckpt(), &trained, &optim, &meta)?;
+                if continuous {
+                    let trainer = run_dir.checkpoints().join("trainer");
+                    let _ = std::fs::remove_dir_all(&trainer);
+                    copy_dir(&run_dir.candidate_ckpt(), &trainer)?;
+                    trainer_dir = trainer;
+                    trainer_updates = optimizer_step_start + report.updates as u64;
                 }
-                Err(e) if e.contains("no trainable") => {
-                    copy_dir(&snapshot_dir, &run_dir.candidate_ckpt())?;
-                    (snapshot_model_id.clone(), None)
-                }
-                Err(e) => return Err(anyhow::anyhow!(e)),
-            };
+                (read_model_id(&run_dir.candidate_ckpt()), Some(report))
+            }
+            Err(e) if e.contains("no trainable") => {
+                copy_dir(&train_from, &run_dir.candidate_ckpt())?;
+                (read_model_id(&train_from), None)
+            }
+            Err(e) => return Err(anyhow::anyhow!(e)),
+        };
         let train_secs = train_start.elapsed().as_secs_f64();
 
         // EVALUATE: batched owners, games in parallel, reports in game order.
         let eval_start = Instant::now();
-        let parent_owner = spawn_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
-        let cand_owner =
-            spawn_owner::<B::InnerBackend>(&run_dir.candidate_ckpt(), cfg, &inner_device)?;
-        let ref_owner =
-            spawn_owner::<B::InnerBackend>(&run_dir.reference_ckpt(), cfg, &inner_device)?;
-        let (parent_ev, cand_ev, ref_ev) = (
-            parent_owner.evaluator(),
-            cand_owner.evaluator(),
-            ref_owner.evaluator(),
-        );
-        let arena_cfg = ArenaConfig {
-            games: cfg.arena_games,
-            simulations: cfg.simulations_per_move,
-            c_puct: cfg.c_puct,
-            recurrence: cfg.recurrence,
-            ply_cap: cfg.ply_cap,
-            seed: cfg.seed.wrapping_add(cycle as u64),
-            openings: openings.clone(),
-            concurrency: eval_concurrency,
+        let candidate_dir = run_dir.candidate_ckpt();
+        let reference_dir = run_dir.reference_ckpt();
+        let models = EvalModels {
+            parent_dir: &snapshot_dir,
+            parent_model_id: &parent_model_id,
+            candidate_dir: &candidate_dir,
+            candidate_model_id: &candidate_model_id,
+            reference_dir: &reference_dir,
+            reference_model_id: &reference_model_id,
         };
-        let arena = run_arena(
-            &parent_ev,
-            &cand_ev,
-            &parent_model_id,
-            &candidate_model_id,
-            &arena_cfg,
-        )?;
-        // Until the first promotion the parent *is* the frozen reference, so
-        // the longitudinal arena would replay the identical deterministic
-        // comparison. Reuse it and say so.
-        let reference_arena_is_parent_arena = parent_model_id == reference_model_id;
-        let reference_arena = if reference_arena_is_parent_arena {
-            arena.clone()
-        } else {
-            run_arena(
-                &ref_ev,
-                &cand_ev,
-                &reference_model_id,
-                &candidate_model_id,
-                &arena_cfg,
-            )?
+        let (outcome, eval_gpu) = gpu_telemetry::monitor(gpu_on, || {
+            evaluate_candidate::<B::InnerBackend>(
+                cfg,
+                &models,
+                cycle,
+                &openings,
+                eval_concurrency,
+                &inner_device,
+                Some(deadline),
+            )
+        });
+        gpu.eval = eval_gpu;
+        // D38: an evaluation cut off by the run deadline decides nothing. The
+        // candidate is held, the partial cycle is recorded, and the run stops.
+        let outcome = match outcome {
+            Err(e)
+                if e.downcast_ref::<recur64_search::EvalError>()
+                    .is_some_and(|x| {
+                        matches!(x, recur64_search::EvalError::DeadlineExceeded(_))
+                    }) =>
+            {
+                status = "budget_exhausted_during_eval".into();
+                let partial = serde_json::json!({
+                    "cycle": cycle,
+                    "evaluation": "incomplete",
+                    "reason": e.to_string(),
+                    "decision": "hold",
+                    "hold_reasons": ["evaluation_deadline"],
+                    "games": games,
+                    "positions": positions,
+                    "new_trainable_positions": new_trainable_positions,
+                    "first_game_id": first_game_id,
+                    "plan": plan,
+                    "selfplay": selfplay,
+                    "root_search": root_search,
+                    "train": train_report,
+                    "parent_model_id": parent_model_id,
+                    "candidate_model_id": candidate_model_id,
+                    "optimizer_step_start": optimizer_step_start,
+                    "accepted_optimizer_step_after": cumulative_updates,
+                    "gpu": gpu,
+                    "collect_secs": collect_secs,
+                    "train_secs": train_secs,
+                    "eval_secs": eval_start.elapsed().as_secs_f64(),
+                    "wall_secs": cycle_start.elapsed().as_secs_f64(),
+                });
+                std::fs::create_dir_all(run_dir.report())?;
+                std::fs::write(
+                    run_dir.report().join(format!("cycle-{cycle:03}.json")),
+                    serde_json::to_vec_pretty(&partial)?,
+                )?;
+                println!(
+                    "cycle {cycle}: evaluation stopped by the run deadline ({e}); candidate held"
+                );
+                break;
+            }
+            other => other,
         };
-        let raw = raw_policy_vs_random(
-            &cand_ev,
-            cfg.arena_games.max(4),
-            cfg.temperature,
-            cfg.ply_cap,
-            cfg.seed.wrapping_add(cycle as u64),
-            &openings,
-            eval_concurrency,
-        )?;
-        let raw_parent = raw_policy_vs_parent(
-            &cand_ev,
-            &parent_ev,
-            cfg.arena_games.max(4),
-            cfg.ply_cap,
-            cfg.seed.wrapping_add(cycle as u64),
-            &openings,
-            eval_concurrency,
-        )?;
-        drop((parent_ev, cand_ev, ref_ev));
-        parent_owner.shutdown();
-        cand_owner.shutdown();
-        ref_owner.shutdown();
+        let EvalOutcome {
+            arena,
+            reference_arena,
+            reference_arena_is_parent_arena,
+            raw,
+            raw_parent,
+            owners_spawned: eval_owners_spawned,
+            max_resident_owners: eval_max_resident_owners,
+            inference: eval_inference,
+        } = outcome?;
         let eval_secs = eval_start.elapsed().as_secs_f64();
 
         // SNAPSHOT DECISION (conservative).
@@ -584,7 +809,11 @@ pub fn run_pilot<B: AutodiffBackend>(
             requested_examples,
             requested_updates,
             scheduled_updates,
+            completed_updates: train_report.as_ref().map(|r| r.updates).unwrap_or(0),
+            max_updates: plan.max_updates,
+            max_updates_cap_bound: plan.cap_bound,
             selfplay,
+            root_search,
             audit_ok: audit.ok(),
             train: train_report,
             arena: Some(arena),
@@ -604,6 +833,10 @@ pub fn run_pilot<B: AutodiffBackend>(
             hold_reasons,
             optimizer_step_start,
             accepted_optimizer_step_after: cumulative_updates,
+            eval_owners_spawned,
+            eval_max_resident_owners,
+            eval_inference,
+            gpu,
             collect_secs,
             train_secs,
             eval_secs,
@@ -675,8 +908,33 @@ pub fn run_pilot<B: AutodiffBackend>(
             run_dir.report().join(format!("cycle-{cycle:03}.json")),
             serde_json::to_vec_pretty(&cycle_report)?,
         )?;
+        // D49 health stops, checked at the cycle boundary after the report is
+        // persisted, so the stopping cycle is fully recorded.
+        let sp = &cycle_report.selfplay;
+        let games_f = sp.games.max(1) as f64;
+        let threefold_fifty =
+            (sp.terminations
+                .get("threefold_repetition")
+                .copied()
+                .unwrap_or(0)
+                + sp.terminations.get("fifty_move_rule").copied().unwrap_or(0)) as f64
+                / games_f;
+        let health = cfg.health_stops.check(
+            sp.draw_share,
+            threefold_fifty,
+            sp.truncated as f64 / games_f,
+            draw_share_was_high,
+        );
+        draw_share_was_high = cfg.health_stops.draw_share_high(sp.draw_share);
         cycles.push(cycle_report);
+        if let Some(reason) = health {
+            println!("cycle {cycle}: health stop: {reason}");
+            status = format!("stopped_health: {reason}");
+            break;
+        }
     }
+    let elapsed_secs = started.elapsed().as_secs_f64();
+    let run_budget_secs = (cfg.run_budget_minutes.max(1) * 60) as f64;
 
     let report = PilotReport {
         run_id: cfg.run_id.clone(),
@@ -685,7 +943,9 @@ pub fn run_pilot<B: AutodiffBackend>(
         baseline: Some(baseline),
         cycles,
         total_positions,
-        elapsed_secs: started.elapsed().as_secs_f64(),
+        elapsed_secs,
+        run_budget_secs,
+        budget_overrun_secs: (elapsed_secs - run_budget_secs).max(0.0),
     };
     std::fs::create_dir_all(run_dir.report())?;
     std::fs::write(
