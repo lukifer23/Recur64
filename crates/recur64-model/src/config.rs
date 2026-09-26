@@ -57,7 +57,12 @@ pub enum DeviceKind {
 }
 
 /// Transformer probe geometry.
+///
+/// Unknown keys are refused. In TOML, a run-level key written below the
+/// `[model]` header belongs to this table; before H3.5B serde ignored it, so
+/// `search_leaves_in_flight = 2` placed there silently ran K = 1 (H3.5 arena).
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ModelConfig {
     pub width: usize,
     pub heads: usize,

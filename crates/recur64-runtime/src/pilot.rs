@@ -75,6 +75,8 @@ pub struct CycleReport {
     /// Why a conservative decision held (empty on promote).
     pub hold_reasons: Vec<String>,
     pub optimizer_step_start: u64,
+    /// Where this cycle's training sits on the cosine LR schedule (H3.5B).
+    pub lr_schedule: LrScheduleStatus,
     /// Accepted-trajectory optimizer step after this cycle's decision.
     pub accepted_optimizer_step_after: u64,
     /// Inference owners created / simultaneously resident during EVALUATE.
@@ -86,6 +88,40 @@ pub struct CycleReport {
     pub train_secs: f64,
     pub eval_secs: f64,
     pub wall_secs: f64,
+}
+
+/// A cycle's trainer steps against the planned LR schedule (H3.5B). Any
+/// update at or past `planned_updates` trains at LR = 0.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub struct LrScheduleStatus {
+    pub warmup_updates: u64,
+    pub planned_updates: u64,
+    pub step_start: u64,
+    pub step_end: u64,
+    /// `step_end / planned_updates`.
+    pub fraction_end: f64,
+    /// LR of the first and last update this cycle (`None` without updates).
+    pub lr_first: Option<f64>,
+    pub lr_last: Option<f64>,
+    /// Updates this cycle whose global step was `>= planned_updates`.
+    pub updates_at_zero_lr: u64,
+}
+
+impl LrScheduleStatus {
+    pub fn new(base_lr: f64, warmup: u64, planned: u64, step_start: u64, updates: u64) -> Self {
+        let step_end = step_start + updates;
+        let lr = |s| crate::learner::lr_at(s, base_lr, warmup, planned);
+        Self {
+            warmup_updates: warmup,
+            planned_updates: planned,
+            step_start,
+            step_end,
+            fraction_end: step_end as f64 / planned.max(1) as f64,
+            lr_first: (updates > 0).then(|| lr(step_start)),
+            lr_last: (updates > 0).then(|| lr(step_end - 1)),
+            updates_at_zero_lr: step_end.saturating_sub(step_start.max(planned)),
+        }
+    }
 }
 
 /// Per-phase GPU telemetry for one cycle (empty on CPU runs).
@@ -800,6 +836,11 @@ pub fn run_pilot<B: AutodiffBackend>(
             None
         };
 
+        let lr_schedule = {
+            let (warmup, planned) = cfg.lr_schedule();
+            let updates = train_report.as_ref().map(|r| r.updates as u64).unwrap_or(0);
+            LrScheduleStatus::new(cfg.lr, warmup, planned, optimizer_step_start, updates)
+        };
         let cycle_report = CycleReport {
             cycle,
             games,
@@ -832,6 +873,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             decision: decision.clone(),
             hold_reasons,
             optimizer_step_start,
+            lr_schedule,
             accepted_optimizer_step_after: cumulative_updates,
             eval_owners_spawned,
             eval_max_resident_owners,
@@ -902,6 +944,16 @@ pub fn run_pilot<B: AutodiffBackend>(
             train_secs,
             eval_secs
         );
+        println!(
+            "cycle {cycle}: trainer step {} -> {} of planned {} ({:.2}); lr {:?} -> {:?}; zero-lr updates {}",
+            lr_schedule.step_start,
+            lr_schedule.step_end,
+            lr_schedule.planned_updates,
+            lr_schedule.fraction_end,
+            lr_schedule.lr_first,
+            lr_schedule.lr_last,
+            lr_schedule.updates_at_zero_lr
+        );
         // Persist a partial report after every cycle so a crash keeps evidence.
         std::fs::create_dir_all(run_dir.report())?;
         std::fs::write(
@@ -919,12 +971,19 @@ pub fn run_pilot<B: AutodiffBackend>(
                 .unwrap_or(0)
                 + sp.terminations.get("fifty_move_rule").copied().unwrap_or(0)) as f64
                 / games_f;
-        let health = cfg.health_stops.check(
-            sp.draw_share,
-            threefold_fifty,
-            sp.truncated as f64 / games_f,
-            draw_share_was_high,
-        );
+        let ls = cycle_report.lr_schedule;
+        let health = cfg
+            .health_stops
+            .check(
+                sp.draw_share,
+                threefold_fifty,
+                sp.truncated as f64 / games_f,
+                draw_share_was_high,
+            )
+            .or_else(|| {
+                cfg.health_stops
+                    .check_schedule(ls.step_end, ls.planned_updates)
+            });
         draw_share_was_high = cfg.health_stops.draw_share_high(sp.draw_share);
         cycles.push(cycle_report);
         if let Some(reason) = health {
@@ -970,6 +1029,25 @@ mod promotion_tests {
             "run_id = 't'\n[model]\nwidth = 32\nheads = 4\nffn = 64\ninput_blocks = 0\ncore_blocks = 1\noutput_blocks = 0\n",
         )
         .unwrap()
+    }
+
+    /// H3.5B: updates at or past the planned endpoint are counted as
+    /// zero-LR updates, never hidden inside a normal-looking cycle.
+    #[test]
+    fn lr_schedule_status_counts_zero_lr_updates() {
+        let fresh = LrScheduleStatus::new(3e-4, 37, 370, 0, 82);
+        assert_eq!((fresh.step_end, fresh.updates_at_zero_lr), (82, 0));
+        assert!(fresh.lr_last.unwrap() > 0.0);
+        let tail = LrScheduleStatus::new(3e-4, 37, 370, 300, 100);
+        assert_eq!((tail.step_end, tail.updates_at_zero_lr), (400, 30));
+        assert_eq!(tail.lr_last, Some(0.0));
+        let exact = LrScheduleStatus::new(3e-4, 37, 370, 226, 144);
+        assert_eq!((exact.step_end, exact.updates_at_zero_lr), (370, 0));
+        assert!(exact.lr_last.unwrap() > 0.0);
+        let past = LrScheduleStatus::new(3e-4, 37, 370, 380, 10);
+        assert_eq!(past.updates_at_zero_lr, 10);
+        let none = LrScheduleStatus::new(3e-4, 37, 370, 50, 0);
+        assert_eq!((none.lr_first, none.updates_at_zero_lr), (None, 0));
     }
 
     fn arena(wins: u32, losses: u32, draws: u32, truncated: u32) -> ArenaResult {

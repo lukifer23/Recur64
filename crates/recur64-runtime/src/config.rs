@@ -119,7 +119,11 @@ pub enum TrainerPolicy {
 /// Self-play health thresholds that stop a pilot at a cycle boundary (D49).
 /// `None` disables a check. These bound execution; they never change what a
 /// cycle does, so they are excluded from the scientific identity.
+///
+/// Unknown keys are refused: a misspelled or misplaced threshold must not
+/// silently disable a stop (H3.5B found a smoke config whose checks were off).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct HealthStops {
     /// Stop when the self-play draw share reaches this in two consecutive
     /// cycles.
@@ -131,9 +135,22 @@ pub struct HealthStops {
     /// Stop when truncated / games reaches this in any cycle.
     #[serde(default)]
     pub truncation: Option<f64>,
+    /// H3.5B: stop at the cycle boundary once the trainer's global step
+    /// reaches `planned_updates` (the cosine LR is 0 from there on), so no
+    /// cycle trains at LR = 0 as if it were normal learning. Omitted from the
+    /// serialized config when unset, so earlier resolved hashes are unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lr_schedule_end: Option<bool>,
 }
 
 impl HealthStops {
+    /// The reason to stop because the LR schedule is exhausted, if enabled.
+    pub fn check_schedule(&self, step_end: u64, planned_updates: u64) -> Option<String> {
+        (self.lr_schedule_end == Some(true) && step_end >= planned_updates).then(|| {
+            format!("lr_schedule_exhausted: trainer step {step_end} >= planned {planned_updates}")
+        })
+    }
+
     /// The reason to stop after a cycle, given this cycle's shares and
     /// whether the previous cycle's draw share already crossed the threshold.
     pub fn check(
@@ -912,6 +929,7 @@ openings = ['{e4}']
             draw_share_two_cycles: Some(0.85),
             threefold_fifty: Some(0.60),
             truncation: Some(0.25),
+            lr_schedule_end: None,
         };
         assert_eq!(
             h.check(0.73, 0.33, 0.01, false),
@@ -952,6 +970,45 @@ openings = ['{e4}']
             base.scientific_config_hash().unwrap(),
             with.scientific_config_hash().unwrap()
         );
+        // H3.5B schedule guard: off unless enabled, stops at the endpoint.
+        assert_eq!(h.check_schedule(10_000, 370), None, "off unless enabled");
+        let g = HealthStops {
+            lr_schedule_end: Some(true),
+            ..h
+        };
+        assert_eq!(g.check_schedule(369, 370), None);
+        assert!(
+            g.check_schedule(370, 370)
+                .unwrap()
+                .contains("lr_schedule_exhausted")
+        );
+        with.health_stops = g;
+        assert_eq!(
+            base.scientific_config_hash().unwrap(),
+            with.scientific_config_hash().unwrap()
+        );
+        // Unset, it stays out of the serialized (resolved) config.
+        assert!(
+            !serde_json::to_string(&base)
+                .unwrap()
+                .contains("lr_schedule_end")
+        );
+        // A run-level key misplaced under [model] is refused (H3.5 ran K = 1).
+        let misplaced = base_toml().replace(
+            "[model]",
+            "[model]
+search_leaves_in_flight = 2",
+        );
+        assert!(RunConfig::from_toml_str(&misplaced).is_err());
+        // A misspelled key is refused rather than silently disabling a stop.
+        let bad = format!(
+            "{}
+[health_stops]
+truncaton = 0.25
+",
+            base_toml()
+        );
+        assert!(RunConfig::from_toml_str(&bad).is_err());
     }
 
     #[test]
@@ -1087,6 +1144,79 @@ openings = ['{e4}']
             smoke.collection_shape().unwrap()
         );
         assert_eq!(qual.reference_model_id, smoke.reference_model_id);
+    }
+
+    /// H3.5B P5: the corrected F15 smoke is pinned field by field, and its
+    /// per-cycle safety cap cannot bind for the expected, stress or
+    /// theoretical-maximum workload (32 games x 400-ply cap).
+    #[test]
+    fn f15_smoke_v2_config_is_the_h3_contract() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../configs/hp/f15-smoke-v2.toml");
+        let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        // Model: F15 512/8/768, 0 + 8 + 0, head v2, 15,154,632 params.
+        let m = &cfg.model;
+        assert_eq!((m.width, m.heads, m.ffn), (512, 8, 768));
+        assert_eq!((m.input_blocks, m.core_blocks, m.output_blocks), (0, 8, 0));
+        assert_eq!(recur64_model::model::HEAD_VERSION, 2);
+        assert_eq!(cfg.recurrence, 1);
+        assert_eq!(
+            (cfg.device.as_str(), cfg.precision.as_str()),
+            ("cuda", "fp32")
+        );
+        assert_eq!(
+            cfg.reference_model_id.as_deref(),
+            Some("d89b408fcc7a3cd9874a0ffbbcafd121c6c78cbb9818d4adaac0fe8d51ea234b")
+        );
+        // Search: 32 sims, D41 exploration, K = 2.
+        assert_eq!(cfg.simulations_per_move, 32);
+        assert_eq!(cfg.temperature, 1.0);
+        assert_eq!(cfg.argmax_after_ply, Some(30));
+        assert_eq!(cfg.root_dirichlet_alpha, 0.3);
+        assert_eq!(cfg.root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.ply_cap, 400);
+        assert_eq!(cfg.search_leaves_in_flight, 2);
+        // Collection and hardware schedule (H3.3).
+        assert_eq!(cfg.collection_shape().unwrap(), (32, 8));
+        assert_eq!(cfg.cpu_workers, 8);
+        assert_eq!(cfg.max_inference_batch, 16);
+        assert_eq!(cfg.batch_timeout_us, 1000);
+        assert_eq!((cfg.train_batch, cfg.accumulation_steps), (32, 4));
+        assert_eq!(cfg.effective_batch(), 128);
+        assert_eq!(cfg.replay_reuse_target, 2.0);
+        // Evaluation: D45 V2, promotion conservative-v2, continuous trainer.
+        assert_eq!(cfg.arena_games, 32);
+        assert_eq!(cfg.arena_sample_plies, Some(30));
+        assert_eq!(cfg.arena_root_dirichlet_epsilon, 0.25);
+        assert_eq!(cfg.arena_rng_policy, ArenaRngPolicy::PairedCommonV1);
+        assert_eq!(
+            cfg.arena_config(0, Vec::new(), 8).rng_policy,
+            ArenaRngPolicy::PairedCommonV1
+        );
+        assert_eq!(cfg.trainer_policy, TrainerPolicy::Continuous);
+        assert_eq!(cfg.snapshot_policy, SnapshotPolicy::Conservative);
+        assert_eq!(cfg.promotion_score_floor, 0.5);
+        assert_eq!(cfg.promotion_min_decisive_games, 4);
+        // D49 + schedule guard, 3 cycles, amended LR schedule.
+        let h = cfg.health_stops;
+        assert_eq!(h.draw_share_two_cycles, Some(0.85));
+        assert_eq!(h.threefold_fifty, Some(0.60));
+        assert_eq!(h.truncation, Some(0.25));
+        assert_eq!(h.lr_schedule_end, Some(true));
+        assert_eq!(cfg.cycles, 3);
+        assert_eq!(cfg.lr_schedule(), (37, 370));
+        assert_eq!(cfg.max_updates, 256);
+        // Workloads: expected T0, 1.75x stress, theoretical maximum.
+        for (positions, updates) in [(5_247, 82), (9_183, 144), (32 * 400, 200)] {
+            let plan = cfg.update_plan(positions).unwrap();
+            assert_eq!(plan.requested_updates, updates, "{positions} positions");
+            assert!(!plan.cap_bound, "cap binds at {positions} positions");
+        }
+        // Planned = expected cycle 0 + two stress cycles; LR > 0 until then.
+        assert_eq!(82 + 144 + 144, cfg.lr_schedule().1);
+        let (w, p) = cfg.lr_schedule();
+        assert!(crate::learner::lr_at(p - 1, cfg.lr, w, p) > 0.0);
+        assert_eq!(crate::learner::lr_at(p, cfg.lr, w, p), 0.0);
     }
 
     /// D45 must not change any identity recorded before it: the original
