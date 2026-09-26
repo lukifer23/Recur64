@@ -186,15 +186,28 @@ repetition attractor at the source.
 
 ## H3.5 — arena qualification (MEASURED)
 
-Reference-vs-reference, frozen v2, 32 sims, K = 2, c8, paired colors, 32 games.
+Reference-vs-reference, frozen v2, 32 sims, c8, paired colors, 32 games.
+
+> **H3.5B correction:**
+> - **K:** these arena cells ran at **K = 1**, not K = 2. In `runs/hp-h3-arena.toml`,
+>   `search_leaves_in_flight = 2` sat below the `[model]` header, where TOML
+>   scopes it to the model table and serde ignored it. The eval-arena JSON did
+>   not record K (it now records `leaves_in_flight`).
+> - **"Paired colors":** this meant a shared opening only. Each game had its own
+>   RNG stream (`seed = base + i`), so under V2's sampling and noise the two
+>   games of a pair were not paired in randomness. See H3.5B.
 
 | variant | decisive | threefold | fifty | truncation | terminations |
 |---|---|---|---|---|---|
 | V0 (argmax, no noise) | 2/32 = **0.063** | 30/32 = **0.938** | 0 | 0 | 2 checkmate, 30 threefold |
 | **V2** (sample 30 plies + root noise 0.25) | 22/32 = **0.688** | 1/32 = **0.031** | 2/32 = 0.063 | 3/32 = 0.094 | 22 checkmate, 2 fifty, 3 insuff, 1 stalemate, 1 threefold, 3 truncated |
 
-0 inference errors; peak VRAM 426 MB; 585 s; both sides the frozen reference
-(so 0.362 is opening/color asymmetry, **not** a strength result).
+0 inference errors; peak VRAM 426 MB; 585 s; both sides the frozen reference.
+
+Identical evaluators scoring 0.362 is **not** a strength result. The original
+"opening/color asymmetry" explanation is insufficient, since the evaluators
+are identical. Corrected (H3.5B): it is a high-variance stochastic comparison
+under **unpaired RNG streams**. The 95% CI [0.209, 0.515] includes 0.5.
 
 **Adopted V2** — qualifies on every pre-registered criterion (decisive
 0.688 ≥ 0.50; threefold 0.031 ≤ 0.30; truncation 0.094 ≤ 0.10) while V0 is
@@ -208,7 +221,16 @@ not relabelled.
 
 **NOT RUN at the time of writing**; frozen as `configs/hp/f15-smoke-v2.toml`.
 K = 2, concurrency 8, 32 sims, 32 games/cycle, 3 cycles, arena V2, continuous
-trainer, reuse target 2.0, `planned_updates = 246`, safety cap 768.
+trainer, reuse target 2.0, `planned_updates = 246`, and `max_updates = 768`.
+`max_updates` is a **per-cycle** safety cap. The old comment described it as a
+multiple of the 3-cycle total, which was wrong. That config also lacked
+`[health_stops]`. All of this is amended in H3.5B.
+
+**Disclosure (H3.5B):** an undocumented partial attempt exists at
+`runs/hp-h3-smoke-v2/`.
+- It was built at `9889c17` (H3.1), before the H3.2 lifecycle requalification.
+- It completed cycle 0 only, and its status is still `running`.
+- It is not H3.6 evidence and is left untouched.
 
 ## Transfer table
 
@@ -219,11 +241,11 @@ trainer, reuse target 2.0, `planned_updates = 246`, safety cap 768.
 | D42 search diagnostics | truthful root metrics | root_search present in every cell | ADOPTED |
 | D43 inference uses inner backend | generic | inherited via merge | INHERITED |
 | D44 owner memory cleanup | **fixes late-run failure** | 496 MB plateau, 0 err | ADOPTED (GO) |
-| D45 searched arena | V0 repetition-heavy | V0 2/32 decisive | V2 pending |
+| D45 searched arena | V0 repetition-heavy | V0 2/32 decisive, V2 22/32 (both K = 1) | ADOPTED V2 (H3.5); RNG pairing in H3.5B |
 | D46 ≤2 resident models | 4 GB card | max_resident = 2 | VALIDATED |
 | D47 multi-leaf PUCT | throughput on HP | K=2 +13.2%, health same | ADOPTED K=2 |
 | D48 continuous trainer | learner continuity | frozen in smoke | ADOPTED |
-| D49 health stops | execution bounds | frozen in smoke | ADOPTED |
+| D49 health stops | execution bounds | missing from the smoke config until H3.5B (silently off) | ADOPTED; restored in H3.5B |
 | D37/D38/telemetry/tooling | generic | inherited via merge | INHERITED |
 
 ## R15 entry decision
