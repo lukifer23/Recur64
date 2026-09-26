@@ -76,6 +76,16 @@ remains **not run**.
 
 Pre-flight: `recur64 config-info --config configs/hp/f15-smoke-v2.toml`.
 
+**H3.6 corrected F15-v2 smoke: CONDITIONAL (2026-09-26)**
+- **GO:** learning mechanism, continuous trainer, lifecycle, reuse and
+  lineage. Self-play draws fell 0.22 → 0.09.
+- **Strength:** the cycle-2 candidate beats the frozen reference 0.733
+  [0.621, 0.846].
+- **CONDITIONAL:** arena truncation was root-caused to won-but-unconverted
+  positions, which the score silently drops.
+- **R15 entry:** CONDITIONAL GO for planning only. Truncation-aware scoring
+  must be pre-registered first, and R15 has not been trained.
+
 - Historical head-v1 HP evidence (frozen): [`docs/HP_H1_RESULTS.md`](docs/HP_H1_RESULTS.md).
 - H3 pre-registration: [`docs/HP_H3_PREREG.md`](docs/HP_H3_PREREG.md).
 - H3 measured results: [`docs/HP_H3_RESULTS.md`](docs/HP_H3_RESULTS.md).

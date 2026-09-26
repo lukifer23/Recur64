@@ -273,14 +273,119 @@ The artifact `model_id` differs per process because of generated ParamIds.
 The weights reproduce exactly per backend, and `d89b408f…` equals fresh CUDA
 freezes semantically (`semantic_weights_digest f81938a2…`).
 
-## H3.6 — corrected F15-v2 smoke
+## H3.6 — corrected F15-v2 smoke (MEASURED — CONDITIONAL)
 
-**NOT RUN at the time of writing**; frozen as `configs/hp/f15-smoke-v2.toml`.
-K = 2, concurrency 8, 32 sims, 32 games/cycle, 3 cycles, arena V2, continuous
-trainer, reuse target 2.0, `planned_updates = 246`, and `max_updates = 768`.
-`max_updates` is a **per-cycle** safety cap. The old comment described it as a
-multiple of the 3-cycle total, which was wrong. That config also lacked
-`[health_stops]`. All of this is amended in H3.5B.
+**Run:**
+- `runs/hp-h3-f15-smoke-v2-h36`, config `configs/hp/f15-smoke-v2.toml`.
+- Scientific identity `866c6afd…`, binary `bd42495` (clean).
+- Reference `d89b408f…` (semantic `f81938a2…`), RTX 2050 CUDA FP32.
+- 3 cycles in 3,904 s of the 10,800 s budget. Status `completed`; no health
+  stop.
+
+**Evidence:**
+- `docs/evidence/hp-h3/smoke-h36/`: the cycle reports, `pilot.json`, lineage,
+  the pre-flight record and `metrics-extract.json`.
+- Root cause: `docs/evidence/hp-h3/smoke-h36/rootcause/`.
+
+| | cycle 0 | cycle 1 | cycle 2 |
+|---|---|---|---|
+| **actor → candidate** | `d89b408f` → `990e5e54` | `990e5e54` → `dda1283f` | `990e5e54` → `d0ee3ced` |
+| **SYSTEM** audit / inference errors / failed games | ok / 0 / 0 | ok / 0 / 0 | ok / 0 / 0 |
+| VRAM start / peak (MB) | 298 / 1,452 | 1,452 / 1,516 | 1,516 / 1,516 |
+| max temp (°C) | 72 | 72 | 70 |
+| resident owners (max) | 2 | 2 | 2 |
+| collect / train / eval / wall (s) | 385 / 75 / 499 / 960 | 385 / 68 / 1,063 / 1,518 | 293 / 55 / 1,058 / 1,407 |
+| **DATA** W / D / B / T | 9 / 7 / 14 / 2 | 14 / 5 / 11 / 2 | 16 / 3 / 12 / 1 |
+| draw share | 0.219 | 0.156 | **0.094** |
+| threefold + fifty | 0.062 | 0.031 | 0.031 |
+| mean plies | 189.0 | 180.4 | **138.3** |
+| trainable positions | 5,247 | 4,973 | 4,027 |
+| target entropy / top-1 | 2.857 / 0.146 | 2.834 / 0.155 | 2.862 / 0.160 |
+| **SEARCH** KL net→noise / noise→target | 0.067 / 0.137 | 0.069 / 0.158 | 0.070 / 0.176 |
+| KL target vs network | 0.258 | 0.293 | 0.321 |
+| mean \|network value\| / \|root value\| | 0.000 / 0.003 | 0.024 / 0.020 | 0.027 / 0.024 |
+| **TRAINER** step (of 370) | 0 → 82 | 82 → 160 | 160 → 223 (0.60) |
+| updates at zero LR | 0 | 0 | 0 |
+| LR first → last | 8.1e-6 → 2.87e-4 | 2.87e-4 → 2.11e-4 | 2.10e-4 → 1.24e-4 |
+| WDL loss first → last | 1.099 → 0.914 | 1.011 → 0.814 | 0.874 → 0.843 |
+| policy loss first → last | 3.163 → 3.120 | 3.107 → 3.071 | 3.226 → 3.161 |
+| grad-norm mean / max | 1.85 / 3.83 | 2.31 / 4.70 | 2.26 / 5.27 |
+| all metrics finite | yes | yes | yes |
+| **REPLAY** reuse (target 2.0) / cap bound | 2.000 / no | 2.008 / no | 2.002 / no |
+| updates requested = scheduled = done | 82 | 78 | 63 |
+| fresh fraction / mean age (cycles) | 1.00 / 0.00 | 0.67 / 0.33 | 0.49 / 0.68 |
+| **EVAL** vs parent: W / D / L / T | 12 / 7 / 11 / 2 | 10 / 6 / 12 / 4 | 12 / 12 / 4 / 4 |
+| score, CI | 0.517 [0.357, 0.676] | 0.464 [0.298, 0.631] | 0.643 [0.511, 0.775] |
+| pair mean, pair CI | 0.554 [0.407, 0.700] | 0.396 [0.201, 0.591] | 0.667 [0.541, 0.792] |
+| decisive / truncation | 0.719 / 0.062 | 0.688 / **0.125** | 0.500 / **0.125** |
+| vs frozen reference: score, CI | = parent arena | 0.574 [0.429, 0.719] | **0.733 [0.621, 0.846]** |
+| reference truncation | — | **0.156** | 0.062 |
+| raw vs random / raw vs parent | 0.54 / 0.547 | 0.52 / 0.484 | 0.52 / 0.484 |
+| **decision** | promote | hold | promote |
+
+- The T0 baseline is raw vs random 0.5625.
+- Lineage is exact. The replay generator is always the actor.
+  - The trainer was continuous (0 → 82 → 160 → 223).
+  - The accepted step was 82 after cycle 1's hold and 223 after cycle 2.
+  - Checkpoints `snapshot-000` = `990e5e54` @ 82 and `snapshot-002` =
+    `d0ee3ced` @ 223.
+
+### Gates
+
+| gate | result |
+|---|---|
+| zero illegal moves, audit clean | **GO** (audit ok every cycle) |
+| zero inference failures, no NaN/Inf | **GO** |
+| stable GPU resources | **GO**. 298 → 1,452 → 1,516 → 1,516 MB: a post-training allocator plateau, like mainline smoke v2 (757 → 3,207 → 3,239). ≤ 2 resident owners. |
+| trainer advances continuously; lineage correct | **GO** |
+| LR schedule does not exhaust | **GO**. It ended at 0.60 of plan with 0 zero-LR updates. |
+| `max_updates` never controls reuse; reuse near target | **GO** (2.00 / 2.01 / 2.00; never cap-bound) |
+| policy does not collapse | **GO**. Target entropy is flat at about 2.85 and top-1 ≤ 0.16. |
+| WDL / value learning accumulates | **GO**. First-update WDL loss on each cycle's fresh data falls 1.099 → 1.011 → 0.874, and \|v\| goes 0 → 0.027. |
+| self-play does not trigger D49; no draw attractor | **GO**. Draws fall 0.22 → 0.16 → 0.09 and games shorten 189 → 138 plies. This is the opposite of mainline smoke v2. |
+| arena remains informative | **GO**. There are 16–23 decisive games per arena (≥ 4 required). |
+| arena truncation acceptable | **CONDITIONAL**. It is 0.125, 0.156 and 0.125 in 3 of 5 arenas, above the 0.10 D45 qualification bound. It is root-caused as a scoring bias (below). |
+| strength evidence | Moderate. Candidate vs the frozen reference at cycle 2 is 0.733 [0.621, 0.846], ≥ 0.688 under any truncation scoring. Raw policy is unchanged. |
+
+**H3.6 verdict: CONDITIONAL.**
+- The learning mechanism, continuous trainer, RTX 2050 lifecycle,
+  replay/reuse and lineage are **GO**.
+- The arena has a measured truncation bias that must be handled before
+  arenas compare architectures.
+
+### Root cause and findings
+
+1. **Arena truncation = won-but-unconverted positions (MEASURED).**
+   - A deterministic replay of the cycle-2 parent arena reproduced it game for
+     game. Of its 4 truncated games, 3 were parent wins that couldn't be
+     converted (K vs K+Q+N+N; K+B+N vs K twice) and 1 was a dead draw.
+   - Truncated games are excluded from `candidate_score`, so unconverted wins
+     vanish from the score.
+   - Cycle 0's promotion **is not robust** to this: 0.517 as played, 0.484 if
+     both truncations were parent wins.
+   - Cycle 2's promotion (≥ 0.562) and the cycle-2 reference result (≥ 0.688)
+     are robust.
+   - Self-play has the same failure: 1–2 truncated games per cycle, whose
+     400–800 positions are discarded from value training.
+2. **Improvement is coming from the value head, not the raw policy
+   (MEASURED).**
+   - Raw vs random stays flat (0.5625 → 0.54 → 0.52 → 0.52), and raw vs
+     parent is 31/32 draws.
+   - Policy loss on fresh data barely moves.
+   - Targets stay near-uniform, with entropy about 2.85 and top-1 about 0.15,
+     while KL(target ‖ network) grows 0.258 → 0.293 → 0.321.
+   - **INFERRED:** with an almost-zero value head, 32 simulations over about
+     30 legal moves cannot sharpen visit targets, so the policy has little to
+     learn yet. Policy learning is gated on value learning, which the 3-cycle
+     smoke only begins.
+3. **Learned play shortens games (MEASURED).** Games went 189 → 180 → 138
+   plies and trainable volume went 5,247 → 4,973 → 4,027. Updates went
+   82 → 78 → 63, so the 370-step schedule was 60 % used. Headroom sized for
+   lengthening was not needed here. Future schedules should be sized from this
+   measured trajectory.
+4. **Determinism (MEASURED).** The CUDA arena replays exactly given its seed
+   and models (four independent checks today). CRN pairing and replays are
+   trustworthy on this stack.
 
 **Disclosure (H3.5B):** an undocumented partial attempt exists at
 `runs/hp-h3-smoke-v2/`.
@@ -300,10 +405,84 @@ multiple of the 3-cycle total, which was wrong. That config also lacked
 | D45 searched arena | V0 repetition-heavy | V0 2/32 decisive, V2 22/32 (both K = 1) | ADOPTED V2 (H3.5); RNG pairing in H3.5B |
 | D46 ≤2 resident models | 4 GB card | max_resident = 2 | VALIDATED |
 | D47 multi-leaf PUCT | throughput on HP | K=2 +13.2%, health same | ADOPTED K=2 |
-| D48 continuous trainer | learner continuity | frozen in smoke | ADOPTED |
-| D49 health stops | execution bounds | missing from the smoke config until H3.5B (silently off) | ADOPTED; restored in H3.5B |
+| D48 continuous trainer | learner continuity | H3.6: steps 0 → 82 → 160 → 223 carried across a hold | VALIDATED |
+| D49 health stops | execution bounds | missing from the smoke config until H3.5B (silently off); H3.6 never near a stop | ADOPTED; restored in H3.5B |
 | D37/D38/telemetry/tooling | generic | inherited via merge | INHERITED |
 
-## R15 entry decision
+## R15 ENTRY DECISION (2026-09-26)
 
-_To be written after the corrected F15-v2 smoke. No R15 training is performed._
+| # | criterion | status |
+|---|---|---|
+| 1 | corrected F15 learning mechanism works | **MET** (MEASURED). Value loss falls on fresh data, \|v\| grows, and the cycle-2 candidate beats the frozen reference at 0.733 [0.621, 0.846], robust to truncation. The raw policy has not moved yet. |
+| 2 | continuous trainer works | **MET** (MEASURED; steps carried across the hold) |
+| 3 | RTX 2050 lifecycle stable | **MET** (MEASURED; 1,516 MB plateau, 0 errors, ≤ 2 resident) |
+| 4 | reuse / replay healthy | **MET** (MEASURED; 2.00 / 2.01 / 2.00, fresh fraction 1.0 / 0.67 / 0.49) |
+| 5 | no immediate learned draw / repetition collapse | **MET** (MEASURED; draws 0.22 → 0.09) |
+| 6 | arena scientifically usable | **PARTIAL**. CRN pairing is exact and informative. The truncation-exclusion bias (MEASURED) makes the per-game score unfit for cross-architecture comparison until truncation-aware scoring is pre-registered. |
+| 7 | checkpoint / provenance semantics understood | **MET** (MEASURED; D50 corrected, semantic digest, non-null SHA) |
+| 8 | F15 / R15 parameter parity exact | **MET** (15,154,632 both; pinned by tests and pre-flight `model-info`) |
+
+**Decision: CONDITIONAL GO for R15 planning.**
+- Do not start R15 training until prerequisite P0 below is pre-registered and
+  tested.
+- No R15 training was performed.
+
+## R15 EXPERIMENT PLAN (plan only — not executed)
+
+**Question:** at a fixed unique-parameter budget (15,154,632), does executing the
+shared R15 core more times per evaluation improve learning under the same
+self-play and search contract?
+
+**Primary comparison:** R15 at **R1 vs R2 vs R4** (8 / 12 / 20 executed blocks).
+- It uses the same weights layout, the same config except `recurrence`, and
+  the same seeds.
+- F15 stays the matched-parameter **feed-forward control**. It is not
+  functionally identical to R15-R1 (0+8+0 vs 2+4+2 wiring), and is not treated
+  as such.
+
+**P0 prerequisites** (engineering, zero-science gate):
+1. **Truncation-aware arena scoring.**
+   - Report `score_truncation_as_draw` and a pre-registered material
+     adjudication at the cap, alongside the historical score. The historical
+     score stays unchanged.
+   - Promotion for R15 reads a score that cannot improve by failing to
+     convert. This is the minimal promotion-v3, pre-registered with a margin
+     rule.
+2. **An ADR on truncated self-play games:** adjudicate them into WDL targets
+   or keep discarding them. The chosen policy is identical across all R arms.
+3. **R15 frozen references:** freeze `r15` head v2 at seed 1 on CUDA. Record
+   `model_id` and `semantic_weights_digest`, and confirm a second freeze
+   reproduces the digest (D50 method).
+4. **RTX 2050 requalification at R2 and R4:**
+   - lifecycle, train-step VRAM at 32×4 and self-play throughput;
+   - R4 runs 2.5× the executed blocks, so derive per-arm wall budgets from
+     measurement;
+   - no change of K, batch or concurrency between arms unless pre-registered.
+
+**P1 — per-arm smoke:**
+- Run the H3.6 contract per arm (3 cycles, 32 games, 32 sims, K = 2, paired
+  arena) against each arm's own frozen reference.
+- Gates: same as H3.6, plus the P0 truncation scoring.
+
+**P2 — comparison run** (only after P1 GO for all arms):
+- **Budgeting.** The primary budget is equal self-play games and equal search
+  budget per arm (learning per game). A secondary is equal wall-clock,
+  reported separately and never mixed.
+- **Metrics per cycle:**
+  - first-update WDL loss on fresh data and on a **fixed held-out position
+    set**, identical for all arms;
+  - candidate vs its frozen reference (truncation-aware);
+  - raw policy vs random;
+  - the full H3.6 metric set.
+- **Cross-arm arenas** at matched cycles: R1 vs R2, R2 vs R4 and R1 vs R4,
+  CRN-paired and truncation-aware.
+- **Sample size.** Pre-register it. At 32 games, per-game SE ≈ 0.08, so
+  detecting a 0.10 score difference needs roughly 96+ games per comparison.
+  Pair-level Wald CIs are anti-conservative at n ≤ 16 (H3.5B) and are not
+  decision rules.
+- **Replication:** at least 2 seeds per arm before any claim.
+- **Stop conditions:** D49 (with the schedule guard), lifecycle regression,
+  and any cap binding.
+- **Claim discipline:** "recurrence helps" requires R2 or R4 to beat R1 on
+  the pre-registered primary metric in both seeds. Anything less is reported
+  as "not shown".

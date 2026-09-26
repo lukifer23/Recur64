@@ -383,6 +383,19 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
   - **Provenance:** CLI `git_revision` is no longer null.
   - **Disclosure:** an abandoned 1-cycle smoke attempt exists at
     `runs/hp-h3-smoke-v2` (pre-H3.2 build). It is not evidence.
+- **H3.6 corrected F15-v2 smoke: CONDITIONAL** (MEASURED, 3 cycles, 65 min;
+  `docs/HP_H3_RESULTS.md`).
+  - **GO:** audit, 0 inference errors, 1,516 MB VRAM plateau, continuous
+    trainer (steps 0 → 223 of 370, 0 zero-LR), reuse 2.00, exact lineage.
+  - **Learning:** value head learning; draws 0.22 → 0.09; the cycle-2
+    candidate vs the frozen reference scored 0.733 [0.621, 0.846]. The raw
+    policy has not improved yet.
+  - **CONDITIONAL:** arena truncation of 0.125–0.156 comes from
+    won-but-unconverted positions excluded from the score. Cycle 0's
+    promotion is not robust to it.
+- **R15 entry: CONDITIONAL GO for planning.** Prerequisites are
+  truncation-aware arena scoring, an ADR on truncated self-play games, R15
+  references, and an R2/R4 hardware requalification. No R15 training.
 - Historical head-v1 HP evidence preserved and labelled HISTORICAL in
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.

@@ -365,4 +365,9 @@ outcomes on the RTX 2050:
   - Smoke config fixed: schedule headroom 370/37, cap 256, D49 restored, and
     a schedule guard added.
 
+- **H3.6 smoke: CONDITIONAL.** The learning mechanism is GO. Arena
+  truncation (unconverted wins dropped from the score) must be handled before
+  R15.
+- **R15 entry: CONDITIONAL GO for planning.** The plan is in `HP_H3_RESULTS.md`.
+
 R15 training, multi-R schedules, and R1/R2/R4 experiments remain **NOT RUN**.
