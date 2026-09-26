@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 /// every generated trajectory after the first cycle.
 pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
 
+use recur64_eval::ArenaRngPolicy;
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -271,8 +272,8 @@ pub struct RunConfig {
     #[serde(default)]
     pub argmax_after_ply: Option<u32>,
     /// Root Dirichlet noise concentration for self-play (AlphaZero chess:
-    /// 0.3). Only used when `root_dirichlet_epsilon > 0`. Arenas never apply
-    /// root noise.
+    /// 0.3). Only used when `root_dirichlet_epsilon > 0`. Searched arenas
+    /// reuse this alpha when `arena_root_dirichlet_epsilon > 0` (D45).
     #[serde(default = "default_root_dirichlet_alpha")]
     pub root_dirichlet_alpha: f32,
     /// Root noise mixing weight for self-play; `0.0` (default) disables it.
@@ -287,6 +288,11 @@ pub struct RunConfig {
     /// `0.0` (default) = noise-free, the original arena contract.
     #[serde(default)]
     pub arena_root_dirichlet_epsilon: f32,
+    /// Arena per-game seed derivation (H3.5B). The default `per_game_v1` is
+    /// the historical contract; it is omitted from the serialized config so
+    /// the resolved hash of every earlier config is unchanged.
+    #[serde(default, skip_serializing_if = "ArenaRngPolicy::is_default")]
+    pub arena_rng_policy: ArenaRngPolicy,
     /// Leaves selected with virtual loss and evaluated together per search
     /// round (D47), for self-play and arenas alike. `1` (default) is the
     /// original one-leaf search; values above 1 are a new identity.
@@ -398,6 +404,11 @@ impl RunConfig {
                 "root_dirichlet_epsilon": self.arena_root_dirichlet_epsilon,
             });
         }
+        // H3.5B: recorded only when it differs from the historical per-game
+        // seeds, so earlier identities are unchanged.
+        if !self.arena_rng_policy.is_default() {
+            v["arena_rng_policy"] = serde_json::to_value(self.arena_rng_policy)?;
+        }
         Ok(v)
     }
 
@@ -423,6 +434,7 @@ impl RunConfig {
             root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
             deadline: None,
             leaves_in_flight: self.search_leaves_in_flight,
+            rng_policy: self.arena_rng_policy,
         }
     }
 
@@ -1108,6 +1120,46 @@ openings = ['{e4}']
         assert_eq!(arena.sample_plies, Some(8));
         assert_eq!(arena.seed, cfg.seed + 3);
         assert_eq!(arena.root_dirichlet_epsilon, 0.0);
+    }
+
+    /// H3.5B: the paired-common arena RNG policy is a new scientific identity;
+    /// the default leaves both the scientific hash and the serialized
+    /// (resolved) config of every earlier config unchanged.
+    #[test]
+    fn paired_arena_rng_is_a_new_identity_and_default_is_unchanged() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let text = std::fs::read_to_string(root.join("configs/phase4/f10-smoke.toml")).unwrap();
+        let mut cfg = RunConfig::from_toml_str(&text).unwrap();
+        cfg.opening_suite = Some(
+            root.join("configs/openings-v1.toml")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        assert_eq!(cfg.arena_rng_policy, ArenaRngPolicy::PerGameV1);
+        assert_eq!(
+            cfg.scientific_config_hash().unwrap(),
+            "5548bfaf796a4a3da88da03407ef6ee0e7198b572d30de022d6dae018fa723a3"
+        );
+        let json = serde_json::to_string(&cfg).unwrap();
+        assert!(
+            !json.contains("arena_rng_policy"),
+            "the default must not enter the resolved config"
+        );
+        let mut paired = cfg.clone();
+        paired.arena_rng_policy = ArenaRngPolicy::PairedCommonV1;
+        assert_ne!(
+            paired.scientific_config_hash().unwrap(),
+            cfg.scientific_config_hash().unwrap()
+        );
+        assert_eq!(
+            paired.scientific_identity().unwrap()["evaluation"]["arena_rng_policy"],
+            "paired_common_v1"
+        );
+        let arena = paired.arena_config(3, Vec::new(), 8);
+        assert_eq!(arena.rng_policy, ArenaRngPolicy::PairedCommonV1);
+        // Round trip through TOML keeps the policy.
+        let back = RunConfig::from_toml_str(&toml::to_string(&paired).unwrap()).unwrap();
+        assert_eq!(back.arena_rng_policy, ArenaRngPolicy::PairedCommonV1);
     }
 
     /// The CUDA fail-fast must accept every versioned NVRTC shared library name

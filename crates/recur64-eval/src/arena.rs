@@ -5,7 +5,8 @@
 //! default moves are chosen deterministically (temperature 0). An optional
 //! sampled opening phase (`sample_plies`) and root noise diversify games that
 //! would otherwise collapse into repetition between near-identical networks;
-//! every game is still reproducible from the recorded seed.
+//! every game is still reproducible from the recorded seed. The seed policy
+//! ([`ArenaRngPolicy`]) decides whether a color-swapped pair shares a stream.
 
 use std::collections::BTreeMap;
 
@@ -13,6 +14,39 @@ use recur64_core::{Color, GameState, Outcome};
 use recur64_search::{
     EvalError, EvalRequest, EvalResult, Evaluator, Rng, SelfPlayConfig, play_game_from,
 };
+
+/// How each arena game's RNG seed is derived (H3.5B).
+///
+/// Game `i` plays opening `i / 2`, with colors swapped between `2p` and
+/// `2p + 1`. Under a stochastic arena (D45: sampling + root noise) the policy
+/// decides whether the two color-swapped games of an opening share one
+/// random stream.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArenaRngPolicy {
+    /// `seed = base + i`: every game has its own stream (the historical
+    /// contract; the pair shares only the opening).
+    #[default]
+    PerGameV1,
+    /// `seed = base + i / 2`: both games of an opening pair share one stream
+    /// (common random numbers). Identical deterministic evaluators then play
+    /// the same game twice with colors swapped, so the pair scores exactly 0.5.
+    PairedCommonV1,
+}
+
+impl ArenaRngPolicy {
+    pub fn is_default(&self) -> bool {
+        *self == Self::PerGameV1
+    }
+}
+
+/// RNG seed of arena game `index` under `policy`.
+pub fn arena_game_seed(policy: ArenaRngPolicy, base: u64, index: u32) -> u64 {
+    match policy {
+        ArenaRngPolicy::PerGameV1 => base.wrapping_add(index as u64),
+        ArenaRngPolicy::PairedCommonV1 => base.wrapping_add((index / 2) as u64),
+    }
+}
 
 /// Arena configuration.
 #[derive(Debug, Clone)]
@@ -40,6 +74,8 @@ pub struct ArenaConfig {
     pub deadline: Option<std::time::Instant>,
     /// Leaves per search round (D47); `1` = original search.
     pub leaves_in_flight: u32,
+    /// Per-game seed derivation (H3.5B); the default is the historical one.
+    pub rng_policy: ArenaRngPolicy,
 }
 
 impl Default for ArenaConfig {
@@ -58,6 +94,7 @@ impl Default for ArenaConfig {
             root_dirichlet_epsilon: 0.0,
             deadline: None,
             leaves_in_flight: 1,
+            rng_policy: ArenaRngPolicy::PerGameV1,
         }
     }
 }
@@ -85,6 +122,127 @@ pub struct ArenaResult {
     pub terminations: BTreeMap<String, u32>,
     pub model_reference: String,
     pub model_candidate: String,
+    /// Seed derivation used (H3.5B). This and the fields below are additive
+    /// diagnostics; the per-game fields above are unchanged.
+    pub rng_policy: ArenaRngPolicy,
+    /// Color-pair diagnostics (the pair is the independent unit).
+    pub pairs: ArenaPairDiagnostics,
+    /// Per-game records in game-index order.
+    pub game_records: Vec<ArenaGameRecord>,
+}
+
+/// One arena game, from the candidate's perspective.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct ArenaGameRecord {
+    pub index: u32,
+    pub pair: u32,
+    pub candidate_white: bool,
+    pub seed: u64,
+    /// 1 / 0.5 / 0, or `None` when truncated.
+    pub candidate_score: Option<f64>,
+    /// `"white"`, `"black"` or `"draw"`; `None` when truncated.
+    pub winner: Option<String>,
+    pub termination: String,
+    pub plies: usize,
+    /// SHA-256 prefix of the start FEN and the selected action sequence.
+    pub moves_digest: String,
+}
+
+/// Pair-level arena diagnostics (H3.5B). Diagnostic only: promotion still
+/// reads the per-game score.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+pub struct ArenaPairDiagnostics {
+    /// Opening pairs `(2p, 2p + 1)`, including an unpaired last game.
+    pub pairs: u32,
+    /// Both games present and neither truncated.
+    pub complete_pairs: u32,
+    pub pairs_with_truncation: u32,
+    /// Complete pairs where both games were draws.
+    pub all_draw_pairs: u32,
+    /// Complete pairs with one candidate win and one candidate loss.
+    pub split_pairs: u32,
+    /// Complete pairs with the same board result in both games (same winner
+    /// color, or both drawn), i.e. pair score exactly 0.5.
+    pub mirrored_pairs: u32,
+    /// Pairs whose two games played the identical move sequence.
+    pub identical_move_pairs: u32,
+    /// Complete-pair candidate score (mean of its two games) -> count, keys
+    /// `"0.00"`, `"0.25"`, `"0.50"`, `"0.75"`, `"1.00"`.
+    pub pair_score_histogram: BTreeMap<String, u32>,
+    /// Mean complete-pair score (0.5 when there are none).
+    pub mean_pair_score: f64,
+    /// 95% Wald interval over complete-pair scores.
+    pub pair_score_ci_low: f64,
+    pub pair_score_ci_high: f64,
+}
+
+/// `(mean, ci_low, ci_high)`: 95% Wald interval, clamped to `[0, 1]`.
+fn mean_ci(scores: &[f64], fallback: f64) -> (f64, f64, f64) {
+    if scores.is_empty() {
+        return (fallback, fallback, fallback);
+    }
+    let n = scores.len() as f64;
+    let mean = scores.iter().sum::<f64>() / n;
+    if scores.len() < 2 {
+        return (mean, mean, mean);
+    }
+    let var = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / (n - 1.0);
+    let se = (var / n).sqrt();
+    (
+        mean,
+        (mean - 1.96 * se).max(0.0),
+        (mean + 1.96 * se).min(1.0),
+    )
+}
+
+/// Pair diagnostics from per-game records in index order.
+pub fn pair_diagnostics(records: &[ArenaGameRecord]) -> ArenaPairDiagnostics {
+    let mut d = ArenaPairDiagnostics::default();
+    let mut pair_scores = Vec::new();
+    for chunk in records.chunks(2) {
+        d.pairs += 1;
+        if chunk.iter().any(|g| g.candidate_score.is_none()) {
+            d.pairs_with_truncation += 1;
+        }
+        let [a, b] = chunk else { continue };
+        if a.moves_digest == b.moves_digest {
+            d.identical_move_pairs += 1;
+        }
+        let (Some(sa), Some(sb)) = (a.candidate_score, b.candidate_score) else {
+            continue;
+        };
+        d.complete_pairs += 1;
+        if sa == 0.5 && sb == 0.5 {
+            d.all_draw_pairs += 1;
+        }
+        if (sa - sb).abs() == 1.0 {
+            d.split_pairs += 1;
+        }
+        if a.winner == b.winner {
+            d.mirrored_pairs += 1;
+        }
+        let ps = (sa + sb) / 2.0;
+        *d.pair_score_histogram
+            .entry(format!("{ps:.2}"))
+            .or_insert(0) += 1;
+        pair_scores.push(ps);
+    }
+    let (mean, lo, hi) = mean_ci(&pair_scores, 0.5);
+    d.mean_pair_score = mean;
+    d.pair_score_ci_low = lo;
+    d.pair_score_ci_high = hi;
+    d
+}
+
+fn moves_digest(game: &recur64_search::SelfPlayGame) -> String {
+    use sha2::{Digest, Sha256};
+    let mut h = Sha256::new();
+    h.update((game.start_fen.len() as u64).to_le_bytes());
+    h.update(game.start_fen.as_bytes());
+    for p in &game.plies {
+        h.update(p.selected.index().to_le_bytes());
+    }
+    format!("{:x}", h.finalize())[..16].to_string()
 }
 
 /// Routes each ply to the correct model by side to move.
@@ -165,7 +323,7 @@ pub fn run_arena(
                 black: candidate,
             }
         };
-        let seed = cfg.seed.wrapping_add(i as u64);
+        let seed = arena_game_seed(cfg.rng_policy, cfg.seed, i);
         let opening = &openings[(i as usize / 2) % openings.len()];
         let start = GameState::from_fen(opening)
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
@@ -179,6 +337,7 @@ pub fn run_arena(
     let mut truncated = 0u32;
     let mut scores: Vec<f64> = Vec::new();
     let mut terminations: BTreeMap<String, u32> = BTreeMap::new();
+    let mut game_records = Vec::with_capacity(games.len());
 
     for (i, game) in games.into_iter().enumerate() {
         let candidate_is_white = i % 2 == 0;
@@ -186,23 +345,46 @@ pub fn run_arena(
             .entry(game.termination.label().to_string())
             .or_insert(0) += 1;
 
-        match game.outcome {
-            None => truncated += 1,
+        let (score, winner) = match game.outcome {
+            None => {
+                truncated += 1;
+                (None, None)
+            }
             Some(Outcome::Draw) => {
                 draws += 1;
                 scores.push(0.5);
+                (Some(0.5), Some("draw"))
             }
             Some(Outcome::Win(winner)) => {
                 let candidate_won = (winner == Color::White) == candidate_is_white;
-                if candidate_won {
+                let s = if candidate_won {
                     candidate_wins += 1;
-                    scores.push(1.0);
+                    1.0
                 } else {
                     reference_wins += 1;
-                    scores.push(0.0);
-                }
+                    0.0
+                };
+                scores.push(s);
+                let color = if winner == Color::White {
+                    "white"
+                } else {
+                    "black"
+                };
+                (Some(s), Some(color))
             }
-        }
+        };
+        game_records.push(ArenaGameRecord {
+            index: i as u32,
+            pair: i as u32 / 2,
+            candidate_white: candidate_is_white,
+            // play_game_from does not stamp the seed; derive it from the policy.
+            seed: arena_game_seed(cfg.rng_policy, cfg.seed, i as u32),
+            candidate_score: score,
+            winner: winner.map(str::to_string),
+            termination: game.termination.label().to_string(),
+            plies: game.plies.len(),
+            moves_digest: moves_digest(&game),
+        });
     }
 
     let decided = cfg.games.saturating_sub(truncated);
@@ -215,11 +397,8 @@ pub fn run_arena(
     let (ci_low, ci_high) = if scores.len() < 2 {
         (candidate_score, candidate_score)
     } else {
-        let n = scores.len() as f64;
-        let mean = scores.iter().sum::<f64>() / n;
-        let var = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / (n - 1.0);
-        let se = (var / n).sqrt();
-        ((mean - 1.96 * se).max(0.0), (mean + 1.96 * se).min(1.0))
+        let (_, lo, hi) = mean_ci(&scores, candidate_score);
+        (lo, hi)
     };
 
     Ok(ArenaResult {
@@ -237,6 +416,9 @@ pub fn run_arena(
         terminations,
         model_reference: reference_id.to_string(),
         model_candidate: candidate_id.to_string(),
+        rng_policy: cfg.rng_policy,
+        pairs: pair_diagnostics(&game_records),
+        game_records,
     })
 }
 

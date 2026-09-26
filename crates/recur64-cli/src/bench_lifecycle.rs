@@ -285,7 +285,8 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchLifecycleArgs) -> a
         "max_inference_batch": cfg.max_inference_batch,
         "batch_timeout_us": cfg.batch_timeout_us,
         "initial_vram_mb": initial_vram_mb,
-        "git_revision": option_env!("RECUR64_GIT_SHA"),
+        "git_revision": recur64_runtime::provenance::git_revision(),
+        "git_branch": recur64_runtime::provenance::git_branch(),
         "reps": results,
     });
     std::fs::write(

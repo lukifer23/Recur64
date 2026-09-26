@@ -426,7 +426,7 @@ pub fn run<B: AutodiffBackend>(
     );
     let mut meta = meta;
     meta.run_id = cfg.run_id.clone();
-    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+    meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
     save_training(
         &run_dir.reference_ckpt(),
         &reference_model,
@@ -451,7 +451,7 @@ pub fn run<B: AutodiffBackend>(
         format!("{} ({})", cfg.device, cfg.precision),
         cfg.precision.clone(),
     );
-    header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+    header.git_revision = crate::provenance::git_revision().map(str::to_owned);
     let inference_model =
         model_io::load::<B::InnerBackend>(&run_dir.reference_ckpt(), &cfg.model, &inner_device)?;
     let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
@@ -540,7 +540,7 @@ pub fn run<B: AutodiffBackend>(
                     cfg.precision.clone(),
                 );
                 cand_meta.run_id = cfg.run_id.clone();
-                cand_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+                cand_meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
                 cand_meta.update_counter = report.updates as u64;
                 save_training(&run_dir.candidate_ckpt(), &trained, &optim, &cand_meta)?;
                 (Some(report), read_model_id(&run_dir.candidate_ckpt()))
@@ -562,7 +562,7 @@ pub fn run<B: AutodiffBackend>(
                     cfg.precision.clone(),
                 );
                 cand_meta.run_id = cfg.run_id.clone();
-                cand_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+                cand_meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
                 save_training(
                     &run_dir.candidate_ckpt(),
                     &reference_model,
@@ -723,7 +723,7 @@ pub fn collect_only<B: AutodiffBackend>(
         cfg.precision.clone(),
     );
     meta.run_id = cfg.run_id.clone();
-    meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+    meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
     let tmp_ckpt = replay_dir.join("_ref");
     save_training(&tmp_ckpt, &reference_model, &reference_optim, &meta)?;
     let model_id = read_model_id(&tmp_ckpt);

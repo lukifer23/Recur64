@@ -267,7 +267,7 @@ pub fn run_cell<B: AutodiffBackend>(
             format!("{} ({})", cfg.device, cfg.precision),
             cfg.precision.clone(),
         );
-        header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+        header.git_revision = crate::provenance::git_revision().map(str::to_owned);
         let mut writer = ReplayWriter::new(dir, header, cfg.shard_max_games)?;
         for r in records.iter().cloned() {
             writer.push(r)?;

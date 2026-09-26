@@ -50,8 +50,8 @@ impl RunMetadata {
         Self {
             run_id: cfg.run_id.clone(),
             status: RunStatus::Running,
-            git_revision: option_env!("RECUR64_GIT_SHA").map(|s| s.to_string()),
-            git_branch: option_env!("RECUR64_GIT_BRANCH").map(|s| s.to_string()),
+            git_revision: crate::provenance::git_revision().map(str::to_string),
+            git_branch: crate::provenance::git_branch().map(str::to_string),
             seed: cfg.seed,
             hardware_profile: cfg.hardware_profile.clone(),
             model_profile: cfg.model_profile.clone(),
@@ -246,13 +246,13 @@ output_blocks = 0
     #[test]
     fn metadata_records_git_provenance_when_built_in_repo() {
         let meta = RunMetadata::new(&cfg());
-        if option_env!("RECUR64_GIT_SHA").is_some() {
+        if crate::provenance::git_revision().is_some() {
             assert!(
                 meta.git_revision.is_some(),
                 "git revision must be recorded when built inside the repo"
             );
         }
-        if option_env!("RECUR64_GIT_BRANCH").is_some() {
+        if crate::provenance::git_branch().is_some() {
             assert!(meta.git_branch.is_some());
         }
     }

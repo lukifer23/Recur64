@@ -388,7 +388,7 @@ fn install_reference<B: AutodiffBackend>(
         cfg.precision.clone(),
     );
     ref_meta.run_id = cfg.run_id.clone();
-    ref_meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+    ref_meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
     save_training(
         &run_dir.reference_ckpt(),
         &reference_model,
@@ -429,8 +429,8 @@ pub fn run_pilot<B: AutodiffBackend>(
             .unwrap_or_else(|| "fresh seeded init".into()),
         opening_suite_digest: cfg.opening_suite_digest()?,
         promotion_rule: PROMOTION_RULE_VERSION.to_string(),
-        git_revision: option_env!("RECUR64_GIT_SHA").map(str::to_owned),
-        git_branch: option_env!("RECUR64_GIT_BRANCH").map(str::to_owned),
+        git_revision: crate::provenance::git_revision().map(str::to_owned),
+        git_branch: crate::provenance::git_branch().map(str::to_owned),
     };
     std::fs::write(
         run_dir.root.join("identity.json"),
@@ -553,7 +553,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             backend_label(cfg),
             cfg.precision.clone(),
         );
-        header.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+        header.git_revision = crate::provenance::git_revision().map(str::to_owned);
         let mut writer = ReplayWriter::open_append(&run_dir.replay(), header, cfg.shard_max_games)?;
         for r in records {
             writer.push(r)?;
@@ -637,7 +637,7 @@ pub fn run_pilot<B: AutodiffBackend>(
                     cfg.precision.clone(),
                 );
                 meta.run_id = cfg.run_id.clone();
-                meta.git_revision = option_env!("RECUR64_GIT_SHA").map(str::to_owned);
+                meta.git_revision = crate::provenance::git_revision().map(str::to_owned);
                 meta.update_counter = optimizer_step_start + report.updates as u64;
                 meta.lr_schedule_step = optimizer_step_start + report.updates as u64;
                 save_training(&run_dir.candidate_ckpt(), &trained, &optim, &meta)?;
@@ -878,8 +878,8 @@ pub fn run_pilot<B: AutodiffBackend>(
             config_hash: cfg.config_hash(),
             scientific_config_hash: scientific_config_hash.clone(),
             resolved_config_hash: resolved_config_hash.clone(),
-            git_revision: option_env!("RECUR64_GIT_SHA").map(str::to_owned),
-            git_branch: option_env!("RECUR64_GIT_BRANCH").map(str::to_owned),
+            git_revision: crate::provenance::git_revision().map(str::to_owned),
+            git_branch: crate::provenance::git_branch().map(str::to_owned),
             seed: cfg.seed,
         })?;
         println!(
@@ -994,6 +994,9 @@ mod promotion_tests {
             terminations: Default::default(),
             model_reference: "parent".into(),
             model_candidate: "candidate".into(),
+            rng_policy: Default::default(),
+            pairs: Default::default(),
+            game_records: Vec::new(),
         }
     }
 

@@ -221,7 +221,8 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
         "model": cfg.model,
         "lr": cfg.lr,
         "lr_schedule": {"warmup_updates": warmup, "planned_updates": planned},
-        "git_revision": option_env!("RECUR64_GIT_SHA"),
+        "git_revision": recur64_runtime::provenance::git_revision(),
+        "git_branch": recur64_runtime::provenance::git_branch(),
         "layouts": results,
     });
     std::fs::write(

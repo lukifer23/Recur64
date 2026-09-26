@@ -7,5 +7,8 @@
 pub mod arena;
 pub mod openings;
 
-pub use arena::{ArenaConfig, ArenaResult, play_indexed, play_indexed_until, run_arena};
+pub use arena::{
+    ArenaConfig, ArenaGameRecord, ArenaPairDiagnostics, ArenaResult, ArenaRngPolicy,
+    arena_game_seed, pair_diagnostics, play_indexed, play_indexed_until, run_arena,
+};
 pub use openings::{OpeningSuite, generate_openings};

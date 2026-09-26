@@ -38,6 +38,9 @@ pub struct EvalArenaArgs {
     /// Override arena_root_dirichlet_epsilon.
     #[arg(long)]
     pub noise_epsilon: Option<f32>,
+    /// Override arena_rng_policy (`per_game_v1` | `paired_common_v1`).
+    #[arg(long)]
+    pub rng_policy: Option<String>,
     /// Seed offset (the pilot uses the cycle index).
     #[arg(long, default_value_t = 0)]
     pub seed_offset: u64,
@@ -92,12 +95,15 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
             "root_dirichlet_epsilon": arena_cfg.root_dirichlet_epsilon,
             "seed": arena_cfg.seed,
             "concurrency": arena_cfg.concurrency,
+            "leaves_in_flight": arena_cfg.leaves_in_flight,
+            "rng_policy": arena_cfg.rng_policy,
         },
         "result": result,
         "secs": secs,
         "inference_errors": inference.iter().map(|m| m.errors).sum::<u64>(),
         "gpu": gpu,
-        "git_revision": option_env!("RECUR64_GIT_SHA"),
+        "git_revision": recur64_runtime::provenance::git_revision(),
+        "git_branch": recur64_runtime::provenance::git_branch(),
     });
     std::fs::create_dir_all(&args.output)?;
     std::fs::write(
@@ -105,9 +111,10 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
         serde_json::to_vec_pretty(&report)?,
     )?;
     println!(
-        "arena sample_plies={:?} eps={} games={}: cand W/D/L {}/{}/{} trunc {} score {:.3} decisive {} terminations {:?} ({:.0}s)",
+        "arena sample_plies={:?} eps={} rng={:?} games={}: cand W/D/L {}/{}/{} trunc {} score {:.3} decisive {} terminations {:?} ({:.0}s)",
         arena_cfg.sample_plies,
         arena_cfg.root_dirichlet_epsilon,
+        arena_cfg.rng_policy,
         result.games,
         result.candidate_wins,
         result.draws,
@@ -117,6 +124,19 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
         result.decisive_games,
         result.terminations,
         secs
+    );
+    println!(
+        "pairs: complete {}/{} mirrored {} identical-moves {} split {} all-draw {} trunc {} mean {:.3} CI [{:.3}, {:.3}]",
+        result.pairs.complete_pairs,
+        result.pairs.pairs,
+        result.pairs.mirrored_pairs,
+        result.pairs.identical_move_pairs,
+        result.pairs.split_pairs,
+        result.pairs.all_draw_pairs,
+        result.pairs.pairs_with_truncation,
+        result.pairs.mean_pair_score,
+        result.pairs.pair_score_ci_low,
+        result.pairs.pair_score_ci_high
     );
     Ok(())
 }
@@ -131,6 +151,10 @@ pub fn run(args: EvalArenaArgs) -> anyhow::Result<()> {
     }
     if let Some(e) = args.noise_epsilon {
         cfg.arena_root_dirichlet_epsilon = e;
+    }
+    if let Some(p) = &args.rng_policy {
+        cfg.arena_rng_policy = serde_json::from_value(serde_json::Value::String(p.clone()))
+            .map_err(|e| anyhow::anyhow!("unknown --rng-policy {p}: {e}"))?;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {

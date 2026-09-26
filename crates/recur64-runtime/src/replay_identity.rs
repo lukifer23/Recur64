@@ -62,7 +62,7 @@ impl ReplayIdentityEntry {
             recurrence: cfg.recurrence,
             ply_cap: cfg.ply_cap,
             start_fen: cfg.start_fen.clone(),
-            git_revision: option_env!("RECUR64_GIT_SHA").map(str::to_owned),
+            git_revision: crate::provenance::git_revision().map(str::to_owned),
         })
     }
 }

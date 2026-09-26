@@ -7,6 +7,12 @@ use recur64_model::train::{CpuTrainBackend, adamw};
 use recur64_runtime::replay::ReplayReader;
 use recur64_runtime::{CancelToken, RunConfig, RunDir, model_io, run_pilot};
 
+/// Flex's seeded RNG is process-global and the harness runs tests on parallel
+/// threads. Both pilots seed and draw from it, so interleaved draws changed
+/// the frozen reference and, measured, made every game in a run truncate
+/// (0 trainable positions) about one run in three. Serialize the pilots.
+static FLEX_RNG: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn cfg(root: &std::path::Path) -> RunConfig {
     let mut c = RunConfig::from_toml_str(
         r#"
@@ -53,6 +59,7 @@ fn freeze(c: &RunConfig, dir: &std::path::Path) -> String {
 
 #[test]
 fn pilot_from_frozen_reference_keeps_identity_and_lineage() {
+    let _serial = FLEX_RNG.lock().unwrap_or_else(|e| e.into_inner());
     let root = std::env::temp_dir().join(format!("recur64-pilot-e2e-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(&root).unwrap();
@@ -143,6 +150,7 @@ fn pilot_from_frozen_reference_keeps_identity_and_lineage() {
 /// parent and the accepted trajectory stay at the last promotion.
 #[test]
 fn continuous_trainer_carries_learning_across_held_cycles() {
+    let _serial = FLEX_RNG.lock().unwrap_or_else(|e| e.into_inner());
     let root = std::env::temp_dir().join(format!("recur64-pilot-d48-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(&root).unwrap();
