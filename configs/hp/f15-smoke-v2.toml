@@ -75,7 +75,11 @@ promotion_min_decisive_games = 4
 
 # --- Execution bounds (excluded from scientific identity) ---
 cycles = 3
-run_budget_minutes = 90
+# 180 min, not the historical 90: the historical head-v1 cap was for a run whose
+# arenas were cheap threefold draws. H3's D45 V2 arenas are ~10 min each (585 s
+# measured for 32 games at concurrency 8), so 3 cycles need more wall headroom.
+# This is an execution bound only; it does not enter the scientific identity.
+run_budget_minutes = 180
 # ~2.5x the expected 3 x 6,047 positions.
 position_budget = 45000
 

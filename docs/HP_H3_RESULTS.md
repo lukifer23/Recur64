@@ -171,12 +171,21 @@ repetition attractor at the source.
 
 Reference-vs-reference, frozen v2, 32 sims, K = 2, c8, paired colors, 32 games.
 
-| variant | decisive | threefold | fifty | truncation |
-|---|---|---|---|---|
-| V0 (argmax, no noise) | 2/32 = 0.063 | 30/32 = 0.938 | 0 | 0 |
-| V2 (sample 30 plies + root noise 0.25) | _pending_ | _pending_ | _pending_ | _pending_ |
+| variant | decisive | threefold | fifty | truncation | terminations |
+|---|---|---|---|---|---|
+| V0 (argmax, no noise) | 2/32 = **0.063** | 30/32 = **0.938** | 0 | 0 | 2 checkmate, 30 threefold |
+| **V2** (sample 30 plies + root noise 0.25) | 22/32 = **0.688** | 1/32 = **0.031** | 2/32 = 0.063 | 3/32 = 0.094 | 22 checkmate, 2 fifty, 3 insuff, 1 stalemate, 1 threefold, 3 truncated |
 
-_Pending the V2 measurement; the decision rule is in `HP_H3_PREREG.md`._
+0 inference errors; peak VRAM 426 MB; 585 s; both sides the frozen reference
+(so 0.362 is opening/color asymmetry, **not** a strength result).
+
+**Adopted V2** — qualifies on every pre-registered criterion (decisive
+0.688 ≥ 0.50; threefold 0.031 ≤ 0.30; truncation 0.094 ≤ 0.10) while V0 is
+repetition-dominated (0.938 threefold). This confirms mainline's D45 result by
+independent HP measurement, and resolves the second historical blocker (arena
+uninformativeness). Truncation 0.094 is close to the 0.10 limit → **watch item**
+for the smoke. V2 is a **new** HP scientific identity; historical HP arenas are
+not relabelled.
 
 ## H3.6 — corrected F15-v2 smoke
 
