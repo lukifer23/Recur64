@@ -43,6 +43,26 @@ fn r10() -> ModelConfig {
     }
 }
 
+/// HP feed-forward control: 512/8/768, `0 + 8 + 0`.
+fn f15() -> ModelConfig {
+    ModelConfig {
+        width: 512,
+        heads: 8,
+        ffn: 768,
+        ..f10()
+    }
+}
+
+/// HP shared recurrent core: 512/8/768, `2 + 4 + 2`.
+fn r15() -> ModelConfig {
+    ModelConfig {
+        input_blocks: 2,
+        core_blocks: 4,
+        output_blocks: 2,
+        ..f15()
+    }
+}
+
 /// (mean entropy / uniform, mean |value|, max |value|, positions) of fresh
 /// networks over three seeds and the openings-v1 suite plus startpos.
 fn fresh_stats(cfg: ModelConfig, recurrence: usize) -> (f64, f64, f64, usize) {
@@ -119,5 +139,41 @@ fn fresh_r10_prior_is_near_uniform_and_value_near_neutral() {
             assert!(ratio >= 0.9, "R10 R1 prior too confident: {ratio:.3}");
             assert!(abs_value <= 0.1, "R10 R1 value not neutral: {abs_value:.3}");
         }
+    }
+}
+
+/// H3 H3.1: the F15 head-v2 reference must start from a near-uniform policy and
+/// a neutral value. This is a sanity gate, not a strength claim.
+#[test]
+fn fresh_f15_prior_is_near_uniform_and_value_near_neutral() {
+    let (ratio, abs_value, abs_value_max, n) = fresh_stats(f15(), 1);
+    println!(
+        "fresh F15 R1 over {n} positions: entropy/uniform = {ratio:.3}, mean |value| = {abs_value:.3}, max |value| = {abs_value_max:.3}"
+    );
+    assert!(
+        ratio >= 0.9,
+        "F15 R1 prior too confident: entropy/uniform = {ratio:.3}"
+    );
+    assert!(
+        abs_value <= 0.1,
+        "F15 R1 value not neutral: mean |value| = {abs_value:.3}"
+    );
+}
+
+/// H3 H3.1: head-v2 sanity must hold across the R15 recurrence ladder. R1 is
+/// the structural baseline; R2/R4 must also stay sane, since a layout-dependent
+/// head-input scale (the head-v1 defect) would have destabilised deeper R.
+#[test]
+fn fresh_r15_prior_is_near_uniform_and_value_near_neutral_across_recurrence() {
+    for r in [1usize, 2, 4] {
+        let (ratio, abs_value, abs_value_max, n) = fresh_stats(r15(), r);
+        println!(
+            "fresh R15 R{r} over {n} positions: entropy/uniform = {ratio:.3}, mean |value| = {abs_value:.3}, max |value| = {abs_value_max:.3}"
+        );
+        assert!(ratio >= 0.9, "R15 R{r} prior too confident: {ratio:.3}");
+        assert!(
+            abs_value <= 0.1,
+            "R15 R{r} value not neutral: {abs_value:.3}"
+        );
     }
 }

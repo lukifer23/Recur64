@@ -5,14 +5,18 @@
 //! unique transformer blocks of identical geometry, so their unique parameter
 //! counts must match exactly. These are *contract* tests: a mismatch must fail
 //! loudly rather than silently unbalance the recurrence comparison.
+//!
+//! H3: under readout **head v2** the final pre-head RMSNorm adds 512 parameters
+//! (one per channel), so the frozen geometry is now 15,154,632 rather than the
+//! head-v1 15,154,120. The value below is the measured `model-info` total.
 
 use burn::backend::Flex;
 use recur64_model::config::{ModelConfig, ProbeConfig};
-use recur64_model::model::ProbeModel;
+use recur64_model::model::{HEAD_VERSION, ProbeModel};
 
-/// Exact unique parameter count for the HP F15/R15 geometry
-/// (width 512, heads 8, ffn 768, 8 unique blocks, policy_dim 128).
-const HP_UNIQUE_PARAMS: usize = 15_154_120;
+/// Exact unique parameter count for the HP F15/R15 geometry under head v2
+/// (width 512, heads 8, ffn 768, 8 unique blocks, policy_dim 128, final_norm).
+const HP_UNIQUE_PARAMS: usize = 15_154_632;
 
 fn hp_model(input: usize, core: usize, output: usize) -> ModelConfig {
     ModelConfig {
@@ -164,4 +168,15 @@ fn hp_config_files_parse_and_match() {
     assert_eq!(f15.model.ffn, r15.model.ffn);
     assert_eq!(f15.model.head_dim(), 64);
     assert_eq!(r15.recurrence, vec![1, 2, 4]);
+}
+
+/// H3 H3.1: the HP geometry is qualified under readout head v2. A future head
+/// bump must be a deliberate, visible change rather than a silent drift in the
+/// F15/R15 comparison.
+#[test]
+fn hp_geometry_is_qualified_under_head_v2() {
+    assert_eq!(
+        HEAD_VERSION, 2,
+        "HP F15/R15 evidence is frozen against head v2; re-qualify before bumping"
+    );
 }

@@ -219,6 +219,76 @@ fn contract_mismatch_is_refused() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// H3 H3.1: a checkpoint trained for a different readout head must be refused
+/// rather than silently reinterpreted. Head v1 weights loaded into a head-v2
+/// graph would produce meaningless logits, so this is a hard contract.
+#[test]
+fn head_version_mismatch_is_refused() {
+    let device = Default::default();
+    let model = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let optim = adamw::<B, _>();
+    let dir = tmp_dir("bad_head_version");
+    let _ = std::fs::remove_dir_all(&dir);
+    let meta = CheckpointMeta::new(cfg(), 1, false, 0, 3e-4, 0, 0, "cpu", "fp32");
+    save_training(&dir, &model, &optim, &meta).expect("save");
+    let mut written: CheckpointMeta =
+        serde_json::from_slice(&std::fs::read(dir.join("meta.json")).unwrap()).unwrap();
+    assert_eq!(
+        written.head_version,
+        recur64_model::model::HEAD_VERSION,
+        "fresh checkpoints record the current head version"
+    );
+    written.head_version = 1;
+    std::fs::write(dir.join("meta.json"), serde_json::to_vec(&written).unwrap()).unwrap();
+
+    let template = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let fresh = adamw::<B, _>();
+    let res = load_training(&dir, template, fresh, &device);
+    let err = match res {
+        Ok(_) => panic!("head v1 checkpoint must be refused under head v2"),
+        Err(e) => e,
+    };
+    assert!(
+        err.to_string().contains("head version"),
+        "expected visible head-version error, got: {err}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A checkpoint written before the `head_version` field existed deserializes to
+/// the legacy v1 value and must therefore also be refused.
+#[test]
+fn legacy_checkpoint_without_head_version_field_is_refused() {
+    let device = Default::default();
+    let model = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let optim = adamw::<B, _>();
+    let dir = tmp_dir("legacy_head_version");
+    let _ = std::fs::remove_dir_all(&dir);
+    let meta = CheckpointMeta::new(cfg(), 1, false, 0, 3e-4, 0, 0, "cpu", "fp32");
+    save_training(&dir, &model, &optim, &meta).expect("save");
+    let mut written: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("meta.json")).unwrap()).unwrap();
+    written
+        .as_object_mut()
+        .unwrap()
+        .remove("head_version")
+        .expect("head_version present before the legacy simulation");
+    std::fs::write(dir.join("meta.json"), serde_json::to_vec(&written).unwrap()).unwrap();
+
+    let template = recur64_model::model::ProbeModel::<B>::new(cfg(), &device);
+    let fresh = adamw::<B, _>();
+    let res = load_training(&dir, template, fresh, &device);
+    let err = match res {
+        Ok(_) => panic!("a legacy (head v1) checkpoint must be refused under head v2"),
+        Err(e) => e,
+    };
+    assert!(
+        err.to_string().contains("head version"),
+        "expected visible head-version error, got: {err}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn schema_mismatch_is_refused() {
     let device = Default::default();
