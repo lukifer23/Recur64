@@ -101,6 +101,10 @@ fn paired_common_rng_mirrors_identical_evaluators() {
         "paired_common_v1: terminations {:?}, decisive {}",
         paired.terminations, paired.decisive_games
     );
+    // R15-P0.1: every game is scored after adjudication.
+    let adj = &paired.adjudicated;
+    assert_eq!(adj.wins + adj.draws + adj.losses, paired.games);
+    assert_eq!(adj.adjudicated_games, paired.truncated);
     let d = &paired.pairs;
     assert_eq!(d.pairs, 4);
     assert_eq!(d.identical_move_pairs, 4);

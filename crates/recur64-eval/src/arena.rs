@@ -48,6 +48,46 @@ pub fn arena_game_seed(policy: ArenaRngPolicy, base: u64, index: u32) -> u64 {
     }
 }
 
+/// Version tag of the truncation adjudication (R15-P0.1, pre-registered).
+pub const ADJUDICATION_RULE: &str = "material_v1:P1,N3,B3,R5,Q9;win_at>=5;else_draw";
+
+/// Material balance of a FEN, White minus Black (P1 N3 B3 R5 Q9, kings 0).
+pub fn material_balance_white(fen: &str) -> Option<i32> {
+    let board = fen.split_whitespace().next()?;
+    let mut total = 0;
+    for c in board.chars() {
+        let v = match c.to_ascii_lowercase() {
+            'p' => 1,
+            'n' | 'b' => 3,
+            'r' => 5,
+            'q' => 9,
+            'k' | '/' | '1'..='8' => 0,
+            _ => return None,
+        };
+        total += if c.is_ascii_uppercase() { v } else { -v };
+    }
+    Some(total)
+}
+
+/// Candidate score of a truncated game under `material_v1`: a balance of at
+/// least +5 (a rook) for the candidate wins, at most -5 loses, anything else
+/// (or an unreadable position) draws.
+pub fn adjudicate_truncated(final_fen: &str, candidate_white: bool) -> f64 {
+    match material_balance_white(final_fen) {
+        Some(b) => {
+            let cand = if candidate_white { b } else { -b };
+            if cand >= 5 {
+                1.0
+            } else if cand <= -5 {
+                0.0
+            } else {
+                0.5
+            }
+        }
+        None => 0.5,
+    }
+}
+
 /// Arena configuration.
 #[derive(Debug, Clone)]
 pub struct ArenaConfig {
@@ -127,8 +167,30 @@ pub struct ArenaResult {
     pub rng_policy: ArenaRngPolicy,
     /// Color-pair diagnostics (the pair is the independent unit).
     pub pairs: ArenaPairDiagnostics,
+    /// `(W + 0.5 * (D + T)) / games` (R15-P0.1).
+    pub score_truncation_as_draw: f64,
+    /// Every game scored, truncated games adjudicated by material (R15-P0.1).
+    pub adjudicated: ArenaAdjudicated,
     /// Per-game records in game-index order.
     pub game_records: Vec<ArenaGameRecord>,
+}
+
+/// Arena outcome with truncated games adjudicated by [`ADJUDICATION_RULE`]
+/// instead of dropped, so a side cannot gain by failing to convert.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+pub struct ArenaAdjudicated {
+    pub rule: String,
+    pub wins: u32,
+    pub draws: u32,
+    pub losses: u32,
+    /// Truncated games that were adjudicated (all of them).
+    pub adjudicated_games: u32,
+    /// Wins + losses after adjudication.
+    pub decisive: u32,
+    /// `(wins + 0.5 * draws) / games`, over all games.
+    pub score: f64,
+    pub score_ci_low: f64,
+    pub score_ci_high: f64,
 }
 
 /// One arena game, from the candidate's perspective.
@@ -148,6 +210,9 @@ pub struct ArenaGameRecord {
     pub moves_digest: String,
     /// Final position (diagnostic; e.g. what a truncated game looked like).
     pub final_fen: String,
+    /// Candidate score after adjudication (equals `candidate_score` for a
+    /// game that ended normally).
+    pub adjudicated_score: f64,
 }
 
 /// Pair-level arena diagnostics (H3.5B). Diagnostic only: promotion still
@@ -195,6 +260,28 @@ fn mean_ci(scores: &[f64], fallback: f64) -> (f64, f64, f64) {
         (mean - 1.96 * se).max(0.0),
         (mean + 1.96 * se).min(1.0),
     )
+}
+
+/// Adjudicated outcome over every game record.
+pub fn adjudicated_summary(records: &[ArenaGameRecord]) -> ArenaAdjudicated {
+    let scores: Vec<f64> = records.iter().map(|g| g.adjudicated_score).collect();
+    let count = |v: f64| scores.iter().filter(|&&s| s == v).count() as u32;
+    let (wins, draws, losses) = (count(1.0), count(0.5), count(0.0));
+    let (score, lo, hi) = mean_ci(&scores, 0.5);
+    ArenaAdjudicated {
+        rule: ADJUDICATION_RULE.to_string(),
+        wins,
+        draws,
+        losses,
+        adjudicated_games: records
+            .iter()
+            .filter(|g| g.candidate_score.is_none())
+            .count() as u32,
+        decisive: wins + losses,
+        score,
+        score_ci_low: lo,
+        score_ci_high: hi,
+    }
 }
 
 /// Pair diagnostics from per-game records in index order.
@@ -400,6 +487,8 @@ pub fn run_arena(
             termination: game.termination.label().to_string(),
             plies: game.plies.len(),
             moves_digest: moves_digest(&game),
+            adjudicated_score: score
+                .unwrap_or_else(|| adjudicate_truncated(&final_fen(&game), candidate_is_white)),
             final_fen: final_fen(&game),
         });
     }
@@ -435,6 +524,12 @@ pub fn run_arena(
         model_candidate: candidate_id.to_string(),
         rng_policy: cfg.rng_policy,
         pairs: pair_diagnostics(&game_records),
+        score_truncation_as_draw: if cfg.games == 0 {
+            0.5
+        } else {
+            (candidate_wins as f64 + 0.5 * (draws + truncated) as f64) / cfg.games as f64
+        },
+        adjudicated: adjudicated_summary(&game_records),
         game_records,
     })
 }

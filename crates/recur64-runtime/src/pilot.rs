@@ -17,7 +17,7 @@ use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 
 use crate::cancel::CancelToken;
-use crate::config::{PROMOTION_RULE_VERSION, RunConfig, SnapshotPolicy, TrainerPolicy};
+use crate::config::{PromotionScore, RunConfig, SnapshotPolicy, TrainerPolicy};
 use crate::coordinator::{
     RootSearchSummary, SelfPlayMetrics, collect_parallel_diag, selfplay_metrics,
 };
@@ -236,15 +236,26 @@ fn copy_dir(src: &Path, dst: &Path) -> anyhow::Result<()> {
 /// Conservative promotion on the candidate-vs-parent arena. Returns the hold
 /// reasons; empty means promote. A score of 0.5 is a tie and never promotes,
 /// and nothing promotes without `promotion_min_decisive_games` won-or-lost
-/// games (see [`PROMOTION_RULE_VERSION`]).
+/// games (see [`crate::config::PROMOTION_RULE_VERSION`] and
+/// [`crate::config::PROMOTION_RULE_V3`]).
+///
+/// With `promotion_score = adjudicated_material_v1` (promotion-v3) the score
+/// and decisive count are the material-adjudicated ones, so truncated games
+/// count instead of being dropped.
 fn promotion_holds(cfg: &RunConfig, healthy: bool, arena: &ArenaResult) -> Vec<String> {
     let mut reasons = Vec::new();
     if !healthy {
         reasons.push("unhealthy".to_string());
     }
-    if arena.decisive_games < cfg.promotion_min_decisive_games.max(1) {
+    let (score, decisive) = match cfg.promotion_score {
+        PromotionScore::PerGameV1 => (arena.candidate_score, arena.decisive_games),
+        PromotionScore::AdjudicatedMaterialV1 => {
+            (arena.adjudicated.score, arena.adjudicated.decisive)
+        }
+    };
+    if decisive < cfg.promotion_min_decisive_games.max(1) {
         reasons.push("arena_uninformative".to_string());
-    } else if arena.candidate_score <= 0.5 || arena.candidate_score < cfg.promotion_score_floor {
+    } else if score <= 0.5 || score < cfg.promotion_score_floor {
         reasons.push("score_not_above_parent".to_string());
     }
     reasons
@@ -464,7 +475,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             .clone()
             .unwrap_or_else(|| "fresh seeded init".into()),
         opening_suite_digest: cfg.opening_suite_digest()?,
-        promotion_rule: PROMOTION_RULE_VERSION.to_string(),
+        promotion_rule: cfg.promotion_rule().to_string(),
         git_revision: crate::provenance::git_revision().map(str::to_owned),
         git_branch: crate::provenance::git_branch().map(str::to_owned),
     };
@@ -1074,8 +1085,52 @@ mod promotion_tests {
             model_candidate: "candidate".into(),
             rng_policy: Default::default(),
             pairs: Default::default(),
+            score_truncation_as_draw: 0.5,
+            adjudicated: Default::default(),
             game_records: Vec::new(),
         }
+    }
+
+    /// R15-P0.1 promotion-v3: truncated games are adjudicated, so a candidate
+    /// whose opponent merely failed to convert cannot promote.
+    #[test]
+    fn promotion_v3_reads_the_adjudicated_score() {
+        // As played: 3 W, 1 L, 12 D, 4 T -> 0.594 over 16 decided: v2 promotes.
+        let mut a = arena(3, 1, 12, 4);
+        // The 4 truncations were parent wins by material: 3 W, 12 D, 5 L.
+        a.adjudicated = recur64_eval::ArenaAdjudicated {
+            wins: 3,
+            draws: 12,
+            losses: 5,
+            adjudicated_games: 4,
+            decisive: 8,
+            score: (3.0 + 6.0) / 20.0,
+            ..Default::default()
+        };
+        let v2 = cfg();
+        assert!(
+            promotion_holds(&v2, true, &a).is_empty(),
+            "v2 promotes 0.594"
+        );
+        let mut v3 = cfg();
+        v3.promotion_score = PromotionScore::AdjudicatedMaterialV1;
+        assert_eq!(promotion_holds(&v3, true, &a), ["score_not_above_parent"]);
+        a.adjudicated.score = 0.6;
+        assert!(promotion_holds(&v3, true, &a).is_empty());
+        a.adjudicated.decisive = 3;
+        assert_eq!(promotion_holds(&v3, true, &a), ["arena_uninformative"]);
+        // Identity: v3 is new, v2 unchanged; the rule text follows.
+        assert_ne!(
+            v2.scientific_config_hash().unwrap(),
+            v3.scientific_config_hash().unwrap()
+        );
+        assert_eq!(v2.promotion_rule(), crate::config::PROMOTION_RULE_VERSION);
+        assert_eq!(v3.promotion_rule(), crate::config::PROMOTION_RULE_V3);
+        assert!(
+            !serde_json::to_string(&v2)
+                .unwrap()
+                .contains("\"promotion_score\"")
+        );
     }
 
     #[test]

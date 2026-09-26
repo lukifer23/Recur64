@@ -391,8 +391,8 @@ fn owner_loop<M: BatchEvaluator>(
             }
         };
         if cancel.load(Ordering::SeqCst) {
-            let _ = first.respond.send(Err(EvalError::Shutdown));
             metrics.errors.fetch_add(1, Ordering::Relaxed);
+            let _ = first.respond.send(Err(EvalError::Shutdown));
             drain(&rx, &metrics);
             return;
         }
@@ -435,25 +435,30 @@ fn owner_loop<M: BatchEvaluator>(
 
         metrics.record_batch(size, queue_wait, forward_us);
 
+        // Count before replying: the reply is what wakes the requester, and a
+        // requester that reads the metrics right after must see its own
+        // request counted (the channel send orders the increment before the
+        // requester's receive). Replying first made `errors_propagate_to_every
+        // _request` flaky under load (H3.0, R15-P0).
         match results {
             Ok(v) if v.len() == size => {
                 for (r, res) in batch.into_iter().zip(v) {
-                    let _ = r.respond.send(Ok(res));
                     metrics.completed.fetch_add(1, Ordering::Relaxed);
+                    let _ = r.respond.send(Ok(res));
                 }
             }
             Ok(_) => {
                 for r in batch {
+                    metrics.errors.fetch_add(1, Ordering::Relaxed);
                     let _ = r.respond.send(Err(EvalError::Backend(
                         "batch result length mismatch".into(),
                     )));
-                    metrics.errors.fetch_add(1, Ordering::Relaxed);
                 }
             }
             Err(e) => {
                 for r in batch {
-                    let _ = r.respond.send(Err(e.clone()));
                     metrics.errors.fetch_add(1, Ordering::Relaxed);
+                    let _ = r.respond.send(Err(e.clone()));
                 }
             }
         }
@@ -463,8 +468,8 @@ fn owner_loop<M: BatchEvaluator>(
 /// Answer any requests still queued with `Shutdown`.
 fn drain(rx: &Receiver<Request>, metrics: &InferenceMetrics) {
     while let Ok(r) = rx.try_recv() {
-        let _ = r.respond.send(Err(EvalError::Shutdown));
         metrics.errors.fetch_add(1, Ordering::Relaxed);
+        let _ = r.respond.send(Err(EvalError::Shutdown));
     }
 }
 

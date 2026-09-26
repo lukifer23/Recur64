@@ -102,6 +102,27 @@ pub enum SnapshotPolicy {
     FrozenReference,
 }
 
+/// Which arena score conservative promotion reads (R15-P0.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PromotionScore {
+    /// conservative-v2: `candidate_score` over non-truncated games.
+    #[default]
+    PerGameV1,
+    /// promotion-v3: the `material_v1` adjudicated score over every game, so
+    /// failing to convert can neither help nor hide.
+    AdjudicatedMaterialV1,
+}
+
+impl PromotionScore {
+    pub fn is_default(&self) -> bool {
+        *self == Self::PerGameV1
+    }
+}
+
+/// promotion-v3 rule text (recorded when `promotion_score` is adjudicated).
+pub const PROMOTION_RULE_V3: &str = "conservative-v3:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,adjudicated_decisive>=min_decisive,adjudicated_score>0.5,adjudicated_score>=floor;adjudication=material_v1";
+
 /// What happens to the learner state when a candidate is held (D48).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -336,6 +357,10 @@ pub struct RunConfig {
     /// promote. A diagnostic floor, not an Elo sample size.
     #[serde(default = "default_min_decisive_games")]
     pub promotion_min_decisive_games: u32,
+    /// Arena score read by conservative promotion (R15-P0.1). The default is
+    /// conservative-v2 and is omitted from the serialized config.
+    #[serde(default, skip_serializing_if = "PromotionScore::is_default")]
+    pub promotion_score: PromotionScore,
     /// Frozen reference checkpoint directory to start the pilot from (an
     /// operational path; identity is `reference_model_id`).
     #[serde(default)]
@@ -563,7 +588,7 @@ impl RunConfig {
             "evaluation": self.evaluation_identity()?,
             "promotion": {
                 "snapshot_policy": self.snapshot_policy,
-                "rule": PROMOTION_RULE_VERSION,
+                "rule": self.promotion_rule(),
                 "score_floor": self.promotion_score_floor,
                 "min_decisive_games": self.promotion_min_decisive_games,
             },
@@ -582,6 +607,15 @@ impl RunConfig {
             identity["trainer_policy"] = serde_json::to_value(self.trainer_policy)?;
         }
         Ok(identity)
+    }
+
+    /// The promotion rule text this config runs (v2 by default, v3 when the
+    /// adjudicated score is selected).
+    pub fn promotion_rule(&self) -> &'static str {
+        match self.promotion_score {
+            PromotionScore::PerGameV1 => PROMOTION_RULE_VERSION,
+            PromotionScore::AdjudicatedMaterialV1 => PROMOTION_RULE_V3,
+        }
     }
 
     /// Experiment identity hash (see [`Self::scientific_identity`]).
