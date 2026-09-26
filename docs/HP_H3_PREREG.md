@@ -209,3 +209,101 @@ reported, not used for promotion (no promotion-v3 in this pass).
 
 D49 `[health_stops]` is restored with the pre-registered values
 `draw_share_two_cycles = 0.85`, `threefold_fifty = 0.60` and `truncation = 0.25`.
+
+## R15-P0 — prerequisites before any R15 training (fixed before measurement)
+
+Owner-approved (2026-09-26) after the H3.6 CONDITIONAL result. **No R15 training
+in P0.** P1 (per-arm R15 smokes) needs a separate go-ahead.
+
+### P0.1 Truncation-aware arena scoring (`material_v1`)
+
+H3.6 measured that truncated arena games are mostly won-but-unconverted
+positions, and they are dropped from `candidate_score`.
+
+**Material adjudication.** Every arena game is scored; none is dropped.
+- A game that ended normally keeps its result.
+- A game truncated at the ply cap is adjudicated from its final position:
+  - Material uses standard values P = 1, N = 3, B = 3, R = 5, Q = 9 (kings
+    excluded), counted from the candidate's side.
+  - A balance of **≥ +5** is a candidate win, **≤ −5** is a candidate loss,
+    and anything else is a draw.
+  - A final position that cannot be reconstructed counts as a draw.
+- Why +5: one rook's worth is the smallest standard balance that is a forced
+  win with bare pieces (K+R vs K, K+B+N vs K).
+  - K+B vs K+N (0) and K+R vs K+B (+2) are draws.
+  - Q vs R (+4) scores a draw. That is conservative: it can only understate a
+    real advantage, never invent one.
+
+**Reported fields.** The historical fields (`candidate_score`, its CI and
+`decisive_games`) are unchanged. New fields:
+- `score_truncation_as_draw = (W + 0.5·(D + T)) / games`;
+- `adjudicated {rule, wins, draws, losses, adjudicated_games, decisive,
+  score, ci}`, where `score = (W' + 0.5·D') / games` over **all** games.
+
+**Promotion-v3** (`promotion_score = "adjudicated_material_v1"`):
+- It keeps the exact conservative-v2 health gates.
+- The score test reads `adjudicated.score` instead of `candidate_score`, and
+  the decisive-games floor reads `adjudicated.decisive`.
+- A candidate can no longer gain by failing to convert, or by its opponent
+  failing to convert against it.
+- The default stays conservative-v2 on `candidate_score`, so every earlier
+  identity is unchanged. The setting enters the scientific identity only when
+  set.
+- **No additional margin rule.** At 32 games the per-game SE is about 0.08, so
+  a margin small enough to allow any promotion gives little protection. With
+  the continuous trainer, learning does not depend on promotion. Strength
+  claims come only from the pre-registered, larger cross-arm arenas.
+
+**Validation (MEASURED before adoption):** re-score the cycle-2 H3.6 parent-arena
+replay, which has final FENs. Expected (computed by hand from the four FENs):
+- g0 → candidate loss;
+- g13 and g15 → candidate losses (the parent had K+B+N);
+- g19 → draw.
+
+That gives adjudicated W / D / L = 12 / 13 / 7 and a score of
+(12 + 6.5) / 32 = **0.578**, versus 0.643 as played. The code must reproduce
+this exactly.
+
+### P0.2 Truncated self-play games (ADR D52, decided now)
+
+**Keep discarding** truncated self-play games from value and policy training,
+identically for every R arm, and **report** the truncated share per arm per
+cycle.
+- Reason: adjudicating them into WDL targets would change the training
+  targets. That needs its own measurement, and it would confound an R1/R2/R4
+  comparison if introduced mid-programme.
+- The bias is known and measured: 1–2 of 32 games per cycle in H3.6. It is
+  equal in kind across arms.
+- If one arm's truncated share exceeds another's by more than 0.10 absolute,
+  the comparison is CONDITIONAL on that difference.
+
+### P0.3 R15 frozen reference
+
+- Config `configs/hp/r15-reference-v2.toml`: identical to
+  `f15-reference-v2.toml` except the 2 + 4 + 2 block layout, `run_id` and
+  `model_profile`. Seed 1, CUDA FP32, head v2.
+- Freeze **twice in separate processes**. GO iff both freezes have the same
+  `semantic_weights_digest`, 15,154,632 unique params and `HEAD_VERSION` 2.
+- The first freeze becomes the pinned reference.
+- One reference serves R1, R2 and R4, because recurrence is not a model
+  parameter.
+
+### P0.4 RTX 2050 requalification at R1 / R2 / R4
+
+Tools: the frozen R15 reference and the H3 schedule (K = 2, concurrency 8, batch
+16, timeout 1000 µs, 32 sims, training 32 × 4). Nothing else runs on the GPU.
+- `bench-lifecycle` (modes one, two, pilot and pilot-promoted; reps 8) at
+  R4, the worst case.
+- `bench-train` at 32 × 4 on the H3 replay, at R1, R2 and R4.
+- `bench-runtime` self-play, 32 games at 32 sims, at R1, R2 and R4.
+
+GO per arm iff:
+- 0 inference errors;
+- the post-shutdown VRAM plateau does not grow monotonically across reps;
+- peak VRAM **< 3.0 GB** in every tool;
+- all training metrics finite.
+
+Throughput (trainable pos/s, s per update) is **recorded, not gated**. It sets
+each arm's P1 wall budget, at 2× the measured cycle estimate. No K, batch or
+concurrency change between arms unless an arm fails the VRAM gate; in that
+case, STOP and report.
