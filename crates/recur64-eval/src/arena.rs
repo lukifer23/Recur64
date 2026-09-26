@@ -146,6 +146,8 @@ pub struct ArenaGameRecord {
     pub plies: usize,
     /// SHA-256 prefix of the start FEN and the selected action sequence.
     pub moves_digest: String,
+    /// Final position (diagnostic; e.g. what a truncated game looked like).
+    pub final_fen: String,
 }
 
 /// Pair-level arena diagnostics (H3.5B). Diagnostic only: promotion still
@@ -232,6 +234,20 @@ pub fn pair_diagnostics(records: &[ArenaGameRecord]) -> ArenaPairDiagnostics {
     d.pair_score_ci_low = lo;
     d.pair_score_ci_high = hi;
     d
+}
+
+/// Replay the selected actions from the start FEN to the final position.
+fn final_fen(game: &recur64_search::SelfPlayGame) -> String {
+    let replay = || -> Result<String, recur64_core::CoreError> {
+        let mut state = GameState::from_fen(&game.start_fen)?;
+        for p in &game.plies {
+            let (from, to, promo) = p.selected.to_physical(state.perspective());
+            let promotion = (!promo.is_none()).then_some(promo);
+            state.apply(recur64_core::StandardMove::new(from, to, promotion))?;
+        }
+        Ok(state.to_fen())
+    };
+    replay().unwrap_or_else(|e| format!("unreplayable: {e}"))
 }
 
 fn moves_digest(game: &recur64_search::SelfPlayGame) -> String {
@@ -384,6 +400,7 @@ pub fn run_arena(
             termination: game.termination.label().to_string(),
             plies: game.plies.len(),
             moves_digest: moves_digest(&game),
+            final_fen: final_fen(&game),
         });
     }
 
