@@ -355,9 +355,29 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
 - P4.6 bounded qualification and the P4.7 R10 entry decision.
 - No 24h run is authorized.
 
+## HP H3 — mainline transfer + F15-v2 requalification (2026-09-26)
+
+Branch `experiment/hp-r15-h3-integration` (mainline unchanged). This is **HP
+experiment** work, not a mainline gate, so mainline status above is unaffected.
+
+- Merged mainline `03e62f7` into HP `3430e6ca` (`a926fa4`); 17 generic conflicts
+  resolved to mainline; HP-only assets preserved; full fmt/clippy/test/CUDA gate
+  green.
+- **Head v2:** F15 = R15 = 15,154,632 unique params; head-v1 checkpoints refused.
+- **Lifecycle GO:** D44 holds on the RTX 2050 — 496 MB plateau vs the historical
+  3,909 MiB; 0 inference errors; ≤2 resident models (D46).
+- **Frozen HP measure:** K = 2, concurrency 8, training 32x4, **search budget
+  32**, arena V2.
+- **Repetition attractor resolved:** self-play draws 22–28% vs the historical
+  89.2%.
+- Historical head-v1 HP evidence preserved and labelled HISTORICAL in
+  `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
+  pre-registration in `docs/HP_H3_PREREG.md`.
+
 ## Historical evidence note
 
 The Phase 3 F10 result above predates the seed and gradient fixes and head v2.
 It is not a clean modern baseline, and its checkpoints are head v1. The HP
-F15/R15 record lives on `experiment/hp-r15`; it is external evidence, not a
-mainline result.
+F15/R15 H1/H2 record lives on `experiment/hp-r15` (head v1); the H3 head-v2
+requalification lives on `experiment/hp-r15-h3-integration`. Both are external
+HP experiment evidence, not mainline results.

@@ -153,3 +153,27 @@ and candidate promotion requires informative parent results.
 The workstation F10 baseline in `docs/F10_BASELINE.md` is historical evidence
 from different hardware. It is not an HP F15 learning measurement. GPU systems,
 search-budget, smoke, and pilot results must be reported separately when run.
+
+## H3 — mainline transfer and head-v2 requalification (2026-09-26)
+
+- **Branch:** `experiment/hp-r15-h3-integration` from `3430e6ca`; safety tag
+  `hp-r15-pre-h3-3430e6c`. Mainline `03e62f7` merged at `a926fa4`.
+- **Conflict policy:** all 17 generic conflicts resolved to mainline (main is the
+  newer descendant of the shared harness). No hybrid semantics invented. HP-only
+  assets survive untouched. The stray working-tree deletion of `Grok-plan.md`
+  was restored.
+- **Code contracts added/changed:** `f15_r15_parity.rs` pins the head-v2 count
+  **15,154,632** and asserts `HEAD_VERSION == 2`; checkpoint tests refuse head-v1
+  and pre-field legacy checkpoints; `t0_prior.rs` extends head-v2 sanity to F15
+  R1 and R15 R1/R2/R4.
+- **New configs (historical head-v1 configs untouched):**
+  `configs/hp/f15-reference-v2.toml`, `configs/hp/f15-smoke-v2.toml`.
+- **Pre-registration:** `docs/HP_H3_PREREG.md`; **results:** `docs/HP_H3_RESULTS.md`.
+- **Adopted measured decisions on the RTX 2050:** K = 2 (D47), concurrency 8,
+  training 32x4 (effective 128), search budget 32, D44 lifecycle **GO**,
+  D46 ≤2 resident verified.
+- **Measured system fact (new):** weight initialisation is *nearly* deterministic
+  but a small subset of parameters varies between processes, so the frozen
+  reference's `model_id` (a file content hash) is not reproducible from
+  config+seed. Freeze once and pin `reference_model_id`. Evidence in
+  `docs/HP_H3_RESULTS.md`.

@@ -1,5 +1,14 @@
 # HP H1 measured results — 2026-09-23
 
+> **HISTORICAL (head v1).** This document is the frozen record of the HP H1/H2
+> F15 qualification under readout **head v1**, the old initial prior, the old
+> exploration contract (no root Dirichlet noise, no ply-30 sampling), single-leaf
+> search (K = 1), the old learner-cap configuration, and the pre-D44 CubeCL owner
+> lifecycle. **H3 re-qualifies F15 under head v2 and the newer
+> learning/search/runtime contracts**; see [`HP_H3_RESULTS.md`](HP_H3_RESULTS.md).
+> Nothing in this file is rewritten by H3 — its numbers and its R15 NO-GO remain
+> valid evidence **for that old contract**.
+
 Status: **H2 complete; final entry decision recorded below**. This is the
 authoritative measured HP record. MEASURED, INFERRED, and NOT RUN are
 labelled. Do not infer F15 learning health from a section that does not say it

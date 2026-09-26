@@ -47,21 +47,24 @@ Phase 4 so far:
 This is a research laboratory, **not** a chess engine. It has no UCI engine
 loop and makes no strength claims.
 
-Phase 3 is merged into the HP experiment branch and adds streaming replay,
-multi-cycle pilots, raw-policy evaluation, and a warmup/cosine learner with
-gradient accumulation. The HP H1 harness is under qualification; no F15
-learning or R15 training result is claimed here.
+> **Experimental branch note.** The current checkout is
+> `experiment/hp-r15-h3-integration`, a separate experimental lineage forked
+> from Phase 2 (`78be205`), reconciled with Phase 3 (`5ac291c`, merge `fa66c32`)
+> and then merged with mainline `03e62f7` (merge `a926fa4`). It explores a ~15M
+> matched-parameter F15/R15 recurrence-vs-search comparison on a home HP machine
+> (RTX 2050, 4 GB). It is not mainline. See `docs/HP_EXPERIMENT.md` and
+> `docs/HP_CHANGES.md`; machine-specific detail stays in those files.
 
-> **Experimental branch note.** This checkout is `experiment/hp-r15`, a separate
-> experimental lineage forked from Phase 2 (`78be205`) and reconciled with
-> Phase 3 (`5ac291c`) in merge `fa66c32`. It explores a ~15M
-> matched-parameter F15/R15 recurrence-vs-search comparison on a home HP machine.
-> It is not mainline and must not be merged without a separate decision. See
-> `docs/HP_EXPERIMENT.md` and `docs/HP_CHANGES.md`; machine-specific detail stays
-> in those files.
+**HP H3 (head v2, 2026-09-26) requalifies F15** after transferring the mainline
+mechanisms. Measured on the RTX 2050: head-v2 F15/R15 are matched at 15,154,632
+unique params; the D44 owner-memory fix holds (496 MB plateau vs the historical
+3,909 MiB); K = 2, concurrency 8, search budget 32 are adopted from measurement;
+and self-play draws fell to 22–28% from the historical 89.2%. R15 training
+remains **not run**.
 
-The current H1 measurements and unfinished gates are in
-[`docs/HP_H1_RESULTS.md`](docs/HP_H1_RESULTS.md).
+- Historical head-v1 HP evidence (frozen): [`docs/HP_H1_RESULTS.md`](docs/HP_H1_RESULTS.md).
+- H3 pre-registration: [`docs/HP_H3_PREREG.md`](docs/HP_H3_PREREG.md).
+- H3 measured results: [`docs/HP_H3_RESULTS.md`](docs/HP_H3_RESULTS.md).
 
 ## Requirements
 

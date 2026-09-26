@@ -332,3 +332,30 @@ is therefore re-based on it:
 4. **Raw policy + openings** — `recur64 eval-policy` and `configs/openings-v1.toml`.
 5. **R15 entry gate** — requires F15 *learning health*, not just "F15 runs"
    (see the updated prior above).
+
+## H3 — mainline science transfer + F15-v2 requalification (2026-09-26)
+
+Branch `experiment/hp-r15-h3-integration` (from `3430e6ca`, tag
+`hp-r15-pre-h3-3430e6c`). Mainline `03e62f7` merged in at `a926fa4`; all 17
+generic conflicts resolved to mainline (the newer descendant of the shared
+harness). HP-only assets (`configs/f15.toml`, `configs/r15.toml`, `configs/hp/*`,
+`configs/hardware/hp-home.toml`, `f15_r15_parity.rs`, `docs/HP_*`, `Grok-plan.md`,
+`scripts/hp-*`) survived unchanged.
+
+Rules were fixed before measurement in [`HP_H3_PREREG.md`](HP_H3_PREREG.md);
+measured results are in [`HP_H3_RESULTS.md`](HP_H3_RESULTS.md). Headline
+outcomes on the RTX 2050:
+
+- **Merge gate:** fmt/clippy/tests/CUDA all green.
+- **Head v2:** F15 = R15 = **15,154,632** unique params; T0 sane; head-v1
+  checkpoints refused.
+- **Lifecycle GO (D44):** 496 MB plateau across 32 owner lifecycles vs the
+  historical 3,909 MiB; 0 errors; ≤2 resident models (D46).
+- **K = 2 adopted** (+13.2% trainable pos/s, identical data health); concurrency
+  8; training 32x4 retained.
+- **Search budget 32 adopted** (identical health to 64, +86% throughput).
+- **Repetition attractor gone:** self-play draws 22–28% vs the historical 89.2%.
+- Historical head-v1 evidence is preserved, not rewritten, and labelled
+  HISTORICAL in `HP_H1_RESULTS.md`.
+
+R15 training, multi-R schedules, and R1/R2/R4 experiments remain **NOT RUN**.

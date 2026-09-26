@@ -1,0 +1,134 @@
+{
+  "checkpoint": "runs/hp-h3-ref-f15-v2",
+  "checkpoint_model_id": "d89b408fcc7a3cd9874a0ffbbcafd121c6c78cbb9818d4adaac0fe8d51ea234b",
+  "device": "cuda",
+  "git_revision": null,
+  "layouts": [
+    {
+      "accumulation_steps": 4,
+      "all_finite": true,
+      "effective_batch": 128,
+      "error": null,
+      "examples_consumed": 2560,
+      "examples_per_sec": 144.30735364851296,
+      "first_loss": 4.333785057067871,
+      "gpu": {
+        "last_vram_mb": 1290,
+        "min_vram_mb": 1290,
+        "peak_vram_mb": 1290,
+        "samples": 34,
+        "temp_max_c": 66,
+        "util_busy_mean": 90.54545454545455,
+        "util_max": 100
+      },
+      "last_loss": 4.056239128112793,
+      "max_grad_norm": 4.617333889007568,
+      "physical_batch": 32,
+      "secs": 17.7399137,
+      "step_ms_mean": 886.9956849999999,
+      "updates": 20,
+      "warmup_secs": 10.2871117,
+      "warmup_updates": 2
+    },
+    {
+      "accumulation_steps": 2,
+      "all_finite": true,
+      "effective_batch": 128,
+      "error": null,
+      "examples_consumed": 2560,
+      "examples_per_sec": 151.83103843486492,
+      "first_loss": 4.333789348602295,
+      "gpu": {
+        "last_vram_mb": 1962,
+        "min_vram_mb": 1962,
+        "peak_vram_mb": 1962,
+        "samples": 32,
+        "temp_max_c": 69,
+        "util_busy_mean": 96.40625,
+        "util_max": 100
+      },
+      "last_loss": 4.056243896484375,
+      "max_grad_norm": 4.617349624633789,
+      "physical_batch": 64,
+      "secs": 16.8608476,
+      "step_ms_mean": 843.0423800000001,
+      "updates": 20,
+      "warmup_secs": 2.9850754999999998,
+      "warmup_updates": 2
+    },
+    {
+      "accumulation_steps": 8,
+      "all_finite": true,
+      "effective_batch": 128,
+      "error": null,
+      "examples_consumed": 2560,
+      "examples_per_sec": 138.33333405381944,
+      "first_loss": 4.333788871765137,
+      "gpu": {
+        "last_vram_mb": 1964,
+        "min_vram_mb": 1964,
+        "peak_vram_mb": 1964,
+        "samples": 35,
+        "temp_max_c": 70,
+        "util_busy_mean": 88.57142857142857,
+        "util_max": 97
+      },
+      "last_loss": 4.056247711181641,
+      "max_grad_norm": 4.61738920211792,
+      "physical_batch": 16,
+      "secs": 18.506024,
+      "step_ms_mean": 925.3012000000001,
+      "updates": 20,
+      "warmup_secs": 3.3250987,
+      "warmup_updates": 2
+    }
+  ],
+  "lr": 0.0003,
+  "lr_schedule": {
+    "planned_updates": 10,
+    "warmup_updates": 10
+  },
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "precision": "fp32",
+  "replay": "runs/hp-h3-replay",
+  "replay_identity": {
+    "entries": [
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 0,
+        "games": 32,
+        "git_revision": "9889c175f5861f8c5f41e26071bfce58769cbaed",
+        "head_version": 2,
+        "model_id": "d89b408fcc7a3cd9874a0ffbbcafd121c6c78cbb9818d4adaac0fe8d51ea234b",
+        "ply_cap": 400,
+        "recurrence": 1,
+        "resolved_config_hash": "d4b20de9030f820aa6774d721fea9a293ee6252b3733a915cfa415210ce81c04",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "8fdf4fa7d35135995283656fcfdba11aa83a8c277f058ae227e63228dbf8f9b1",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      }
+    ],
+    "kind": "recur64-replay-identity-v1"
+  },
+  "replay_sampleable_positions": 4795,
+  "replay_total_games": 32
+}
