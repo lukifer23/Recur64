@@ -526,6 +526,48 @@ impl<B: Backend> ProbeModel<B> {
         ]
     }
 
+    /// Every float parameter as `(name, dims, values)` in an explicit, stable
+    /// order (struct declaration order, blocks by index). Used for semantic
+    /// weight identity, which must not depend on generated `ParamId`s or on
+    /// the recorder's container layout. An absent optional bias is reported
+    /// with `values == None`.
+    pub fn named_float_params(&self) -> anyhow::Result<Vec<NamedParam>> {
+        let mut out = Vec::new();
+        push_linear(&mut out, "input_proj", &self.input_proj)?;
+        push_param(&mut out, "square_emb".into(), &self.square_emb)?;
+        for (group, blocks) in [
+            ("input_blocks", &self.input_blocks),
+            ("core_blocks", &self.core_blocks),
+            ("output_blocks", &self.output_blocks),
+        ] {
+            for (i, b) in blocks.iter().enumerate() {
+                let p = format!("{group}.{i}");
+                push_param(&mut out, format!("{p}.norm1.gamma"), &b.norm1.gamma)?;
+                push_linear(&mut out, &format!("{p}.q_proj"), &b.q_proj)?;
+                push_linear(&mut out, &format!("{p}.k_proj"), &b.k_proj)?;
+                push_linear(&mut out, &format!("{p}.v_proj"), &b.v_proj)?;
+                push_linear(&mut out, &format!("{p}.out_proj"), &b.out_proj)?;
+                push_param(&mut out, format!("{p}.rel.table"), &b.rel.table)?;
+                push_param(&mut out, format!("{p}.norm2.gamma"), &b.norm2.gamma)?;
+                push_linear(&mut out, &format!("{p}.ffn1"), &b.ffn1)?;
+                push_linear(&mut out, &format!("{p}.ffn2"), &b.ffn2)?;
+            }
+        }
+        push_param(
+            &mut out,
+            "inject_norm.gamma".into(),
+            &self.inject_norm.gamma,
+        )?;
+        push_param(&mut out, "final_norm.gamma".into(), &self.final_norm.gamma)?;
+        push_param(&mut out, "alpha_logit".into(), &self.alpha_logit)?;
+        push_linear(&mut out, "source_proj", &self.source_proj)?;
+        push_linear(&mut out, "dest_proj", &self.dest_proj)?;
+        push_linear(&mut out, "promo1", &self.promo1)?;
+        push_linear(&mut out, "promo2", &self.promo2)?;
+        push_linear(&mut out, "wdl", &self.wdl)?;
+        Ok(out)
+    }
+
     /// Number of uniquely stored core blocks.
     pub fn core_block_count(&self) -> usize {
         self.core_blocks.len()
@@ -564,6 +606,54 @@ impl<B: Backend> ProbeModel<B> {
         let t = Tensor::<B, 2>::from_data(TensorData::new(data, [o, i]), &device);
         m.core_blocks[0].q_proj.weight = Param::from_tensor(t);
         m
+    }
+}
+
+/// One named float parameter (see [`ProbeModel::named_float_params`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct NamedParam {
+    pub name: String,
+    pub dims: Vec<usize>,
+    /// Row-major FP32 values; `None` for an absent optional parameter.
+    pub values: Option<Vec<f32>>,
+}
+
+fn push_param<B: Backend, const D: usize>(
+    out: &mut Vec<NamedParam>,
+    name: String,
+    param: &Param<Tensor<B, D>>,
+) -> anyhow::Result<()> {
+    let t = param.val();
+    let dims = t.dims().to_vec();
+    // `to_vec::<f32>` refuses a non-F32 dtype, so no silent conversion.
+    let values = t
+        .into_data()
+        .to_vec::<f32>()
+        .map_err(|e| anyhow::anyhow!("parameter {name} is not FP32: {e:?}"))?;
+    out.push(NamedParam {
+        name,
+        dims,
+        values: Some(values),
+    });
+    Ok(())
+}
+
+fn push_linear<B: Backend>(
+    out: &mut Vec<NamedParam>,
+    prefix: &str,
+    linear: &Linear<B>,
+) -> anyhow::Result<()> {
+    push_param(out, format!("{prefix}.weight"), &linear.weight)?;
+    match &linear.bias {
+        Some(b) => push_param(out, format!("{prefix}.bias"), b),
+        None => {
+            out.push(NamedParam {
+                name: format!("{prefix}.bias"),
+                dims: Vec::new(),
+                values: None,
+            });
+            Ok(())
+        }
     }
 }
 

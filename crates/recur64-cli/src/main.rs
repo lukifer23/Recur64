@@ -14,6 +14,7 @@ mod cuda_smoke;
 mod doctor;
 mod eval_arena;
 mod inspect;
+mod model_digest;
 mod model_info;
 mod perft;
 mod phase2;
@@ -40,6 +41,8 @@ enum Commands {
         #[arg(long)]
         config: PathBuf,
     },
+    /// Artifact `model_id` vs semantic weight digest of a checkpoint (D50).
+    ModelDigest(model_digest::ModelDigestArgs),
     /// Bounded benchmark matrix; writes raw data to --output.
     Bench(bench::BenchArgs),
     /// Count legal move tree nodes from a FEN (validates move generation).
@@ -90,6 +93,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Commands::Doctor => doctor::run_doctor(),
         Commands::ModelInfo { config } => model_info::run_model_info(&config),
+        Commands::ModelDigest(args) => model_digest::run(args),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),
         Commands::ValidatePosition(args) => inspect::run_validate(args),

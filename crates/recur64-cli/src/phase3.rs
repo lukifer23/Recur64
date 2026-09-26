@@ -84,6 +84,9 @@ fn freeze_reference_impl<B: AutodiffBackend>(
     meta.run_id = cfg.run_id.clone();
     meta.git_revision = RunMetadata::new(cfg).git_revision;
     save_training(output, &model, &optim, &meta)?;
+    // Semantic weight identity (D50 amendment): model_id is the artifact hash
+    // and includes generated ParamIds; this digest covers values only.
+    let semantic = recur64_model::digest::semantic_weights_digest(&model)?;
     std::fs::write(output.join("config.toml"), toml::to_string_pretty(cfg)?)?;
     let saved: CheckpointMeta = serde_json::from_slice(&std::fs::read(output.join("meta.json"))?)?;
     let run_meta = RunMetadata::new(cfg);
@@ -93,6 +96,8 @@ fn freeze_reference_impl<B: AutodiffBackend>(
     let identity = serde_json::json!({
         "kind": "recur64-frozen-reference-v1",
         "model_id": saved.model_id,
+        "semantic_weights_digest": semantic.digest,
+        "semantic_digest_version": semantic.version,
         "seed": cfg.seed,
         "model": cfg.model,
         "recurrence": cfg.recurrence,
