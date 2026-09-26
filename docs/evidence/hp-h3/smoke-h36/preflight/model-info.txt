@@ -1,0 +1,26 @@
+config          : f15
+device          : Cpu
+precision       : fp32
+geometry        : width=512 heads=8 ffn=768 head_dim=64
+blocks          : input=0 core=8 (shared) output=0 unique=8
+
+parameter breakdown (unique; shared counted once):
+  input_proj                    61440
+  square_emb                    32768
+  input_blocks                      0
+  core_blocks (shared)       14729280
+  output_blocks                     0
+  inject_norm                     512
+  final_norm                      512
+  alpha_logit                       1
+  source_proj                   65664
+  dest_proj                     65664
+  promotion_head               197252
+  wdl_head                       1539
+  TOTAL UNIQUE               15154632
+
+executed transformer blocks and compute multiplier:
+  R              final blocks    deep-sup blocks  mult vs R=1
+  R=1                       8                  8         1.00x
+
+note: 'mult vs R=1' = executed_blocks / 8 (the 8-block R=1 control).
