@@ -41,6 +41,14 @@ pub struct EvalArenaArgs {
     /// Override arena_rng_policy (`per_game_v1` | `paired_common_v1`).
     #[arg(long)]
     pub rng_policy: Option<String>,
+    /// Games at once (default: the config's eval_concurrency, else the
+    /// self-play concurrency). Scheduling only.
+    #[arg(long)]
+    pub concurrency: Option<usize>,
+    /// Owner batch cap (default: eval_max_inference_batch, else
+    /// max_inference_batch). Scheduling only.
+    #[arg(long)]
+    pub max_batch: Option<usize>,
     /// Override arena_tree_policy (`per_node_side_v1` | `root_player_v1`).
     #[arg(long)]
     pub tree_policy: Option<String>,
@@ -68,7 +76,11 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
         None => Vec::new(),
     };
     let (ref_id, cand_id) = (model_id(&args.reference)?, model_id(&args.candidate)?);
-    let concurrency = cfg.collection_shape()?.1;
+    let concurrency = args
+        .concurrency
+        .or(cfg.eval_concurrency)
+        .unwrap_or(cfg.collection_shape()?.1);
+    let cfg = &cfg.for_evaluation();
     let arena_cfg = cfg.arena_config(args.seed_offset, openings, concurrency);
     let ref_owner = spawn_owner::<B::InnerBackend>(&args.reference, cfg, &device)?;
     let cand_owner = spawn_owner::<B::InnerBackend>(&args.candidate, cfg, &device)?;
@@ -98,6 +110,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
             "root_dirichlet_epsilon": arena_cfg.root_dirichlet_epsilon,
             "seed": arena_cfg.seed,
             "concurrency": arena_cfg.concurrency,
+            "max_inference_batch": cfg.max_inference_batch,
             "leaves_in_flight": arena_cfg.leaves_in_flight,
             "rng_policy": arena_cfg.rng_policy,
             "tree_policy": arena_cfg.tree_policy,
@@ -155,6 +168,9 @@ pub fn run(args: EvalArenaArgs) -> anyhow::Result<()> {
     }
     if let Some(e) = args.noise_epsilon {
         cfg.arena_root_dirichlet_epsilon = e;
+    }
+    if let Some(b) = args.max_batch {
+        cfg.eval_max_inference_batch = Some(b);
     }
     if let Some(p) = &args.tree_policy {
         cfg.arena_tree_policy = serde_json::from_value(serde_json::Value::String(p.clone()))

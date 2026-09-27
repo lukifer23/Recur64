@@ -323,3 +323,33 @@ case, STOP and report.
 - **Gates unchanged:** 0 errors, no VRAM growth across reps, peak < 3.0 GB.
   Training VRAM (the R-dependent risk) was measured first: R4 peaks at
   2,113 MB.
+
+## R15-P0.5 — D54 impact and evaluation-scheduling measurement (fixed before running)
+
+**Diagnostic** re-runs of the H3.6 cycle-2 arenas: same checkpoints, same seeds
+(offset 2), `paired_common_v1`, K = 2, 32 sims, 32 games, the run's own config.
+They change no historical result.
+
+| cell | models | tree policy | schedule | compared with |
+|---|---|---|---|---|
+| M1 | `d0ee3ced` vs reference `d89b408f` | `root_player_v1` | c8 / batch 16 | H3.6 mixed-tree 0.733 |
+| M2 | `d0ee3ced` vs parent `990e5e54` | `root_player_v1` | c8 / batch 16 | H3.6 mixed-tree 0.643 |
+| M3 | as M1 | `root_player_v1` | **c32 / batch 32** | M1 (wall time, game identity) |
+
+**Reported, not gated:**
+- the as-played score, `score_truncation_as_draw` and the `material_v1`
+  adjudicated score, with the change against the mixed-tree result;
+- wall time and batch statistics.
+
+**Interpretation, fixed in advance:**
+- D54 predicts that per-player trees *increase* separation from 0.5 whenever
+  the networks differ. A shift of ≥ 0.05 in either cell counts as a material
+  effect. A smaller shift is reported as "no material effect measured at
+  n = 32".
+- Scheduling (M3 vs M1) must not change what the arena measures. Move-digest
+  identity of M3 vs M1 is recorded.
+  - CUDA batch composition can legitimately change float results, and
+    therefore games. So identity is *not* required.
+  - If the games differ, the scores must agree within the per-game CI.
+- Adopt `eval_concurrency = 32` and `eval_max_inference_batch = 32` for R15
+  iff M3 is **≥ 1.3× faster** than M1 with 0 errors and peak VRAM < 3.0 GB.
