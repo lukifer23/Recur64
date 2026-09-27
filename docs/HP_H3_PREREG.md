@@ -381,3 +381,21 @@ each. That is 64 games, all of them decided under D53.
 
 Every disagreement is reported. If the gate fails, STOP and report; there is
 no retuning of N or the threshold on the same data.
+
+## Perf #11 / #13 — scheduling on the accepted D55 build (fixed before running)
+
+Execution-only settings; neither enters the scientific identity.
+
+- **#13 evaluation scheduling.**
+  - Compare the M1 arena (`d0ee3ced` vs reference, root_player_v1, paired RNG,
+    offset 2, 32 games) on the D55 build at c8 / batch 16 against the
+    existing D55 c32 / batch 32 run. The c32 run is the 338 s shadow run;
+    shadow mode does not change play.
+  - Adopt `eval_concurrency = 32` and `eval_max_inference_batch = 32` for R15
+    iff c32 is **≥ 1.3× faster** with **identical move digests** on all 32
+    games and 0 errors.
+- **#11 self-play concurrency.**
+  - 16 games per cell at c8 / c12 / c16 (batch = 2 × c), trained `d0ee3ced`,
+    32 sims, K = 2.
+  - Adopt the smallest concurrency whose trainable positions/s is within 5 % of
+    the best, with 0 errors and peak VRAM < 3.0 GB (the H3.3B rule).
