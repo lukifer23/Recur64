@@ -779,6 +779,51 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     covering the misplaced `[model]` key and the misspelled stop.
   - `lr_schedule_status_counts_zero_lr_updates`.
 
+## D52 - Truncated self-play games stay untrainable (R15 comparison policy)
+
+- **Status:** ACCEPTED (HP R15-P0.2, 2026-09-26; pre-registered in
+  `HP_H3_PREREG.md`).
+- **Decision:** games truncated at the ply cap remain excluded from policy
+  and value training, identically for every R15 arm. The truncated share is
+  reported per arm per cycle.
+- **Why:**
+  - H3.6 measured that these are mostly won-but-unconverted games (1–2 of 32
+    per cycle), so the value head never sees those positions as wins. That is
+    a known bias.
+  - Adjudicating them into WDL targets would change the training targets.
+    That needs its own measurement, and it would confound R1/R2/R4 if
+    introduced mid-programme.
+- **Consequence:** if two arms' truncated shares differ by more than 0.10
+  absolute, their comparison is CONDITIONAL on that difference.
+  Target adjudication stays a separately measured future option.
+
+## D53 - material_v1 arena adjudication and opt-in promotion-v3
+
+- **Status:** ACCEPTED (HP R15-P0.1, 2026-09-26; pre-registered, validated).
+- **Decision:**
+  - Every arena game is scored. A game truncated at the cap is adjudicated
+    from its final position by material (P1 N3 B3 R5 Q9): ≥ +5 is a win,
+    ≤ −5 a loss, otherwise a draw.
+  - `ArenaResult.adjudicated` and `score_truncation_as_draw` are reported.
+    Historical fields are unchanged.
+  - `promotion_score = "adjudicated_material_v1"` (promotion-v3) makes
+    conservative promotion read the adjudicated score and decisive count.
+    The default conservative-v2 is identity-neutral. There is no margin rule.
+- **Why:**
+  - H3.6: truncated arena games were mostly unconverted wins silently dropped
+    from `candidate_score`.
+  - Cycle 0's promotion was not robust to that.
+- **Validation:** the H3.6 cycle-2 replay re-scores to exactly the
+  pre-registered 12 / 13 / 7 = 0.578 (0.643 as played).
+- **Tests:**
+  - `h36_cycle2_replay_rescores_to_the_preregistered_value`
+  - `material_balance_and_thresholds`
+  - `promotion_v3_reads_the_adjudicated_score`
+- **Also fixed** (same commit): the inference owner now counts
+  `completed`/`errors` **before** replying. Replying first let a requester
+  read stale metrics, which was the root cause of the recurring
+  `errors_propagate_to_every_request` flake.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
