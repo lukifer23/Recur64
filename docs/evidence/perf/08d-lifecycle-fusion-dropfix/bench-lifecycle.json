@@ -1,0 +1,85 @@
+{
+  "arena_games": 8,
+  "batch_timeout_us": 1000,
+  "checkpoint": "runs/hp-h3-ref-f15-v2",
+  "checkpoint_model_id": "d89b408fcc7a3cd9874a0ffbbcafd121c6c78cbb9818d4adaac0fe8d51ea234b",
+  "concurrency": 16,
+  "device": "cuda",
+  "git_branch": "experiment/hp-r15-h3-integration",
+  "git_revision": "16ebfd1c3513050f5aa828bf2ef373406a48774b-dirty",
+  "initial_vram_mb": 0,
+  "max_inference_batch": 16,
+  "precision": "fp32",
+  "reps": [
+    {
+      "batch_mean": 2.958828911253431,
+      "errors": 0,
+      "evaluations": 16170,
+      "evaluations_per_sec": 206.08200872826512,
+      "forward_us_mean": 18947.70100640439,
+      "gpu": {
+        "last_vram_mb": 417,
+        "min_vram_mb": 0,
+        "peak_vram_mb": 417,
+        "samples": 144,
+        "temp_max_c": 64,
+        "util_busy_mean": 39.6865671641791,
+        "util_max": 73
+      },
+      "max_resident_owners": 2,
+      "mode": "two",
+      "owners_spawned": 2,
+      "rep": 0,
+      "secs": 78.4639091,
+      "vram_after_shutdown_mb": 417,
+      "vram_before_mb": 0
+    },
+    {
+      "batch_mean": 3.15456,
+      "errors": 0,
+      "evaluations": 19716,
+      "evaluations_per_sec": 272.4164819681491,
+      "forward_us_mean": 14152.47984,
+      "gpu": {
+        "last_vram_mb": 449,
+        "min_vram_mb": 417,
+        "peak_vram_mb": 449,
+        "samples": 133,
+        "temp_max_c": 67,
+        "util_busy_mean": 47.09230769230769,
+        "util_max": 78
+      },
+      "max_resident_owners": 2,
+      "mode": "two",
+      "owners_spawned": 2,
+      "rep": 1,
+      "secs": 72.3744755,
+      "vram_after_shutdown_mb": 449,
+      "vram_before_mb": 417
+    },
+    {
+      "batch_mean": 3.9143413367942896,
+      "errors": 0,
+      "evaluations": 36192,
+      "evaluations_per_sec": 335.53787614348005,
+      "forward_us_mean": 16207.019576032879,
+      "gpu": {
+        "last_vram_mb": 449,
+        "min_vram_mb": 449,
+        "peak_vram_mb": 449,
+        "samples": 196,
+        "temp_max_c": 68,
+        "util_busy_mean": 49.01030927835052,
+        "util_max": 77
+      },
+      "max_resident_owners": 2,
+      "mode": "two",
+      "owners_spawned": 2,
+      "rep": 2,
+      "secs": 107.8626366,
+      "vram_after_shutdown_mb": 449,
+      "vram_before_mb": 449
+    }
+  ],
+  "simulations_per_move": 16
+}

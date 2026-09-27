@@ -454,7 +454,8 @@ pub fn run<B: AutodiffBackend>(
     header.git_revision = crate::provenance::git_revision().map(str::to_owned);
     let inference_model =
         model_io::load::<B::InnerBackend>(&run_dir.reference_ckpt(), &cfg.model, &inner_device)?;
-    let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
+    let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone())
+        .with_candidate_buckets(cfg.inference_candidate_buckets);
     let owner = InferenceOwner::spawn(
         batched,
         InferenceConfig {
@@ -735,7 +736,8 @@ pub fn collect_only<B: AutodiffBackend>(
     );
 
     let inference_model = model_io::load::<B::InnerBackend>(&tmp_ckpt, &cfg.model, &inner_device)?;
-    let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone());
+    let batched = BatchedModel::new(inference_model, cfg.recurrence, inner_device.clone())
+        .with_candidate_buckets(cfg.inference_candidate_buckets);
     let owner = InferenceOwner::spawn(
         batched,
         InferenceConfig {

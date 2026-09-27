@@ -64,7 +64,9 @@ fn softmax3(logits: [f32; 3]) -> [f32; 3] {
 
 /// The production batch evaluator over a Burn model.
 pub struct BatchedModel<B: Backend> {
-    model: ProbeModel<B>,
+    /// `Option` only so `Drop` can release the parameters *before* the final
+    /// sync + cleanup (see `Drop`). Always `Some` while the owner is alive.
+    model: Option<ProbeModel<B>>,
     recurrence: usize,
     device: B::Device,
     phases: PhaseTimes,
@@ -117,7 +119,7 @@ impl PhaseTimes {
 impl<B: Backend> BatchedModel<B> {
     pub fn new(model: ProbeModel<B>, recurrence: usize, device: B::Device) -> Self {
         Self {
-            model,
+            model: Some(model),
             recurrence,
             device,
             phases: PhaseTimes::default(),
@@ -148,6 +150,16 @@ impl<B: Backend> BatchedModel<B> {
 /// and are unaffected.
 impl<B: Backend> Drop for BatchedModel<B> {
     fn drop(&mut self) {
+        // Order matters under a fusing backend (D55 experiment): freeing a
+        // tensor is itself a queued operation there. Fields drop only after
+        // this function returns, so the parameters must be released here,
+        // then the queue flushed, then the thread's pool cleaned. Otherwise
+        // the parameter drops are queued after the last sync on a thread
+        // that is about to exit, and never run (measured: +~64 MB, one F15
+        // parameter set, per owner lifecycle with `fusion`). Harmless on the
+        // plain backend, where the drop frees immediately.
+        drop(self.model.take());
+        let _ = B::sync(&self.device);
         B::memory_cleanup(&self.device);
     }
 }
@@ -197,7 +209,11 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
         let cands = CandidateTensors::from_batch(&cb, &self.device);
         let t_forward = Instant::now();
 
-        let out = self.model.forward_r(board, &cands, self.recurrence, false);
+        let model = self
+            .model
+            .as_ref()
+            .ok_or_else(|| EvalError::Backend("model already released".into()))?;
+        let out = model.forward_r(board, &cands, self.recurrence, false);
         let t_readback = Instant::now();
         let readout = out
             .readouts

@@ -263,6 +263,10 @@ pub struct RunConfig {
     pub eval_concurrency: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub eval_max_inference_batch: Option<usize>,
+    /// Round inference candidate widths up to fixed buckets (D55 perf pass;
+    /// execution only: outputs equal to float noise, excluded from identity).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub inference_candidate_buckets: bool,
     #[serde(default = "default_batch_timeout_us")]
     pub batch_timeout_us: u64,
 
@@ -1324,9 +1328,15 @@ truncaton = 0.25
                 .unwrap()
                 .contains("eval_concurrency")
         );
+        assert!(
+            !serde_json::to_string(&base)
+                .unwrap()
+                .contains("inference_candidate_buckets")
+        );
         let mut e = base.clone();
         e.eval_concurrency = Some(32);
         e.eval_max_inference_batch = Some(32);
+        e.inference_candidate_buckets = true;
         assert_eq!(
             base.scientific_config_hash().unwrap(),
             e.scientific_config_hash().unwrap()

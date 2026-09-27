@@ -49,6 +49,9 @@ pub struct EvalArenaArgs {
     /// max_inference_batch). Scheduling only.
     #[arg(long)]
     pub max_batch: Option<usize>,
+    /// Enable inference candidate-width bucketing (D55 perf pass).
+    #[arg(long, default_value_t = false)]
+    pub bucket_candidates: bool,
     /// Override arena_tree_policy (`per_node_side_v1` | `root_player_v1`).
     #[arg(long)]
     pub tree_policy: Option<String>,
@@ -168,6 +171,9 @@ pub fn run(args: EvalArenaArgs) -> anyhow::Result<()> {
     }
     if let Some(e) = args.noise_epsilon {
         cfg.arena_root_dirichlet_epsilon = e;
+    }
+    if args.bucket_candidates {
+        cfg.inference_candidate_buckets = true;
     }
     if let Some(b) = args.max_batch {
         cfg.eval_max_inference_batch = Some(b);

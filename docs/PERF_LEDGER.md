@@ -145,3 +145,31 @@
 
 The loss trajectory and gradient norm are identical to printed precision.
 Training is about 5 % of cycle wall time, so this is a minor contributor.
+
+### #8 — D44 lifecycle under fusion: leak found, root-caused, fixed (MEASURED)
+
+**Initial finding (FAIL):** the full 4-mode check on the fusion + autotune build
+(`docs/evidence/perf/08-lifecycle-fusion-autotune/`):
+- post-shutdown VRAM grew **~64 MB per owner lifecycle** without plateau:
+  291 → 357 → 549 → 613 → 677 → 741 → 805 → 901 MB;
+- 0 errors.
+- Across a pilot (3 owners per cycle) this would exhaust the 4 GB card.
+
+**Isolation, with 4-minute probes (`two` mode, 3 reps each):**
+
+| build | post-shutdown VRAM by rep | verdict |
+|---|---|---|
+| fusion + autotune + sync-before-cleanup (`08b`) | 419 → 483 → 547 | still leaks |
+| fusion only (`08c`) | 417 → 481 → 545 | **fusion is the cause**, not autotune |
+| **fusion + drop-order fix (`08d`)** | **417 → 449 → 449** | **plateau, same as the baseline build** |
+
+**Root cause (VERIFIED by the fix):**
+- `BatchedModel::drop` ran sync and cleanup *before* its fields dropped.
+- On the plain backend a tensor frees immediately. Under fusion, freeing a
+  tensor is a **queued operation**.
+- So the model's parameter frees were queued after the final sync on an owner
+  thread that then exited, and never ran. The ~64 MB leaked per rep is about
+  one F15 parameter set (15.15 M × 4 B ≈ 61 MB).
+
+**Fix:** the owner releases the model explicitly, then syncs, then cleans up.
+This is harmless on the plain backend.

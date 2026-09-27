@@ -45,6 +45,9 @@ pub struct BenchRuntimeArgs {
     pub timeout_us: Option<u64>,
     #[arg(long)]
     pub simulations: Option<u32>,
+    /// Enable inference candidate-width bucketing (D55 perf pass).
+    #[arg(long, default_value_t = false)]
+    pub bucket_candidates: bool,
 }
 
 fn run_impl<B: AutodiffBackend>(
@@ -185,6 +188,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if let Some(k) = args.leaves_in_flight {
         cfg.search_leaves_in_flight = k;
+    }
+    if args.bucket_candidates {
+        cfg.inference_candidate_buckets = true;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {

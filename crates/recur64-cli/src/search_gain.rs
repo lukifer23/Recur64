@@ -103,7 +103,8 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &SearchGainArgs) -> anyho
     let search = games.first().map(|g| g.search.clone());
     let device: Device<B::InnerBackend> = Default::default();
     let model = model_io::load::<B::InnerBackend>(&args.checkpoint, &cfg.model, &device)?;
-    let batched = BatchedModel::new(model, cfg.recurrence, device);
+    let batched = BatchedModel::new(model, cfg.recurrence, device)
+        .with_candidate_buckets(cfg.inference_candidate_buckets);
     let gain = search_gain(&batched, &games, args.batch)?;
     let report = serde_json::json!({
         "metric": "network_to_target_divergence",
