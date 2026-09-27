@@ -399,3 +399,57 @@ Execution-only settings; neither enters the scientific identity.
     32 sims, K = 2.
   - Adopt the smallest concurrency whose trainable positions/s is within 5 % of
     the best, with 0 errors and peak VRAM < 3.0 GB (the H3.3B rule).
+
+## R15-P1 — per-arm R15 smokes (fixed before any R15 training)
+
+Owner go-ahead: 2026-09-27 ("next steps, end to end"). P0 is complete
+(`HP_R15_RESULTS.md`). D55 is accepted, D56 was rejected by its own gate, and
+D53/D54 are in force.
+
+**Arms:**
+- `configs/hp/r15-smoke-r{1,2,4}.toml`: identical except `recurrence` (and
+  `run_id`).
+- Frozen R15 reference `385f4f27…` (semantic `17b03869…`), seed 1, CUDA FP32,
+  head v2.
+- D55 build (`--features cuda,fusion,autotune`) with
+  `inference_candidate_buckets = true`.
+
+**Scientific contract (all arms):**
+- Search and self-play: the H3.6 contract. 32 sims, D41 exploration, K = 2,
+  32 games/cycle, reuse 2.0, 32 × 4, continuous trainer, LR 370/37, and a
+  256 per-cycle cap.
+- Arena: D45 V2 with paired RNG, **root_player_v1 (D54)** and
+  **promotion-v3 (D53)**.
+- 3 cycles. D49 health stops plus `lr_schedule_end`.
+- D52: truncated self-play stays untrainable. The truncated share is reported
+  per arm.
+- Scheduling (execution only): self-play at 12 games / batch 24 / 12 CPU workers (perf #11); evaluation at 8 games / batch 16 (perf #13 not adopted).
+
+**Execution bounds (from P0.4 measurements, 2× estimate):**
+- `run_budget_minutes`: R1 180, R2 240, R4 360.
+- `position_budget` 45,000.
+
+**Per-arm gates (as H3.6):**
+- **GO iff:**
+  - audit clean; 0 inference errors; no NaN/Inf;
+  - VRAM plateau below 3.0 GB;
+  - trainer continuous with lineage exact;
+  - 0 zero-LR updates; the cap never binds; achieved reuse ≥ 0.8 × target;
+  - no D49 stop.
+- **CONDITIONAL if:** arena truncation > 0.10 in any arena, or truncated
+  self-play share > 0.10 in any cycle, or the draw share rises by more than
+  0.25 over the arm's cycle 0.
+- **NO-GO:** a lifecycle regression, training instability, lineage
+  corruption, or repeated CUDA failure.
+
+**This is not a recurrence comparison.**
+- Each arm is judged only against its own frozen reference. The report gives
+  each arm's adjudicated score vs the reference, with CI, and flags every CI
+  that includes 0.5.
+- Any R1-vs-R2-vs-R4 strength claim waits for the P2 design: ≥ 96 games per
+  comparison, ≥ 2 seeds, and sampler v2 pre-registered.
+- Per-arm cost (wall per cycle, per phase) **is** reported, because it is the
+  input to P2 budgeting.
+
+**Order:** R1, then R2, then R4, sequentially, one GPU job at a time, under a
+keep-awake hold. A NO-GO arm stops the sequence. A CONDITIONAL arm does not.

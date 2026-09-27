@@ -241,3 +241,33 @@ candidate (#11).
     against 587 s on the original build at c8 / 16. That is **1.74× end to
     end** on a full arena.
   - M2: 322 s against 539 s, **1.67×**.
+
+### #11 — self-play concurrency on the D55 build (MEASURED — ADOPTED c12)
+
+- **Setup:** `bench-runtime`, 16 games per cell, trained `d0ee3ced`, 32 sims,
+  K = 2, batch = 2 × c. Evidence: `docs/evidence/perf/11-conc-c*`.
+
+| concurrency / batch | trainable pos/s | evals/s | GPU util | VRAM | errors |
+|---|---|---|---|---|---|
+| 8 / 16 | 10.7 | 535 | 63 % | 289 MB | 0 |
+| **12 / 24** | **13.4 (+25 %)** | 667 | 75 % | 289 MB | 0 |
+| 16 / 32 | 13.1 | 656 | 73 % | 545 MB | 0 |
+
+- **Decision:** under the pre-registered rule (smallest within 5 % of the
+  best) → **c12 / batch 24**, with `cpu_workers = 12`.
+- The faster D55 forward moved the saturation point beyond the old H3.3B
+  choice of c8.
+
+### #13 — evaluation scheduling on the D55 build (MEASURED — NOT ADOPTED)
+
+- **Setup:** M1 arena (32 games) on the D55 build at c8 / batch 16 (503 s)
+  against c32 / batch 32 (338 s). Evidence: `perf/13-arena-fused-c8`,
+  `d56-shadow/m1`.
+- **Speed:** 1.49×, which passes the ≥ 1.3× bar.
+- **Identity:** **30/32 games identical**, failing the pre-registered "all 32"
+  clause. W/D/L (11/3/6) and the adjudicated score (0.750) are identical;
+  the 2 divergent games are float-level effects of batch composition under
+  autotune.
+- **Decision:** not adopted, per the rule as written. Evaluation stays at
+  c8 / 16. A distribution-level criterion would need a new pre-registration
+  on fresh seeds.

@@ -1294,6 +1294,72 @@ truncaton = 0.25
         assert_eq!(crate::learner::lr_at(p, cfg.lr, w, p), 0.0);
     }
 
+    /// R15-P1: the three per-arm smoke configs are the pre-registered contract
+    /// and differ only in `recurrence` (and labels / wall budget).
+    #[test]
+    fn r15_smoke_arms_differ_only_in_recurrence() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../configs/hp");
+        let load = |r: u32| {
+            let mut c = RunConfig::from_toml_str(
+                &std::fs::read_to_string(dir.join(format!("r15-smoke-r{r}.toml"))).unwrap(),
+            )
+            .unwrap();
+            // The suite path is repo-relative; tests run from the crate dir.
+            assert_eq!(c.opening_suite.as_deref(), Some("configs/openings-v1.toml"));
+            c.opening_suite = Some(
+                dir.join("../openings-v1.toml")
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+            c
+        };
+        let arms = [load(1), load(2), load(4)];
+        for (cfg, r) in arms.iter().zip([1usize, 2, 4]) {
+            assert_eq!(cfg.recurrence, r);
+            let m = &cfg.model;
+            assert_eq!((m.width, m.heads, m.ffn), (512, 8, 768));
+            assert_eq!((m.input_blocks, m.core_blocks, m.output_blocks), (2, 4, 2));
+            assert_eq!(
+                cfg.reference_model_id.as_deref(),
+                Some("385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965")
+            );
+            assert_eq!(cfg.search_leaves_in_flight, 2);
+            assert_eq!(cfg.simulations_per_move, 32);
+            assert_eq!(cfg.collection_shape().unwrap().0, 32);
+            assert_eq!(cfg.effective_batch(), 128);
+            assert_eq!(cfg.lr_schedule(), (37, 370));
+            assert_eq!(cfg.max_updates, 256);
+            assert_eq!(cfg.trainer_policy, TrainerPolicy::Continuous);
+            assert_eq!(cfg.arena_rng_policy, ArenaRngPolicy::PairedCommonV1);
+            assert_eq!(cfg.arena_tree_policy, ArenaTreePolicy::RootPlayerV1);
+            assert_eq!(cfg.promotion_score, PromotionScore::AdjudicatedMaterialV1);
+            assert_eq!(cfg.arena_early_adjudication, ArenaEarlyAdjudication::Off);
+            assert!(cfg.inference_candidate_buckets);
+            assert_eq!(cfg.health_stops.draw_share_two_cycles, Some(0.85));
+            assert_eq!(cfg.health_stops.threefold_fifty, Some(0.60));
+            assert_eq!(cfg.health_stops.truncation, Some(0.25));
+            assert_eq!(cfg.health_stops.lr_schedule_end, Some(true));
+            assert_eq!(cfg.cycles, 3);
+            for (positions, updates) in [(5_247, 82), (12_800, 200)] {
+                let plan = cfg.update_plan(positions).unwrap();
+                assert_eq!(plan.requested_updates, updates);
+                assert!(!plan.cap_bound);
+            }
+        }
+        // Everything scientific except recurrence is identical across arms.
+        let strip = |c: &RunConfig| {
+            let mut v = c.scientific_identity().unwrap();
+            v["recurrence"] = serde_json::Value::Null;
+            v
+        };
+        assert_eq!(strip(&arms[0]), strip(&arms[1]));
+        assert_eq!(strip(&arms[0]), strip(&arms[2]));
+        assert_ne!(
+            arms[0].scientific_config_hash().unwrap(),
+            arms[2].scientific_config_hash().unwrap()
+        );
+    }
+
     /// D45 must not change any identity recorded before it: the original
     /// deterministic, noise-free arena reproduces the smoke's recorded
     /// scientific hash exactly, while an arena exploration variant is a new

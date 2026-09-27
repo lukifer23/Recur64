@@ -1,9 +1,11 @@
-# Recur64 HP R15 smoke, arm R4 (20 executed blocks). DRAFT: not frozen until
-# the P1 pre-registration (docs/HP_H3_PREREG.md). Identical to
-# configs/hp/f15-smoke-v2.toml except: R15 2+4+2 layout, the R15 reference
-# (runs/hp-r15-p0-ref-r15-v2, semantic 17b03869...), recurrence = 4, and
-# promotion-v3 (R15-P0.1). One reference serves R1/R2/R4. run_budget_minutes
-# and position_budget are set from the P0.4 requalification.
+# Recur64 HP R15 smoke, arm R4 (20 executed blocks). FROZEN by the R15-P1
+# pre-registration (docs/HP_H3_PREREG.md §R15-P1). The three arms are identical
+# except recurrence, run_id and the wall budget (test
+# r15_smoke_arms_differ_only_in_recurrence). Contract: the H3.6 F15 smoke v2
+# with the R15 2+4+2 layout, the R15 reference (385f4f27 / semantic 17b03869),
+# D53 promotion-v3, D54 root-player arena trees, D55 build
+# (--features cuda,fusion,autotune) + candidate buckets, perf #11 self-play
+# schedule.
 run_id = "hp-r15-smoke-r4"
 device = "cuda"
 precision = "fp32"
@@ -27,14 +29,14 @@ ply_cap = 400
 search_leaves_in_flight = 2
 
 # --- Collection (scientific: total games; the rest is scheduling) ---
-# 32 games = four waves at concurrency 8.
+# 32 games per cycle (waves of 12 at concurrency 12; perf #11).
 games_per_cycle = 32
 
-# --- Hardware schedule (H3.3B, MEASURED on the RTX 2050) ---
-concurrent_games = 8
-cpu_workers = 8
-# K = 2 leaves x 8 games -> batch cap 16.
-max_inference_batch = 16
+# --- Hardware schedule (perf #11 on the D55 build, MEASURED on the RTX 2050) ---
+concurrent_games = 12
+cpu_workers = 12
+# K = 2 leaves x 12 games -> batch cap 24.
+max_inference_batch = 24
 batch_timeout_us = 1000
 # H3.3C (retained prior): effective batch 32 x 4 = 128.
 train_batch = 32
@@ -43,6 +45,11 @@ accumulation_steps = 4
 # D55 (accepted): candidate-width bucketing on the batched inference path
 # (execution only). Build with --features cuda,fusion,autotune.
 inference_candidate_buckets = true
+# Perf #11 (adopted, pre-registered 42a0f66): self-play at 12 games / batch 24
+# (+25% trainable pos/s on the D55 build). Evaluation stays at the tested
+# c8 / batch 16 (perf #13 did not meet its identity clause, 30/32 games).
+eval_concurrency = 8
+eval_max_inference_batch = 16
 
 # --- Replay / learner ---
 shard_max_games = 256
@@ -75,6 +82,8 @@ arena_root_dirichlet_epsilon = 0.25
 # score exactly 0.500, 16/16 pairs replayed move-for-move, decisive 0.875, 0
 # threefold, 0 truncation (per_game_v1: 0.362). New scientific identity.
 arena_rng_policy = "paired_common_v1"
+# D54: each arena player searches its own tree with its own network.
+arena_tree_policy = "root_player_v1"
 opening_suite = "configs/openings-v1.toml"
 snapshot_policy = "conservative"
 # D48 (adopted): the learner keeps weights + Adam + LR step across a held cycle;
@@ -88,11 +97,10 @@ promotion_score = "adjudicated_material_v1"
 
 # --- Execution bounds (excluded from scientific identity) ---
 cycles = 3
-# 180 min, not the historical 90: the historical head-v1 cap was for a run whose
-# arenas were cheap threefold draws. H3's D45 V2 arenas are ~10 min each (585 s
-# measured for 32 games at concurrency 8), so 3 cycles need more wall headroom.
-# This is an execution bound only; it does not enter the scientific identity.
-run_budget_minutes = 180
+# Wall budget per arm (R1 180 / R2 240 / R4 360 min): about 2x the P0.4 cost
+# estimate, which scales with executed blocks (8 / 12 / 20). Execution bound only;
+# it does not enter the scientific identity.
+run_budget_minutes = 360
 # ~2.5x the expected 3 x 6,047 positions; above the theoretical 3 x 12,800.
 position_budget = 45000
 
