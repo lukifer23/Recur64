@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 
 mod bench;
 mod bench_core;
+mod bench_forward;
 mod bench_lifecycle;
 mod bench_runtime;
 mod bench_train;
@@ -44,6 +45,8 @@ enum Commands {
     },
     /// Resolved config, identities, LR schedule and update-plan bounds.
     ConfigInfo(config_info::ConfigInfoArgs),
+    /// Fast production-path inference throughput probe with output parity.
+    BenchForward(bench_forward::BenchForwardArgs),
     /// Artifact `model_id` vs semantic weight digest of a checkpoint (D50).
     ModelDigest(model_digest::ModelDigestArgs),
     /// Bounded benchmark matrix; writes raw data to --output.
@@ -97,6 +100,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Doctor => doctor::run_doctor(),
         Commands::ModelInfo { config } => model_info::run_model_info(&config),
         Commands::ConfigInfo(args) => config_info::run(args),
+        Commands::BenchForward(args) => bench_forward::run(args),
         Commands::ModelDigest(args) => model_digest::run(args),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),

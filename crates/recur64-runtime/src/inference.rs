@@ -67,6 +67,48 @@ pub struct BatchedModel<B: Backend> {
     model: ProbeModel<B>,
     recurrence: usize,
     device: B::Device,
+    phases: PhaseTimes,
+}
+
+/// Cumulative wall time (µs) per phase of `evaluate_batch`, for profiling.
+/// GPU work is asynchronous: `forward_us` is graph/launch submission, and the
+/// device compute is paid inside the first readback (`readback_us`).
+#[derive(Debug, Default)]
+pub struct PhaseTimes {
+    pub batches: AtomicU64,
+    pub positions: AtomicU64,
+    /// Host tensor data (observations, candidate lists) + uploads.
+    pub prepare_us: AtomicU64,
+    pub forward_us: AtomicU64,
+    /// Policy + WDL readbacks (includes waiting for the device).
+    pub readback_us: AtomicU64,
+    /// Softmax/normalization/finiteness checks on the host.
+    pub post_us: AtomicU64,
+}
+
+/// A plain copy of [`PhaseTimes`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize)]
+pub struct PhaseSnapshot {
+    pub batches: u64,
+    pub positions: u64,
+    pub prepare_us: u64,
+    pub forward_us: u64,
+    pub readback_us: u64,
+    pub post_us: u64,
+}
+
+impl PhaseTimes {
+    pub fn snapshot(&self) -> PhaseSnapshot {
+        let l = |a: &AtomicU64| a.load(Ordering::Relaxed);
+        PhaseSnapshot {
+            batches: l(&self.batches),
+            positions: l(&self.positions),
+            prepare_us: l(&self.prepare_us),
+            forward_us: l(&self.forward_us),
+            readback_us: l(&self.readback_us),
+            post_us: l(&self.post_us),
+        }
+    }
 }
 
 impl<B: Backend> BatchedModel<B> {
@@ -75,7 +117,13 @@ impl<B: Backend> BatchedModel<B> {
             model,
             recurrence,
             device,
+            phases: PhaseTimes::default(),
         }
+    }
+
+    /// Cumulative per-phase timings of every batch evaluated so far.
+    pub fn phase_times(&self) -> PhaseSnapshot {
+        self.phases.snapshot()
     }
 }
 
@@ -110,6 +158,7 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
             ));
         }
 
+        let t_prepare = Instant::now();
         let mut data = Vec::with_capacity(b * 64 * 119);
         for o in observations {
             data.extend_from_slice(o.as_slice());
@@ -132,8 +181,10 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
             return Err(EvalError::Invalid("batch has no legal candidates".into()));
         }
         let cands = CandidateTensors::from_batch(&cb, &self.device);
+        let t_forward = Instant::now();
 
         let out = self.model.forward_r(board, &cands, self.recurrence, false);
+        let t_readback = Instant::now();
         let readout = out
             .readouts
             .first()
@@ -153,6 +204,7 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
             .to_vec::<f32>()
             .map_err(|e| EvalError::Backend(format!("wdl read failed: {e}")))?;
 
+        let t_post = Instant::now();
         let width = cb.width;
         let mut results = Vec::with_capacity(b);
         for (i, l) in legal.iter().enumerate() {
@@ -180,6 +232,18 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
             }
             results.push(EvalResult { policy, value, wdl });
         }
+        let us = |a: Instant, b: Instant| b.duration_since(a).as_micros() as u64;
+        let done = Instant::now();
+        let p = &self.phases;
+        p.batches.fetch_add(1, Ordering::Relaxed);
+        p.positions.fetch_add(b as u64, Ordering::Relaxed);
+        p.prepare_us
+            .fetch_add(us(t_prepare, t_forward), Ordering::Relaxed);
+        p.forward_us
+            .fetch_add(us(t_forward, t_readback), Ordering::Relaxed);
+        p.readback_us
+            .fetch_add(us(t_readback, t_post), Ordering::Relaxed);
+        p.post_us.fetch_add(us(t_post, done), Ordering::Relaxed);
         Ok(results)
     }
 }

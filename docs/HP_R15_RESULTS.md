@@ -113,3 +113,37 @@ steps are 0.87 / 1.26 / 2.03 s.
      readback, drop observation copies. Estimated 2–5 %.
   4. **Pipeline the owner** (up to ~1.15× in self-play) and **fuse QKV** at
      load (3–5 %).
+
+## P0.5 — D54 impact and evaluation scheduling (MEASURED; pre-registered `1e196cf`)
+
+**Setup:**
+- Same checkpoints and seeds as the H3.6 cycle-2 arenas (offset 2, paired RNG,
+  K = 2, 32 sims, 32 games), now with `root_player_v1` (each side searches its
+  own tree).
+- Evidence: `docs/evidence/hp-r15-p0/d54-impact/`.
+
+| cell | pair | H3.6 mixed trees (as played) | root-player as played | root-player T = draw | root-player **adjudicated** (W / D / L) | truncated |
+|---|---|---|---|---|---|---|
+| M1 | cycle-2 candidate vs frozen reference | 0.733 | 0.643 | 0.594 | **0.750 [0.618, 0.882]** (21 / 6 / 5) | 11 |
+| M2 | cycle-2 candidate vs parent (step 223 vs 82) | 0.643 | 0.500 | 0.500 | **0.547 [0.420, 0.674]** (10 / 15 / 7) | 5 |
+
+**Findings (MEASURED):**
+- **Material effect in both cells.** The shift is ≥ 0.05 under the
+  pre-registered rule.
+- The mixed-tree bias is **not** a simple pull toward 0.5, as predicted. On M2
+  it *overstated* the difference (0.643 vs 0.547 adjudicated). Mixed-tree
+  scores are confounded in no fixed direction.
+- **The learning is real** (0.750 vs the untrained reference) and mostly early.
+  From step 82 to step 223 the gain is small and not significant at n = 32.
+  Cycle 2's mixed-tree promotion would not clearly hold under correct trees.
+- **Conversion is the dominant failure.** In M1, 10 of 11 truncations are the
+  candidate holding crushing material (K+Q vs K, K+Q+Q+N vs K, K+R vs K)
+  without mating.
+  - Those self-play games are discarded from training (D52), so the value head
+    never learns them as wins.
+  - This is the top learning-side fix candidate, to take up after the
+    throughput pass (needs an ADR).
+
+**Scheduling (M3):** 1.20× (587 → 489 s) with 32/32 identical games. This is
+below the pre-registered 1.3× adoption bar, so it is not adopted for R15. The
+GPU reached ~91 % busy. See `docs/PERF_LEDGER.md` #1.

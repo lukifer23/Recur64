@@ -33,7 +33,7 @@ pub use eval_policy::{RawMatchResult, raw_policy_vs_random};
 pub use evaluator::SyncEvaluator;
 pub use inference::{
     BatchEvaluator, BatchedEvaluator, BatchedModel, InferenceConfig, InferenceMetrics,
-    InferenceOwner, MetricsSnapshot,
+    InferenceOwner, MetricsSnapshot, PhaseSnapshot,
 };
 pub use learner::{
     LearnerConfig, TrainReport, build_batch_tensors, build_examples, lr_at, train_from_games,
