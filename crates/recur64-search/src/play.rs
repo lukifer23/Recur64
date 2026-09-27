@@ -224,6 +224,41 @@ pub fn play_game_from(
     evaluator: &dyn Evaluator,
     cfg: &SelfPlayConfig,
     rng: &mut Rng,
+    state: GameState,
+) -> Result<SelfPlayGame, crate::EvalError> {
+    play_game_routed(&|_| evaluator, cfg, rng, state)
+}
+
+/// Play one game in which each side searches **its own tree with its own
+/// evaluator**, chosen by the side to move at the root of each search (the
+/// AlphaZero evaluation contract). Every node of White's tree, at any depth,
+/// is evaluated by `white`, and likewise for Black.
+///
+/// Contrast: `play_game_from` with a per-node side router sends each tree
+/// node to the network of *that node's* side to move, so both networks mix
+/// inside every search (H3.6 review finding).
+pub fn play_game_per_side(
+    white: &dyn Evaluator,
+    black: &dyn Evaluator,
+    cfg: &SelfPlayConfig,
+    rng: &mut Rng,
+    state: GameState,
+) -> Result<SelfPlayGame, crate::EvalError> {
+    play_game_routed(
+        &|side| match side {
+            recur64_core::Color::White => white,
+            recur64_core::Color::Black => black,
+        },
+        cfg,
+        rng,
+        state,
+    )
+}
+
+fn play_game_routed<'e>(
+    pick: &dyn Fn(recur64_core::Color) -> &'e dyn Evaluator,
+    cfg: &SelfPlayConfig,
+    rng: &mut Rng,
     mut state: GameState,
 ) -> Result<SelfPlayGame, crate::EvalError> {
     let start_fen = state.to_fen();
@@ -247,7 +282,7 @@ pub fn play_game_from(
             epsilon: cfg.root_dirichlet_epsilon,
             noise: rng.dirichlet(cfg.root_dirichlet_alpha as f64, state.legal_actions().len()),
         });
-        let game = ChessGame::new(state.clone(), evaluator);
+        let game = ChessGame::new(state.clone(), pick(side_to_move));
         let result = search_with_root_noise(
             game,
             &PuctConfig {

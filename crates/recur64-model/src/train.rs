@@ -93,9 +93,10 @@ impl<B: AutodiffBackend> ModuleVisitor<B> for GradNormVisitor<'_, B> {
     fn visit_float<const D: usize>(&mut self, param: &Param<Tensor<B, D>>) {
         if let Some(g) = self.grads.get::<B::InnerBackend, D>(param.id) {
             let sq = scalar1((g.clone() * g).sum());
-            if sq.is_finite() {
-                self.sum_sq += sq as f64;
-            }
+            // A non-finite gradient must make the norm non-finite so the
+            // learner's health guard refuses the step (review F4); it was
+            // previously skipped, letting a NaN update through.
+            self.sum_sq += sq as f64;
         }
     }
 }

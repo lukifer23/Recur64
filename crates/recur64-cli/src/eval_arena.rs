@@ -41,6 +41,9 @@ pub struct EvalArenaArgs {
     /// Override arena_rng_policy (`per_game_v1` | `paired_common_v1`).
     #[arg(long)]
     pub rng_policy: Option<String>,
+    /// Override arena_tree_policy (`per_node_side_v1` | `root_player_v1`).
+    #[arg(long)]
+    pub tree_policy: Option<String>,
     /// Seed offset (the pilot uses the cycle index).
     #[arg(long, default_value_t = 0)]
     pub seed_offset: u64,
@@ -97,6 +100,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
             "concurrency": arena_cfg.concurrency,
             "leaves_in_flight": arena_cfg.leaves_in_flight,
             "rng_policy": arena_cfg.rng_policy,
+            "tree_policy": arena_cfg.tree_policy,
         },
         "result": result,
         "secs": secs,
@@ -151,6 +155,10 @@ pub fn run(args: EvalArenaArgs) -> anyhow::Result<()> {
     }
     if let Some(e) = args.noise_epsilon {
         cfg.arena_root_dirichlet_epsilon = e;
+    }
+    if let Some(p) = &args.tree_policy {
+        cfg.arena_tree_policy = serde_json::from_value(serde_json::Value::String(p.clone()))
+            .map_err(|e| anyhow::anyhow!("unknown --tree-policy {p}: {e}"))?;
     }
     if let Some(p) = &args.rng_policy {
         cfg.arena_rng_policy = serde_json::from_value(serde_json::Value::String(p.clone()))

@@ -824,6 +824,46 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   read stale metrics, which was the root cause of the recurring
   `errors_propagate_to_every_request` flake.
 
+## D54 - Arena players search their own trees (root_player_v1)
+
+- **Status:** ACCEPTED (HP core review, 2026-09-27). Found by an independent
+  read-only review and VERIFIED by reading the code path.
+- **Finding:**
+  - `run_arena` passed a `SideRouter` into `play_game_from` as *the* search
+    evaluator. Every tree node's request carries that node's side to move
+    (`game_tree.rs`), so the router sent each node to the network of the side
+    to move *at that node*.
+  - A White player's search therefore had every Black-to-move node (depths 1,
+    3, …) evaluated by the opponent's network. Both networks mixed inside
+    every search.
+  - This pulls arena scores toward 0.5 and understates real differences
+    between networks.
+  - It affects every searched arena to date: mainline D45 arenas, HP H3.5,
+    H3.5B and H3.6. Self-vs-self results are unaffected, since the model is
+    identical on both sides.
+- **Decision:**
+  - `arena_tree_policy = "root_player_v1"`: each player searches its own tree
+    with its own network at every depth, chosen at the root. This is the
+    AlphaZero evaluation contract, implemented by `play_game_per_side`.
+  - The historical `per_node_side_v1` stays the default. It enters the
+    scientific identity only when changed, so every earlier identity
+    reproduces.
+  - New R15 configurations use `root_player_v1`.
+- **Consequence:**
+  - All earlier arena scores and promotions are *mixed-tree* measurements and
+    must be read as such. They are not invalidated, just labelled.
+  - Batches also fill better, because each tree now submits to one model.
+- **Test:** `root_player_trees_use_one_network_per_side`. Under the old
+  routing the White player's evaluator only ever sees White-to-move nodes;
+  under root_player_v1 each side's evaluator sees both parities of its own
+  tree.
+- **Same review, also fixed:** non-finite model output now fails visibly on
+  both inference paths. Previously a NaN policy fell back to uniform, and NaN
+  WDL logits fell back to [1/3, 1/3, 1/3] (value 0). A non-finite gradient
+  now makes `grad_norm` non-finite, so the learner's guard refuses the step.
+  The NaN fixes are covered by
+  `non_finite_model_output_fails_visibly_on_both_inference_paths`.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

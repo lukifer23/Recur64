@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// every generated trajectory after the first cycle.
 pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
 
-use recur64_eval::ArenaRngPolicy;
+use recur64_eval::{ArenaRngPolicy, ArenaTreePolicy};
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -255,6 +255,14 @@ pub struct RunConfig {
     // Inference batching.
     #[serde(default = "default_max_batch")]
     pub max_inference_batch: usize,
+    /// Evaluation scheduling (execution only, excluded from the scientific
+    /// identity): games played at once in pilot evaluation matches, and the
+    /// evaluation owners' batch cap. `None` keeps the historical schedule
+    /// (self-play concurrency and `max_inference_batch`). Omitted when unset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eval_concurrency: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eval_max_inference_batch: Option<usize>,
     #[serde(default = "default_batch_timeout_us")]
     pub batch_timeout_us: u64,
 
@@ -331,6 +339,11 @@ pub struct RunConfig {
     /// the resolved hash of every earlier config is unchanged.
     #[serde(default, skip_serializing_if = "ArenaRngPolicy::is_default")]
     pub arena_rng_policy: ArenaRngPolicy,
+    /// Arena search-tree routing (D54). The historical `per_node_side_v1`
+    /// mixes both networks inside every search; `root_player_v1` gives each
+    /// player its own tree. Omitted from the serialized config when default.
+    #[serde(default, skip_serializing_if = "ArenaTreePolicy::is_default")]
+    pub arena_tree_policy: ArenaTreePolicy,
     /// Leaves selected with virtual loss and evaluated together per search
     /// round (D47), for self-play and arenas alike. `1` (default) is the
     /// original one-leaf search; values above 1 are a new identity.
@@ -451,6 +464,10 @@ impl RunConfig {
         if !self.arena_rng_policy.is_default() {
             v["arena_rng_policy"] = serde_json::to_value(self.arena_rng_policy)?;
         }
+        // D54: recorded only when it differs from the historical routing.
+        if !self.arena_tree_policy.is_default() {
+            v["arena_tree_policy"] = serde_json::to_value(self.arena_tree_policy)?;
+        }
         Ok(v)
     }
 
@@ -477,6 +494,7 @@ impl RunConfig {
             deadline: None,
             leaves_in_flight: self.search_leaves_in_flight,
             rng_policy: self.arena_rng_policy,
+            tree_policy: self.arena_tree_policy,
         }
     }
 
@@ -607,6 +625,16 @@ impl RunConfig {
             identity["trainer_policy"] = serde_json::to_value(self.trainer_policy)?;
         }
         Ok(identity)
+    }
+
+    /// This config with the evaluation owners' batch cap applied (scheduling
+    /// only; see `eval_max_inference_batch`).
+    pub fn for_evaluation(&self) -> RunConfig {
+        let mut c = self.clone();
+        if let Some(b) = self.eval_max_inference_batch {
+            c.max_inference_batch = b;
+        }
+        c
     }
 
     /// The promotion rule text this config runs (v2 by default, v3 when the
@@ -1284,6 +1312,51 @@ truncaton = 0.25
         assert_eq!(arena.sample_plies, Some(8));
         assert_eq!(arena.seed, cfg.seed + 3);
         assert_eq!(arena.root_dirichlet_epsilon, 0.0);
+    }
+
+    /// Evaluation scheduling keys are execution-only: they change neither the
+    /// scientific identity nor (when unset) the serialized config.
+    #[test]
+    fn eval_scheduling_is_excluded_from_identity() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert!(
+            !serde_json::to_string(&base)
+                .unwrap()
+                .contains("eval_concurrency")
+        );
+        let mut e = base.clone();
+        e.eval_concurrency = Some(32);
+        e.eval_max_inference_batch = Some(32);
+        assert_eq!(
+            base.scientific_config_hash().unwrap(),
+            e.scientific_config_hash().unwrap()
+        );
+        assert_eq!(e.for_evaluation().max_inference_batch, 32);
+        assert_eq!(
+            base.for_evaluation().max_inference_batch,
+            base.max_inference_batch
+        );
+    }
+
+    /// D54: root-player arena trees are a new identity; the default is not.
+    #[test]
+    fn arena_tree_policy_is_a_new_identity_and_default_is_unchanged() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert!(
+            !serde_json::to_string(&base)
+                .unwrap()
+                .contains("arena_tree_policy")
+        );
+        let mut t = base.clone();
+        t.arena_tree_policy = ArenaTreePolicy::RootPlayerV1;
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            t.scientific_config_hash().unwrap()
+        );
+        assert_eq!(
+            t.arena_config(0, Vec::new(), 8).tree_policy,
+            ArenaTreePolicy::RootPlayerV1
+        );
     }
 
     /// H3.5B: the paired-common arena RNG policy is a new scientific identity;

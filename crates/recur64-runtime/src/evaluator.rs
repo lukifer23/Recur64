@@ -38,11 +38,9 @@ fn softmax3(logits: [f32; 3]) -> [f32; 3] {
     let max = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
     let exps = logits.map(|v| (v - max).exp());
     let sum = exps.iter().sum::<f32>();
-    if sum > 0.0 {
-        exps.map(|v| v / sum)
-    } else {
-        [1.0 / 3.0; 3]
-    }
+    // NaN/Inf logits propagate as NaN so the caller's finiteness check
+    // refuses them; a uniform fallback here hid them as value 0 (review F2).
+    exps.map(|v| v / sum)
 }
 
 impl<B: Backend> Evaluator for SyncEvaluator<B> {
@@ -87,12 +85,15 @@ impl<B: Backend> Evaluator for SyncEvaluator<B> {
         let n = request.legal.len();
         let mut policy: Vec<f32> = (0..n).map(|k| log_probs[k].exp()).collect();
         let sum: f32 = policy.iter().sum();
-        if sum > 0.0 {
-            for p in policy.iter_mut() {
-                *p /= sum;
-            }
-        } else {
-            policy = vec![1.0 / n as f32; n];
+        // NaN/Inf or zero legal mass is a model failure, never a uniform
+        // prior (the old fallback also hid NaN from the check below).
+        if n > 0 && !(sum.is_finite() && sum > 0.0) {
+            return Err(EvalError::Backend(format!(
+                "non-finite or zero legal policy mass ({sum})"
+            )));
+        }
+        for p in policy.iter_mut() {
+            *p /= sum;
         }
 
         let wdl_logits = readout

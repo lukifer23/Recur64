@@ -57,11 +57,9 @@ fn softmax3(logits: [f32; 3]) -> [f32; 3] {
     let max = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
     let exps = logits.map(|v| (v - max).exp());
     let sum = exps.iter().sum::<f32>();
-    if sum > 0.0 {
-        exps.map(|v| v / sum)
-    } else {
-        [1.0 / 3.0; 3]
-    }
+    // NaN/Inf logits propagate as NaN so the caller's finiteness check
+    // refuses them; a uniform fallback here hid them as value 0 (review F2).
+    exps.map(|v| v / sum)
 }
 
 /// The production batch evaluator over a Burn model.
@@ -161,12 +159,15 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
             let n = l.len();
             let mut policy: Vec<f32> = (0..n).map(|k| log_probs[i * width + k].exp()).collect();
             let sum: f32 = policy.iter().sum();
-            if sum > 0.0 {
-                for p in policy.iter_mut() {
-                    *p /= sum;
-                }
-            } else {
-                policy = vec![1.0 / n as f32; n];
+            // A NaN/Inf or all-zero legal policy is a model failure, never a
+            // uniform prior (no silent fallback; review finding F2).
+            if n > 0 && !(sum.is_finite() && sum > 0.0) {
+                return Err(EvalError::Backend(format!(
+                    "non-finite or zero legal policy mass ({sum})"
+                )));
+            }
+            for p in policy.iter_mut() {
+                *p /= sum;
             }
             let wdl = softmax3([
                 wdl_logits[i * 3],
@@ -174,6 +175,9 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
                 wdl_logits[i * 3 + 2],
             ]);
             let value = wdl[0] - wdl[2];
+            if !value.is_finite() || wdl.iter().any(|w| !w.is_finite()) {
+                return Err(EvalError::Backend("non-finite value output".into()));
+            }
             results.push(EvalResult { policy, value, wdl });
         }
         Ok(results)

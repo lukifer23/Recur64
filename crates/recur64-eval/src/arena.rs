@@ -13,7 +13,28 @@ use std::collections::BTreeMap;
 use recur64_core::{Color, GameState, Outcome};
 use recur64_search::{
     EvalError, EvalRequest, EvalResult, Evaluator, Rng, SelfPlayConfig, play_game_from,
+    play_game_per_side,
 };
+
+/// Which network evaluates the nodes of each side's search tree (D54).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArenaTreePolicy {
+    /// Historical: every tree node goes to the network of *that node's* side
+    /// to move, so both networks mix inside each player's search. Kept only
+    /// to reproduce earlier identities.
+    #[default]
+    PerNodeSideV1,
+    /// Each player searches its own tree with its own network at every depth
+    /// (the AlphaZero evaluation contract).
+    RootPlayerV1,
+}
+
+impl ArenaTreePolicy {
+    pub fn is_default(&self) -> bool {
+        *self == Self::PerNodeSideV1
+    }
+}
 
 /// How each arena game's RNG seed is derived (H3.5B).
 ///
@@ -116,6 +137,8 @@ pub struct ArenaConfig {
     pub leaves_in_flight: u32,
     /// Per-game seed derivation (H3.5B); the default is the historical one.
     pub rng_policy: ArenaRngPolicy,
+    /// Search-tree evaluator routing (D54); the default is the historical one.
+    pub tree_policy: ArenaTreePolicy,
 }
 
 impl Default for ArenaConfig {
@@ -135,6 +158,7 @@ impl Default for ArenaConfig {
             deadline: None,
             leaves_in_flight: 1,
             rng_policy: ArenaRngPolicy::PerGameV1,
+            tree_policy: ArenaTreePolicy::PerNodeSideV1,
         }
     }
 }
@@ -165,6 +189,8 @@ pub struct ArenaResult {
     /// Seed derivation used (H3.5B). This and the fields below are additive
     /// diagnostics; the per-game fields above are unchanged.
     pub rng_policy: ArenaRngPolicy,
+    /// Search-tree evaluator routing used (D54).
+    pub tree_policy: ArenaTreePolicy,
     /// Color-pair diagnostics (the pair is the independent unit).
     pub pairs: ArenaPairDiagnostics,
     /// `(W + 0.5 * (D + T)) / games` (R15-P0.1).
@@ -430,7 +456,14 @@ pub fn run_arena(
         let opening = &openings[(i as usize / 2) % openings.len()];
         let start = GameState::from_fen(opening)
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
-        play_game_from(&router, &sp, &mut Rng::new(seed), start)
+        match cfg.tree_policy {
+            ArenaTreePolicy::PerNodeSideV1 => {
+                play_game_from(&router, &sp, &mut Rng::new(seed), start)
+            }
+            ArenaTreePolicy::RootPlayerV1 => {
+                play_game_per_side(router.white, router.black, &sp, &mut Rng::new(seed), start)
+            }
+        }
     };
     let games = play_indexed_until(cfg.games, cfg.concurrency, cfg.deadline, play_one)?;
 
@@ -523,6 +556,7 @@ pub fn run_arena(
         model_reference: reference_id.to_string(),
         model_candidate: candidate_id.to_string(),
         rng_policy: cfg.rng_policy,
+        tree_policy: cfg.tree_policy,
         pairs: pair_diagnostics(&game_records),
         score_truncation_as_draw: if cfg.games == 0 {
             0.5

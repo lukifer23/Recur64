@@ -301,44 +301,63 @@ pub fn evaluate_candidate<B: Backend>(
     // the parent): the parent is shut down and the reference loaded for the
     // longitudinal arena. Each match keeps its own seed and inputs, so the
     // results do not depend on this schedule.
+    //
+    // Scheduling (execution only): `eval_concurrency` / `eval_max_inference_
+    // batch` override the self-play schedule, and the three Phase A matches run
+    // concurrently so their requests share batches. Each match keeps its own
+    // seeds and returns games in index order.
+    let eval_concurrency = cfg.eval_concurrency.unwrap_or(eval_concurrency);
+    let eval_cfg = cfg.for_evaluation();
     let mut arena_cfg = cfg.arena_config(cycle as u64, openings.to_vec(), eval_concurrency);
     arena_cfg.deadline = deadline;
     let seed = cfg.seed.wrapping_add(cycle as u64);
     let raw_games = cfg.arena_games.max(4);
-    let cand_owner = spawn_owner::<B>(models.candidate_dir, cfg, device)?;
+    let cand_owner = spawn_owner::<B>(models.candidate_dir, &eval_cfg, device)?;
     let cand_ev = cand_owner.evaluator();
     let mut inference = Vec::new();
 
     // Phase A: parent comparisons.
-    let parent_owner = spawn_owner::<B>(models.parent_dir, cfg, device)?;
+    let parent_owner = spawn_owner::<B>(models.parent_dir, &eval_cfg, device)?;
     let parent_ev = parent_owner.evaluator();
-    let arena = run_arena(
-        &parent_ev,
-        &cand_ev,
-        models.parent_model_id,
-        models.candidate_model_id,
-        &arena_cfg,
-    )?;
-    let raw = raw_policy_vs_random(
-        &cand_ev,
-        raw_games,
-        cfg.temperature,
-        cfg.ply_cap,
-        seed,
-        openings,
-        eval_concurrency,
-        deadline,
-    )?;
-    let raw_parent = raw_policy_vs_parent(
-        &cand_ev,
-        &parent_ev,
-        raw_games,
-        cfg.ply_cap,
-        seed,
-        openings,
-        eval_concurrency,
-        deadline,
-    )?;
+    let (arena, raw, raw_parent) = std::thread::scope(|s| {
+        let arena = s.spawn(|| {
+            run_arena(
+                &parent_ev,
+                &cand_ev,
+                models.parent_model_id,
+                models.candidate_model_id,
+                &arena_cfg,
+            )
+        });
+        let raw = s.spawn(|| {
+            raw_policy_vs_random(
+                &cand_ev,
+                raw_games,
+                cfg.temperature,
+                cfg.ply_cap,
+                seed,
+                openings,
+                eval_concurrency,
+                deadline,
+            )
+        });
+        let raw_parent = raw_policy_vs_parent(
+            &cand_ev,
+            &parent_ev,
+            raw_games,
+            cfg.ply_cap,
+            seed,
+            openings,
+            eval_concurrency,
+            deadline,
+        );
+        (
+            arena.join().expect("arena thread panicked"),
+            raw.join().expect("raw-vs-random thread panicked"),
+            raw_parent,
+        )
+    });
+    let (arena, raw, raw_parent) = (arena?, raw?, raw_parent?);
     drop(parent_ev);
     inference.push(("parent".to_string(), parent_owner.metrics().snapshot()));
     parent_owner.shutdown();
@@ -350,7 +369,7 @@ pub fn evaluate_candidate<B: Backend>(
     let (reference_arena, owners_spawned) = if reference_arena_is_parent_arena {
         (arena.clone(), 2)
     } else {
-        let ref_owner = spawn_owner::<B>(models.reference_dir, cfg, device)?;
+        let ref_owner = spawn_owner::<B>(models.reference_dir, &eval_cfg, device)?;
         let ref_ev = ref_owner.evaluator();
         let reference_arena = run_arena(
             &ref_ev,
@@ -1084,6 +1103,7 @@ mod promotion_tests {
             model_reference: "parent".into(),
             model_candidate: "candidate".into(),
             rng_policy: Default::default(),
+            tree_policy: Default::default(),
             pairs: Default::default(),
             score_truncation_as_draw: 0.5,
             adjudicated: Default::default(),
