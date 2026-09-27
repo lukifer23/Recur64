@@ -1,0 +1,675 @@
+[
+ {
+  "cycle": 0,
+  "SYSTEM": {
+   "audit_ok": true,
+   "selfplay_inference_errors": 0,
+   "eval_inference_errors": 0,
+   "failed_games": 0,
+   "vram_peak_mb": {
+    "collect": 291,
+    "train": 1285,
+    "eval": 1445
+   },
+   "vram_at_cycle_start_mb": 291,
+   "temp_max_c": {
+    "collect": 70,
+    "train": 66,
+    "eval": 70
+   },
+   "owners_spawned/max_resident": [
+    2,
+    2
+   ],
+   "secs collect/train/eval/wall": [
+    342,
+    74,
+    349,
+    766
+   ]
+  },
+  "DATA": {
+   "W/D/B/T (white/draw/black/trunc)": "8/8/11/5",
+   "terminations": {
+    "checkmate": 19,
+    "fifty_move_rule": 3,
+    "insufficient_material": 5,
+    "truncated": 5
+   },
+   "draw_share": 0.25,
+   "truncated_share": 0.156,
+   "threefold+fifty": 0.094,
+   "mean_plies": 211.7,
+   "positions": 6773,
+   "trainable_positions": 4773,
+   "target_entropy": 2.829,
+   "target_top1": 0.149
+  },
+  "SEARCH": {
+   "kl net->noise": 0.067,
+   "argmax changed by noise": 0.927,
+   "kl noise->target": 0.1217,
+   "argmax changed by search": 0.191,
+   "mean |network value|": 0.0,
+   "mean |root value|": 0.0028
+  },
+  "TRAINER": {
+   "step start->end": [
+    0,
+    75
+   ],
+   "planned": 370,
+   "fraction_end": 0.20270270270270271,
+   "lr first/last": [
+    8.108108108108107e-06,
+    0.0002909538931178862
+   ],
+   "updates_at_zero_lr": 0,
+   "updates req/sched/done": [
+    75,
+    75,
+    75
+   ],
+   "loss first/last": [
+    4.193247,
+    4.0567694
+   ],
+   "policy/wdl loss first->last": [
+    [
+     3.094634,
+     3.0686035
+    ],
+    [
+     1.0986123,
+     0.9881656
+    ]
+   ],
+   "grad_norm mean/max": [
+    2.498,
+    7.193
+   ],
+   "policy_entropy first->last": [
+    3.100805,
+    3.070847
+   ],
+   "all finite": true
+  },
+  "REPLAY": {
+   "reuse achieved": 2.011,
+   "reuse all-new": 1.417,
+   "cap_bound": false,
+   "shortfall": null,
+   "fresh sample fraction": 1.0,
+   "mean sample age (cycles)": 0.0,
+   "replay games/positions": [
+    32,
+    4773
+   ]
+  },
+  "EVAL": {
+   "candidate_vs_parent": {
+    "W/D/L/T": "6/11/15/0",
+    "adjudicated": {
+     "wins": 6,
+     "draws": 11,
+     "losses": 15,
+     "score": 0.359375,
+     "score_ci_low": 0.22565727137892055,
+     "score_ci_high": 0.49309272862107945
+    },
+    "score_truncation_as_draw": 0.359375,
+    "tree_policy": "root_player_v1",
+    "score": 0.359,
+    "ci": [
+     0.226,
+     0.493
+    ],
+    "decisive": 21,
+    "decisive_frac": 0.656,
+    "trunc_frac": 0.0,
+    "terminations": {
+     "checkmate": 21,
+     "fifty_move_rule": 1,
+     "insufficient_material": 9,
+     "stalemate": 1
+    },
+    "pairs": {
+     "complete_pairs": 16,
+     "mirrored_pairs": 7,
+     "identical_move_pairs": 0,
+     "split_pairs": 5,
+     "all_draw_pairs": 2,
+     "pairs_with_truncation": 0,
+     "pair_score_histogram": {
+      "0.00": 2,
+      "0.25": 6,
+      "0.50": 7,
+      "0.75": 1
+     },
+     "mean_pair_score": 0.359375,
+     "pair_score_ci_low": 0.2596672238488893,
+     "pair_score_ci_high": 0.4590827761511107
+    }
+   },
+   "candidate_vs_reference": {
+    "W/D/L/T": "6/11/15/0",
+    "adjudicated": {
+     "wins": 6,
+     "draws": 11,
+     "losses": 15,
+     "score": 0.359375,
+     "score_ci_low": 0.22565727137892055,
+     "score_ci_high": 0.49309272862107945
+    },
+    "score_truncation_as_draw": 0.359375,
+    "tree_policy": "root_player_v1",
+    "score": 0.359,
+    "ci": [
+     0.226,
+     0.493
+    ],
+    "decisive": 21,
+    "decisive_frac": 0.656,
+    "trunc_frac": 0.0,
+    "terminations": {
+     "checkmate": 21,
+     "fifty_move_rule": 1,
+     "insufficient_material": 9,
+     "stalemate": 1
+    },
+    "pairs": {
+     "complete_pairs": 16,
+     "mirrored_pairs": 7,
+     "identical_move_pairs": 0,
+     "split_pairs": 5,
+     "all_draw_pairs": 2,
+     "pairs_with_truncation": 0,
+     "pair_score_histogram": {
+      "0.00": 2,
+      "0.25": 6,
+      "0.50": 7,
+      "0.75": 1
+     },
+     "mean_pair_score": 0.359375,
+     "pair_score_ci_low": 0.2596672238488893,
+     "pair_score_ci_high": 0.4590827761511107
+    }
+   },
+   "reference_arena_is_parent_arena": true,
+   "raw_vs_random": {
+    "policy_wins": 5,
+    "draws": 17,
+    "random_wins": 3,
+    "truncated": 7,
+    "policy_score": 0.54
+   },
+   "raw_vs_parent": {
+    "candidate_wins": 1,
+    "draws": 31,
+    "parent_wins": 0,
+    "truncated": 0,
+    "candidate_score": 0.515625
+   },
+   "decision": "hold",
+   "hold_reasons": [
+    "score_not_above_parent"
+   ]
+  },
+  "LINEAGE": {
+   "parent(actor)": "385f4f27b5e9",
+   "candidate": "7d067f4ec547",
+   "snapshot(promoted actor)": "385f4f27b5e9",
+   "accepted step after": 0
+  }
+ },
+ {
+  "cycle": 1,
+  "SYSTEM": {
+   "audit_ok": true,
+   "selfplay_inference_errors": 0,
+   "eval_inference_errors": 0,
+   "failed_games": 0,
+   "vram_peak_mb": {
+    "collect": 1445,
+    "train": 1445,
+    "eval": 1477
+   },
+   "vram_at_cycle_start_mb": 1445,
+   "temp_max_c": {
+    "collect": 70,
+    "train": 66,
+    "eval": 70
+   },
+   "owners_spawned/max_resident": [
+    2,
+    2
+   ],
+   "secs collect/train/eval/wall": [
+    297,
+    61,
+    344,
+    703
+   ]
+  },
+  "DATA": {
+   "W/D/B/T (white/draw/black/trunc)": "11/7/12/2",
+   "terminations": {
+    "checkmate": 23,
+    "fifty_move_rule": 2,
+    "insufficient_material": 5,
+    "truncated": 2
+   },
+   "draw_share": 0.219,
+   "truncated_share": 0.062,
+   "threefold+fifty": 0.062,
+   "mean_plies": 179.7,
+   "positions": 5750,
+   "trainable_positions": 4950,
+   "target_entropy": 2.876,
+   "target_top1": 0.143
+  },
+  "SEARCH": {
+   "kl net->noise": 0.0674,
+   "argmax changed by noise": 0.93,
+   "kl noise->target": 0.1252,
+   "argmax changed by search": 0.203,
+   "mean |network value|": 0.0,
+   "mean |root value|": 0.0026
+  },
+  "TRAINER": {
+   "step start->end": [
+    75,
+    153
+   ],
+   "planned": 370,
+   "fraction_end": 0.4135135135135135,
+   "lr first/last": [
+    0.0002904636239987088,
+    0.0002200456066978722
+   ],
+   "updates_at_zero_lr": 0,
+   "updates req/sched/done": [
+    78,
+    78,
+    78
+   ],
+   "loss first/last": [
+    3.9329422,
+    4.098162
+   ],
+   "policy/wdl loss first->last": [
+    [
+     3.0905535,
+     3.19686
+    ],
+    [
+     0.84238875,
+     0.90130216
+    ]
+   ],
+   "grad_norm mean/max": [
+    1.81,
+    5.706
+   ],
+   "policy_entropy first->last": [
+    3.0923672,
+    3.2022192
+   ],
+   "all finite": true
+  },
+  "REPLAY": {
+   "reuse achieved": 2.017,
+   "reuse all-new": 1.736,
+   "cap_bound": false,
+   "shortfall": null,
+   "fresh sample fraction": 0.6690705128205128,
+   "mean sample age (cycles)": 0.33092948717948717,
+   "replay games/positions": [
+    64,
+    9723
+   ]
+  },
+  "EVAL": {
+   "candidate_vs_parent": {
+    "W/D/L/T": "9/10/12/1",
+    "adjudicated": {
+     "wins": 9,
+     "draws": 11,
+     "losses": 12,
+     "score": 0.453125,
+     "score_ci_low": 0.31149605676986825,
+     "score_ci_high": 0.5947539432301318
+    },
+    "score_truncation_as_draw": 0.453125,
+    "tree_policy": "root_player_v1",
+    "score": 0.452,
+    "ci": [
+     0.305,
+     0.598
+    ],
+    "decisive": 21,
+    "decisive_frac": 0.656,
+    "trunc_frac": 0.031,
+    "terminations": {
+     "checkmate": 21,
+     "insufficient_material": 7,
+     "stalemate": 1,
+     "threefold_repetition": 2,
+     "truncated": 1
+    },
+    "pairs": {
+     "complete_pairs": 15,
+     "mirrored_pairs": 2,
+     "identical_move_pairs": 0,
+     "split_pairs": 1,
+     "all_draw_pairs": 1,
+     "pairs_with_truncation": 1,
+     "pair_score_histogram": {
+      "0.00": 4,
+      "0.25": 3,
+      "0.50": 2,
+      "0.75": 4,
+      "1.00": 2
+     },
+     "mean_pair_score": 0.45,
+     "pair_score_ci_low": 0.263566812682577,
+     "pair_score_ci_high": 0.636433187317423
+    }
+   },
+   "candidate_vs_reference": {
+    "W/D/L/T": "9/10/12/1",
+    "adjudicated": {
+     "wins": 9,
+     "draws": 11,
+     "losses": 12,
+     "score": 0.453125,
+     "score_ci_low": 0.31149605676986825,
+     "score_ci_high": 0.5947539432301318
+    },
+    "score_truncation_as_draw": 0.453125,
+    "tree_policy": "root_player_v1",
+    "score": 0.452,
+    "ci": [
+     0.305,
+     0.598
+    ],
+    "decisive": 21,
+    "decisive_frac": 0.656,
+    "trunc_frac": 0.031,
+    "terminations": {
+     "checkmate": 21,
+     "insufficient_material": 7,
+     "stalemate": 1,
+     "threefold_repetition": 2,
+     "truncated": 1
+    },
+    "pairs": {
+     "complete_pairs": 15,
+     "mirrored_pairs": 2,
+     "identical_move_pairs": 0,
+     "split_pairs": 1,
+     "all_draw_pairs": 1,
+     "pairs_with_truncation": 1,
+     "pair_score_histogram": {
+      "0.00": 4,
+      "0.25": 3,
+      "0.50": 2,
+      "0.75": 4,
+      "1.00": 2
+     },
+     "mean_pair_score": 0.45,
+     "pair_score_ci_low": 0.263566812682577,
+     "pair_score_ci_high": 0.636433187317423
+    }
+   },
+   "reference_arena_is_parent_arena": true,
+   "raw_vs_random": {
+    "policy_wins": 5,
+    "draws": 15,
+    "random_wins": 3,
+    "truncated": 9,
+    "policy_score": 0.5434782608695652
+   },
+   "raw_vs_parent": {
+    "candidate_wins": 0,
+    "draws": 27,
+    "parent_wins": 5,
+    "truncated": 0,
+    "candidate_score": 0.421875
+   },
+   "decision": "hold",
+   "hold_reasons": [
+    "score_not_above_parent"
+   ]
+  },
+  "LINEAGE": {
+   "parent(actor)": "385f4f27b5e9",
+   "candidate": "767db27c6532",
+   "snapshot(promoted actor)": "385f4f27b5e9",
+   "accepted step after": 0
+  }
+ },
+ {
+  "cycle": 2,
+  "SYSTEM": {
+   "audit_ok": true,
+   "selfplay_inference_errors": 0,
+   "eval_inference_errors": 0,
+   "failed_games": 0,
+   "vram_peak_mb": {
+    "collect": 1477,
+    "train": 1477,
+    "eval": 1477
+   },
+   "vram_at_cycle_start_mb": 1477,
+   "temp_max_c": {
+    "collect": 69,
+    "train": 65,
+    "eval": 70
+   },
+   "owners_spawned/max_resident": [
+    2,
+    2
+   ],
+   "secs collect/train/eval/wall": [
+    265,
+    74,
+    373,
+    713
+   ]
+  },
+  "DATA": {
+   "W/D/B/T (white/draw/black/trunc)": "12/6/11/3",
+   "terminations": {
+    "checkmate": 23,
+    "insufficient_material": 4,
+    "stalemate": 2,
+    "truncated": 3
+   },
+   "draw_share": 0.188,
+   "truncated_share": 0.094,
+   "threefold+fifty": 0.0,
+   "mean_plies": 167.8,
+   "positions": 5369,
+   "trainable_positions": 4169,
+   "target_entropy": 2.925,
+   "target_top1": 0.137
+  },
+  "SEARCH": {
+   "kl net->noise": 0.0684,
+   "argmax changed by noise": 0.937,
+   "kl noise->target": 0.1583,
+   "argmax changed by search": 0.224,
+   "mean |network value|": 0.0,
+   "mean |root value|": 0.0031
+  },
+  "TRAINER": {
+   "step start->end": [
+    153,
+    219
+   ],
+   "planned": 370,
+   "fraction_end": 0.5918918918918918,
+   "lr first/last": [
+    0.00021879114554347362,
+    0.00012954452586508506
+   ],
+   "updates_at_zero_lr": 0,
+   "updates req/sched/done": [
+    66,
+    66,
+    66
+   ],
+   "loss first/last": [
+    4.0251102,
+    4.090361
+   ],
+   "policy/wdl loss first->last": [
+    [
+     3.1230817,
+     3.2300544
+    ],
+    [
+     0.9020284,
+     0.8603067
+    ]
+   ],
+   "grad_norm mean/max": [
+    2.005,
+    4.212
+   ],
+   "policy_entropy first->last": [
+    3.1270761,
+    3.2285857
+   ],
+   "all finite": true
+  },
+  "REPLAY": {
+   "reuse achieved": 2.026,
+   "reuse all-new": 1.573,
+   "cap_bound": false,
+   "shortfall": null,
+   "fresh sample fraction": 0.49254261363636365,
+   "mean sample age (cycles)": 0.6782670454545454,
+   "replay games/positions": [
+    96,
+    13892
+   ]
+  },
+  "EVAL": {
+   "candidate_vs_parent": {
+    "W/D/L/T": "10/9/9/4",
+    "adjudicated": {
+     "wins": 12,
+     "draws": 10,
+     "losses": 10,
+     "score": 0.53125,
+     "score_ci_low": 0.38572276748585577,
+     "score_ci_high": 0.6767772325141442
+    },
+    "score_truncation_as_draw": 0.515625,
+    "tree_policy": "root_player_v1",
+    "score": 0.518,
+    "ci": [
+     0.363,
+     0.673
+    ],
+    "decisive": 19,
+    "decisive_frac": 0.594,
+    "trunc_frac": 0.125,
+    "terminations": {
+     "checkmate": 19,
+     "fifty_move_rule": 1,
+     "insufficient_material": 7,
+     "threefold_repetition": 1,
+     "truncated": 4
+    },
+    "pairs": {
+     "complete_pairs": 13,
+     "mirrored_pairs": 6,
+     "identical_move_pairs": 0,
+     "split_pairs": 5,
+     "all_draw_pairs": 1,
+     "pairs_with_truncation": 3,
+     "pair_score_histogram": {
+      "0.25": 3,
+      "0.50": 6,
+      "0.75": 3,
+      "1.00": 1
+     },
+     "mean_pair_score": 0.5384615384615384,
+     "pair_score_ci_low": 0.4163245022223134,
+     "pair_score_ci_high": 0.6605985747007634
+    }
+   },
+   "candidate_vs_reference": {
+    "W/D/L/T": "10/9/9/4",
+    "adjudicated": {
+     "wins": 12,
+     "draws": 10,
+     "losses": 10,
+     "score": 0.53125,
+     "score_ci_low": 0.38572276748585577,
+     "score_ci_high": 0.6767772325141442
+    },
+    "score_truncation_as_draw": 0.515625,
+    "tree_policy": "root_player_v1",
+    "score": 0.518,
+    "ci": [
+     0.363,
+     0.673
+    ],
+    "decisive": 19,
+    "decisive_frac": 0.594,
+    "trunc_frac": 0.125,
+    "terminations": {
+     "checkmate": 19,
+     "fifty_move_rule": 1,
+     "insufficient_material": 7,
+     "threefold_repetition": 1,
+     "truncated": 4
+    },
+    "pairs": {
+     "complete_pairs": 13,
+     "mirrored_pairs": 6,
+     "identical_move_pairs": 0,
+     "split_pairs": 5,
+     "all_draw_pairs": 1,
+     "pairs_with_truncation": 3,
+     "pair_score_histogram": {
+      "0.25": 3,
+      "0.50": 6,
+      "0.75": 3,
+      "1.00": 1
+     },
+     "mean_pair_score": 0.5384615384615384,
+     "pair_score_ci_low": 0.4163245022223134,
+     "pair_score_ci_high": 0.6605985747007634
+    }
+   },
+   "reference_arena_is_parent_arena": true,
+   "raw_vs_random": {
+    "policy_wins": 3,
+    "draws": 25,
+    "random_wins": 2,
+    "truncated": 2,
+    "policy_score": 0.5166666666666667
+   },
+   "raw_vs_parent": {
+    "candidate_wins": 1,
+    "draws": 29,
+    "parent_wins": 2,
+    "truncated": 0,
+    "candidate_score": 0.484375
+   },
+   "decision": "promote",
+   "hold_reasons": []
+  },
+  "LINEAGE": {
+   "parent(actor)": "385f4f27b5e9",
+   "candidate": "e2819ee1f60d",
+   "snapshot(promoted actor)": "e2819ee1f60d",
+   "accepted step after": 219
+  }
+ }
+]

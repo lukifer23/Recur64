@@ -1,0 +1,57 @@
+# Recur64 HP R15-P1 — R4 artifact of the frozen R15 head-v2 reference. Same seed,
+# layout and weights as r15-reference-v2.toml (semantic digest must be identical);
+# only the recorded recurrence differs, because the pilot requires the reference
+# checkpoint recurrence to equal the run recurrence.
+#
+# Identical to configs/hp/f15-reference-v2.toml except the 2 + 4 + 2 block layout,
+# run_id and model_profile (pre-registered, docs/HP_H3_PREREG.md R15-P0.3). One
+# reference serves R1, R2 and R4: recurrence is a runtime argument, not a
+# parameter. Freeze with:
+#   recur64 freeze-reference --config configs/hp/r15-reference-v2.toml #     --output runs/hp-r15-p0-ref-r15-v2
+
+run_id = "hp-r15-p0-ref-r15-v2-r4"
+device = "cuda"
+precision = "fp32"
+recurrence = 4
+model_profile = "r15"
+hardware_profile = "hp-home"
+seed = 1
+
+# Search contract (recorded for continuity; the reference itself is not searched).
+simulations_per_move = 64
+c_puct = 1.0
+temperature = 1.0
+ply_cap = 400
+# Self-play exploration contract (D41): sample the first 30 plies, then argmax.
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
+
+# Collection contract. This is the historical HP scheduling prior; H3.3
+# re-measures K, concurrency and batch layout rather than assuming it.
+games_per_cycle = 32
+concurrent_games = 16
+cpu_workers = 12
+max_inference_batch = 32
+batch_timeout_us = 1000
+
+# Replay / learner contract.
+lr = 3.0e-4
+train_batch = 32
+accumulation_steps = 4
+replay_reuse_target = 2.0
+opening_suite = "configs/openings-v1.toml"
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 2
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5

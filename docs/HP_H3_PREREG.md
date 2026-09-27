@@ -453,3 +453,25 @@ D53/D54 are in force.
 
 **Order:** R1, then R2, then R4, sequentially, one GPU job at a time, under a
 keep-awake hold. A NO-GO arm stops the sequence. A CONDITIONAL arm does not.
+
+### R15-P1 amendment (2026-09-27, after R1, before R2/R4 ran)
+
+- **The failure:** the R2 arm refused to start with "reference checkpoint
+  recurrence differs from the run config" (`pilot.rs:417`).
+  - The pilot requires the reference checkpoint's recorded recurrence to equal
+    the run's.
+  - P0.3's "one reference serves R1/R2/R4" was true of the **weights**, since
+    recurrence is not a parameter, but not of the checkpoint **artifact**.
+- **Fix, with the safety check kept:**
+  - The same config was re-frozen with `recurrence = 2` and `recurrence = 4`
+    (`configs/hp/r15-reference-v2-r{2,4}.toml`).
+  - Both artifacts have semantic digest `17b03869…`, and 0 of 15,154,632
+    elements differ from the R1 reference. Evidence:
+    `docs/evidence/hp-r15-p1/reference-artifacts/`.
+  - R2 pins `0cd0036c…` and R4 pins `6c41aec0…`.
+- **Effect:**
+  - All arms still start from identical weights.
+  - `reference_model_id` now differs per arm, as an artifact identity only.
+    The contract test compares scientific identities with recurrence and
+    `reference_model_id` masked.
+  - R1 is unaffected and not re-run.

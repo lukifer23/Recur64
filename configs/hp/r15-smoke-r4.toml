@@ -2,7 +2,8 @@
 # pre-registration (docs/HP_H3_PREREG.md §R15-P1). The three arms are identical
 # except recurrence, run_id and the wall budget (test
 # r15_smoke_arms_differ_only_in_recurrence). Contract: the H3.6 F15 smoke v2
-# with the R15 2+4+2 layout, the R15 reference (385f4f27 / semantic 17b03869),
+# with the R15 2+4+2 layout, the R15 reference weights (semantic 17b03869; this
+# arm pins its own recurrence-matched artifact of them),
 # D53 promotion-v3, D54 root-player arena trees, D55 build
 # (--features cuda,fusion,autotune) + candidate buckets, perf #11 self-play
 # schedule.
@@ -14,8 +15,12 @@ model_profile = "r15"
 hardware_profile = "hp-home"
 seed = 1
 
-reference_checkpoint = "runs/hp-r15-p0-ref-r15-v2"
-reference_model_id = "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965"
+# R15-P1 amendment: the pilot requires the reference checkpoint's recorded
+# recurrence to equal the run's, so each arm pins its own artifact of the SAME
+# weights (semantic digest 17b03869..., identical to the R1 reference; evidence
+# docs/evidence/hp-r15-p1/reference-artifacts/).
+reference_checkpoint = "runs/hp-r15-p0-ref-r15-v2-r4"
+reference_model_id = "6c41aec0c95d861e8e01bfd20616bf9b71d361e01120d272ea568d7f38b0d580"
 
 # --- Search / self-play contract (H3.4 budget; D41 exploration) ---
 simulations_per_move = 32

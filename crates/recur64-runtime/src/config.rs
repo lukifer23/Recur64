@@ -1295,7 +1295,8 @@ truncaton = 0.25
     }
 
     /// R15-P1: the three per-arm smoke configs are the pre-registered contract
-    /// and differ only in `recurrence` (and labels / wall budget).
+    /// and differ only in `recurrence`, the recurrence-matched reference
+    /// artifact of identical weights, and labels / wall budget.
     #[test]
     fn r15_smoke_arms_differ_only_in_recurrence() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../configs/hp");
@@ -1314,15 +1315,19 @@ truncaton = 0.25
             c
         };
         let arms = [load(1), load(2), load(4)];
-        for (cfg, r) in arms.iter().zip([1usize, 2, 4]) {
+        // One set of reference weights (semantic digest 17b03869…), one
+        // recurrence-matched checkpoint artifact per arm (R15-P1 amendment).
+        let refs = [
+            "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965",
+            "0cd0036cae8bfb541cab792f1844eda0f47d69b08f7e6d955ea188c1b723a47b",
+            "6c41aec0c95d861e8e01bfd20616bf9b71d361e01120d272ea568d7f38b0d580",
+        ];
+        for ((cfg, r), reference) in arms.iter().zip([1usize, 2, 4]).zip(refs) {
             assert_eq!(cfg.recurrence, r);
+            assert_eq!(cfg.reference_model_id.as_deref(), Some(reference));
             let m = &cfg.model;
             assert_eq!((m.width, m.heads, m.ffn), (512, 8, 768));
             assert_eq!((m.input_blocks, m.core_blocks, m.output_blocks), (2, 4, 2));
-            assert_eq!(
-                cfg.reference_model_id.as_deref(),
-                Some("385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965")
-            );
             assert_eq!(cfg.search_leaves_in_flight, 2);
             assert_eq!(cfg.simulations_per_move, 32);
             assert_eq!(cfg.collection_shape().unwrap().0, 32);
@@ -1350,6 +1355,7 @@ truncaton = 0.25
         let strip = |c: &RunConfig| {
             let mut v = c.scientific_identity().unwrap();
             v["recurrence"] = serde_json::Value::Null;
+            v["reference_model_id"] = serde_json::Value::Null;
             v
         };
         assert_eq!(strip(&arms[0]), strip(&arms[1]));

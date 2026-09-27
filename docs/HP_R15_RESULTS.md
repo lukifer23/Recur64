@@ -147,3 +147,49 @@ steps are 0.87 / 1.26 / 2.03 s.
 **Scheduling (M3):** 1.20× (587 → 489 s) with 32/32 identical games. This is
 below the pre-registered 1.3× adoption bar, so it is not adopted for R15. The
 GPU reached ~91 % busy. See `docs/PERF_LEDGER.md` #1.
+
+
+## P1 — per-arm R15 smokes (MEASURED; pre-registered `fa21ef1`, amended)
+
+**Build and schedule:**
+- D55 build (`--features cuda,fusion,autotune`), binary `fa21ef1`.
+- Self-play at c12 / batch 24; evaluation at c8 / batch 16.
+- root_player_v1 arenas, promotion-v3, 3 cycles.
+- Evidence: `docs/evidence/hp-r15-p1/r{1,2,4}/`, with pre-flight records and
+  metrics extracts.
+
+### R1 (8 executed blocks) — **CONDITIONAL**
+
+| | cycle 0 | cycle 1 | cycle 2 |
+|---|---|---|---|
+| actor → candidate | `385f4f27` → `7d067f4e` | `385f4f27` → `767db27c` | `385f4f27` → `e2819ee1` |
+| wall (collect / train / eval) | 766 s (342 / 74 / 349) | 703 s (297 / 61 / 344) | 713 s (265 / 74 / 373) |
+| audit / errors / VRAM peak | ok / 0 / 1,445 MB | ok / 0 / 1,477 MB | ok / 0 / 1,477 MB |
+| draw / threefold+fifty / **truncated self-play** | 0.25 / 0.094 / **0.156** | 0.219 / 0.062 / 0.062 | 0.188 / 0.0 / 0.094 |
+| mean plies / trainable positions | 211.7 / 4,773 | 179.7 / 4,950 | 167.8 / 4,169 |
+| trainer step (of 370) / zero-LR updates | 0 → 75 / 0 | 75 → 153 / 0 | 153 → 219 / 0 |
+| WDL loss first → last | 1.099 → 0.988 | 0.842 → 0.901 | 0.902 → 0.860 |
+| reuse / cap bound / fresh fraction | 2.011 / no / 1.00 | 2.017 / no / 0.67 | 2.026 / no / 0.49 |
+| **vs frozen reference, adjudicated** (= parent arena) | **0.359 [0.226, 0.493]** | 0.453 [0.311, 0.595] | 0.531 [0.386, 0.677] |
+| arena truncation | 0.0 | 0.031 | **0.125** |
+| raw vs random | 0.54 | 0.54 | 0.52 |
+| decision | hold | hold | promote (step 219) |
+
+**Gates:**
+- All GO criteria are met: audit clean, 0 errors, VRAM plateau under 3 GB,
+  continuous trainer with exact lineage, 0 zero-LR updates, the cap never
+  binds, reuse ≥ 0.8 × target, and no D49 stop.
+- Two **CONDITIONAL** flags: truncated self-play share 0.156 (> 0.10, cycle 0)
+  and arena truncation 0.125 (> 0.10, cycle 2).
+
+**Findings (MEASURED):**
+- The 75-update candidate is **worse** than the untrained reference: its CI
+  excludes 0.5 on the low side.
+- It then recovers as training continues (0.453, then 0.531).
+- INFERRED: an early, barely-trained value head adds misleading signal to
+  search compared with a neutral zero value.
+- The raw policy stays flat, as in H3.6.
+
+### R2 / R4
+
+These are pending (re-launched after the reference-artifact amendment).
