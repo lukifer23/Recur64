@@ -1,0 +1,83 @@
+{
+  "checkpoint": "runs/hp-r15-p0-ref-r15-v2",
+  "checkpoint_model_id": "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965",
+  "device": "cuda",
+  "git_branch": "experiment/hp-r15-h3-integration",
+  "git_revision": "bac2bbab30c04de779c622f2504e6ec6c66fe1c7",
+  "layouts": [
+    {
+      "accumulation_steps": 4,
+      "all_finite": true,
+      "effective_batch": 128,
+      "error": null,
+      "examples_consumed": 2560,
+      "examples_per_sec": 146.5820319573451,
+      "first_loss": 4.331433296203613,
+      "gpu": {
+        "last_vram_mb": 1281,
+        "min_vram_mb": 1281,
+        "peak_vram_mb": 1281,
+        "samples": 33,
+        "temp_max_c": 68,
+        "util_busy_mean": 92.24242424242425,
+        "util_max": 100
+      },
+      "last_loss": 4.046159267425537,
+      "max_grad_norm": 5.250728130340576,
+      "physical_batch": 32,
+      "secs": 17.4646235,
+      "step_ms_mean": 873.2311749999999,
+      "updates": 20,
+      "warmup_secs": 9.8379495,
+      "warmup_updates": 2
+    }
+  ],
+  "lr": 0.0003,
+  "lr_schedule": {
+    "planned_updates": 370,
+    "warmup_updates": 37
+  },
+  "model": {
+    "core_blocks": 4,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 2,
+    "output_blocks": 2,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "precision": "fp32",
+  "replay": "runs/hp-h3-replay",
+  "replay_identity": {
+    "entries": [
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 0,
+        "games": 32,
+        "git_revision": "9889c175f5861f8c5f41e26071bfce58769cbaed",
+        "head_version": 2,
+        "model_id": "d89b408fcc7a3cd9874a0ffbbcafd121c6c78cbb9818d4adaac0fe8d51ea234b",
+        "ply_cap": 400,
+        "recurrence": 1,
+        "resolved_config_hash": "d4b20de9030f820aa6774d721fea9a293ee6252b3733a915cfa415210ce81c04",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "8fdf4fa7d35135995283656fcfdba11aa83a8c277f058ae227e63228dbf8f9b1",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      }
+    ],
+    "kind": "recur64-replay-identity-v1"
+  },
+  "replay_sampleable_positions": 4795,
+  "replay_total_games": 32
+}
