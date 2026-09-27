@@ -131,3 +131,49 @@ fn non_finite_model_output_fails_visibly_on_both_inference_paths() {
     );
     assert!(r.is_err(), "batched path must refuse NaN output");
 }
+
+/// Throughput experiment (PERF_LEDGER): candidate-width bucketing pads the
+/// candidate dimension; masked slots must not change any output.
+#[test]
+fn candidate_bucketing_does_not_change_outputs() {
+    let device = Default::default();
+    <Flex as Backend>::seed(&device, 9);
+    let cfg = ModelConfig {
+        width: 32,
+        heads: 4,
+        ffn: 64,
+        input_blocks: 0,
+        core_blocks: 1,
+        output_blocks: 0,
+        squares: 64,
+        in_features: 119,
+        policy_dim: 16,
+        wdl_classes: 3,
+        promo_codes: 5,
+        rms_eps: 1e-5,
+    };
+    let model = ProbeModel::<Flex>::new(cfg, &device);
+    let states = [
+        GameState::startpos(),
+        GameState::from_fen("8/8/8/4k3/8/8/8/R3K3 w - - 0 1").unwrap(),
+        GameState::from_fen("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3")
+            .unwrap(),
+    ];
+    let obs: Vec<_> = states.iter().map(encode_observation_v1).collect();
+    let legal: Vec<_> = states.iter().map(|s| s.legal_actions()).collect();
+    let plain = BatchedModel::new(model.clone(), 1, device);
+    let bucketed = BatchedModel::new(model, 1, device).with_candidate_buckets(true);
+    let a = plain.evaluate_batch(&obs, &legal).unwrap();
+    let b = bucketed.evaluate_batch(&obs, &legal).unwrap();
+    for (x, y) in a.iter().zip(&b) {
+        assert_eq!(x.policy.len(), y.policy.len());
+        let d = x
+            .policy
+            .iter()
+            .zip(&y.policy)
+            .map(|(p, q)| (p - q).abs())
+            .fold(0f32, f32::max);
+        assert!(d < 1e-6, "policy diff {d}");
+        assert!((x.value - y.value).abs() < 1e-6);
+    }
+}

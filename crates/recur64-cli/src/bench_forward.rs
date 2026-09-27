@@ -37,6 +37,9 @@ pub struct BenchForwardArgs {
     /// Distinct positions (openings + seeded random playouts).
     #[arg(long, default_value_t = 256)]
     pub positions: usize,
+    /// Round candidate widths up to fixed buckets (fewer tensor shapes).
+    #[arg(long, default_value_t = false)]
+    pub bucket_candidates: bool,
     /// Earlier bench-forward JSON to compare outputs against (parity).
     #[arg(long)]
     pub baseline: Option<PathBuf>,
@@ -108,7 +111,8 @@ fn run_impl<B: Backend>(cfg: &RunConfig, args: &BenchForwardArgs) -> anyhow::Res
     let mut parity = serde_json::Map::new();
     for &r in &recurrences {
         let model = model_io::load::<B>(&args.checkpoint, &meta.model, &device)?;
-        let bm = BatchedModel::new(model, r, device.clone());
+        let bm = BatchedModel::new(model, r, device.clone())
+            .with_candidate_buckets(args.bucket_candidates);
         // Parity outputs: every position once, in batches of 16.
         let mut pol: Vec<f32> = Vec::new();
         let mut val: Vec<f32> = Vec::new();
@@ -194,6 +198,8 @@ fn run_impl<B: Backend>(cfg: &RunConfig, args: &BenchForwardArgs) -> anyhow::Res
         "model_id": meta.model_id,
         "device": cfg.device,
         "positions": obs.len(),
+        "bucket_candidates": args.bucket_candidates,
+        "build_features": {"fusion": cfg!(feature = "fusion"), "autotune": cfg!(feature = "autotune")},
         "cells": cells,
         "parity_vs_baseline": parity,
         "baseline": args.baseline.as_ref().map(|p| p.display().to_string()),

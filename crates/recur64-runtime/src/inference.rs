@@ -68,6 +68,9 @@ pub struct BatchedModel<B: Backend> {
     recurrence: usize,
     device: B::Device,
     phases: PhaseTimes,
+    /// Round the candidate width up to fixed buckets (throughput experiment;
+    /// see `CandidateBatch::from_lists_bucketed`). Off by default.
+    bucket_candidates: bool,
 }
 
 /// Cumulative wall time (µs) per phase of `evaluate_batch`, for profiling.
@@ -118,7 +121,14 @@ impl<B: Backend> BatchedModel<B> {
             recurrence,
             device,
             phases: PhaseTimes::default(),
+            bucket_candidates: false,
         }
+    }
+
+    /// Enable candidate-width bucketing (fewer distinct tensor shapes).
+    pub fn with_candidate_buckets(mut self, on: bool) -> Self {
+        self.bucket_candidates = on;
+        self
     }
 
     /// Cumulative per-phase timings of every batch evaluated so far.
@@ -176,7 +186,11 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
                     .collect()
             })
             .collect();
-        let cb = CandidateBatch::from_lists(&lists);
+        let cb = if self.bucket_candidates {
+            CandidateBatch::from_lists_bucketed(&lists)
+        } else {
+            CandidateBatch::from_lists(&lists)
+        };
         if cb.width == 0 {
             return Err(EvalError::Invalid("batch has no legal candidates".into()));
         }

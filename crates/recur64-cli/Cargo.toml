@@ -14,6 +14,10 @@ default = ["cpu"]
 cpu = ["recur64-model/cpu", "recur64-runtime/cpu", "burn/flex"]
 cuda = ["recur64-model/cuda", "recur64-runtime/cuda", "burn/cuda"]
 store = ["recur64-model/store"]
+# Throughput experiments (docs/PERF_LEDGER.md). Off by default: the validated
+# default build is plain CubeCL CUDA without fusion or autotune.
+fusion = ["burn/fusion"]
+autotune = ["burn/autotune"]
 
 [dependencies]
 recur64-core = { path = "../recur64-core" }

@@ -864,6 +864,32 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   The NaN fixes are covered by
   `non_finite_model_output_fails_visibly_on_both_inference_paths`.
 
+## D55 - Inference throughput build: fusion + autotune + candidate buckets (PROPOSED)
+
+- **Status:** PROPOSED (HP perf pass, 2026-09-27). It stays PROPOSED until
+  every check in `docs/PERF_LEDGER.md` #3–#9 passes. The default build is
+  unchanged until then.
+- **Decision (proposed):**
+  - Build CUDA with Burn `fusion` and `autotune`, via the recur64-cli cargo
+    features `fusion` and `autotune`.
+  - Enable candidate-width bucketing on the batched inference path.
+  - Precision stays FP32, and the backend stays Burn CubeCL CUDA. This only
+    enables features of the pinned backend.
+- **Why:**
+  - Measured on the production batch path of a trained network:
+    - inference is +38 % at batch 16 and +63 % at batch 8 (arena-sized
+      batches);
+    - training steps are +11 %;
+    - parity is at float noise (max |Δ| 9e-5 policy, 1.3e-5 value);
+    - the training loss trajectory is unchanged.
+  - Per-position GPU cost dominates; host overhead is under 1 %.
+- **Risks:**
+  - Autotune picks kernels by timing, so cross-process CUDA results may no
+    longer be bit-exact. Within-process pairing (CRN) is unaffected.
+  - Fusion's `memory_cleanup` passes through. The D44 lifecycle must be
+    re-verified (ledger #8).
+  - Warmup is longer because kernels compile and tune on first use.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
