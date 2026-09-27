@@ -890,6 +890,44 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     re-verified (ledger #8).
   - Warmup is longer because kernels compile and tune on first use.
 
+## D56 - Early material adjudication in arenas (PROPOSED — needs owner sign-off)
+
+- **Status:** PROPOSED (HP perf pass, 2026-09-27). Not implemented. It changes
+  the evaluation contract, so it needs owner approval and a pre-registered
+  shadow-mode validation before it can be adopted.
+- **Evidence (MEASURED):**
+  - Games that run to the 400-ply cap consume **51 %** of all arena plies in
+    P0.5 M1, 25 % in M2, and 22 % / 12 % in the H3.6 cycle-2 arenas.
+  - 10 of the 11 M1 truncations were one side holding decisive material
+    (K+Q vs K and similar) that it could not convert.
+  - Under D53 those games are already scored by `material_v1` at the cap.
+- **Proposal:** end an arena game early, with the `material_v1` result for
+  the leading side, once that side's balance is ≥ +5 for **N consecutive
+  plies** (proposed N = 40).
+  - The result is the same one D53 would assign at the cap, reached
+    earlier.
+  - This is an arena-only change. Self-play is untouched unless separately
+    decided (see D52).
+- **What can change:**
+  - A game that would later end naturally is decided early instead:
+    - a checkmate by the leader gives the same result;
+    - a fifty-move or stalemate draw by a leader who cannot convert would
+      now count as a win;
+    - a comeback (material flip) would be missed.
+  - These are exactly the cases the validation must count.
+- **Validation plan (shadow mode, pre-registered before use):**
+  - Run arenas with the rule **observing only**: record the ply at which it
+    would fire and its verdict, but play every game to its natural end or
+    the cap.
+  - Adopt iff:
+    - verdict agreement with the final D53-adjudicated result is ≥ 95 %;
+    - no material flip is observed after firing;
+    - the saved-plies estimate is ≥ 25 %.
+  - Report every disagreement.
+- **Expected gain:** up to about 40–50 % of arena compute when the candidate
+  is strong but cannot convert, which is the current regime. The
+  realized gain is set by N and measured in shadow mode.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

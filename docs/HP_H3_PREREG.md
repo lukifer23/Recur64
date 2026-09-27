@@ -353,3 +353,31 @@ They change no historical result.
   - If the games differ, the scores must agree within the per-game CI.
 - Adopt `eval_concurrency = 32` and `eval_max_inference_batch = 32` for R15
   iff M3 is **≥ 1.3× faster** than M1 with 0 errors and peak VRAM < 3.0 GB.
+
+## D56 — early material adjudication, shadow-mode validation (fixed before running)
+
+Owner-approved 2026-09-27.
+
+**Rule `early_material_v1`:** the side whose `material_v1` balance (P1 N3 B3 R5
+Q9) is ≥ +5 for **40 consecutive plies** is adjudicated the winner at the
+firing ply. The result is the one D53 assigns at the cap, reached earlier.
+
+**Shadow mode (observe only):** every game plays to its natural end or the cap.
+Each game records:
+- the firing ply and leader, if any;
+- the leader's minimum balance after firing (flip detection);
+- the plies that would have been saved.
+
+**Validation set:** the P0.5 M1 and M2 pairs (cycle-2 candidate vs reference and
+vs parent), root_player_v1, paired RNG, K = 2, 32 sims, seed offset 2, 32 games
+each. That is 64 games, all of them decided under D53.
+
+**Adopt enforcement for R15 iff all of these hold:**
+1. **Verdict agreement ≥ 95 %.** Among games where the rule fires, the leader
+   equals the D53-adjudicated winner of the full game.
+2. **No flip.** No fired game in which the leader's balance later falls to ≤ 0.
+3. **Saved plies ≥ 25 %** of total arena plies.
+4. **0 inference errors.**
+
+Every disagreement is reported. If the gate fails, STOP and report; there is
+no retuning of N or the threshold on the same data.
