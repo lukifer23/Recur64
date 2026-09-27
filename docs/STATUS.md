@@ -396,6 +396,25 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
 - **R15 entry: CONDITIONAL GO for planning.** Prerequisites are
   truncation-aware arena scoring, an ADR on truncated self-play games, R15
   references, and an R2/R4 hardware requalification. No R15 training.
+- **Core review + R15 P0 (2026-09-27; `docs/HP_R15_RESULTS.md`):**
+  - **D54:** arena players now search their own trees. Earlier arenas mixed
+    both networks.
+  - **D53:** truncation-aware scoring (material adjudication, promotion-v3).
+  - **P0.3/P0.4:** the R15 reference is reproducible, and R1/R2/R4 pass the
+    RTX 2050 hardware checks.
+  - **Also fixed:** NaN no longer hides as uniform/zero, and the inference
+    metrics race is gone.
+- **Perf pass (`docs/PERF_LEDGER.md`), D55 ACCEPTED:** build with
+  `--features cuda,fusion,autotune` plus candidate buckets.
+  - **Measured:** self-play +30 %, training +11 %, forward +38–63 %.
+  - **Arenas:** only +8 %; they are latency-bound.
+  - **Lifecycle:** a fusion leak was root-caused (drop order) and fixed; VRAM
+    is flat at 483 MB.
+- **D56 early adjudication:** implemented, but its shadow gate **failed**
+  (58.9 % agreement, 17 flips), so it is **not adopted**. At this strength a
+  material lead does not predict a win. Endgame technique is the core
+  weakness.
+- **Still not run:** R15 training (P1).
 - Historical head-v1 HP evidence preserved and labelled HISTORICAL in
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.

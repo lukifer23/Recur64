@@ -901,11 +901,37 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     re-verified (ledger #8e).
   - Warmup is longer because kernels compile and tune on first use.
 
-## D56 - Early material adjudication in arenas (PROPOSED — needs owner sign-off)
+## D56 - Early material adjudication in arenas (REJECTED by its pre-registered gate)
 
-- **Status:** PROPOSED (HP perf pass, 2026-09-27). Not implemented. It changes
-  the evaluation contract, so it needs owner approval and a pre-registered
-  shadow-mode validation before it can be adopted.
+- **Status:** REJECTED for enforcement (2026-09-27).
+  - It was implemented and owner-approved for validation. `shadow` and
+    `enforce` modes exist, both off by default.
+  - The shadow gate (`HP_H3_PREREG.md` §D56, commit `5928208`) failed.
+  - Evidence: `docs/evidence/d56-shadow/` (with `gate.json`).
+- **Measured on 64 games** (M1 and M2 pairs, root_player_v1, paired RNG,
+  32 sims, K = 2):
+  - the rule fired in 56 games;
+  - verdict agreement with the full-game D53 result was **58.9 %** (bar
+    ≥ 95 %);
+  - **17 material flips** after firing (bar 0);
+  - 62.6 % of plies would have been saved (bar ≥ 25 %);
+  - 0 errors.
+- **Why it failed (MEASURED from the 23 disagreements):**
+  - At this playing strength a +5 lead held for 40 plies does not predict a
+    win. The leader often gives material back: K+Q later ends as bare kings
+    (insufficient material).
+  - The leader often hits the fifty-move rule with Q vs K, or gets mated after
+    blundering.
+- **Consequences:**
+  - Endgame technique, both conversion and keeping an advantage, is the
+    network's core weakness. This strengthens the learning-side fix: train on
+    won endgames instead of discarding them (D52).
+  - **D53 caveat:** D53's cap adjudication makes the same "+5 = win"
+    assumption. It is still less biased than dropping truncated games, but it
+    can overcount conversions. Arenas should report as-played, T = draw and
+    adjudicated scores side by side, which they already do.
+  - N and the threshold are not retuned on this data. A stricter rule needs a
+    new pre-registration and fresh seeds.
 - **Evidence (MEASURED):**
   - Games that run to the 400-ply cap consume **51 %** of all arena plies in
     P0.5 M1, 25 % in M2, and 22 % / 12 % in the H3.6 cycle-2 arenas.

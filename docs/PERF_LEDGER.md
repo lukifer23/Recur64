@@ -227,3 +227,17 @@ candidate (#11).
   - arena +8 %.
 - **Guarantees:** lifecycle flat (#8e), and parity at float noise with
   identical games observed (#6, #9, #10).
+
+### #12 — D56 early adjudication, shadow validation (MEASURED — REJECTED by gate)
+
+- **Evidence:** `docs/evidence/d56-shadow/` (`gate.json` lists every
+  disagreement).
+- **Result:** fired in 56/64 games; agreement 58.9 % (≥ 95 % required); 17
+  flips (0 required); 62.6 % of plies would be saved; 0 errors.
+- **Decision:** **not adopted.** The saving is real but the rule is wrong
+  about 4 times in 10 at this playing strength. See DECISIONS D56.
+- **Throughput data point from the same runs:**
+  - The fused build at c32 / batch 32 ran the 32-game M1 arena in **338 s**,
+    against 587 s on the original build at c8 / 16. That is **1.74× end to
+    end** on a full arena.
+  - M2: 322 s against 539 s, **1.67×**.

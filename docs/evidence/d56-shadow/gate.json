@@ -1,0 +1,302 @@
+{
+ "fired": 56,
+ "agreement": 0.5892857142857143,
+ "flips": 17,
+ "saved_fraction": 0.6264589134427395,
+ "errors": 0,
+ "gate": {
+  "1_agreement_ge_95pct": false,
+  "2_no_flip": false,
+  "3_saved_ge_25pct": true,
+  "4_zero_errors": true
+ },
+ "adopt": false,
+ "disagreements": [
+  {
+   "arm": "m1",
+   "game": 6,
+   "fired_at": 73,
+   "plies": 359,
+   "leader_is_candidate": false,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -1,
+   "final_fen": "6B1/5k2/8/8/8/K6b/8/8 b - - 0 183"
+  },
+  {
+   "arm": "m1",
+   "game": 9,
+   "fired_at": 51,
+   "plies": 377,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "fifty_move_rule",
+   "min_leader_balance_after": 8,
+   "final_fen": "1k6/5n2/8/8/8/2K5/8/3q4 b - - 100 192"
+  },
+  {
+   "arm": "m1",
+   "game": 13,
+   "fired_at": 99,
+   "plies": 231,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.0,
+   "termination": "checkmate",
+   "min_leader_balance_after": -6,
+   "final_fen": "r5N1/8/3n2kQ/r5P1/4b3/8/5R2/6K1 b - - 1 119"
+  },
+  {
+   "arm": "m1",
+   "game": 16,
+   "fired_at": 74,
+   "plies": 344,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -6,
+   "final_fen": "8/7k/8/8/8/8/8/4K3 w - - 0 176"
+  },
+  {
+   "arm": "m1",
+   "game": 18,
+   "fired_at": 164,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "truncated",
+   "min_leader_balance_after": 3,
+   "final_fen": "1k4N1/8/8/8/P3K3/8/8/8 w - - 50 204"
+  },
+  {
+   "arm": "m1",
+   "game": 20,
+   "fired_at": 62,
+   "plies": 340,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.0,
+   "termination": "checkmate",
+   "min_leader_balance_after": -5,
+   "final_fen": "7r/8/8/8/5k1K/8/8/8 w - - 26 174"
+  },
+  {
+   "arm": "m1",
+   "game": 21,
+   "fired_at": 79,
+   "plies": 121,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.0,
+   "termination": "checkmate",
+   "min_leader_balance_after": -1,
+   "final_fen": "4Qk1r/4p1b1/p6p/1B2r3/1n3p2/4R1N1/5P2/4K3 b - - 0 64"
+  },
+  {
+   "arm": "m1",
+   "game": 22,
+   "fired_at": 88,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 1.0,
+   "termination": "truncated",
+   "min_leader_balance_after": -2,
+   "final_fen": "8/8/8/8/6P1/Q6K/2k5/8 w - - 95 204"
+  },
+  {
+   "arm": "m1",
+   "game": 26,
+   "fired_at": 118,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 1.0,
+   "termination": "truncated",
+   "min_leader_balance_after": -1,
+   "final_fen": "3k2K1/8/3B4/6N1/7B/8/8/8 w - - 67 204"
+  },
+  {
+   "arm": "m1",
+   "game": 28,
+   "fired_at": 107,
+   "plies": 165,
+   "leader_is_candidate": false,
+   "final_adjudicated": 1.0,
+   "termination": "checkmate",
+   "min_leader_balance_after": -6,
+   "final_fen": "3n4/8/8/kp6/1p4r1/1P3K2/5Q2/Q5b1 b - - 2 86"
+  },
+  {
+   "arm": "m1",
+   "game": 30,
+   "fired_at": 132,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 1.0,
+   "termination": "truncated",
+   "min_leader_balance_after": -2,
+   "final_fen": "8/6K1/8/7P/8/3Q4/8/k7 w - - 18 204"
+  },
+  {
+   "arm": "m2",
+   "game": 0,
+   "fired_at": 112,
+   "plies": 394,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": 3,
+   "final_fen": "8/8/1k6/8/K7/8/8/3N4 w - - 0 201"
+  },
+  {
+   "arm": "m2",
+   "game": 1,
+   "fired_at": 131,
+   "plies": 309,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": 0,
+   "final_fen": "4k3/8/8/8/3K4/8/8/8 b - - 0 158"
+  },
+  {
+   "arm": "m2",
+   "game": 2,
+   "fired_at": 130,
+   "plies": 296,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "fifty_move_rule",
+   "min_leader_balance_after": 6,
+   "final_fen": "8/3N2k1/8/8/8/8/1K2B3/8 w - - 100 152"
+  },
+  {
+   "arm": "m2",
+   "game": 3,
+   "fired_at": 211,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "truncated",
+   "min_leader_balance_after": 1,
+   "final_fen": "8/8/8/5k2/8/8/p5K1/8 w - - 9 204"
+  },
+  {
+   "arm": "m2",
+   "game": 9,
+   "fired_at": 85,
+   "plies": 198,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -10,
+   "final_fen": "1k6/8/8/8/4B3/1b1K4/8/8 w - - 0 103"
+  },
+  {
+   "arm": "m2",
+   "game": 10,
+   "fired_at": 88,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "fifty_move_rule",
+   "min_leader_balance_after": 8,
+   "final_fen": "3k4/8/8/8/1K6/7Q/8/8 w - - 100 204"
+  },
+  {
+   "arm": "m2",
+   "game": 12,
+   "fired_at": 64,
+   "plies": 290,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -3,
+   "final_fen": "8/8/8/8/2K5/8/1k6/6b1 w - - 0 149"
+  },
+  {
+   "arm": "m2",
+   "game": 14,
+   "fired_at": 62,
+   "plies": 306,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": 0,
+   "final_fen": "8/1k6/8/8/8/8/7K/8 w - - 0 157"
+  },
+  {
+   "arm": "m2",
+   "game": 17,
+   "fired_at": 226,
+   "plies": 248,
+   "leader_is_candidate": false,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": 3,
+   "final_fen": "8/2k5/8/8/1K6/2N5/8/8 w - - 0 128"
+  },
+  {
+   "arm": "m2",
+   "game": 18,
+   "fired_at": 93,
+   "plies": 293,
+   "leader_is_candidate": false,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -9,
+   "final_fen": "8/8/8/8/2k5/8/6K1/8 b - - 0 150"
+  },
+  {
+   "arm": "m2",
+   "game": 22,
+   "fired_at": 48,
+   "plies": 370,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "threefold_repetition",
+   "min_leader_balance_after": 7,
+   "final_fen": "2Q5/6K1/8/8/k7/8/8/8 w - - 18 189"
+  },
+  {
+   "arm": "m2",
+   "game": 26,
+   "fired_at": 88,
+   "plies": 108,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.0,
+   "termination": "checkmate",
+   "min_leader_balance_after": 13,
+   "final_fen": "5N1R/4k3/pQ5N/P1P4P/b2P2P1/R3p3/1Kq1P3/B6B w - - 7 58"
+  },
+  {
+   "arm": "m2",
+   "game": 28,
+   "fired_at": 68,
+   "plies": 338,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": 0,
+   "final_fen": "8/2k5/8/8/8/K7/8/8 w - - 0 173"
+  },
+  {
+   "arm": "m2",
+   "game": 29,
+   "fired_at": 91,
+   "plies": 282,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "insufficient_material",
+   "min_leader_balance_after": -5,
+   "final_fen": "8/6k1/8/2K5/8/8/8/8 w - - 0 145"
+  },
+  {
+   "arm": "m2",
+   "game": 30,
+   "fired_at": 240,
+   "plies": 400,
+   "leader_is_candidate": true,
+   "final_adjudicated": 0.5,
+   "termination": "truncated",
+   "min_leader_balance_after": 0,
+   "final_fen": "8/1k6/8/8/8/K6P/8/8 w - - 14 204"
+  }
+ ]
+}
