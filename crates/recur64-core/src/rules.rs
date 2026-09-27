@@ -75,6 +75,26 @@ impl Termination {
     }
 }
 
+/// Material balance White minus Black with P1 N3 B3 R5 Q9 (kings 0), the
+/// `material_v1` values of D53/D56.
+pub fn material_balance_white(board: &Board) -> i32 {
+    let value = [
+        (Piece::Pawn, 1),
+        (Piece::Knight, 3),
+        (Piece::Bishop, 3),
+        (Piece::Rook, 5),
+        (Piece::Queen, 9),
+    ];
+    value
+        .iter()
+        .map(|&(p, v)| {
+            let w = (board.pieces(p) & board.colors(Color::White)).len() as i32;
+            let b = (board.pieces(p) & board.colors(Color::Black)).len() as i32;
+            v * (w - b)
+        })
+        .sum()
+}
+
 /// True if the position has at least one legal move.
 pub fn has_legal_move(board: &Board) -> bool {
     board.generate_moves(|_| true)

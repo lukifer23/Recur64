@@ -31,6 +31,41 @@ pub struct SelfPlayConfig {
     pub root_dirichlet_epsilon: f32,
     /// Leaves evaluated together per search round (D47); `1` = original search.
     pub search_leaves_in_flight: u32,
+    /// Early material adjudication (D56); `None` = off (every earlier path).
+    pub early_adjudication: Option<EarlyAdjudication>,
+}
+
+/// D56 `early_material_v1`: a side whose material balance is at least
+/// `min_balance` for `plies` consecutive plies is the adjudicated leader.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EarlyAdjudication {
+    pub min_balance: i32,
+    pub plies: u32,
+    /// `false` = shadow mode: record when the rule would fire, keep playing.
+    pub enforce: bool,
+}
+
+impl EarlyAdjudication {
+    /// The pre-registered D56 rule (+5 for 40 consecutive plies).
+    pub const fn early_material_v1(enforce: bool) -> Self {
+        Self {
+            min_balance: 5,
+            plies: 40,
+            enforce,
+        }
+    }
+}
+
+/// When and for whom the early-adjudication rule fired in a game.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EarlyAdjudicationEvent {
+    /// Plies played (from the start position) when the rule fired.
+    pub fired_at_ply: u32,
+    pub leader: Color,
+    /// The leader's lowest balance from firing to the end of the game
+    /// (shadow mode; a value <= 0 is a material flip).
+    pub min_leader_balance_after: i32,
+    pub enforced: bool,
 }
 
 impl Default for SelfPlayConfig {
@@ -45,6 +80,7 @@ impl Default for SelfPlayConfig {
             root_dirichlet_alpha: 0.3,
             root_dirichlet_epsilon: 0.0,
             search_leaves_in_flight: 1,
+            early_adjudication: None,
         }
     }
 }
@@ -151,6 +187,9 @@ pub struct SelfPlayGame {
     pub seed: u64,
     /// Root search diagnostics summed over the game's searched plies.
     pub root_diag: RootSearchDiag,
+    /// D56 early-adjudication event, if the rule fired (shadow or enforced).
+    /// An enforced game ends with `Termination::Truncated` at the firing ply.
+    pub early_adjudication: Option<EarlyAdjudicationEvent>,
 }
 
 fn sparse_target(edges: &[RootEdge<ActionId>], total_visits: u32) -> Vec<TargetEntry> {
@@ -266,6 +305,8 @@ fn play_game_routed<'e>(
     let mut plies = Vec::new();
     let mut root_diag = RootSearchDiag::default();
     let termination;
+    let mut early: Option<EarlyAdjudicationEvent> = None;
+    let (mut white_streak, mut black_streak) = (0u32, 0u32);
 
     loop {
         if let Some(t) = state.termination() {
@@ -337,6 +378,47 @@ fn play_game_routed<'e>(
         state
             .apply(StandardMove::new(from, to, promotion))
             .expect("selected action is legal at this position");
+
+        if let Some(ea) = cfg.early_adjudication {
+            let bw = recur64_core::material_balance_white(state.board());
+            match early.as_mut() {
+                Some(ev) => {
+                    let lb = if ev.leader == Color::White { bw } else { -bw };
+                    ev.min_leader_balance_after = ev.min_leader_balance_after.min(lb);
+                }
+                None => {
+                    if bw >= ea.min_balance {
+                        white_streak += 1;
+                        black_streak = 0;
+                    } else if bw <= -ea.min_balance {
+                        black_streak += 1;
+                        white_streak = 0;
+                    } else {
+                        white_streak = 0;
+                        black_streak = 0;
+                    }
+                    let leader = if white_streak >= ea.plies {
+                        Some(Color::White)
+                    } else if black_streak >= ea.plies {
+                        Some(Color::Black)
+                    } else {
+                        None
+                    };
+                    if let Some(leader) = leader {
+                        early = Some(EarlyAdjudicationEvent {
+                            fired_at_ply: plies.len() as u32,
+                            leader,
+                            min_leader_balance_after: if leader == Color::White { bw } else { -bw },
+                            enforced: ea.enforce,
+                        });
+                        if ea.enforce {
+                            termination = Termination::Truncated;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     let outcome = termination.outcome(state.side_to_move());
@@ -347,6 +429,7 @@ fn play_game_routed<'e>(
         outcome,
         seed: 0,
         root_diag,
+        early_adjudication: early,
     })
 }
 

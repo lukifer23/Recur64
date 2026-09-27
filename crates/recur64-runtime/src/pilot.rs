@@ -1105,6 +1105,8 @@ mod promotion_tests {
             model_candidate: "candidate".into(),
             rng_policy: Default::default(),
             tree_policy: Default::default(),
+            early_adjudication: Default::default(),
+            early_adjudication_summary: None,
             pairs: Default::default(),
             score_truncation_as_draw: 0.5,
             adjudicated: Default::default(),

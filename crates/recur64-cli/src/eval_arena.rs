@@ -52,6 +52,9 @@ pub struct EvalArenaArgs {
     /// Enable inference candidate-width bucketing (D55 perf pass).
     #[arg(long, default_value_t = false)]
     pub bucket_candidates: bool,
+    /// Override arena_early_adjudication (`off` | `shadow` | `enforce`), D56.
+    #[arg(long)]
+    pub early_adjudication: Option<String>,
     /// Override arena_tree_policy (`per_node_side_v1` | `root_player_v1`).
     #[arg(long)]
     pub tree_policy: Option<String>,
@@ -117,6 +120,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
             "leaves_in_flight": arena_cfg.leaves_in_flight,
             "rng_policy": arena_cfg.rng_policy,
             "tree_policy": arena_cfg.tree_policy,
+            "early_adjudication": arena_cfg.early_adjudication,
         },
         "result": result,
         "secs": secs,
@@ -177,6 +181,10 @@ pub fn run(args: EvalArenaArgs) -> anyhow::Result<()> {
     }
     if let Some(b) = args.max_batch {
         cfg.eval_max_inference_batch = Some(b);
+    }
+    if let Some(p) = &args.early_adjudication {
+        cfg.arena_early_adjudication = serde_json::from_value(serde_json::Value::String(p.clone()))
+            .map_err(|e| anyhow::anyhow!("unknown --early-adjudication {p}: {e}"))?;
     }
     if let Some(p) = &args.tree_policy {
         cfg.arena_tree_policy = serde_json::from_value(serde_json::Value::String(p.clone()))

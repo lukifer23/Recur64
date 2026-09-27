@@ -12,9 +12,35 @@ use std::collections::BTreeMap;
 
 use recur64_core::{Color, GameState, Outcome};
 use recur64_search::{
-    EvalError, EvalRequest, EvalResult, Evaluator, Rng, SelfPlayConfig, play_game_from,
-    play_game_per_side,
+    EarlyAdjudication, EvalError, EvalRequest, EvalResult, Evaluator, Rng, SelfPlayConfig,
+    play_game_from, play_game_per_side,
 };
+
+/// D56 early-adjudication mode for arenas.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArenaEarlyAdjudication {
+    /// Off (every earlier identity).
+    #[default]
+    Off,
+    /// Observe only: record when `early_material_v1` would fire; play on.
+    Shadow,
+    /// End the game when `early_material_v1` fires (the D53 result, earlier).
+    Enforce,
+}
+
+impl ArenaEarlyAdjudication {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Off
+    }
+    fn rule(self) -> Option<EarlyAdjudication> {
+        match self {
+            Self::Off => None,
+            Self::Shadow => Some(EarlyAdjudication::early_material_v1(false)),
+            Self::Enforce => Some(EarlyAdjudication::early_material_v1(true)),
+        }
+    }
+}
 
 /// Which network evaluates the nodes of each side's search tree (D54).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -139,6 +165,8 @@ pub struct ArenaConfig {
     pub rng_policy: ArenaRngPolicy,
     /// Search-tree evaluator routing (D54); the default is the historical one.
     pub tree_policy: ArenaTreePolicy,
+    /// D56 early material adjudication (default off).
+    pub early_adjudication: ArenaEarlyAdjudication,
 }
 
 impl Default for ArenaConfig {
@@ -159,6 +187,7 @@ impl Default for ArenaConfig {
             leaves_in_flight: 1,
             rng_policy: ArenaRngPolicy::PerGameV1,
             tree_policy: ArenaTreePolicy::PerNodeSideV1,
+            early_adjudication: ArenaEarlyAdjudication::Off,
         }
     }
 }
@@ -191,6 +220,9 @@ pub struct ArenaResult {
     pub rng_policy: ArenaRngPolicy,
     /// Search-tree evaluator routing used (D54).
     pub tree_policy: ArenaTreePolicy,
+    /// D56 mode used, and (shadow or enforce) its summary.
+    pub early_adjudication: ArenaEarlyAdjudication,
+    pub early_adjudication_summary: Option<EarlyAdjudicationSummary>,
     /// Color-pair diagnostics (the pair is the independent unit).
     pub pairs: ArenaPairDiagnostics,
     /// `(W + 0.5 * (D + T)) / games` (R15-P0.1).
@@ -239,6 +271,31 @@ pub struct ArenaGameRecord {
     /// Candidate score after adjudication (equals `candidate_score` for a
     /// game that ended normally).
     pub adjudicated_score: f64,
+    /// D56: when `early_material_v1` fired (shadow or enforced).
+    pub early_adjudication: Option<EarlyAdjudicationRecord>,
+}
+
+/// One game's D56 firing.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub struct EarlyAdjudicationRecord {
+    pub fired_at_ply: u32,
+    pub leader_is_candidate: bool,
+    pub min_leader_balance_after: i32,
+    pub enforced: bool,
+}
+
+/// D56 shadow/enforce summary over an arena (pre-registered gate inputs).
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize)]
+pub struct EarlyAdjudicationSummary {
+    pub fired_games: u32,
+    /// Fired games whose leader equals the full-game adjudicated winner
+    /// (shadow mode only; enforced games agree by construction).
+    pub agree_with_final: u32,
+    /// Fired games where the leader's balance later fell to <= 0.
+    pub flips: u32,
+    /// Plies played after the firing ply (would be saved under enforcement).
+    pub plies_after_firing: u64,
+    pub total_plies: u64,
 }
 
 /// Pair-level arena diagnostics (H3.5B). Diagnostic only: promotion still
@@ -286,6 +343,30 @@ fn mean_ci(scores: &[f64], fallback: f64) -> (f64, f64, f64) {
         (mean - 1.96 * se).max(0.0),
         (mean + 1.96 * se).min(1.0),
     )
+}
+
+/// D56 summary: firings, agreement with the full-game adjudicated result,
+/// material flips after firing, and plies after firing.
+pub fn early_adjudication_summary(records: &[ArenaGameRecord]) -> EarlyAdjudicationSummary {
+    let mut s = EarlyAdjudicationSummary {
+        total_plies: records.iter().map(|g| g.plies as u64).sum(),
+        ..Default::default()
+    };
+    for g in records {
+        let Some(e) = g.early_adjudication else {
+            continue;
+        };
+        s.fired_games += 1;
+        let leader_score = if e.leader_is_candidate { 1.0 } else { 0.0 };
+        if g.adjudicated_score == leader_score {
+            s.agree_with_final += 1;
+        }
+        if e.min_leader_balance_after <= 0 {
+            s.flips += 1;
+        }
+        s.plies_after_firing += (g.plies as u64).saturating_sub(e.fired_at_ply as u64);
+    }
+    s
 }
 
 /// Adjudicated outcome over every game record.
@@ -431,6 +512,7 @@ pub fn run_arena(
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
         search_leaves_in_flight: cfg.leaves_in_flight,
+        early_adjudication: cfg.early_adjudication.rule(),
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {
@@ -509,6 +591,23 @@ pub fn run_arena(
                 (Some(s), Some(color))
             }
         };
+        let early = game.early_adjudication.map(|e| EarlyAdjudicationRecord {
+            fired_at_ply: e.fired_at_ply,
+            leader_is_candidate: (e.leader == Color::White) == candidate_is_white,
+            min_leader_balance_after: e.min_leader_balance_after,
+            enforced: e.enforced,
+        });
+        if early.is_some_and(|e| e.enforced) {
+            // Label enforced early adjudications apart from true cap hits.
+            let t = terminations.entry("truncated".to_string()).or_insert(0);
+            *t -= 1;
+            if *t == 0 {
+                terminations.remove("truncated");
+            }
+            *terminations
+                .entry("early_adjudicated".to_string())
+                .or_insert(0) += 1;
+        }
         game_records.push(ArenaGameRecord {
             index: i as u32,
             pair: i as u32 / 2,
@@ -523,6 +622,7 @@ pub fn run_arena(
             adjudicated_score: score
                 .unwrap_or_else(|| adjudicate_truncated(&final_fen(&game), candidate_is_white)),
             final_fen: final_fen(&game),
+            early_adjudication: early,
         });
     }
 
@@ -557,6 +657,9 @@ pub fn run_arena(
         model_candidate: candidate_id.to_string(),
         rng_policy: cfg.rng_policy,
         tree_policy: cfg.tree_policy,
+        early_adjudication: cfg.early_adjudication,
+        early_adjudication_summary: (!cfg.early_adjudication.is_default())
+            .then(|| early_adjudication_summary(&game_records)),
         pairs: pair_diagnostics(&game_records),
         score_truncation_as_draw: if cfg.games == 0 {
             0.5

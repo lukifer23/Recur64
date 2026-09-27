@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// every generated trajectory after the first cycle.
 pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
 
-use recur64_eval::{ArenaRngPolicy, ArenaTreePolicy};
+use recur64_eval::{ArenaEarlyAdjudication, ArenaRngPolicy, ArenaTreePolicy};
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -348,6 +348,10 @@ pub struct RunConfig {
     /// player its own tree. Omitted from the serialized config when default.
     #[serde(default, skip_serializing_if = "ArenaTreePolicy::is_default")]
     pub arena_tree_policy: ArenaTreePolicy,
+    /// D56 early material adjudication in arenas. `shadow` observes only and
+    /// is identity-neutral; `enforce` is a new scientific identity.
+    #[serde(default, skip_serializing_if = "ArenaEarlyAdjudication::is_default")]
+    pub arena_early_adjudication: ArenaEarlyAdjudication,
     /// Leaves selected with virtual loss and evaluated together per search
     /// round (D47), for self-play and arenas alike. `1` (default) is the
     /// original one-leaf search; values above 1 are a new identity.
@@ -472,6 +476,10 @@ impl RunConfig {
         if !self.arena_tree_policy.is_default() {
             v["arena_tree_policy"] = serde_json::to_value(self.arena_tree_policy)?;
         }
+        // D56: only enforcement changes results; shadow mode only observes.
+        if self.arena_early_adjudication == ArenaEarlyAdjudication::Enforce {
+            v["arena_early_adjudication"] = serde_json::json!("early_material_v1:+5x40");
+        }
         Ok(v)
     }
 
@@ -499,6 +507,7 @@ impl RunConfig {
             leaves_in_flight: self.search_leaves_in_flight,
             rng_policy: self.arena_rng_policy,
             tree_policy: self.arena_tree_policy,
+            early_adjudication: self.arena_early_adjudication,
         }
     }
 

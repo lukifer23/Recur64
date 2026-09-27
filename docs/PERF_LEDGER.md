@@ -173,3 +173,57 @@ Training is about 5 % of cycle wall time, so this is a minor contributor.
 
 **Fix:** the owner releases the model explicitly, then syncs, then cleans up.
 This is harmless on the plain backend.
+
+### #8e — final lifecycle on fusion + autotune + drop fix (MEASURED — PASS)
+
+- **Setup:** 4 modes × 2 reps, F15 reference. Evidence:
+  `docs/evidence/perf/08e-lifecycle-final/`.
+- **Post-shutdown VRAM:** 291 → 291 (one), 419 → 483 (two), then 483 flat
+  through pilot and pilot-promoted.
+- Baseline build H3.2 plateau: 492 MB. 0 errors in 8 lifecycles, at most 2
+  resident owners. The D44 invariant holds under fusion.
+
+### #9 — end-to-end self-play probe (MEASURED)
+
+- **Setup:** `bench-runtime`, 8 games, trained `d0ee3ced`, 32 sims, K = 2, c8,
+  batch 16. Evidence: `docs/evidence/perf/09-*`.
+
+| build | evals/s | positions/s | GPU util mean | VRAM | errors |
+|---|---|---|---|---|---|
+| baseline | 437.2 | 13.7 | 69 % | 289 MB | 0 |
+| **fusion + autotune + buckets** | **569.6 (+30 %)** | **17.9 (+31 %)** | 67 % | 289 MB | 0 |
+
+GPU utilization of about 67 % leaves room: owner pipelining is a live
+candidate (#11).
+
+### #10 — end-to-end arena probe (MEASURED)
+
+- **Setup:** `eval-arena`, 8 games, `d0ee3ced` vs reference, root_player_v1,
+  paired RNG. Evidence: `docs/evidence/perf/10-*`.
+
+| build | wall | plies/s | GPU util mean | errors |
+|---|---|---|---|---|
+| baseline | 172 s | 13.8 | 69 % | 0 |
+| fused | 159 s (**1.08×**) | 15.0 | 62 % | 0 |
+
+- **Parity:** **8/8 games move-for-move identical** across the builds, even
+  with autotune. The adjudicated score is 0.8125 in both.
+- **Finding: arenas are latency-bound, not throughput-bound.**
+  - Per-owner batches are about 3 positions.
+  - Wall time is set by the sequential chain of the longest games: 3 of 8 hit
+    the 400-ply cap, at 16 search rounds per ply.
+  - Fusion speeds up throughput at batch 8 and above, not batch 1–4 latency.
+  - Only shortening the chain helps. That is **D56** (early adjudication),
+    which this probe confirms as the arena lever.
+
+### Decision: D55 ACCEPTED (scope as measured)
+
+- **Build:** fusion + autotune (`--features cuda,fusion,autotune`), plus
+  `inference_candidate_buckets = true`.
+- **Measured effect:**
+  - self-play +30 %;
+  - training +11 %;
+  - forward +38–63 % at batch 8–64;
+  - arena +8 %.
+- **Guarantees:** lifecycle flat (#8e), and parity at float noise with
+  identical games observed (#6, #9, #10).

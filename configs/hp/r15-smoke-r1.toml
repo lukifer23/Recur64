@@ -40,6 +40,10 @@ batch_timeout_us = 1000
 train_batch = 32
 accumulation_steps = 4
 
+# D55 (accepted): candidate-width bucketing on the batched inference path
+# (execution only). Build with --features cuda,fusion,autotune.
+inference_candidate_buckets = true
+
 # --- Replay / learner ---
 shard_max_games = 256
 replay_max_positions = 100000

@@ -27,7 +27,7 @@ pub use cozy_chess::Board;
 pub use error::CoreError;
 pub use game::GameState;
 pub use observation::{OBS_LEN, ObservationV1, encode_observation_v1};
-pub use rules::{Outcome, Termination, is_insufficient_material};
+pub use rules::{Outcome, Termination, is_insufficient_material, material_balance_white};
 pub use schema::{
     ACTION_VERSION_V1, ContractVersions, OBSERVATION_VERSION_V1, RULES_PROFILE_VERSION_V1,
 };

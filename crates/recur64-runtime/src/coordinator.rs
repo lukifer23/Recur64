@@ -296,6 +296,8 @@ pub(crate) fn collect_parallel_diag(
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
         search_leaves_in_flight: cfg.search_leaves_in_flight,
+        // D56 is an arena-only rule; self-play is untouched (see D52).
+        early_adjudication: None,
     };
     let search_record = SearchRecord {
         simulations: cfg.simulations_per_move,

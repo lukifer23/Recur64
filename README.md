@@ -76,6 +76,26 @@ remains **not run**.
 
 Pre-flight: `recur64 config-info --config configs/hp/f15-smoke-v2.toml`.
 
+**HP perf pass (2026-09-27, [`docs/PERF_LEDGER.md`](docs/PERF_LEDGER.md)).**
+The accepted HP build is `cargo build --release -p recur64-cli --features
+cuda,fusion,autotune` with `inference_candidate_buckets = true` (D55).
+Compared with the plain build, measured on a trained network:
+
+- **Self-play:** +30 %.
+- **Training:** +11 %.
+- **Forward pass:** +38–63 %.
+- **Arenas:** +8 %. They are latency-bound, so D56 early adjudication is the
+  next lever there.
+- **VRAM lifecycle:** flat, after a fusion-specific leak was root-caused and
+  fixed.
+
+Fast probes:
+
+- `recur64 bench-forward`: the production batch path, with parity against a
+  saved baseline.
+- `recur64 bench-runtime --games-per-cell 8`.
+- `recur64 eval-arena --arena-games 8`.
+
 **H3.6 corrected F15-v2 smoke: CONDITIONAL (2026-09-26)**
 - **GO:** learning mechanism, continuous trainer, lifecycle, reuse and
   lineage. Self-play draws fell 0.22 → 0.09.

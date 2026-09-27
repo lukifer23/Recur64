@@ -864,11 +864,22 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   The NaN fixes are covered by
   `non_finite_model_output_fails_visibly_on_both_inference_paths`.
 
-## D55 - Inference throughput build: fusion + autotune + candidate buckets (PROPOSED)
+## D55 - Inference throughput build: fusion + autotune + candidate buckets
 
-- **Status:** PROPOSED (HP perf pass, 2026-09-27). It stays PROPOSED until
-  every check in `docs/PERF_LEDGER.md` #3–#9 passes. The default build is
-  unchanged until then.
+- **Status:** ACCEPTED for the HP branch (2026-09-27), after every check in
+  `docs/PERF_LEDGER.md` #3–#10 passed.
+  - **HP build:** `cargo build --release -p recur64-cli --features
+    cuda,fusion,autotune`.
+  - **Config:** `inference_candidate_buckets = true`.
+  - The cargo default stays plain CUDA, so older evidence rebuilds exactly.
+- **Measured effect:**
+  - self-play +30 % (#9);
+  - training +11 % (#7);
+  - forward +38–63 % at batch 8–64 (#6);
+  - arena only +8 %, because arenas are latency-bound (#10).
+- **Lifecycle (#8):** fusion first leaked about 64 MB per owner, because the
+  queued parameter frees ran after the owner's final sync. The drop-order fix
+  gives a flat 483 MB plateau (#8e).
 - **Decision (proposed):**
   - Build CUDA with Burn `fusion` and `autotune`, via the recur64-cli cargo
     features `fusion` and `autotune`.
@@ -886,8 +897,8 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **Risks:**
   - Autotune picks kernels by timing, so cross-process CUDA results may no
     longer be bit-exact. Within-process pairing (CRN) is unaffected.
-  - Fusion's `memory_cleanup` passes through. The D44 lifecycle must be
-    re-verified (ledger #8).
+  - Fusion's `memory_cleanup` passes through. The D44 lifecycle was
+    re-verified (ledger #8e).
   - Warmup is longer because kernels compile and tune on first use.
 
 ## D56 - Early material adjudication in arenas (PROPOSED — needs owner sign-off)
