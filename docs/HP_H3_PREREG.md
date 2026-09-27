@@ -307,3 +307,19 @@ Throughput (trainable pos/s, s per update) is **recorded, not gated**. It sets
 each arm's P1 wall budget, at 2× the measured cycle estimate. No K, batch or
 concurrency change between arms unless an arm fails the VRAM gate; in that
 case, STOP and report.
+
+### R15-P0.4 amendment (2026-09-27, before the R4 lifecycle step ran)
+
+- **Sleep contamination.** The first P0.4 attempt (started 2026-09-26 18:00)
+  straddled Windows sleep/resume (system time-change events at 19:05 and 23:45)
+  and was stopped unfinished. Its outputs were deleted, not used. The re-run
+  holds a user-space keep-awake request (`SetThreadExecutionState`) for its
+  duration; no power setting is changed.
+- **R4 lifecycle: reps 8 → 2 per mode**, all four modes kept.
+  - Owner create/shutdown/reload is independent of recurrence: recurrence is
+    a forward argument, not owner state.
+  - D44/D46 were already validated over 32 lifecycles on F15 (H3.2).
+  - At R4 the full 8 reps cost about 2.5 h of GPU time.
+- **Gates unchanged:** 0 errors, no VRAM growth across reps, peak < 3.0 GB.
+  Training VRAM (the R-dependent risk) was measured first: R4 peaks at
+  2,113 MB.
