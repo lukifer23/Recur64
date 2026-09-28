@@ -102,6 +102,12 @@ pub enum SnapshotPolicy {
     Conservative,
     /// Always keep the initial reference as the self-play snapshot.
     FrozenReference,
+    /// AlphaZero-style: the latest trained candidate becomes the self-play
+    /// actor every cycle it passes the health gates (audit, errors, finite
+    /// metrics, reuse); arenas are diagnostics only. Added after T1 measured
+    /// that gating kept the untrained reference as the actor, whose zero value
+    /// head yields no policy-learning signal.
+    Latest,
 }
 
 /// Which arena score conservative promotion reads (R15-P0.1).
@@ -1465,6 +1471,23 @@ truncaton = 0.25
         assert_eq!(arena.sample_plies, Some(8));
         assert_eq!(arena.seed, cfg.seed + 3);
         assert_eq!(arena.root_dirichlet_epsilon, 0.0);
+    }
+
+    /// T1: `snapshot_policy = "latest"` is a new scientific identity.
+    #[test]
+    fn latest_snapshot_policy_parses_and_is_a_new_identity() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        let latest = RunConfig::from_toml_str(&format!(
+            "snapshot_policy = \"latest\"
+{}",
+            base_toml()
+        ))
+        .unwrap();
+        assert_eq!(latest.snapshot_policy, SnapshotPolicy::Latest);
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            latest.scientific_config_hash().unwrap()
+        );
     }
 
     /// Evaluation scheduling keys are execution-only: they change neither the

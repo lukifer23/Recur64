@@ -185,3 +185,34 @@ fn continuous_trainer_carries_learning_across_held_cycles() {
     );
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// T1: with `snapshot_policy = latest`, a healthy candidate always becomes the
+/// next self-play actor, whatever the arena says; arenas are diagnostic only.
+#[test]
+fn latest_snapshot_policy_makes_the_trained_candidate_the_next_actor() {
+    let _serial = FLEX_RNG.lock().unwrap_or_else(|e| e.into_inner());
+    let root = std::env::temp_dir().join(format!("recur64-pilot-latest-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    let mut c = cfg(&root);
+    let reference_id = freeze(&c, &root.join("frozen"));
+    c.reference_model_id = Some(reference_id.clone());
+    c.trainer_policy = recur64_runtime::TrainerPolicy::Continuous;
+    c.snapshot_policy = recur64_runtime::config::SnapshotPolicy::Latest;
+    // The arena could never promote under conservative-v2 with this floor.
+    c.promotion_min_decisive_games = 1_000;
+    let dir = RunDir::create(&root.join("run"), false).unwrap();
+    let report = run_pilot::<CpuTrainBackend>(&c, &dir, &CancelToken::new()).unwrap();
+    let (c0, c1) = (&report.cycles[0], &report.cycles[1]);
+    assert!(
+        c0.train.as_ref().is_some_and(|t| t.updates > 0),
+        "fixture must train"
+    );
+    assert_eq!(c0.decision, "promote", "healthy candidate must promote");
+    assert_eq!(
+        c1.parent_model_id, c0.candidate_model_id,
+        "cycle 1 self-play comes from cycle 0's trained candidate"
+    );
+    assert_eq!(c0.parent_model_id, reference_id);
+    let _ = std::fs::remove_dir_all(&root);
+}

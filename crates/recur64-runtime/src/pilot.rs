@@ -836,10 +836,17 @@ pub fn run_pilot<B: AutodiffBackend>(
         let hold_reasons = match cfg.snapshot_policy {
             SnapshotPolicy::FrozenReference => vec!["frozen_reference_policy".to_string()],
             SnapshotPolicy::Conservative => promotion_holds(cfg, healthy, &arena),
+            SnapshotPolicy::Latest => {
+                if healthy {
+                    Vec::new()
+                } else {
+                    vec!["unhealthy".to_string()]
+                }
+            }
         };
         let decision = match cfg.snapshot_policy {
             SnapshotPolicy::FrozenReference => "continue".to_string(),
-            SnapshotPolicy::Conservative => {
+            SnapshotPolicy::Conservative | SnapshotPolicy::Latest => {
                 if hold_reasons.is_empty() {
                     let snap = run_dir.checkpoints().join(format!("snapshot-{cycle:03}"));
                     copy_dir(&run_dir.candidate_ckpt(), &snap)?;
