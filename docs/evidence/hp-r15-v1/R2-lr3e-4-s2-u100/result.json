@@ -1,0 +1,9 @@
+{
+ "cell": "R2-lr3e-4-s2-u100",
+ "heldout_wdl_ce": 0.9720081752399687,
+ "heldout_policy_ce": 3.1795539292071155,
+ "positions": 10249,
+ "train_wdl_last20": 0.8989461809396744,
+ "max_grad": 5.825363636016846,
+ "secs": 149
+}
