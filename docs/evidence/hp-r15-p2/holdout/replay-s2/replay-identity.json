@@ -1,0 +1,25 @@
+{
+  "kind": "recur64-replay-identity-v1",
+  "entries": [
+    {
+      "first_game_id": 0,
+      "games": 32,
+      "model_id": "942dad40ac05188c28f247f5e29106c8c2adec67c4b0dc93bd9bcd4e619ac072",
+      "head_version": 2,
+      "scientific_config_hash": "c260e0f84b2f62b5f35e651584a3f353bf6befbdf4fd4db4119ad86dea99f99b",
+      "resolved_config_hash": "c0699f66fb077e0c42efa43ce899d6721eef5de8702421487a2ef7b2925fbde0",
+      "seed_policy": "base_seed_plus_global_game_id_v1",
+      "seed": 778,
+      "simulations": 32,
+      "c_puct": 1.0,
+      "temperature": 1.0,
+      "argmax_after_ply": 30,
+      "root_dirichlet_alpha": 0.3,
+      "root_dirichlet_epsilon": 0.25,
+      "recurrence": 1,
+      "ply_cap": 400,
+      "start_fen": null,
+      "git_revision": "2e5f3c6025b79c291d45cb2d3849c41e05e59481"
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "cells": [
+    {
+      "active_games": 12,
+      "batch_max": 24,
+      "batch_mean": 14.816229303342705,
+      "batch_p50": 18,
+      "batch_p95": 24,
+      "batch_timeout_us": 1000,
+      "batches": 12804,
+      "collect_secs": 330.5215377,
+      "effective_concurrency": 12,
+      "errors": 0,
+      "evaluations_per_sec": 573.9625965681812,
+      "forward_us_mean": 19870.951655732584,
+      "games": 32,
+      "games_per_hour": 348.54007034350064,
+      "gpu_samples": 604,
+      "gpu_temp_max_c": 70,
+      "gpu_util_busy_mean": 66.055,
+      "gpu_util_max": 93,
+      "max_batch": 24,
+      "mean_target_entropy": 2.86675450417598,
+      "mean_top1_visit_share": 0.14267531384590731,
+      "peak_in_flight": 24,
+      "peak_vram_mb": 289,
+      "positions": 5956,
+      "positions_per_sec": 18.020005720190014,
+      "queue_wait_us_p50": 6564,
+      "queue_wait_us_p95": 10655,
+      "requested_concurrency": 12,
+      "requested_games": 32,
+      "requests": 189707,
+      "resolved_config_hash": "c0699f66fb077e0c42efa43ce899d6721eef5de8702421487a2ef7b2925fbde0",
+      "root_search": {
+        "all": {
+          "argmax_changed_by_noise": 0.9316655473472129,
+          "argmax_changed_by_search": 0.20181329751511082,
+          "argmax_changed_total": 0.9262928139691068,
+          "mean_abs_network_value": 0.0,
+          "mean_abs_root_value": 0.003634177478589493,
+          "mean_kl_noisy_vs_network": 0.06643202502852641,
+          "mean_kl_target_vs_network": 0.2298290597791413,
+          "mean_kl_target_vs_noisy": 0.11904102203329674,
+          "plies": 5956
+        },
+        "trainable": {
+          "argmax_changed_by_noise": 0.9403122130394858,
+          "argmax_changed_by_search": 0.21441689623507806,
+          "argmax_changed_total": 0.9331955922865014,
+          "mean_abs_network_value": 0.0,
+          "mean_abs_root_value": 0.004969045239320252,
+          "mean_kl_noisy_vs_network": 0.06718185911123625,
+          "mean_kl_target_vs_network": 0.24833438993057017,
+          "mean_kl_target_vs_noisy": 0.13393827849324316,
+          "plies": 4356
+        }
+      },
+      "scientific_config_hash": "c260e0f84b2f62b5f35e651584a3f353bf6befbdf4fd4db4119ad86dea99f99b",
+      "selfplay": {
+        "black_wins": 8,
+        "concurrent_games": 12,
+        "cpu_workers": 12,
+        "draw_share": 0.125,
+        "draws": 4,
+        "failed_games": 0,
+        "games": 32,
+        "games_completed": 32,
+        "games_requested": 32,
+        "inference": {
+          "batch_size_max": 24,
+          "batch_size_mean": 14.816229303342705,
+          "batch_size_p50": 18,
+          "batch_size_p95": 24,
+          "batches": 12804,
+          "completed": 189707,
+          "errors": 0,
+          "forward_us_mean": 19870.951655732584,
+          "peak_in_flight": 24,
+          "queue_wait_us_mean": 5821.529522024367,
+          "queue_wait_us_p50": 6564,
+          "queue_wait_us_p95": 10655,
+          "submitted": 189707
+        },
+        "mean_game_plies": 186.125,
+        "peak_in_flight_evaluations": 24,
+        "plies": 5956,
+        "repetition_share": 0.0,
+        "requested_active_games": 12,
+        "target_health": {
+          "all": {
+            "mean_entropy": 2.86675450417598,
+            "mean_top1_visit_share": 0.14267531384590731,
+            "positions": 5956
+          },
+          "trainable": {
+            "mean_entropy": 2.926839893645211,
+            "mean_top1_visit_share": 0.13545276431915845,
+            "positions": 4356
+          }
+        },
+        "terminations": {
+          "checkmate": 24,
+          "fifty_move_rule": 1,
+          "insufficient_material": 3,
+          "truncated": 4
+        },
+        "trainable_games": 28,
+        "trainable_positions": 4356,
+        "truncated": 4,
+        "white_wins": 16
+      },
+      "simulations": 32,
+      "terminations": {
+        "checkmate": 24,
+        "fifty_move_rule": 1,
+        "insufficient_material": 3,
+        "truncated": 4
+      },
+      "trainable_positions": 4356,
+      "trainable_positions_per_sec": 13.179171409863617
+    }
+  ],
+  "checkpoint": "runs/hp-r15-p2-ref-s2-r1",
+  "checkpoint_model_id": "942dad40ac05188c28f247f5e29106c8c2adec67c4b0dc93bd9bcd4e619ac072",
+  "device": "cuda",
+  "games_per_cell": 32,
+  "git_revision": "2e5f3c6025b79c291d45cb2d3849c41e05e59481",
+  "model": {
+    "core_blocks": 4,
+    "ffn": 768,
+    "heads": 8,
+    "in_features": 119,
+    "input_blocks": 2,
+    "output_blocks": 2,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 512
+  },
+  "resolved_config_hash": "13dbd5f084e37052dc5425718fbe89b94f4eba3f3b23f07565dcf852ab4f1f73",
+  "scientific_config_hash": "c260e0f84b2f62b5f35e651584a3f353bf6befbdf4fd4db4119ad86dea99f99b",
+  "warmup_secs": 5.7214825000000005
+}

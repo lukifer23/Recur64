@@ -1,0 +1,24 @@
+{
+  "header": {
+    "replay_schema_version": 1,
+    "observation_version": 1,
+    "action_version": 1,
+    "rules_profile_version": 1,
+    "run_id": "hp-r15-p2-holdout-s2",
+    "model_id": "942dad40ac05188c28f247f5e29106c8c2adec67c4b0dc93bd9bcd4e619ac072",
+    "git_revision": "2e5f3c6025b79c291d45cb2d3849c41e05e59481",
+    "backend": "cuda (fp32)",
+    "precision": "fp32"
+  },
+  "shards": [
+    {
+      "file": "shard-000000.r64shard",
+      "games": 32,
+      "positions": 5956,
+      "bytes": 923857,
+      "crc32": 3068181076
+    }
+  ],
+  "games": 32,
+  "bytes": 923857
+}
