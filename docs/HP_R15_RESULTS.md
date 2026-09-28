@@ -270,12 +270,44 @@ The reference artifact is `6c41aec0…`, with the same weights as R1 (semantic
 - **Measured cost per cycle,** the input to P2 budgeting: about 725 s (R1),
   1,000 s (R2) and 1,425 s (R4).
 
+## P1b — R4 value-learning LR probe (MEASURED; pre-registered `5de7d28`)
+
+**Setup:**
+- `bench-train`, 32 × 4, 120 updates from step 0, on the P1 R4 replay
+  (96 reference-generated games).
+- All cells start from the same reference weights (semantic `17b03869…`).
+- Evidence: `docs/evidence/hp-r15-p1b/`, with per-update curves.
+
+| cell | WDL loss, first 30 → last 30 updates | policy loss, last 30 | max / mean grad |
+|---|---|---|---|
+| A: R4 @ 3e-4 (P1) | 1.036 → **1.101** | 3.131 | 5.10 / 1.97 |
+| B: R4 @ 1.5e-4 | 1.057 → **0.999** | 3.130 | 5.32 / 2.13 |
+| C: R1 @ 3e-4 (control) | 1.051 → **0.954** | 3.130 | 4.52 / 2.05 |
+
+**Verdict: LR-DRIVEN.**
+- B − A = −0.101 (the bar was ≤ −0.05), and the control separates
+  (C − A = −0.147).
+- At the shared LR, R4's value head gets worse. At half the LR it learns,
+  though at 120 updates it still trails R1 (0.999 vs 0.954).
+- Gradient spikes here stay at ≤ 5.3 in every cell, so P1's 15.6 spikes were
+  likely data-specific. The loss trend is the robust signal.
+- No LR is adopted from this probe, as pre-registered. It only sets the P2
+  design.
+
 ## P2 proposal (NOT RUN; needs owner approval, since it is a large GPU commitment)
+
+**Amended by P1b.** P2 adds an **R4 @ 1.5e-4** arm next to R1, R2 and R4 at 3e-4.
+Without it, "R4 is worse" cannot be separated from "the shared LR handicaps
+deeper recurrence." There are 4 arms × 2 seeds. At 8 cycles that is about
+8 × (725 + 1,000 + 1,425 + 1,425) s ≈ 10 h per seed, so **~20 h of GPU time**,
+plus about 1.5 h of cross-arm arenas. A 6-cycle variant takes about 15 h.
+
 
 The first recurrence comparison that could support a claim.
 
 **Design:**
-- 3 arms (R1/R2/R4) × **2 seeds** × **8 cycles**.
+- Base design: 3 arms (R1/R2/R4) × **2 seeds** × **8 cycles**. P1b adds the
+  R4 @ 1.5e-4 arm.
 - Identical contract to P1, plus **sampler v2** (per-position recency
   weighting, pre-registered). Sampler v2 removes the shard-level coupling to
   the truncation rate.

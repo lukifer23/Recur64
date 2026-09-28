@@ -420,8 +420,10 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
   - **Key finding:** R4's value head does not learn at the shared LR (WDL
     loss rises to 1.097, gradient spikes 2×), while R1 and R2 learn. One
     seed; no strength claim.
-  - P2 (2 seeds × 8 cycles, ~14 h GPU) is proposed and awaits owner
-    approval.
+  - **P1b LR probe:** the stall is LR-driven. At LR 1.5e-4 R4's value loss
+    falls (1.057 → 0.999), while at 3e-4 it rises (1.036 → 1.101).
+  - P2 (4 arms including R4 @ 1.5e-4, 2 seeds × 8 cycles, ~20 h GPU) is
+    proposed and awaits owner approval.
 - Historical head-v1 HP evidence preserved and labelled HISTORICAL in
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.
