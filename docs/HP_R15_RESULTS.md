@@ -453,7 +453,7 @@ The first recurrence comparison that could support a claim.
   - With 40 × 128 samples each, the 32-sim data was reused about 5.7×
     against about 3.3×.
 - **Also observed (not a pre-registered claim):**
-  - 32-sim targets are *sharper* than deep-search targets (entropy 2.02,
+  - 32-sim targets are *sharper* (entropy 2.02,
     top-1 share 0.28) than deep-search targets (2.58 / 0.16). The 128-sim
     targets are close to deep search (2.59 / 0.19).
   - So 32 sims gives confident targets that are the wrong shape, not merely
