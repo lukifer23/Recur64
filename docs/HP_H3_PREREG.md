@@ -632,3 +632,21 @@ is measurable in minutes on fixed data.
   - "Not the cause" iff |that difference| < 0.01.
   - Otherwise the result is inconclusive.
   - No other claims.
+
+## P-1r — size-controlled replication of P-1 (fixed before running)
+- Same M, same oracle (`runs/p1x-oracle256`, seed 901), same training (40 updates,
+  LR 7.5e-5, 32×4) and metric as P-1.
+- **New data, new seeds:**
+  - 32-sim: **16 games**, seed 904. This gives the 32-sim arm *at least as
+    much* trainable data as the 128-sim arm, so the confound works against
+    the hypothesis.
+  - 128-sim: 8 games, seed 905.
+- Trainable position counts are recorded. If the 32-sim arm still has fewer
+  trainable positions than the 128-sim arm, the size control failed, and
+  that is reported.
+- **Rule** (same thresholds as P-1):
+  - "Confirmed" iff gain128 − gain32 ≥ 0.02.
+  - "Not replicated" iff it is < 0.01.
+  - Otherwise inconclusive.
+- **Only "confirmed" moves the pipeline** to higher simulation counts for
+  training targets.

@@ -422,3 +422,43 @@ The first recurrence comparison that could support a claim.
    every setup tried. The cause is **not established**. Candidates: too few
    simulations for informative targets, target noise, or too little data.
    Each needs a clean test.
+
+## P-1 — are 32 simulations the policy bottleneck? (MEASURED; pre-registered `8fb55f3`)
+- **Setup:**
+  - M = V1 R1 (`runs/v1/R1-lr7.5e-5-s1-u400-d288`).
+  - Oracle: 8 games at 256 sims with noise 0 (seed 901). This gives 1,076
+    positions, target entropy 2.58 and top-1 visit share 0.16.
+  - Training sets: 8 games from M at 32 sims (seed 902) and at 128 sims
+    (seed 903).
+  - Each set: 40 updates at LR 7.5e-5 (32×4), then `eval-value` on the
+    oracle.
+  - Evidence: `docs/evidence/p-1/` (`result.json`, `oracle-*/`, `train-M*/`,
+    `oracle256/`, `train32/`, `train128/`).
+  - Wall time: 10.5 + 2.3 + 5.7 min generation, plus about 3 min training
+    and scoring.
+
+| Network | Oracle policy CE | Oracle WDL CE |
+|---|---|---|
+| M | 2.7387 | 0.7230 |
+| M + 40 upd on 32-sim | 2.7242 (−0.0144) | 1.0015 |
+| M + 40 upd on 128-sim | 2.7020 (−0.0367) | 0.5440 |
+
+- **Pre-registered rule:** gain128 − gain32 = **0.0223 ≥ 0.02 → "sims are the
+  policy bottleneck"**.
+- **Caveats (MEASURED, disclosed and not explained away):**
+  - The margin is thin: 0.0223 against a threshold of 0.02.
+  - Single seed; 8 games per set.
+  - **Data size is confounded.** The 32-sim set had 899 trainable positions
+    because 3 of its 8 games hit the 400-ply cap. The 128-sim set had 1,531.
+  - With 40 × 128 samples each, the 32-sim data was reused about 5.7×
+    against about 3.3×.
+- **Also observed (not a pre-registered claim):**
+  - 32-sim targets are *sharper* than deep-search targets (entropy 2.02,
+    top-1 share 0.28) than deep-search targets (2.58 / 0.16). The 128-sim
+    targets are close to deep search (2.59 / 0.19).
+  - So 32 sims gives confident targets that are the wrong shape, not merely
+    noisy ones.
+  - Training on 32-sim data also made oracle WDL worse (0.72 → 1.00).
+- **Status:** it passes the rule, but it is not yet acted on, because of the
+  data-size confound. A size-controlled replication (P-1r) is pre-registered
+  in `HP_H3_PREREG.md`.
