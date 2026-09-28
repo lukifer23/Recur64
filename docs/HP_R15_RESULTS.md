@@ -190,6 +190,31 @@ GPU reached ~91 % busy. See `docs/PERF_LEDGER.md` #1.
   search compared with a neutral zero value.
 - The raw policy stays flat, as in H3.6.
 
-### R2 / R4
+### R2 (12 executed blocks) — **CONDITIONAL**
 
-These are pending (re-launched after the reference-artifact amendment).
+The reference artifact is `0cd0036c…`, with the same weights as R1 (semantic
+`17b03869…`).
+
+| | cycle 0 | cycle 1 | cycle 2 |
+|---|---|---|---|
+| actor → candidate | `0cd0036c` → `4e60b0c5` | `0cd0036c` → `6a59f387` | `0cd0036c` → `755e8a2b` |
+| wall (collect / train / eval) | 907 s (397 / 99 / 411) | 1,007 s (432 / 92 / 483) | 1,073 s (407 / 83 / 583) |
+| audit / errors / VRAM peak | ok / 0 / 1,701 MB | ok / 0 / 1,733 MB | ok / 0 / 1,733 MB |
+| draw / threefold+fifty / truncated self-play | 0.156 / 0.031 / 0.062 | 0.25 / 0.062 / 0.031 | 0.188 / 0.094 / 0.062 |
+| mean plies / trainable positions | 176.0 / 4,833 | 187.5 / 5,599 | 184.4 / 5,102 |
+| trainer step (of 370) / zero-LR updates | 0 → 76 / 0 | 76 → 164 / 0 | 164 → 244 / 0 |
+| WDL loss first → last | 1.099 → 0.944 | 1.000 → 0.887 | 0.906 → **0.781** |
+| reuse / cap bound / fresh fraction | 2.013 / no / 1.00 | 2.012 / no / 0.67 | 2.007 / no / 0.50 |
+| **vs frozen reference, adjudicated** | 0.484 [0.342, 0.627] | 0.438 [0.280, 0.595] | **0.594 [0.474, 0.714]** |
+| arena truncation | 0.0 | 0.062 | **0.25** |
+| raw vs random | 0.43 | 0.46 | 0.48 |
+| decision | hold | hold | promote (step 244) |
+
+**Gates:**
+- All GO criteria are met.
+- One **CONDITIONAL** flag: arena truncation 0.25 in cycle 2 (> 0.10). The
+  stronger candidate reaches more won-but-unconverted positions.
+
+### R4
+
+Pending (running).
