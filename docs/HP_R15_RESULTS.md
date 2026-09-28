@@ -625,3 +625,23 @@ The first recurrence comparison that could support a claim.
      degrading.
 - **Not done (would be post hoc):** a 192-game check of the cycle-5 snapshot.
   If wanted, it must be pre-registered first.
+
+### Train1 repetition draws are conversion failures (MEASURED, zero compute)
+- **Measured:** from the final-arena `final_fen` of the 111 threefold games,
+  the trained network was **≥ +3 material ahead in 109**, ≥ +9 in 103, with a
+  median lead of **+20** (e.g. queen + rook up). One game was level, and one
+  had it behind.
+- **Checked in code:** search is not blind to repetition.
+  - `ChessGame` clones the full `GameState` history.
+  - An in-tree third occurrence is a terminal draw, value 0
+    (`game_tree.rs::terminal_value`).
+- **Hypothesis (INFERRED, untested):** a self-reinforcing value loop.
+  - Self-play games won on material increasingly end in repetition, so the
+    value head learns "big material edge → draw".
+  - That makes a repetition draw (0) look about as good as progress, so search
+    stops preferring winning lines.
+  - Consistent with this: the rising self-play threefold share (the stop at
+    0.625) and the off-distribution held-out value collapse.
+- **Next test** (≤ 3 min, no training): the final trainer's WDL on positions
+  where it is ≥ +9 material up. A high P(draw) supports the loop; a high
+  P(win) refutes it.
