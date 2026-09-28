@@ -199,3 +199,64 @@ fn capacity_archival_is_crash_safe_at_every_step() {
     assert_eq!(shard_files(&dir2.join("archive")), files[..2].to_vec());
     assert_eq!(ReplayStore::open(&dir2).unwrap().sampleable(), 4);
 }
+
+/// P2 sampler v2 (`position_recency_v2`): per-position recency weights. With
+/// shard 0 = 2 trainable games (8 positions) and shard 1 = 1 trainable game
+/// (4 positions) + 1 truncated game, v1 picks shard 1 with p = 2/3 (per-shard
+/// weight) while v2 picks it with p = (2*4)/(1*8 + 2*4) = 1/2.
+#[test]
+fn position_recency_v2_weights_positions_not_shards() {
+    use recur64_runtime::replay::ReplaySampler;
+    let dir = tmp("v2");
+    let mut w = ReplayWriter::new(&dir, header(), 2).unwrap();
+    let mate = ["f2f3", "e7e5", "g2g4", "d8h4"];
+    w.push(record_from_uci(0, &mate, Some(2), "checkmate"))
+        .unwrap();
+    w.push(record_from_uci(1, &mate, Some(2), "checkmate"))
+        .unwrap();
+    w.push(record_from_uci(2, &mate, Some(2), "checkmate"))
+        .unwrap();
+    w.push(record_from_uci(3, &["e2e4", "e7e5"], None, "truncated"))
+        .unwrap();
+    w.finish().unwrap();
+    let store = ReplayStore::open(&dir).unwrap();
+    assert_eq!((store.shard_count(), store.sampleable()), (2, 12));
+
+    let share = |sampler| {
+        let mut rng = Rng::new(7);
+        let b = store.sample_batch_with(6000, &mut rng, sampler).unwrap();
+        b.iter().filter(|e| e.source_game_id == 2).count() as f64 / b.len() as f64
+    };
+    let v1 = share(ReplaySampler::ShardRecencyV1);
+    let v2 = share(ReplaySampler::PositionRecencyV2);
+    assert!((v1 - 2.0 / 3.0).abs() < 0.03, "v1 newest-shard share {v1}");
+    assert!((v2 - 0.5).abs() < 0.03, "v2 newest-shard share {v2}");
+    assert_eq!(ReplaySampler::default(), ReplaySampler::ShardRecencyV1);
+}
+
+/// v2 gives an all-truncated shard weight 0 (v1 moved its weight onto the
+/// oldest shard, review finding F3).
+#[test]
+fn position_recency_v2_skips_empty_shards() {
+    use recur64_runtime::replay::ReplaySampler;
+    let dir = tmp("v2empty");
+    let mut w = ReplayWriter::new(&dir, header(), 1).unwrap();
+    let mate = ["f2f3", "e7e5", "g2g4", "d8h4"];
+    w.push(record_from_uci(0, &mate, Some(2), "checkmate"))
+        .unwrap();
+    w.push(record_from_uci(1, &mate, Some(2), "checkmate"))
+        .unwrap();
+    w.push(record_from_uci(2, &["e2e4", "e7e5"], None, "truncated"))
+        .unwrap();
+    w.finish().unwrap();
+    let store = ReplayStore::open(&dir).unwrap();
+    let mut rng = Rng::new(3);
+    let b = store
+        .sample_batch_with(3000, &mut rng, ReplaySampler::PositionRecencyV2)
+        .unwrap();
+    let newest = b.iter().filter(|e| e.source_game_id == 1).count() as f64 / b.len() as f64;
+    // Shards 0 and 1 have weights 1*4 and 2*4: the newest trainable shard
+    // gets 2/3, and nothing is taken from the empty shard 2.
+    assert!((newest - 2.0 / 3.0).abs() < 0.03, "newest share {newest}");
+    assert!(b.iter().all(|e| e.source_game_id != 2));
+}

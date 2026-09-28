@@ -55,6 +55,13 @@ pub struct EvalArenaArgs {
     /// Override arena_early_adjudication (`off` | `shadow` | `enforce`), D56.
     #[arg(long)]
     pub early_adjudication: Option<String>,
+    /// Recurrence of the reference-side network (default: the config's).
+    /// With `--candidate-recurrence`, runs a cross-recurrence arena (P2).
+    #[arg(long)]
+    pub reference_recurrence: Option<usize>,
+    /// Recurrence of the candidate-side network (default: the config's).
+    #[arg(long)]
+    pub candidate_recurrence: Option<usize>,
     /// Override arena_tree_policy (`per_node_side_v1` | `root_player_v1`).
     #[arg(long)]
     pub tree_policy: Option<String>,
@@ -88,8 +95,21 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
         .unwrap_or(cfg.collection_shape()?.1);
     let cfg = &cfg.for_evaluation();
     let arena_cfg = cfg.arena_config(args.seed_offset, openings, concurrency);
-    let ref_owner = spawn_owner::<B::InnerBackend>(&args.reference, cfg, &device)?;
-    let cand_owner = spawn_owner::<B::InnerBackend>(&args.candidate, cfg, &device)?;
+    // Each owner evaluates at its own recurrence (the network's forward
+    // argument); the search contract is shared.
+    let side_cfg = |r: Option<usize>| {
+        let mut c = cfg.clone();
+        if let Some(r) = r {
+            c.recurrence = r;
+        }
+        c
+    };
+    let (ref_cfg, cand_cfg) = (
+        side_cfg(args.reference_recurrence),
+        side_cfg(args.candidate_recurrence),
+    );
+    let ref_owner = spawn_owner::<B::InnerBackend>(&args.reference, &ref_cfg, &device)?;
+    let cand_owner = spawn_owner::<B::InnerBackend>(&args.candidate, &cand_cfg, &device)?;
     let (ref_ev, cand_ev) = (ref_owner.evaluator(), cand_owner.evaluator());
     let start = std::time::Instant::now();
     let (result, gpu) = gpu_telemetry::monitor(cfg.device == "cuda", || {
@@ -119,6 +139,8 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &EvalArenaArgs) -> anyhow
             "max_inference_batch": cfg.max_inference_batch,
             "leaves_in_flight": arena_cfg.leaves_in_flight,
             "rng_policy": arena_cfg.rng_policy,
+            "reference_recurrence": ref_cfg.recurrence,
+            "candidate_recurrence": cand_cfg.recurrence,
             "tree_policy": arena_cfg.tree_policy,
             "early_adjudication": arena_cfg.early_adjudication,
         },

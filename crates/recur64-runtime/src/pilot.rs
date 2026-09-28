@@ -685,6 +685,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             deadline: Some(deadline),
             current_cycle_first_game_id: Some(first_game_id),
             games_per_cycle: games_per_cycle as u64,
+            sampler: cfg.replay_sampler,
         };
         let (trained, train_gpu) = gpu_telemetry::monitor(gpu_on, || {
             train_from_store(&store, train_model, &mut optim, &learner_cfg, &b_device)

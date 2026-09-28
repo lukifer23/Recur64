@@ -54,6 +54,8 @@ pub struct LearnerConfig {
     pub current_cycle_first_game_id: Option<u64>,
     /// Games per cycle, used to express sample age in cycles.
     pub games_per_cycle: u64,
+    /// Replay sampling policy (P2 sampler v2; default = historical v1).
+    pub sampler: crate::replay::ReplaySampler,
 }
 
 impl Default for LearnerConfig {
@@ -71,6 +73,7 @@ impl Default for LearnerConfig {
             deadline: None,
             current_cycle_first_game_id: None,
             games_per_cycle: 0,
+            sampler: crate::replay::ReplaySampler::ShardRecencyV1,
         }
     }
 }
@@ -446,6 +449,6 @@ where
         store.sampleable(),
         store.trainable_games(),
         store.total_games() - store.trainable_games(),
-        |batch_size| store.sample_batch(batch_size, &mut rng),
+        |batch_size| store.sample_batch_with(batch_size, &mut rng, cfg.sampler),
     )
 }

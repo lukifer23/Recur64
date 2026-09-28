@@ -527,6 +527,7 @@ pub fn run<B: AutodiffBackend>(
         deadline: Some(deadline),
         current_cycle_first_game_id: Some(0),
         games_per_cycle: cfg.collection_shape()?.0 as u64,
+        sampler: cfg.replay_sampler,
     };
     let (train_report, candidate_model_id) =
         match train_from_games(train_model, &mut optim, &all_games, &learner_cfg, &b_device) {

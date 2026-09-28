@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
 
 use recur64_eval::{ArenaEarlyAdjudication, ArenaRngPolicy, ArenaTreePolicy};
+
+use crate::replay::ReplaySampler;
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -216,7 +218,12 @@ pub struct UpdatePlan {
 }
 
 /// A complete, resolved Phase 2 run configuration.
+///
+/// Unknown keys are refused (D51, extended in P2). An old binary silently
+/// dropped `replay_sampler`, and a misspelled key would silently run a
+/// different experiment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RunConfig {
     pub run_id: String,
     pub model: ModelConfig,
@@ -263,6 +270,10 @@ pub struct RunConfig {
     pub eval_concurrency: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub eval_max_inference_batch: Option<usize>,
+    /// Replay sampling policy (P2). The default is the historical per-shard
+    /// sampler; `position_recency_v2` enters the identity.
+    #[serde(default, skip_serializing_if = "ReplaySampler::is_default")]
+    pub replay_sampler: ReplaySampler,
     /// Round inference candidate widths up to fixed buckets (D55 perf pass;
     /// execution only: outputs equal to float noise, excluded from identity).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -614,7 +625,7 @@ impl RunConfig {
             "replay": {
                 "max_positions": self.replay_max_positions,
                 "shard_max_games": self.shard_max_games,
-                "sampler": "shard_recency_weight_index_plus_1_v1",
+                "sampler": self.replay_sampler.label(),
             },
             "evaluation": self.evaluation_identity()?,
             "promotion": {
@@ -1068,6 +1079,14 @@ openings = ['{e4}']
                 .unwrap()
                 .contains("lr_schedule_end")
         );
+        // An unknown top-level key is refused (P2: `replay_sampler` was dropped
+        // silently by an older binary).
+        let unknown = format!(
+            "replay_samplr = \"position_recency_v2\"
+{}",
+            base_toml()
+        );
+        assert!(RunConfig::from_toml_str(&unknown).is_err());
         // A run-level key misplaced under [model] is refused (H3.5 ran K = 1).
         let misplaced = base_toml().replace(
             "[model]",
@@ -1364,6 +1383,55 @@ truncaton = 0.25
             arms[0].scientific_config_hash().unwrap(),
             arms[2].scientific_config_hash().unwrap()
         );
+    }
+
+    /// R15-P2: 4 arms x 2 seeds share one contract; they differ only in
+    /// recurrence, seed (and its reference artifact) and the R4-LR arm's LR.
+    #[test]
+    fn r15_p2_arms_share_one_contract() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../configs/hp");
+        let mut masked = Vec::new();
+        for seed in [1u64, 2] {
+            for (arm, r, lr) in [
+                ("r1", 1usize, 3e-4),
+                ("r2", 2, 3e-4),
+                ("r4", 4, 3e-4),
+                ("r4lr", 4, 1.5e-4),
+            ] {
+                let path = dir.join(format!("r15-p2-{arm}-s{seed}.toml"));
+                let mut c =
+                    RunConfig::from_toml_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+                c.opening_suite = Some(
+                    dir.join("../openings-v1.toml")
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+                assert_eq!((c.recurrence, c.seed), (r, seed), "{arm} s{seed}");
+                assert_eq!(c.lr, lr, "{arm} s{seed}");
+                assert_eq!(c.cycles, 6);
+                assert_eq!(c.lr_schedule(), (80, 800));
+                assert_eq!(c.max_updates, 256);
+                assert_eq!(c.replay_sampler, ReplaySampler::PositionRecencyV2);
+                assert_eq!(c.arena_tree_policy, ArenaTreePolicy::RootPlayerV1);
+                assert_eq!(c.promotion_score, PromotionScore::AdjudicatedMaterialV1);
+                assert_eq!(c.health_stops.lr_schedule_end, Some(true));
+                assert!(c.inference_candidate_buckets);
+                assert_eq!(c.position_budget, Some(90_000));
+                assert!(!c.update_plan(12_800).unwrap().cap_bound);
+                let mut v = c.scientific_identity().unwrap();
+                v["recurrence"] = serde_json::Value::Null;
+                v["seed"] = serde_json::Value::Null;
+                v["reference_model_id"] = serde_json::Value::Null;
+                v["training"]["lr"] = serde_json::Value::Null;
+                masked.push(v);
+            }
+        }
+        for v in &masked[1..] {
+            assert_eq!(
+                v, &masked[0],
+                "arms differ beyond recurrence/seed/reference/lr"
+            );
+        }
     }
 
     /// D45 must not change any identity recorded before it: the original

@@ -15,6 +15,7 @@ mod config_info;
 mod cuda_smoke;
 mod doctor;
 mod eval_arena;
+mod eval_value;
 mod inspect;
 mod model_digest;
 mod model_info;
@@ -47,6 +48,8 @@ enum Commands {
     ConfigInfo(config_info::ConfigInfoArgs),
     /// Fast production-path inference throughput probe with output parity.
     BenchForward(bench_forward::BenchForwardArgs),
+    /// Held-out value/policy cross-entropy of a checkpoint (P2 primary metric).
+    EvalValue(eval_value::EvalValueArgs),
     /// Artifact `model_id` vs semantic weight digest of a checkpoint (D50).
     ModelDigest(model_digest::ModelDigestArgs),
     /// Bounded benchmark matrix; writes raw data to --output.
@@ -101,6 +104,7 @@ fn main() -> anyhow::Result<()> {
         Commands::ModelInfo { config } => model_info::run_model_info(&config),
         Commands::ConfigInfo(args) => config_info::run(args),
         Commands::BenchForward(args) => bench_forward::run(args),
+        Commands::EvalValue(args) => eval_value::run(args),
         Commands::ModelDigest(args) => model_digest::run(args),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),

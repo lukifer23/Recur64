@@ -209,6 +209,31 @@ fn sync_dir(dir: &Path) -> anyhow::Result<()> {
 }
 
 /// A loaded replay store with on-demand sampling.
+/// Replay sampling policy (identity-tracked; see `RunConfig::replay_sampler`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReplaySampler {
+    /// Historical: pick a shard with weight `index + 1`, then a position
+    /// uniformly inside it (per-shard; couples to shard size).
+    #[default]
+    ShardRecencyV1,
+    /// Per-position recency weight `index + 1` (P2 sampler v2).
+    PositionRecencyV2,
+}
+
+impl ReplaySampler {
+    pub fn is_default(&self) -> bool {
+        *self == Self::ShardRecencyV1
+    }
+    /// Identity label (the v1 label is the historical constant).
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::ShardRecencyV1 => "shard_recency_weight_index_plus_1_v1",
+            Self::PositionRecencyV2 => "position_recency_weight_index_plus_1_v2",
+        }
+    }
+}
+
 pub struct ReplayStore {
     dir: PathBuf,
     /// `(shard_index, game)` in insertion order.
@@ -284,6 +309,17 @@ impl ReplayStore {
         self.coords_by_shard.len()
     }
 
+    /// Every sampleable position as `(game, ply)` coordinates, oldest shard
+    /// first, in game and ply order (deterministic; for held-out evaluation).
+    pub fn coordinates(&self) -> Vec<(usize, usize)> {
+        self.coords_by_shard.iter().flatten().copied().collect()
+    }
+
+    /// The training example at a coordinate from [`Self::coordinates`].
+    pub fn example(&self, coord: (usize, usize)) -> Result<TrainingExample, String> {
+        self.example_at(coord)
+    }
+
     /// Reconstruct one example from a coordinate.
     fn example_at(&self, coord: (usize, usize)) -> Result<TrainingExample, String> {
         let (gi, pi) = coord;
@@ -307,8 +343,59 @@ impl ReplayStore {
         Err(format!("ply {pi} out of range for game {gi}"))
     }
 
+    /// Sample `n` examples with the given sampler (see [`ReplaySampler`]).
+    pub fn sample_batch_with(
+        &self,
+        n: usize,
+        rng: &mut Rng,
+        sampler: ReplaySampler,
+    ) -> Result<Vec<TrainingExample>, String> {
+        match sampler {
+            ReplaySampler::ShardRecencyV1 => self.sample_batch(n, rng),
+            ReplaySampler::PositionRecencyV2 => self.sample_batch_position_recency(n, rng),
+        }
+    }
+
+    /// `position_recency_v2`: every trainable position of shard `s` has weight
+    /// `s + 1`, so a shard's share is `(s + 1) * positions_in_s`. Unlike v1, a
+    /// shard with few trainable positions (e.g. many truncated games) does not
+    /// oversample them, and an empty shard has weight 0 (no fallback needed).
+    fn sample_batch_position_recency(
+        &self,
+        n: usize,
+        rng: &mut Rng,
+    ) -> Result<Vec<TrainingExample>, String> {
+        if self.sampleable() == 0 {
+            return Err("replay has no sampleable positions".into());
+        }
+        let weights: Vec<u64> = self
+            .coords_by_shard
+            .iter()
+            .enumerate()
+            .map(|(s, v)| (s as u64 + 1) * v.len() as u64)
+            .collect();
+        let total: u64 = weights.iter().sum();
+        let mut out = Vec::with_capacity(n);
+        for _ in 0..n {
+            let mut pick = rng.next_u64() % total;
+            let mut shard = weights.len() - 1;
+            for (s, &w) in weights.iter().enumerate() {
+                if pick < w {
+                    shard = s;
+                    break;
+                }
+                pick -= w;
+            }
+            let pool = &self.coords_by_shard[shard];
+            let coord = pool[(rng.next_u64() as usize) % pool.len()];
+            out.push(self.example_at(coord)?);
+        }
+        Ok(out)
+    }
+
     /// Sample `n` examples. Newer shards are favored (weight = shard index + 1),
     /// so replay freshness is respected within the reuse budget.
+    /// (`shard_recency_weight_index_plus_1_v1`, the historical sampler.)
     pub fn sample_batch(&self, n: usize, rng: &mut Rng) -> Result<Vec<TrainingExample>, String> {
         if self.sampleable() == 0 {
             return Err("replay has no sampleable positions".into());

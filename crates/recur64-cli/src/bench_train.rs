@@ -114,6 +114,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
             deadline: None,
             current_cycle_first_game_id: None,
             games_per_cycle: 0,
+            sampler: cfg.replay_sampler,
         };
         let (model, mut optim, _) = load_training(
             &args.checkpoint,
