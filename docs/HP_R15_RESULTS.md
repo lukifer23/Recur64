@@ -215,6 +215,92 @@ The reference artifact is `0cd0036c…`, with the same weights as R1 (semantic
 - One **CONDITIONAL** flag: arena truncation 0.25 in cycle 2 (> 0.10). The
   stronger candidate reaches more won-but-unconverted positions.
 
-### R4
+### R4 (20 executed blocks) — **CONDITIONAL**
 
-Pending (running).
+The reference artifact is `6c41aec0…`, with the same weights as R1 (semantic
+`17b03869…`).
+
+| | cycle 0 | cycle 1 | cycle 2 |
+|---|---|---|---|
+| wall (collect / train / eval) | 1,436 s (562 / 124 / 749) | 1,374 s (600 / 125 / 649) | 1,466 s (580 / 95 / 791) |
+| audit / errors / VRAM peak | ok / 0 / 2,275 MB | ok / 0 / 2,309 MB | ok / 0 / 2,309 MB |
+| draw / truncated self-play | 0.156 / 0.062 | 0.25 / 0.062 | 0.094 / **0.125** |
+| trainer step / zero-LR updates | 0 → 70 / 0 | 70 → 146 / 0 | 146 → 206 / 0 |
+| reuse / cap bound | 2.022 / no | 2.003 / no | 2.005 / no |
+| **vs frozen reference, adjudicated** | 0.406 [0.251, 0.561] | 0.359 [0.219, 0.500] | 0.578 [0.438, 0.718] |
+| arena truncation | **0.156** | 0.094 | 0.031 |
+| decision | hold | hold | promote (step 206) |
+
+**Gates:**
+- All GO criteria are met.
+- **CONDITIONAL** flags: arena truncation 0.156 (c0) and truncated self-play
+  0.125 (c2).
+
+## P1 verdict and cross-arm observations (MEASURED; one seed, n = 32 per arena)
+
+- **All three arms: CONDITIONAL.**
+  - The mechanism is GO in every arm: 0 errors, audit clean, VRAM plateaus
+    (1,477 / 1,733 / 2,309 MB), continuous trainers, 0 zero-LR updates,
+    reuse 2.0 never cap-bound, exact lineage.
+  - Every flag is a truncation flag. That is the conversion weakness already
+    documented in D53, D56 and H3.6.
+- **Value learning diverges by recurrence** (the main finding). The table
+  gives the mean WDL loss over the last quarter of each cycle's updates.
+
+| arm | c0 | c1 | c2 | fresh-data first-update WDL at c2 | max grad-norm |
+|---|---|---|---|---|---|
+| R1 | 0.881 | 0.852 | **0.832** | 0.902 | 7.19 |
+| R2 | 1.015 | 0.923 | **0.859** | 0.906 | 7.88 |
+| **R4** | 0.988 | 1.033 | **1.097** | **1.151** (> uniform 1.099) | **15.62** |
+
+- **R4 in detail:**
+  - At the shared LR (3e-4) and equal updates, R4's value head does not
+    learn, and on fresh data it predicts worse than uniform.
+  - Its gradient-norm spikes are twice R1/R2's.
+  - INFERRED: the 20-block unrolled recurrence is harder to optimize at this
+    LR and update count.
+  - This is not instability in the pre-registered sense: metrics are finite,
+    the policy is stable, and it promoted at c2.
+- **All arms dip early, then recover.** Scores vs the reference go
+  0.36 → 0.45 → 0.53 (R1), 0.48 → 0.44 → 0.59 (R2) and 0.41 → 0.36 → 0.58
+  (R4). Every CI but R1 c0 and R4 c1 includes 0.5.
+  - **No R1-vs-R2-vs-R4 strength claim is made** (pre-registered).
+- **Raw policy is flat everywhere** (vs random 0.43–0.54). As in H3.6,
+  learning shows up through the value head and search only.
+- **Measured cost per cycle,** the input to P2 budgeting: about 725 s (R1),
+  1,000 s (R2) and 1,425 s (R4).
+
+## P2 proposal (NOT RUN; needs owner approval, since it is a large GPU commitment)
+
+The first recurrence comparison that could support a claim.
+
+**Design:**
+- 3 arms (R1/R2/R4) × **2 seeds** × **8 cycles**.
+- Identical contract to P1, plus **sampler v2** (per-position recency
+  weighting, pre-registered). Sampler v2 removes the shard-level coupling to
+  the truncation rate.
+
+**Metrics:**
+- Pre-registered primary: **fresh-data first-update WDL loss at the final
+  cycle**, the value-learning signal P1 showed separating by R.
+- Secondary: each arm's adjudicated score vs the shared reference weights,
+  plus **cross-arm arenas** at the final cycle (96 games per pair,
+  CRN-paired, root-player, truncation-aware).
+- Always report grad-norm distributions per arm.
+
+**Claim rule:**
+- "Recurrence helps" requires R2 or R4 to beat R1 on the primary metric in
+  **both** seeds, and the cross-arm arena CI to exclude 0.5.
+- "Recurrence hurts at a fixed LR" is reported symmetrically.
+
+**Cost:**
+- About 8 × (725 + 1,000 + 1,425) s ≈ 7 h per seed, so **~14 h of GPU time**
+  for 2 seeds.
+- Plus cross-arm arenas (~1.5 h).
+
+**Before P2 (cheap):**
+- A 20-minute pre-registered check of whether R4's value stall is LR-driven:
+  60 updates at LR 1.5e-4 vs 3e-4 on the same replay, reading the WDL-loss
+  trajectory.
+- This decides whether P2 should also carry an R-scaled-LR arm. Changing LR
+  per arm is a separate scientific choice, not a silent fix.

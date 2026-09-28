@@ -1,0 +1,82 @@
+{
+  "run_id": "hp-r15-smoke-r4",
+  "scientific_config_hash": "adcce0c16966d64c397498f7738765e41d216ed47f4f26de4602b20f98036c7e",
+  "resolved_config_hash": "8bbd506680c123e3c0a5c65c55438a1cc318213384de67e9775c354e7089f343",
+  "scientific_identity": {
+    "collection": {
+      "games_per_cycle": 32,
+      "seed_policy": "base_seed_plus_global_game_id_v1"
+    },
+    "evaluation": {
+      "arena_exploration": {
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "sample_plies": 30
+      },
+      "arena_games": 32,
+      "arena_rng_policy": "paired_common_v1",
+      "arena_tree_policy": "root_player_v1",
+      "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c"
+    },
+    "identity_version": 4,
+    "model": {
+      "core_blocks": 4,
+      "ffn": 768,
+      "heads": 8,
+      "in_features": 119,
+      "input_blocks": 2,
+      "output_blocks": 2,
+      "policy_dim": 128,
+      "promo_codes": 5,
+      "rms_eps": 0.00001,
+      "squares": 64,
+      "wdl_classes": 3,
+      "width": 512
+    },
+    "model_head_version": 2,
+    "optimizer": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "precision": "fp32",
+    "promotion": {
+      "min_decisive_games": 4,
+      "rule": "conservative-v3:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,adjudicated_decisive>=min_decisive,adjudicated_score>0.5,adjudicated_score>=floor;adjudication=material_v1",
+      "score_floor": 0.5,
+      "snapshot_policy": "conservative"
+    },
+    "recurrence": 4,
+    "reference_model_id": "6c41aec0c95d861e8e01bfd20616bf9b71d361e01120d272ea568d7f38b0d580",
+    "replay": {
+      "max_positions": 100000,
+      "sampler": "shard_recency_weight_index_plus_1_v1",
+      "shard_max_games": 256
+    },
+    "search": {
+      "argmax_after_ply": 30,
+      "c_puct": 1.0,
+      "ply_cap": 400,
+      "root_dirichlet_alpha": 0.30000001192092896,
+      "root_dirichlet_epsilon": 0.25,
+      "simulations_per_move": 32,
+      "start_fen": null,
+      "temperature": 1.0
+    },
+    "search_execution": {
+      "leaves_in_flight": 2,
+      "virtual_loss": 1.0
+    },
+    "seed": 1,
+    "trainer_policy": "continuous",
+    "training": {
+      "effective_batch": 128,
+      "lr": 0.0003,
+      "planned_updates": 370,
+      "replay_reuse_target": 2.0,
+      "warmup_updates": 37
+    }
+  },
+  "reference_model_id": "6c41aec0c95d861e8e01bfd20616bf9b71d361e01120d272ea568d7f38b0d580",
+  "reference_source": "runs/hp-r15-p0-ref-r15-v2-r4",
+  "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c",
+  "promotion_rule": "conservative-v3:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,adjudicated_decisive>=min_decisive,adjudicated_score>0.5,adjudicated_score>=floor;adjudication=material_v1",
+  "git_revision": "bf6f8715f228f726b84939f896b79c42a0821a5a",
+  "git_branch": "experiment/hp-r15-h3-integration"
+}

@@ -89,6 +89,15 @@ Compared with the plain build, measured on a trained network:
 - **VRAM lifecycle:** flat, after a fusion-specific leak was root-caused and
   fixed.
 
+**R15 P1 (2026-09-27):** 3-cycle smokes at R1/R2/R4 on the D55 build are all
+CONDITIONAL. The mechanism is GO, and the flags are all truncation.
+
+- The key finding is that R4's value learning stalls at the shared LR, while
+  R1 and R2 learn.
+- No strength claim yet.
+- P2 (2 seeds × 8 cycles) is proposed in
+  [`docs/HP_R15_RESULTS.md`](docs/HP_R15_RESULTS.md).
+
 Fast probes:
 
 - `recur64 bench-forward`: the production batch path, with parity against a

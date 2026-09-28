@@ -414,7 +414,14 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
   (58.9 % agreement, 17 flips), so it is **not adopted**. At this strength a
   material lead does not predict a win. Endgame technique is the core
   weakness.
-- **Still not run:** R15 training (P1).
+- **R15 P1 (per-arm 3-cycle smokes): all three arms CONDITIONAL.**
+  - The mechanism is GO; every flag is a truncation flag (the conversion
+    weakness).
+  - **Key finding:** R4's value head does not learn at the shared LR (WDL
+    loss rises to 1.097, gradient spikes 2×), while R1 and R2 learn. One
+    seed; no strength claim.
+  - P2 (2 seeds × 8 cycles, ~14 h GPU) is proposed and awaits owner
+    approval.
 - Historical head-v1 HP evidence preserved and labelled HISTORICAL in
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.

@@ -1,0 +1,17 @@
+{
+  "run_id": "hp-r15-smoke-r4",
+  "status": "completed",
+  "git_revision": "bf6f8715f228f726b84939f896b79c42a0821a5a",
+  "git_branch": "experiment/hp-r15-h3-integration",
+  "seed": 1,
+  "hardware_profile": "hp-home",
+  "model_profile": "r15",
+  "recur64_version": "0.1.0",
+  "observation_version": 1,
+  "action_version": 1,
+  "rules_profile_version": 1,
+  "replay_schema_version": 1,
+  "device": "cuda",
+  "precision": "fp32",
+  "note": "completed"
+}
