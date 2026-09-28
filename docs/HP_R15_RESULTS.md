@@ -531,3 +531,26 @@ The first recurrence comparison that could support a claim.
   most a modest strength gain, one that 64 games cannot resolve.
   - At about 12 s per game, resolving a ~5-point edge needs a few hundred
     games, which is roughly 40–60 min on this GPU.
+
+## P-3b — baseline strength check, fresh 192 games (MEASURED; pre-registered) — **training produced search strength**
+- **Setup:** M vs the untrained seed-1 reference, standard R1 contract, seed
+  offset 10000 (disjoint from P-3). Wall time **44.4 min** (estimate 39).
+  Evidence: `docs/evidence/p-3b/eval-arena.json`.
+- **Outcomes:**
+  - W/D/L 50/67/33, truncated 42 (22 %).
+  - Terminations: 83 checkmates, 44 insufficient material, 20 fifty-move, 3
+    threefold.
+- **Primary (adjudicated material_v1): 0.617, CI [0.563, 0.671]**
+  - The lower bound is > 0.5, so the rule verdict is **"training produced
+    search strength."**
+- **Robustness (MEASURED):**
+  - As played, truncation = draw: 0.557.
+  - Complete pairs only (59/96), no adjudication: mean 0.568, pair CI
+    [0.503, 0.632], which is also above 0.5.
+- **Secondary (pooled with P-3 after a look, disclosed):** 256 games, about
+  0.605.
+- **Meaning:** the pipeline works end to end. 400 updates on 288 self-play
+  games give a measurable gain of about +0.1 score over the untrained net.
+  - This is the baseline that later changes are compared against.
+  - The 22 % truncation rate means many games are not converted. That is
+    noted, and nothing has been changed because of it.
