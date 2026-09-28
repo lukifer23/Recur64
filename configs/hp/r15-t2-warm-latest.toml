@@ -1,7 +1,8 @@
 # Recur64 HP R15-T2 — fast learning-loop test (about 12 min). P1 R1 contract with
 # the two fixes found on 2026-09-28: snapshot_policy = latest (the trained
 # network is the self-play actor) and LR 7.5e-5 (V1). Warm-started from the V1
-# R1 network (held-out value 0.894), 16 games x 2 cycles, 8-game diagnostic
+# R1 network (held-out value 0.894; copy runs/t2-warm-ref with optimizer-step
+# counters reset to 0, weights unchanged), 16 games x 2 cycles, 8-game diagnostic
 # arena. Exploratory.
 run_id = "hp-r15-t2-warm-latest"
 device = "cuda"
@@ -11,7 +12,7 @@ model_profile = "r15"
 hardware_profile = "hp-home"
 seed = 1
 
-reference_checkpoint = "runs/v1/R1-lr7.5e-5-s1-u400-d288"
+reference_checkpoint = "runs/t2-warm-ref"
 reference_model_id = "789bbce8df4374d5e34734e795abda2fac0d5fda1282aba21b10bb7ec5ed821c"
 
 # --- Search / self-play contract (H3.4 budget; D41 exploration) ---
