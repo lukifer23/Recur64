@@ -616,3 +616,19 @@ is measurable in minutes on fixed data.
   strength not shown."
 - This is single-seed, so it is exploratory; adoption as the default LR
   needs a seed-2 repeat.
+
+## P-1 — are 32 simulations the policy bottleneck? (fixed before running)
+
+- **Starting network** M = the V1 R1 network (`runs/v1/R1-lr7.5e-5-s1-u400-d288`).
+- **Oracle:** 8 self-play games by M at **256 sims, noise 0**, seed 901. The
+  metric is `eval-value` policy CE against these deep-search visit targets.
+- **Training sets:** 8 games by M at **32 sims** (seed 902) and at **128 sims**
+  (seed 903), standard D41 noise.
+  - M is trained on each for 40 updates at LR 7.5e-5 (32 × 4).
+  - M, M+32 and M+128 are all scored on the oracle.
+- **Rules:**
+  - "Sims are the policy bottleneck" iff (oracle CE of M − M+128) − (M − M+32)
+    ≥ 0.02.
+  - "Not the cause" iff |that difference| < 0.01.
+  - Otherwise the result is inconclusive.
+  - No other claims.

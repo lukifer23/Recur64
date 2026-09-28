@@ -51,6 +51,9 @@ pub struct BenchRuntimeArgs {
     /// Override the self-play root Dirichlet epsilon (policy-target probes).
     #[arg(long)]
     pub noise_epsilon: Option<f32>,
+    /// Override the self-play seed (disjoint data sets for probes).
+    #[arg(long)]
+    pub seed: Option<u64>,
 }
 
 fn run_impl<B: AutodiffBackend>(
@@ -197,6 +200,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if let Some(e) = args.noise_epsilon {
         cfg.root_dirichlet_epsilon = e;
+    }
+    if let Some(seed) = args.seed {
+        cfg.seed = seed;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
