@@ -22,6 +22,7 @@ mod model_info;
 mod perft;
 mod phase2;
 mod phase3;
+mod replay_merge;
 mod search_gain;
 
 #[derive(Parser)]
@@ -50,6 +51,8 @@ enum Commands {
     BenchForward(bench_forward::BenchForwardArgs),
     /// Held-out value/policy cross-entropy of a checkpoint (P2 primary metric).
     EvalValue(eval_value::EvalValueArgs),
+    /// Concatenate replays into one fixed dataset (fast-loop training sets).
+    ReplayMerge(replay_merge::ReplayMergeArgs),
     /// Artifact `model_id` vs semantic weight digest of a checkpoint (D50).
     ModelDigest(model_digest::ModelDigestArgs),
     /// Bounded benchmark matrix; writes raw data to --output.
@@ -105,6 +108,7 @@ fn main() -> anyhow::Result<()> {
         Commands::ConfigInfo(args) => config_info::run(args),
         Commands::BenchForward(args) => bench_forward::run(args),
         Commands::EvalValue(args) => eval_value::run(args),
+        Commands::ReplayMerge(args) => replay_merge::run(args),
         Commands::ModelDigest(args) => model_digest::run(args),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),
