@@ -1,0 +1,128 @@
+# Recur64 HP R15-P2 — held-out game generator 1. Identical to
+# configs/hp/r15-p2-r1-s1.toml except run_id and seed = 777, a self-play
+# seed no arm uses. Generates the fixed held-out replay scored by
+# `recur64 eval-value`, the P2 primary metric, from the seed-1 R15 reference
+# at R1. Not a training config.
+run_id = "hp-r15-p2-holdout-s1"
+device = "cuda"
+precision = "fp32"
+recurrence = 1
+model_profile = "r15"
+hardware_profile = "hp-home"
+seed = 777
+
+reference_checkpoint = "runs/hp-r15-p0-ref-r15-v2"
+reference_model_id = "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965"
+
+# --- Search / self-play contract (H3.4 budget; D41 exploration) ---
+simulations_per_move = 32
+c_puct = 1.0
+temperature = 1.0
+argmax_after_ply = 30
+root_dirichlet_alpha = 0.3
+root_dirichlet_epsilon = 0.25
+ply_cap = 400
+# H3.3A (adopted): 2 leaves per search round with virtual loss.
+search_leaves_in_flight = 2
+
+# --- Collection (scientific: total games; the rest is scheduling) ---
+# 32 games per cycle (waves of 12 at concurrency 12; perf #11).
+games_per_cycle = 32
+
+# --- Hardware schedule (perf #11 on the D55 build, MEASURED on the RTX 2050) ---
+concurrent_games = 12
+cpu_workers = 12
+# K = 2 leaves x 12 games -> batch cap 24.
+max_inference_batch = 24
+batch_timeout_us = 1000
+# H3.3C (retained prior): effective batch 32 x 4 = 128.
+train_batch = 32
+accumulation_steps = 4
+
+# D55 (accepted): candidate-width bucketing on the batched inference path
+# (execution only). Build with --features cuda,fusion,autotune.
+inference_candidate_buckets = true
+# Perf #11 (adopted, pre-registered 42a0f66): self-play at 12 games / batch 24
+# (+25% trainable pos/s on the D55 build). Evaluation stays at the tested
+# c8 / batch 16 (perf #13 did not meet its identity clause, 30/32 games).
+eval_concurrency = 8
+eval_max_inference_batch = 16
+
+# --- Replay / learner ---
+shard_max_games = 256
+replay_max_positions = 100000
+replay_reuse_target = 2.0
+# P2 sampler v2: per-position recency weights (fixes review F2/F3).
+replay_sampler = "position_recency_v2"
+lr = 3.0e-4
+# LR schedule (H3.5B amendment, pre-registered in docs/HP_H3_PREREG.md):
+#   T0: 5,247 trainable positions/cycle -> ceil(5247 * 2.0 / 128) = 82 updates.
+#   Learned cycles 1-2 at a 1.75x lengthening stress (observed priors ~1.4x):
+#   9,183 positions -> 144 updates each. Planned 82 + 144 + 144 = 370, warmup
+#   10%. Replaces 246/25, which a lengthening learned value head would have
+#   exhausted into an LR = 0 tail (as mainline smoke v2 did). Never extended
+#   after the run starts.
+planned_updates = 800
+warmup_updates = 80
+# PER-CYCLE safety cap (not a multiple of the 3-cycle total). Truncated games
+# are untrainable, so trainable positions/cycle < 32 x 400 = 12,800 and the
+# request is at most ceil(12,800 * 2 / 128) = 200. 256 can bind only through
+# an accounting error; a binding cap makes the smoke CONDITIONAL/NO-GO and is
+# never raised mid-run.
+max_updates = 256
+
+# --- Evaluation / promotion ---
+arena_games = 32
+# H3.5 (adopted): sample 30 plies, root Dirichlet noise on every move.
+arena_sample_plies = 30
+arena_root_dirichlet_epsilon = 0.25
+# H3.5B (adopted under the pre-registered gate): both color-swapped games of an
+# opening pair share one RNG stream (seed = base + i/2). Reference vs itself:
+# score exactly 0.500, 16/16 pairs replayed move-for-move, decisive 0.875, 0
+# threefold, 0 truncation (per_game_v1: 0.362). New scientific identity.
+arena_rng_policy = "paired_common_v1"
+# D54: each arena player searches its own tree with its own network.
+arena_tree_policy = "root_player_v1"
+opening_suite = "configs/openings-v1.toml"
+snapshot_policy = "conservative"
+# D48 (adopted): the learner keeps weights + Adam + LR step across a held cycle;
+# the actor only advances on promotion.
+trainer_policy = "continuous"
+promotion_score_floor = 0.5
+promotion_min_decisive_games = 4
+# R15-P0.1: promotion-v3 reads the material_v1 adjudicated score (every game
+# counts; failing to convert can neither help nor hide).
+promotion_score = "adjudicated_material_v1"
+
+# --- Execution bounds (excluded from scientific identity) ---
+cycles = 6
+# Wall budget per arm (R1 180 / R2 240 / R4 360 min): about 2x the P0.4 cost
+# estimate, which scales with executed blocks (8 / 12 / 20). Execution bound only;
+# it does not enter the scientific identity.
+run_budget_minutes = 150
+# ~2.5x the expected 3 x 6,047 positions; above the theoretical 3 x 12,800.
+position_budget = 90000
+
+# D49 health stops (pre-registered in docs/HP_H3_PREREG.md; execution bounds,
+# excluded from the scientific identity). Absent before H3.5B, which silently
+# disabled them. lr_schedule_end stops at the cycle boundary once the trainer
+# step reaches planned_updates (no training at LR = 0 reported as learning).
+[health_stops]
+draw_share_two_cycles = 0.85
+threefold_fifty = 0.60
+truncation = 0.25
+lr_schedule_end = true
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 2
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5
