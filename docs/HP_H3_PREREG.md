@@ -697,3 +697,17 @@ is measurable in minutes on fixed data.
   - "Weaker" iff the CI upper bound is < 0.5.
   - "Not shown" otherwise.
 - **Secondary (disclosed as pooled after a look):** P-3 + P-3b, 256 games.
+
+## T-1 — truncated-game policy training, GPU smoke on real data (fixed before running)
+- **Arms:** two `bench-train` cells from the seed-1 reference on
+  `runs/v1-train-288`, 100 updates at LR 7.5e-5 (32×4), R1:
+  - (a) `configs/hp/r15-p2-r1-s1.toml`, which excludes truncated games;
+  - (b) `configs/probe/r15-p2-r1-s1-trunc.toml`, which is (a) plus
+    `truncated_games = "policy_only_v1"`.
+- **Metric:** held-out WDL CE on the P2 held-out sets, position-weighted.
+- **Rule:**
+  - "Adopt for the training run" iff (b) completes with finite losses, (b)
+    has 51,744 sampleable positions against (a)'s 42,544, and held-out WDL(b)
+    ≤ WDL(a) + 0.01.
+  - "Rejected" if held-out WDL(b) > WDL(a) + 0.01.
+  - Held-out policy CE is not used (see §P-1r measurement correction).
