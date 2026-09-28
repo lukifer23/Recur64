@@ -1,0 +1,14 @@
+{
+  "checkpoint": "runs/hp-r15-train1-r1/checkpoints/trainer",
+  "games": 32,
+  "git_revision": "c793b3ae9ea12c9c1cc03a16aaf44cee4d45c618",
+  "kind": "recur64-eval-value-v1",
+  "mean_policy_ce": 3.393008482138754,
+  "mean_wdl_ce": 1.3962353241892447,
+  "model_id": "073357a9888256ec28be40649e6f1d67bb103341223f091ff5d67c50239676ae",
+  "positions": 4356,
+  "recurrence": 1,
+  "replay": "runs/hp-r15-p2-holdout-s2",
+  "uniform_wdl_ce": 1.0986122886681098,
+  "update_counter": 954
+}

@@ -1,0 +1,35 @@
+{
+  "reference_model_id": "789bbce8df4374d5e34734e795abda2fac0d5fda1282aba21b10bb7ec5ed821c",
+  "raw_vs_random": {
+    "games": 32,
+    "policy_wins": 3,
+    "random_wins": 1,
+    "draws": 22,
+    "truncated": 6,
+    "policy_score": 0.5384615384615384,
+    "decisive_games": 4,
+    "informative": true,
+    "terminations": {
+      "checkmate": 4,
+      "fifty_move_rule": 3,
+      "insufficient_material": 14,
+      "stalemate": 4,
+      "threefold_repetition": 1,
+      "truncated": 6
+    }
+  },
+  "policy": {
+    "positions": 12,
+    "mean_entropy": 3.290778199975712,
+    "mean_top1_prob": 0.0390760552448531,
+    "mean_uniform_entropy": 3.2909775678618787,
+    "top_moves": {
+      "a2a3": 3,
+      "d4d5": 1,
+      "e2e4": 1,
+      "e4f5": 2,
+      "e5d6": 1,
+      "h2h3": 4
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "run_id": "hp-r15-train1-r1",
+  "status": "interrupted",
+  "git_revision": "c793b3ae9ea12c9c1cc03a16aaf44cee4d45c618",
+  "git_branch": "experiment/hp-r15-h3-integration",
+  "seed": 11,
+  "hardware_profile": "hp-home",
+  "model_profile": "r15",
+  "recur64_version": "0.1.0",
+  "observation_version": 1,
+  "action_version": 1,
+  "rules_profile_version": 1,
+  "replay_schema_version": 1,
+  "device": "cuda",
+  "precision": "fp32",
+  "note": "stopped_health: threefold_fifty 0.625 >= 0.6"
+}

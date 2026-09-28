@@ -573,3 +573,55 @@ The first recurrence comparison that could support a claim.
 - No policy-quality claim: held-out policy CE cannot measure it.
 - **Also fixed:** the pilot trainer tests' fixture truncated every game on
   HEAD (two tests failed 3/3). They now pass 5/5, with assertions unchanged.
+
+## Train1 — first real training run from M (MEASURED; pre-registered) — **improved strength over M**
+- **Run:**
+  - `runs/hp-r15-train1-r1` (identity `a23396a6…`, git `c793b3a`), 04:16 → 07:03.
+  - 9 cycles (0–8), 32 games each, about 950 updates.
+  - **Stopped by the pre-registered D49 health stop** `threefold_fifty`:
+    0.625 ≥ 0.60 after cycle 8. It was not the time budget.
+  - Evidence: `docs/evidence/train1/` (cycle reports, lineage, identity,
+    `pilot.log`).
+
+| Cycle | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| vs parent (adj.) | 0.562 | 0.484 | 0.531 | 0.641 | 0.453 | 0.578 | 0.469 | 0.422 | 0.438 |
+| **vs M (adj.)** | 0.562 | 0.609 | 0.766 | **0.828** | 0.797 | 0.750 | 0.781 | 0.656 | 0.703 |
+| decision | promote | hold | promote | promote | hold | promote | hold | hold | hold |
+
+- The per-cycle arenas are 32 games each (±~0.15). Truncation fell from 4 to
+  0–3 per cycle.
+- Per-cycle cost: about 17–22 min, of which evaluation is about 60–65 %
+  (two arenas once the parent ≠ M).
+
+**Final check** (pre-registered; final trainer vs M, 192 games, seed offset
+20000, 24 min). Evidence: `docs/evidence/train1/final-arena/`.
+- **Outcomes:**
+  - W/D/L 54/123/9, truncated 6.
+  - **Threefold repetition 111/192 (58 %)**; checkmate 63.
+- **Scores:**
+  - Adjudicated **0.633, CI [0.595, 0.671]**, so the rule verdict is **"Train1
+    improved strength over M."**
+  - As played 0.621; complete pairs 0.624, pair CI [0.580, 0.667].
+- **Chain of evidence:**
+  - Untrained → M: +0.117 (P-3b).
+  - M → Train1-final: +0.133.
+
+**Warning signs (MEASURED; not explained away):**
+1. **Draws by repetition are rising.**
+   - The self-play threefold/fifty share reached 0.625 and tripped the stop.
+   - 58 % of final-arena games were threefold repetitions.
+   - The network wins more but converts a won position into a win rarely.
+2. **Held-out value collapsed off-distribution.**
+   - Final trainer held-out WDL CE is **1.237 / 1.396**, worse than uniform
+     (1.0986) and far worse than M's 0.889 / 0.902.
+   - The held-out games come from the untrained reference's play. The value
+     head has specialised to its own self-play distribution and is
+     overconfident outside it.
+3. **Late training was not improving on the promoted snapshot.**
+   - The cycle-7 and cycle-8 trainers lost to the cycle-5 snapshot (0.422 /
+     0.438), and vs-M scores fell from the cycle 3–6 peak.
+   - These are 32-game samples each. INFERRED only: the late trainer may be
+     degrading.
+- **Not done (would be post hoc):** a 192-game check of the cycle-5 snapshot.
+  If wanted, it must be pre-registered first.

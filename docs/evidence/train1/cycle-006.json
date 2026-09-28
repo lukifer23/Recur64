@@ -1,0 +1,2491 @@
+{
+  "cycle": 6,
+  "games": 32,
+  "positions": 6002,
+  "new_trainable_positions": 6002,
+  "first_game_id": 192,
+  "requested_examples": 12004.0,
+  "requested_updates": 94,
+  "scheduled_updates": 94,
+  "completed_updates": 94,
+  "max_updates": 256,
+  "max_updates_cap_bound": false,
+  "selfplay": {
+    "games_requested": 32,
+    "games_completed": 32,
+    "failed_games": 0,
+    "concurrent_games": 12,
+    "requested_active_games": 32,
+    "cpu_workers": 12,
+    "games": 32,
+    "plies": 6002,
+    "mean_game_plies": 187.5625,
+    "peak_in_flight_evaluations": 24,
+    "terminations": {
+      "checkmate": 10,
+      "fifty_move_rule": 1,
+      "insufficient_material": 1,
+      "threefold_repetition": 18,
+      "truncated": 2
+    },
+    "white_wins": 5,
+    "draws": 20,
+    "black_wins": 5,
+    "truncated": 2,
+    "draw_share": 0.625,
+    "repetition_share": 0.5625,
+    "trainable_positions": 5202,
+    "trainable_games": 30,
+    "truncated_positions": 800,
+    "target_health": {
+      "all": {
+        "positions": 6002,
+        "mean_entropy": 1.4326998242530151,
+        "mean_top1_visit_share": 0.4175328563666669
+      },
+      "trainable": {
+        "positions": 5202,
+        "mean_entropy": 1.4574873474073726,
+        "mean_top1_visit_share": 0.41746349773673724
+      }
+    },
+    "inference": {
+      "submitted": 185834,
+      "completed": 185834,
+      "errors": 0,
+      "batches": 12525,
+      "batch_size_mean": 14.837045908183633,
+      "batch_size_max": 24,
+      "batch_size_p50": 20,
+      "batch_size_p95": 24,
+      "queue_wait_us_mean": 4048.418842315369,
+      "queue_wait_us_p50": 2977,
+      "queue_wait_us_p95": 10449,
+      "forward_us_mean": 20325.817005988025,
+      "peak_in_flight": 24
+    }
+  },
+  "root_search": {
+    "all": {
+      "plies": 6002,
+      "mean_kl_noisy_vs_network": 0.08040923219419634,
+      "argmax_changed_by_noise": 0.6361212929023659,
+      "mean_kl_target_vs_noisy": 0.7107086563541634,
+      "argmax_changed_by_search": 0.27307564145284907,
+      "mean_kl_target_vs_network": 0.9199026462382425,
+      "argmax_changed_total": 0.6217927357547485,
+      "mean_abs_network_value": 0.4989702306545542,
+      "mean_abs_root_value": 0.5070150206729889
+    },
+    "trainable": {
+      "plies": 5202,
+      "mean_kl_noisy_vs_network": 0.08180376121910884,
+      "argmax_changed_by_noise": 0.6249519415609381,
+      "mean_kl_target_vs_noisy": 0.7066398093659991,
+      "argmax_changed_by_search": 0.27720107650903497,
+      "mean_kl_target_vs_network": 0.9085284126671866,
+      "argmax_changed_total": 0.6141868512110726,
+      "mean_abs_network_value": 0.49921713219012065,
+      "mean_abs_root_value": 0.5042568550777176
+    }
+  },
+  "audit_ok": true,
+  "train": {
+    "examples": 47810,
+    "examples_consumed": 12032,
+    "games_used": 208,
+    "games_skipped": 16,
+    "replay_total_games": 224,
+    "sampleable_positions": 47810,
+    "current_cycle_sample_fraction": 0.22664561170212766,
+    "mean_sample_age_cycles": 2.1245844414893615,
+    "updates": 94,
+    "first_loss": 3.1701946,
+    "last_loss": 3.0453646,
+    "loss_curve": [
+      [
+        0,
+        3.1701946
+      ],
+      [
+        1,
+        3.1265962
+      ],
+      [
+        2,
+        3.2420683
+      ],
+      [
+        3,
+        3.1793227
+      ],
+      [
+        4,
+        3.2019649
+      ],
+      [
+        5,
+        3.1191182
+      ],
+      [
+        6,
+        3.1416368
+      ],
+      [
+        7,
+        3.0533295
+      ],
+      [
+        8,
+        3.2458615
+      ],
+      [
+        9,
+        3.2306352
+      ],
+      [
+        10,
+        3.0620346
+      ],
+      [
+        11,
+        3.1575615
+      ],
+      [
+        12,
+        3.0833976
+      ],
+      [
+        13,
+        3.1725008
+      ],
+      [
+        14,
+        3.245317
+      ],
+      [
+        15,
+        3.0984867
+      ],
+      [
+        16,
+        3.1774495
+      ],
+      [
+        17,
+        3.1504877
+      ],
+      [
+        18,
+        3.3161082
+      ],
+      [
+        19,
+        3.1580515
+      ],
+      [
+        20,
+        2.9820924
+      ],
+      [
+        21,
+        2.9873674
+      ],
+      [
+        22,
+        3.0648837
+      ],
+      [
+        23,
+        3.1230013
+      ],
+      [
+        24,
+        3.2792733
+      ],
+      [
+        25,
+        3.1090374
+      ],
+      [
+        26,
+        3.0824647
+      ],
+      [
+        27,
+        3.051282
+      ],
+      [
+        28,
+        3.2014956
+      ],
+      [
+        29,
+        3.0340967
+      ],
+      [
+        30,
+        3.1119196
+      ],
+      [
+        31,
+        3.1140127
+      ],
+      [
+        32,
+        3.1656668
+      ],
+      [
+        33,
+        3.0633688
+      ],
+      [
+        34,
+        2.9275677
+      ],
+      [
+        35,
+        3.208423
+      ],
+      [
+        36,
+        3.1136413
+      ],
+      [
+        37,
+        3.1591578
+      ],
+      [
+        38,
+        3.1139774
+      ],
+      [
+        39,
+        3.1436486
+      ],
+      [
+        40,
+        2.9373276
+      ],
+      [
+        41,
+        2.939927
+      ],
+      [
+        42,
+        2.9415731
+      ],
+      [
+        43,
+        3.2137547
+      ],
+      [
+        44,
+        2.9325433
+      ],
+      [
+        45,
+        3.1822448
+      ],
+      [
+        46,
+        3.133184
+      ],
+      [
+        47,
+        3.2509055
+      ],
+      [
+        48,
+        3.2608285
+      ],
+      [
+        49,
+        3.017014
+      ],
+      [
+        50,
+        3.3147933
+      ],
+      [
+        51,
+        3.1913624
+      ],
+      [
+        52,
+        3.0432587
+      ],
+      [
+        53,
+        3.0969143
+      ],
+      [
+        54,
+        3.0282495
+      ],
+      [
+        55,
+        3.0413804
+      ],
+      [
+        56,
+        3.0875351
+      ],
+      [
+        57,
+        3.2786071
+      ],
+      [
+        58,
+        3.0037951
+      ],
+      [
+        59,
+        2.9443173
+      ],
+      [
+        60,
+        2.9147034
+      ],
+      [
+        61,
+        3.0402634
+      ],
+      [
+        62,
+        3.0921068
+      ],
+      [
+        63,
+        2.9550486
+      ],
+      [
+        64,
+        2.8741565
+      ],
+      [
+        65,
+        2.9659572
+      ],
+      [
+        66,
+        3.2647996
+      ],
+      [
+        67,
+        2.9806376
+      ],
+      [
+        68,
+        2.961036
+      ],
+      [
+        69,
+        3.0852005
+      ],
+      [
+        70,
+        3.075936
+      ],
+      [
+        71,
+        2.9950988
+      ],
+      [
+        72,
+        3.1332302
+      ],
+      [
+        73,
+        3.2091227
+      ],
+      [
+        74,
+        3.2355435
+      ],
+      [
+        75,
+        3.0680428
+      ],
+      [
+        76,
+        3.1292157
+      ],
+      [
+        77,
+        3.1354358
+      ],
+      [
+        78,
+        3.2612698
+      ],
+      [
+        79,
+        3.0649395
+      ],
+      [
+        80,
+        2.8835917
+      ],
+      [
+        81,
+        3.1139352
+      ],
+      [
+        82,
+        3.0709996
+      ],
+      [
+        83,
+        2.9863224
+      ],
+      [
+        84,
+        3.012004
+      ],
+      [
+        85,
+        3.2354736
+      ],
+      [
+        86,
+        3.0549228
+      ],
+      [
+        87,
+        3.0468736
+      ],
+      [
+        88,
+        3.0320892
+      ],
+      [
+        89,
+        3.207595
+      ],
+      [
+        90,
+        2.9211593
+      ],
+      [
+        91,
+        3.3202305
+      ],
+      [
+        92,
+        3.1668537
+      ],
+      [
+        93,
+        3.0453646
+      ]
+    ],
+    "metrics": [
+      {
+        "update": 655,
+        "total_loss": 3.1701946,
+        "policy_loss": 2.5734613,
+        "wdl_loss": 0.5967336,
+        "grad_norm": 2.783753,
+        "lr": 0.00004310947872333267,
+        "policy_entropy": 2.5730233
+      },
+      {
+        "update": 656,
+        "total_loss": 3.1265962,
+        "policy_loss": 2.4529328,
+        "wdl_loss": 0.67366326,
+        "grad_norm": 3.9831548,
+        "lr": 0.00004302381367704891,
+        "policy_entropy": 2.486876
+      },
+      {
+        "update": 657,
+        "total_loss": 3.2420683,
+        "policy_loss": 2.5039206,
+        "wdl_loss": 0.7381475,
+        "grad_norm": 2.5763366,
+        "lr": 0.00004293811915529394,
+        "policy_entropy": 2.4737322
+      },
+      {
+        "update": 658,
+        "total_loss": 3.1793227,
+        "policy_loss": 2.593349,
+        "wdl_loss": 0.5859736,
+        "grad_norm": 1.8035854,
+        "lr": 0.000042852395615339976,
+        "policy_entropy": 2.6033783
+      },
+      {
+        "update": 659,
+        "total_loss": 3.2019649,
+        "policy_loss": 2.5033143,
+        "wdl_loss": 0.69865054,
+        "grad_norm": 2.2061782,
+        "lr": 0.000042766643514614036,
+        "policy_entropy": 2.4914546
+      },
+      {
+        "update": 660,
+        "total_loss": 3.1191182,
+        "policy_loss": 2.5236793,
+        "wdl_loss": 0.5954387,
+        "grad_norm": 4.4910583,
+        "lr": 0.00004268086331069558,
+        "policy_entropy": 2.5051014
+      },
+      {
+        "update": 661,
+        "total_loss": 3.1416368,
+        "policy_loss": 2.5368564,
+        "wdl_loss": 0.60478055,
+        "grad_norm": 4.41492,
+        "lr": 0.000042595055461313996,
+        "policy_entropy": 2.504576
+      },
+      {
+        "update": 662,
+        "total_loss": 3.0533295,
+        "policy_loss": 2.4835467,
+        "wdl_loss": 0.5697828,
+        "grad_norm": 2.2755578,
+        "lr": 0.000042509220424346204,
+        "policy_entropy": 2.4601243
+      },
+      {
+        "update": 663,
+        "total_loss": 3.2458615,
+        "policy_loss": 2.5316937,
+        "wdl_loss": 0.7141681,
+        "grad_norm": 2.1676574,
+        "lr": 0.000042423358657814206,
+        "policy_entropy": 2.5260715
+      },
+      {
+        "update": 664,
+        "total_loss": 3.2306352,
+        "policy_loss": 2.612042,
+        "wdl_loss": 0.61859286,
+        "grad_norm": 2.3163152,
+        "lr": 0.00004233747061988262,
+        "policy_entropy": 2.6367514
+      },
+      {
+        "update": 665,
+        "total_loss": 3.0620346,
+        "policy_loss": 2.465963,
+        "wdl_loss": 0.59607136,
+        "grad_norm": 2.9655285,
+        "lr": 0.000042251556768856265,
+        "policy_entropy": 2.407449
+      },
+      {
+        "update": 666,
+        "total_loss": 3.1575615,
+        "policy_loss": 2.5442266,
+        "wdl_loss": 0.6133347,
+        "grad_norm": 1.219999,
+        "lr": 0.00004216561756317769,
+        "policy_entropy": 2.5814185
+      },
+      {
+        "update": 667,
+        "total_loss": 3.0833976,
+        "policy_loss": 2.5162635,
+        "wdl_loss": 0.5671342,
+        "grad_norm": 1.6071105,
+        "lr": 0.00004207965346142475,
+        "policy_entropy": 2.590353
+      },
+      {
+        "update": 668,
+        "total_loss": 3.1725008,
+        "policy_loss": 2.538066,
+        "wdl_loss": 0.6344351,
+        "grad_norm": 2.894947,
+        "lr": 0.00004199366492230812,
+        "policy_entropy": 2.5660026
+      },
+      {
+        "update": 669,
+        "total_loss": 3.245317,
+        "policy_loss": 2.660405,
+        "wdl_loss": 0.5849123,
+        "grad_norm": 0.9005614,
+        "lr": 0.000041907652404668914,
+        "policy_entropy": 2.6625605
+      },
+      {
+        "update": 670,
+        "total_loss": 3.0984867,
+        "policy_loss": 2.493884,
+        "wdl_loss": 0.60460246,
+        "grad_norm": 2.752433,
+        "lr": 0.00004182161636747616,
+        "policy_entropy": 2.514755
+      },
+      {
+        "update": 671,
+        "total_loss": 3.1774495,
+        "policy_loss": 2.5666018,
+        "wdl_loss": 0.61084765,
+        "grad_norm": 2.0013783,
+        "lr": 0.000041735557269824415,
+        "policy_entropy": 2.5636077
+      },
+      {
+        "update": 672,
+        "total_loss": 3.1504877,
+        "policy_loss": 2.6158602,
+        "wdl_loss": 0.5346274,
+        "grad_norm": 1.4912243,
+        "lr": 0.000041649475570931275,
+        "policy_entropy": 2.6071026
+      },
+      {
+        "update": 673,
+        "total_loss": 3.3161082,
+        "policy_loss": 2.6475503,
+        "wdl_loss": 0.66855806,
+        "grad_norm": 1.7810545,
+        "lr": 0.00004156337173013495,
+        "policy_entropy": 2.6330318
+      },
+      {
+        "update": 674,
+        "total_loss": 3.1580515,
+        "policy_loss": 2.5980458,
+        "wdl_loss": 0.56000555,
+        "grad_norm": 3.5758975,
+        "lr": 0.00004147724620689178,
+        "policy_entropy": 2.6152728
+      },
+      {
+        "update": 675,
+        "total_loss": 2.9820924,
+        "policy_loss": 2.468705,
+        "wdl_loss": 0.51338744,
+        "grad_norm": 1.4850537,
+        "lr": 0.000041391099460773816,
+        "policy_entropy": 2.5230608
+      },
+      {
+        "update": 676,
+        "total_loss": 2.9873674,
+        "policy_loss": 2.4023883,
+        "wdl_loss": 0.58497924,
+        "grad_norm": 1.6630934,
+        "lr": 0.00004130493195146636,
+        "policy_entropy": 2.3857324
+      },
+      {
+        "update": 677,
+        "total_loss": 3.0648837,
+        "policy_loss": 2.5609508,
+        "wdl_loss": 0.5039332,
+        "grad_norm": 2.1080406,
+        "lr": 0.000041218744138765504,
+        "policy_entropy": 2.5842729
+      },
+      {
+        "update": 678,
+        "total_loss": 3.1230013,
+        "policy_loss": 2.6079807,
+        "wdl_loss": 0.5150205,
+        "grad_norm": 2.4408784,
+        "lr": 0.000041132536482575675,
+        "policy_entropy": 2.5524318
+      },
+      {
+        "update": 679,
+        "total_loss": 3.2792733,
+        "policy_loss": 2.6793895,
+        "wdl_loss": 0.59988356,
+        "grad_norm": 1.5352904,
+        "lr": 0.000041046309442907204,
+        "policy_entropy": 2.7231712
+      },
+      {
+        "update": 680,
+        "total_loss": 3.1090374,
+        "policy_loss": 2.545845,
+        "wdl_loss": 0.56319237,
+        "grad_norm": 1.4432735,
+        "lr": 0.000040960063479873824,
+        "policy_entropy": 2.5807862
+      },
+      {
+        "update": 681,
+        "total_loss": 3.0824647,
+        "policy_loss": 2.5510595,
+        "wdl_loss": 0.5314055,
+        "grad_norm": 4.0421,
+        "lr": 0.00004087379905369027,
+        "policy_entropy": 2.591045
+      },
+      {
+        "update": 682,
+        "total_loss": 3.051282,
+        "policy_loss": 2.5189822,
+        "wdl_loss": 0.53229976,
+        "grad_norm": 2.7962868,
+        "lr": 0.00004078751662466979,
+        "policy_entropy": 2.5501463
+      },
+      {
+        "update": 683,
+        "total_loss": 3.2014956,
+        "policy_loss": 2.5917509,
+        "wdl_loss": 0.60974467,
+        "grad_norm": 2.4333878,
+        "lr": 0.0000407012166532217,
+        "policy_entropy": 2.5909328
+      },
+      {
+        "update": 684,
+        "total_loss": 3.0340967,
+        "policy_loss": 2.5582247,
+        "wdl_loss": 0.47587195,
+        "grad_norm": 3.671472,
+        "lr": 0.00004061489959984889,
+        "policy_entropy": 2.543519
+      },
+      {
+        "update": 685,
+        "total_loss": 3.1119196,
+        "policy_loss": 2.6001375,
+        "wdl_loss": 0.51178205,
+        "grad_norm": 1.901525,
+        "lr": 0.00004052856592514548,
+        "policy_entropy": 2.537148
+      },
+      {
+        "update": 686,
+        "total_loss": 3.1140127,
+        "policy_loss": 2.5807376,
+        "wdl_loss": 0.53327537,
+        "grad_norm": 2.6464663,
+        "lr": 0.00004044221608979419,
+        "policy_entropy": 2.472849
+      },
+      {
+        "update": 687,
+        "total_loss": 3.1656668,
+        "policy_loss": 2.5619228,
+        "wdl_loss": 0.6037442,
+        "grad_norm": 2.2142768,
+        "lr": 0.00004035585055456403,
+        "policy_entropy": 2.549087
+      },
+      {
+        "update": 688,
+        "total_loss": 3.0633688,
+        "policy_loss": 2.5448222,
+        "wdl_loss": 0.5185469,
+        "grad_norm": 2.7508047,
+        "lr": 0.00004026946978030777,
+        "policy_entropy": 2.5150547
+      },
+      {
+        "update": 689,
+        "total_loss": 2.9275677,
+        "policy_loss": 2.388969,
+        "wdl_loss": 0.5385988,
+        "grad_norm": 1.5721303,
+        "lr": 0.00004018307422795951,
+        "policy_entropy": 2.3733716
+      },
+      {
+        "update": 690,
+        "total_loss": 3.208423,
+        "policy_loss": 2.5887952,
+        "wdl_loss": 0.61962783,
+        "grad_norm": 2.0781734,
+        "lr": 0.00004009666435853219,
+        "policy_entropy": 2.589793
+      },
+      {
+        "update": 691,
+        "total_loss": 3.1136413,
+        "policy_loss": 2.5872765,
+        "wdl_loss": 0.526365,
+        "grad_norm": 2.3261395,
+        "lr": 0.00004001024063311514,
+        "policy_entropy": 2.5745163
+      },
+      {
+        "update": 692,
+        "total_loss": 3.1591578,
+        "policy_loss": 2.6324515,
+        "wdl_loss": 0.5267064,
+        "grad_norm": 4.2761097,
+        "lr": 0.00003992380351287165,
+        "policy_entropy": 2.5734644
+      },
+      {
+        "update": 693,
+        "total_loss": 3.1139774,
+        "policy_loss": 2.437787,
+        "wdl_loss": 0.6761904,
+        "grad_norm": 4.4946666,
+        "lr": 0.000039837353459036486,
+        "policy_entropy": 2.504645
+      },
+      {
+        "update": 694,
+        "total_loss": 3.1436486,
+        "policy_loss": 2.4488902,
+        "wdl_loss": 0.6947584,
+        "grad_norm": 2.3642113,
+        "lr": 0.000039750890932913406,
+        "policy_entropy": 2.49855
+      },
+      {
+        "update": 695,
+        "total_loss": 2.9373276,
+        "policy_loss": 2.4856088,
+        "wdl_loss": 0.45171905,
+        "grad_norm": 2.0566947,
+        "lr": 0.00003966441639587272,
+        "policy_entropy": 2.4416432
+      },
+      {
+        "update": 696,
+        "total_loss": 2.939927,
+        "policy_loss": 2.2826128,
+        "wdl_loss": 0.65731436,
+        "grad_norm": 3.4437234,
+        "lr": 0.00003957793030934887,
+        "policy_entropy": 2.313004
+      },
+      {
+        "update": 697,
+        "total_loss": 2.9415731,
+        "policy_loss": 2.4326098,
+        "wdl_loss": 0.5089629,
+        "grad_norm": 4.085503,
+        "lr": 0.00003949143313483788,
+        "policy_entropy": 2.4631166
+      },
+      {
+        "update": 698,
+        "total_loss": 3.2137547,
+        "policy_loss": 2.5670152,
+        "wdl_loss": 0.6467395,
+        "grad_norm": 1.8333417,
+        "lr": 0.00003940492533389496,
+        "policy_entropy": 2.618763
+      },
+      {
+        "update": 699,
+        "total_loss": 2.9325433,
+        "policy_loss": 2.3615365,
+        "wdl_loss": 0.5710067,
+        "grad_norm": 2.0578184,
+        "lr": 0.000039318407368132024,
+        "policy_entropy": 2.4233057
+      },
+      {
+        "update": 700,
+        "total_loss": 3.1822448,
+        "policy_loss": 2.5983057,
+        "wdl_loss": 0.58393896,
+        "grad_norm": 2.1664686,
+        "lr": 0.00003923187969921524,
+        "policy_entropy": 2.6423564
+      },
+      {
+        "update": 701,
+        "total_loss": 3.133184,
+        "policy_loss": 2.585609,
+        "wdl_loss": 0.54757476,
+        "grad_norm": 3.1297698,
+        "lr": 0.0000391453427888625,
+        "policy_entropy": 2.6019065
+      },
+      {
+        "update": 702,
+        "total_loss": 3.2509055,
+        "policy_loss": 2.5552537,
+        "wdl_loss": 0.69565177,
+        "grad_norm": 3.3184948,
+        "lr": 0.00003905879709884109,
+        "policy_entropy": 2.5183797
+      },
+      {
+        "update": 703,
+        "total_loss": 3.2608285,
+        "policy_loss": 2.69777,
+        "wdl_loss": 0.5630587,
+        "grad_norm": 4.206916,
+        "lr": 0.000038972243090965074,
+        "policy_entropy": 2.6600146
+      },
+      {
+        "update": 704,
+        "total_loss": 3.017014,
+        "policy_loss": 2.4615052,
+        "wdl_loss": 0.5555089,
+        "grad_norm": 3.5186496,
+        "lr": 0.000038885681227092936,
+        "policy_entropy": 2.342321
+      },
+      {
+        "update": 705,
+        "total_loss": 3.3147933,
+        "policy_loss": 2.7094333,
+        "wdl_loss": 0.6053601,
+        "grad_norm": 2.950167,
+        "lr": 0.00003879911196912507,
+        "policy_entropy": 2.6659524
+      },
+      {
+        "update": 706,
+        "total_loss": 3.1913624,
+        "policy_loss": 2.5802934,
+        "wdl_loss": 0.61106867,
+        "grad_norm": 2.171745,
+        "lr": 0.000038712535779001336,
+        "policy_entropy": 2.5749953
+      },
+      {
+        "update": 707,
+        "total_loss": 3.0432587,
+        "policy_loss": 2.452479,
+        "wdl_loss": 0.59078,
+        "grad_norm": 1.3037637,
+        "lr": 0.00003862595311869855,
+        "policy_entropy": 2.419383
+      },
+      {
+        "update": 708,
+        "total_loss": 3.0969143,
+        "policy_loss": 2.5674968,
+        "wdl_loss": 0.5294175,
+        "grad_norm": 1.8203788,
+        "lr": 0.00003853936445022811,
+        "policy_entropy": 2.5079155
+      },
+      {
+        "update": 709,
+        "total_loss": 3.0282495,
+        "policy_loss": 2.519293,
+        "wdl_loss": 0.50895625,
+        "grad_norm": 4.385534,
+        "lr": 0.000038452770235633436,
+        "policy_entropy": 2.5882735
+      },
+      {
+        "update": 710,
+        "total_loss": 3.0413804,
+        "policy_loss": 2.57695,
+        "wdl_loss": 0.46443045,
+        "grad_norm": 2.459998,
+        "lr": 0.00003836617093698754,
+        "policy_entropy": 2.6199927
+      },
+      {
+        "update": 711,
+        "total_loss": 3.0875351,
+        "policy_loss": 2.5150864,
+        "wdl_loss": 0.57244897,
+        "grad_norm": 2.0412138,
+        "lr": 0.00003827956701639058,
+        "policy_entropy": 2.5582068
+      },
+      {
+        "update": 712,
+        "total_loss": 3.2786071,
+        "policy_loss": 2.6443312,
+        "wdl_loss": 0.63427603,
+        "grad_norm": 3.6037369,
+        "lr": 0.000038192958935967365,
+        "policy_entropy": 2.655851
+      },
+      {
+        "update": 713,
+        "total_loss": 3.0037951,
+        "policy_loss": 2.3701153,
+        "wdl_loss": 0.63367987,
+        "grad_norm": 2.1357226,
+        "lr": 0.00003810634715786492,
+        "policy_entropy": 2.3892465
+      },
+      {
+        "update": 714,
+        "total_loss": 2.9443173,
+        "policy_loss": 2.399631,
+        "wdl_loss": 0.54468644,
+        "grad_norm": 1.8479993,
+        "lr": 0.00003801973214424997,
+        "policy_entropy": 2.3645563
+      },
+      {
+        "update": 715,
+        "total_loss": 2.9147034,
+        "policy_loss": 2.4066658,
+        "wdl_loss": 0.50803757,
+        "grad_norm": 2.4562864,
+        "lr": 0.000037933114357306527,
+        "policy_entropy": 2.4240727
+      },
+      {
+        "update": 716,
+        "total_loss": 3.0402634,
+        "policy_loss": 2.6051588,
+        "wdl_loss": 0.43510443,
+        "grad_norm": 1.5247428,
+        "lr": 0.000037846494259233405,
+        "policy_entropy": 2.628044
+      },
+      {
+        "update": 717,
+        "total_loss": 3.0921068,
+        "policy_loss": 2.541407,
+        "wdl_loss": 0.55069995,
+        "grad_norm": 2.094189,
+        "lr": 0.00003775987231224173,
+        "policy_entropy": 2.5657778
+      },
+      {
+        "update": 718,
+        "total_loss": 2.9550486,
+        "policy_loss": 2.4340458,
+        "wdl_loss": 0.5210032,
+        "grad_norm": 2.3379877,
+        "lr": 0.000037673248978552514,
+        "policy_entropy": 2.4591222
+      },
+      {
+        "update": 719,
+        "total_loss": 2.8741565,
+        "policy_loss": 2.3510582,
+        "wdl_loss": 0.5230982,
+        "grad_norm": 2.608694,
+        "lr": 0.00003758662472039415,
+        "policy_entropy": 2.3524766
+      },
+      {
+        "update": 720,
+        "total_loss": 2.9659572,
+        "policy_loss": 2.4374511,
+        "wdl_loss": 0.52850604,
+        "grad_norm": 3.9278612,
+        "lr": 0.0000375,
+        "policy_entropy": 2.4713194
+      },
+      {
+        "update": 721,
+        "total_loss": 3.2647996,
+        "policy_loss": 2.6517615,
+        "wdl_loss": 0.61303794,
+        "grad_norm": 2.5784507,
+        "lr": 0.00003741337527960584,
+        "policy_entropy": 2.634151
+      },
+      {
+        "update": 722,
+        "total_loss": 2.9806376,
+        "policy_loss": 2.4685483,
+        "wdl_loss": 0.5120892,
+        "grad_norm": 2.9157834,
+        "lr": 0.000037326751021447487,
+        "policy_entropy": 2.464888
+      },
+      {
+        "update": 723,
+        "total_loss": 2.961036,
+        "policy_loss": 2.4532084,
+        "wdl_loss": 0.5078275,
+        "grad_norm": 1.6373907,
+        "lr": 0.00003724012768775827,
+        "policy_entropy": 2.430879
+      },
+      {
+        "update": 724,
+        "total_loss": 3.0852005,
+        "policy_loss": 2.5421844,
+        "wdl_loss": 0.5430161,
+        "grad_norm": 3.3795278,
+        "lr": 0.000037153505740766595,
+        "policy_entropy": 2.5352626
+      },
+      {
+        "update": 725,
+        "total_loss": 3.075936,
+        "policy_loss": 2.5602427,
+        "wdl_loss": 0.5156932,
+        "grad_norm": 2.1876884,
+        "lr": 0.000037066885642693474,
+        "policy_entropy": 2.5476577
+      },
+      {
+        "update": 726,
+        "total_loss": 2.9950988,
+        "policy_loss": 2.4677722,
+        "wdl_loss": 0.52732646,
+        "grad_norm": 2.2514725,
+        "lr": 0.00003698026785575003,
+        "policy_entropy": 2.5381198
+      },
+      {
+        "update": 727,
+        "total_loss": 3.1332302,
+        "policy_loss": 2.563509,
+        "wdl_loss": 0.5697214,
+        "grad_norm": 1.7749343,
+        "lr": 0.00003689365284213509,
+        "policy_entropy": 2.5187993
+      },
+      {
+        "update": 728,
+        "total_loss": 3.2091227,
+        "policy_loss": 2.5825477,
+        "wdl_loss": 0.6265747,
+        "grad_norm": 1.6656783,
+        "lr": 0.00003680704106403263,
+        "policy_entropy": 2.5644007
+      },
+      {
+        "update": 729,
+        "total_loss": 3.2355435,
+        "policy_loss": 2.6240282,
+        "wdl_loss": 0.61151534,
+        "grad_norm": 5.0648003,
+        "lr": 0.00003672043298360942,
+        "policy_entropy": 2.597203
+      },
+      {
+        "update": 730,
+        "total_loss": 3.0680428,
+        "policy_loss": 2.5251262,
+        "wdl_loss": 0.5429166,
+        "grad_norm": 2.5959592,
+        "lr": 0.000036633829063012456,
+        "policy_entropy": 2.5575583
+      },
+      {
+        "update": 731,
+        "total_loss": 3.1292157,
+        "policy_loss": 2.4375086,
+        "wdl_loss": 0.69170725,
+        "grad_norm": 4.338823,
+        "lr": 0.00003654722976436657,
+        "policy_entropy": 2.4591475
+      },
+      {
+        "update": 732,
+        "total_loss": 3.1354358,
+        "policy_loss": 2.5763073,
+        "wdl_loss": 0.55912834,
+        "grad_norm": 1.3504171,
+        "lr": 0.00003646063554977189,
+        "policy_entropy": 2.528468
+      },
+      {
+        "update": 733,
+        "total_loss": 3.2612698,
+        "policy_loss": 2.5849357,
+        "wdl_loss": 0.67633414,
+        "grad_norm": 1.9735963,
+        "lr": 0.000036374046881301454,
+        "policy_entropy": 2.525115
+      },
+      {
+        "update": 734,
+        "total_loss": 3.0649395,
+        "policy_loss": 2.5480452,
+        "wdl_loss": 0.5168948,
+        "grad_norm": 2.6064377,
+        "lr": 0.00003628746422099868,
+        "policy_entropy": 2.502436
+      },
+      {
+        "update": 735,
+        "total_loss": 2.8835917,
+        "policy_loss": 2.3897269,
+        "wdl_loss": 0.49386454,
+        "grad_norm": 2.8377156,
+        "lr": 0.00003620088803087494,
+        "policy_entropy": 2.4168835
+      },
+      {
+        "update": 736,
+        "total_loss": 3.1139352,
+        "policy_loss": 2.5490248,
+        "wdl_loss": 0.5649103,
+        "grad_norm": 3.3337228,
+        "lr": 0.000036114318772907065,
+        "policy_entropy": 2.4905562
+      },
+      {
+        "update": 737,
+        "total_loss": 3.0709996,
+        "policy_loss": 2.517857,
+        "wdl_loss": 0.5531428,
+        "grad_norm": 3.2963467,
+        "lr": 0.00003602775690903493,
+        "policy_entropy": 2.505873
+      },
+      {
+        "update": 738,
+        "total_loss": 2.9863224,
+        "policy_loss": 2.4438314,
+        "wdl_loss": 0.54249096,
+        "grad_norm": 1.2092094,
+        "lr": 0.000035941202901158915,
+        "policy_entropy": 2.519699
+      },
+      {
+        "update": 739,
+        "total_loss": 3.012004,
+        "policy_loss": 2.4874897,
+        "wdl_loss": 0.52451414,
+        "grad_norm": 2.694299,
+        "lr": 0.0000358546572111375,
+        "policy_entropy": 2.4891393
+      },
+      {
+        "update": 740,
+        "total_loss": 3.2354736,
+        "policy_loss": 2.5744896,
+        "wdl_loss": 0.6609843,
+        "grad_norm": 2.299101,
+        "lr": 0.00003576812030078477,
+        "policy_entropy": 2.6128511
+      },
+      {
+        "update": 741,
+        "total_loss": 3.0549228,
+        "policy_loss": 2.419622,
+        "wdl_loss": 0.6353007,
+        "grad_norm": 2.2653673,
+        "lr": 0.000035681592631867977,
+        "policy_entropy": 2.4259996
+      },
+      {
+        "update": 742,
+        "total_loss": 3.0468736,
+        "policy_loss": 2.4732385,
+        "wdl_loss": 0.5736352,
+        "grad_norm": 2.1395063,
+        "lr": 0.00003559507466610503,
+        "policy_entropy": 2.5069935
+      },
+      {
+        "update": 743,
+        "total_loss": 3.0320892,
+        "policy_loss": 2.4573827,
+        "wdl_loss": 0.57470655,
+        "grad_norm": 2.99785,
+        "lr": 0.00003550856686516211,
+        "policy_entropy": 2.4644117
+      },
+      {
+        "update": 744,
+        "total_loss": 3.207595,
+        "policy_loss": 2.6458266,
+        "wdl_loss": 0.56176835,
+        "grad_norm": 1.5754029,
+        "lr": 0.000035422069690651125,
+        "policy_entropy": 2.6462471
+      },
+      {
+        "update": 745,
+        "total_loss": 2.9211593,
+        "policy_loss": 2.3796546,
+        "wdl_loss": 0.54150486,
+        "grad_norm": 2.0677981,
+        "lr": 0.000035335583604127264,
+        "policy_entropy": 2.4758496
+      },
+      {
+        "update": 746,
+        "total_loss": 3.3202305,
+        "policy_loss": 2.7145686,
+        "wdl_loss": 0.60566163,
+        "grad_norm": 3.1193118,
+        "lr": 0.000035249109067086594,
+        "policy_entropy": 2.7063406
+      },
+      {
+        "update": 747,
+        "total_loss": 3.1668537,
+        "policy_loss": 2.591274,
+        "wdl_loss": 0.57557964,
+        "grad_norm": 2.77663,
+        "lr": 0.0000351626465409635,
+        "policy_entropy": 2.6374216
+      },
+      {
+        "update": 748,
+        "total_loss": 3.0453646,
+        "policy_loss": 2.4914804,
+        "wdl_loss": 0.55388415,
+        "grad_norm": 2.3426754,
+        "lr": 0.00003507619648712834,
+        "policy_entropy": 2.50946
+      }
+    ]
+  },
+  "arena": {
+    "games": 32,
+    "candidate_wins": 5,
+    "reference_wins": 8,
+    "draws": 18,
+    "truncated": 1,
+    "candidate_score": 0.45161290322580644,
+    "decisive_games": 13,
+    "informative": true,
+    "score_ci_low": 0.3370479280307239,
+    "score_ci_high": 0.566177878420889,
+    "opening_count": 12,
+    "terminations": {
+      "checkmate": 13,
+      "fifty_move_rule": 1,
+      "insufficient_material": 3,
+      "threefold_repetition": 14,
+      "truncated": 1
+    },
+    "model_reference": "d1880e042e9c8a3869c46a39cef32c168e2f9fdb4cf53d9f3f6b926795dee9d3",
+    "model_candidate": "6cede81c34249e6161c68a3c1f3330f1654cb90ec714823d1eaf391a3297fb3b",
+    "rng_policy": "paired_common_v1",
+    "tree_policy": "root_player_v1",
+    "early_adjudication": "off",
+    "early_adjudication_summary": null,
+    "pairs": {
+      "pairs": 16,
+      "complete_pairs": 15,
+      "pairs_with_truncation": 1,
+      "all_draw_pairs": 4,
+      "split_pairs": 0,
+      "mirrored_pairs": 4,
+      "identical_move_pairs": 0,
+      "pair_score_histogram": {
+        "0.25": 7,
+        "0.50": 4,
+        "0.75": 3,
+        "1.00": 1
+      },
+      "mean_pair_score": 0.4666666666666667,
+      "pair_score_ci_low": 0.34135993190042285,
+      "pair_score_ci_high": 0.5919734014329106
+    },
+    "score_truncation_as_draw": 0.453125,
+    "adjudicated": {
+      "rule": "material_v1:P1,N3,B3,R5,Q9;win_at>=5;else_draw",
+      "wins": 6,
+      "draws": 18,
+      "losses": 8,
+      "adjudicated_games": 1,
+      "decisive": 14,
+      "score": 0.46875,
+      "score_ci_low": 0.3528491194472483,
+      "score_ci_high": 0.5846508805527517
+    },
+    "game_records": [
+      {
+        "index": 0,
+        "pair": 0,
+        "candidate_white": true,
+        "seed": 17,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 257,
+        "moves_digest": "43027be7a5c7c894",
+        "final_fen": "8/8/6k1/6p1/3K3p/6p1/8/8 b - - 18 132",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 1,
+        "pair": 0,
+        "candidate_white": false,
+        "seed": 17,
+        "candidate_score": 0.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 159,
+        "moves_digest": "9474554a2606b717",
+        "final_fen": "1Q6/7Q/kQ6/5P1P/P7/1P4P1/6K1/R1NB3R b - - 2 83",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 2,
+        "pair": 1,
+        "candidate_white": true,
+        "seed": 18,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "fifty_move_rule",
+        "plies": 388,
+        "moves_digest": "0156f8f43b5af87c",
+        "final_fen": "8/1k6/8/5PP1/3P4/1K6/8/3Q4 w - - 100 198",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 3,
+        "pair": 1,
+        "candidate_white": false,
+        "seed": 18,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 32,
+        "moves_digest": "8b5bf993620c7c3c",
+        "final_fen": "Q1b1q1nr/7k/2p4p/3p2p1/6P1/N4Pb1/1PPPP3/R1BQKBN1 w Q - 1 20",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 4,
+        "pair": 2,
+        "candidate_white": true,
+        "seed": 19,
+        "candidate_score": 0.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 10,
+        "moves_digest": "b7aab486dabd774e",
+        "final_fen": "rnb1k2r/pppp3p/6pn/2b1P3/4P1p1/P1N5/1PP2q1P/RNBQKBR1 w Qkq - 0 9",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 5,
+        "pair": 2,
+        "candidate_white": false,
+        "seed": 19,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 134,
+        "moves_digest": "293af9fc9d71ea53",
+        "final_fen": "8/6R1/B6n/8/P4P2/N3k3/2P5/1R2K3 w - - 10 71",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 6,
+        "pair": 3,
+        "candidate_white": true,
+        "seed": 20,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 291,
+        "moves_digest": "9ae9fa1e117f5d17",
+        "final_fen": "4q1k1/8/1K6/8/8/8/6r1/8 b - - 23 149",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 7,
+        "pair": 3,
+        "candidate_white": false,
+        "seed": 20,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 334,
+        "moves_digest": "c8850dca30f6fc3d",
+        "final_fen": "q4r2/1b6/8/3p2p1/2n1p3/5pp1/1k6/q5K1 w - - 10 171",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 8,
+        "pair": 4,
+        "candidate_white": true,
+        "seed": 21,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 74,
+        "moves_digest": "93d11e86eed2bf54",
+        "final_fen": "6n1/8/5k1B/2R5/7P/P4P1N/P3P3/R2QKB2 w Q - 15 41",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 9,
+        "pair": 4,
+        "candidate_white": false,
+        "seed": 21,
+        "candidate_score": 0.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 175,
+        "moves_digest": "b4265c9bd8b6155c",
+        "final_fen": "3B1Q1Q/1R6/P4N2/8/k7/3P3P/2QPK3/5BQ1 b - - 7 91",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 10,
+        "pair": 5,
+        "candidate_white": true,
+        "seed": 22,
+        "candidate_score": 0.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 372,
+        "moves_digest": "709deaba00d9349d",
+        "final_fen": "8/8/4p1r1/4p3/8/1p2q3/1k6/3K3q w - - 100 190",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 11,
+        "pair": 5,
+        "candidate_white": false,
+        "seed": 22,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 106,
+        "moves_digest": "e6603e3388b95ce0",
+        "final_fen": "2Q5/4k3/8/8/8/8/5P2/2KQ2N1 w - - 27 57",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 12,
+        "pair": 6,
+        "candidate_white": true,
+        "seed": 23,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 307,
+        "moves_digest": "00ad9a4cb82a3923",
+        "final_fen": "3k4/8/8/K7/8/5q2/8/8 b - - 46 157",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 13,
+        "pair": 6,
+        "candidate_white": false,
+        "seed": 23,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 373,
+        "moves_digest": "d9a5033d730c121b",
+        "final_fen": "6r1/8/3K1n2/8/4q2k/5q1p/8/1q6 b - - 36 190",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 14,
+        "pair": 7,
+        "candidate_white": true,
+        "seed": 24,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 51,
+        "moves_digest": "e9f0659979655825",
+        "final_fen": "rn1qkbn1/p3pr2/8/1p1pB2p/1P6/N5K1/2PP2p1/1Q4N1 b q - 17 29",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 15,
+        "pair": 7,
+        "candidate_white": false,
+        "seed": 24,
+        "candidate_score": 0.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 69,
+        "moves_digest": "7d5316219491ae68",
+        "final_fen": "k6R/4Q3/1P1N4/1P2P3/P5P1/8/8/R1B1K1N1 b Q - 2 38",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 16,
+        "pair": 8,
+        "candidate_white": true,
+        "seed": 25,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 41,
+        "moves_digest": "6dc2ce8aad4105d9",
+        "final_fen": "r1bqkbr1/p1npppp1/7p/8/4B3/1R4P1/P7/1K4nR b q - 13 24",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 17,
+        "pair": 8,
+        "candidate_white": false,
+        "seed": 25,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 151,
+        "moves_digest": "6191053910890594",
+        "final_fen": "r3r3/1b1p4/3p4/1p4K1/4k3/8/5b2/8 b - - 42 79",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 18,
+        "pair": 9,
+        "candidate_white": true,
+        "seed": 26,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 51,
+        "moves_digest": "81a2131eefaa6d08",
+        "final_fen": "R7/R4k2/3p4/5PB1/3P4/1P6/2P2P2/1N2K1N1 b - - 1 29",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 19,
+        "pair": 9,
+        "candidate_white": false,
+        "seed": 26,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 124,
+        "moves_digest": "c3b6dd8e9a5a9a35",
+        "final_fen": "8/3k4/8/5Pn1/5N1P/N7/P3KPP1/R7 w - - 39 66",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 20,
+        "pair": 10,
+        "candidate_white": true,
+        "seed": 27,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 81,
+        "moves_digest": "eb951f31c15d77e8",
+        "final_fen": "1Q4B1/R3k3/1B6/6PR/1P6/3P4/2PNP3/3Q2K1 b - - 6 44",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 21,
+        "pair": 10,
+        "candidate_white": false,
+        "seed": 27,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 96,
+        "moves_digest": "b26b4f0ba457e3c0",
+        "final_fen": "r5r1/1b2k3/3q4/pp3p2/3p4/8/K1q2b2/6q1 w - - 16 52",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 22,
+        "pair": 11,
+        "candidate_white": true,
+        "seed": 28,
+        "candidate_score": 0.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 308,
+        "moves_digest": "bdf7b10629c37aea",
+        "final_fen": "8/7q/6k1/6q1/2p5/1p6/7K/4r3 w - - 20 158",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 23,
+        "pair": 11,
+        "candidate_white": false,
+        "seed": 28,
+        "candidate_score": null,
+        "winner": null,
+        "termination": "truncated",
+        "plies": 400,
+        "moves_digest": "828b286a8c0ad9ba",
+        "final_fen": "8/5p2/5q2/8/4K1p1/8/k7/5q2 w - - 22 204",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 24,
+        "pair": 12,
+        "candidate_white": true,
+        "seed": 29,
+        "candidate_score": 0.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 82,
+        "moves_digest": "8cda83873dd621c3",
+        "final_fen": "r1bqk1n1/1p1p4/2p1pp2/p7/8/5p2/1q6/4K2r w q - 2 45",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 25,
+        "pair": 12,
+        "candidate_white": false,
+        "seed": 29,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 41,
+        "moves_digest": "0c0153ec73d6fb28",
+        "final_fen": "r1bq2nr/ppppk1pp/4p3/4p3/8/1B6/P2NKPPP/R7 b - - 8 24",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 26,
+        "pair": 13,
+        "candidate_white": true,
+        "seed": 30,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 119,
+        "moves_digest": "bf3424f2a94fb5e6",
+        "final_fen": "4k3/8/7b/1r2p3/5n2/8/8/3b2K1 b - - 43 63",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 27,
+        "pair": 13,
+        "candidate_white": false,
+        "seed": 30,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 260,
+        "moves_digest": "630ff34fabc04fb5",
+        "final_fen": "8/8/1k6/8/7N/8/1K6/8 w - - 0 134",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 28,
+        "pair": 14,
+        "candidate_white": true,
+        "seed": 31,
+        "candidate_score": 0.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 76,
+        "moves_digest": "d25a272416315739",
+        "final_fen": "r1b1kb2/1p2n3/p5p1/3n4/8/4Kp2/2q5/3q4 w q - 2 42",
+        "adjudicated_score": 0.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 29,
+        "pair": 14,
+        "candidate_white": false,
+        "seed": 31,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 65,
+        "moves_digest": "75d5cb2908e98bb4",
+        "final_fen": "rn1qk1r1/p1pp3p/6p1/8/1PP5/7P/5K2/N1B5 b q - 8 36",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 30,
+        "pair": 15,
+        "candidate_white": true,
+        "seed": 32,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 156,
+        "moves_digest": "e34246e53981383a",
+        "final_fen": "8/8/8/3b2k1/8/5K2/8/8 w - - 0 82",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 31,
+        "pair": 15,
+        "candidate_white": false,
+        "seed": 32,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 262,
+        "moves_digest": "1735f6d6c2d725ba",
+        "final_fen": "5B2/8/k7/8/8/8/8/2K5 w - - 0 135",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      }
+    ]
+  },
+  "reference_arena": {
+    "games": 32,
+    "candidate_wins": 14,
+    "reference_wins": 0,
+    "draws": 14,
+    "truncated": 4,
+    "candidate_score": 0.75,
+    "decisive_games": 14,
+    "informative": true,
+    "score_ci_low": 0.6556994560323611,
+    "score_ci_high": 0.8443005439676389,
+    "opening_count": 12,
+    "terminations": {
+      "checkmate": 14,
+      "fifty_move_rule": 1,
+      "insufficient_material": 3,
+      "threefold_repetition": 10,
+      "truncated": 4
+    },
+    "model_reference": "789bbce8df4374d5e34734e795abda2fac0d5fda1282aba21b10bb7ec5ed821c",
+    "model_candidate": "6cede81c34249e6161c68a3c1f3330f1654cb90ec714823d1eaf391a3297fb3b",
+    "rng_policy": "paired_common_v1",
+    "tree_policy": "root_player_v1",
+    "early_adjudication": "off",
+    "early_adjudication_summary": null,
+    "pairs": {
+      "pairs": 16,
+      "complete_pairs": 12,
+      "pairs_with_truncation": 4,
+      "all_draw_pairs": 2,
+      "split_pairs": 0,
+      "mirrored_pairs": 2,
+      "identical_move_pairs": 0,
+      "pair_score_histogram": {
+        "0.50": 2,
+        "0.75": 6,
+        "1.00": 4
+      },
+      "mean_pair_score": 0.7916666666666666,
+      "pair_score_ci_low": 0.69014167845035,
+      "pair_score_ci_high": 0.8931916548829832
+    },
+    "score_truncation_as_draw": 0.71875,
+    "adjudicated": {
+      "rule": "material_v1:P1,N3,B3,R5,Q9;win_at>=5;else_draw",
+      "wins": 18,
+      "draws": 14,
+      "losses": 0,
+      "adjudicated_games": 4,
+      "decisive": 18,
+      "score": 0.78125,
+      "score_ci_low": 0.6939336604915134,
+      "score_ci_high": 0.8685663395084866
+    },
+    "game_records": [
+      {
+        "index": 0,
+        "pair": 0,
+        "candidate_white": true,
+        "seed": 17,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 98,
+        "moves_digest": "c14be2a09032a18f",
+        "final_fen": "B6k/8/7B/8/4P3/PP3N2/2P4P/R3K1NR w K - 17 53",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 1,
+        "pair": 0,
+        "candidate_white": false,
+        "seed": 17,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 342,
+        "moves_digest": "4f22892104d4fa97",
+        "final_fen": "8/8/7k/K7/2b5/8/8/8 w - - 0 175",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 2,
+        "pair": 1,
+        "candidate_white": true,
+        "seed": 18,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 105,
+        "moves_digest": "6e9140e498ca91e0",
+        "final_fen": "1Q4k1/8/P7/6N1/2PQ4/4PP2/4KP2/5B2 b - - 10 56",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 3,
+        "pair": 1,
+        "candidate_white": false,
+        "seed": 18,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 318,
+        "moves_digest": "22f25b0ca01c2ece",
+        "final_fen": "1q4k1/5pr1/8/K7/q3q3/7p/8/8 w - - 14 163",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 4,
+        "pair": 2,
+        "candidate_white": true,
+        "seed": 19,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 134,
+        "moves_digest": "d3c116d11d2c6b90",
+        "final_fen": "3k4/1B6/Q7/P6R/N5P1/1R6/1PP1N1K1/2Q5 w - - 61 71",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 5,
+        "pair": 2,
+        "candidate_white": false,
+        "seed": 19,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 76,
+        "moves_digest": "106692b9c9d56bcd",
+        "final_fen": "r3k3/p5b1/6p1/1p2n3/8/2p2q1r/4K2n/1qq5 w q - 4 42",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 6,
+        "pair": 3,
+        "candidate_white": true,
+        "seed": 20,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 40,
+        "moves_digest": "6cbb8479b6326b0f",
+        "final_fen": "r7/p1qpk1p1/n1p4r/4p3/8/1P3PPN/P1PPP2P/R1BQKBR1 w Q - 13 24",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 7,
+        "pair": 3,
+        "candidate_white": false,
+        "seed": 20,
+        "candidate_score": null,
+        "winner": null,
+        "termination": "truncated",
+        "plies": 400,
+        "moves_digest": "6ce0b3728cdabe41",
+        "final_fen": "8/4q3/2q2k2/5p2/2rpp1p1/2p4n/2q5/4K3 w - - 46 204",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 8,
+        "pair": 4,
+        "candidate_white": true,
+        "seed": 21,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 39,
+        "moves_digest": "de469215c9e0f030",
+        "final_fen": "3k4/Q2Q4/3b4/4p3/4P3/N5P1/PP1P1P2/R1B1KBNr b Q - 0 23",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 9,
+        "pair": 4,
+        "candidate_white": false,
+        "seed": 21,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 206,
+        "moves_digest": "411db2e5a0ead84a",
+        "final_fen": "4r3/4p1bp/5k1p/1p1b1r2/8/8/5q2/6K1 w - - 96 107",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 10,
+        "pair": 5,
+        "candidate_white": true,
+        "seed": 22,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 279,
+        "moves_digest": "5b3202e3af5bc49a",
+        "final_fen": "4K3/3Q4/3k4/7B/PPP2P2/3P4/7P/6BR b - - 15 143",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 11,
+        "pair": 5,
+        "candidate_white": false,
+        "seed": 22,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 332,
+        "moves_digest": "0789fba50591084d",
+        "final_fen": "1b6/1qk4n/8/5p2/1p2p3/1Kq2p2/6q1/q7 w - - 2 170",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 12,
+        "pair": 6,
+        "candidate_white": true,
+        "seed": 23,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 92,
+        "moves_digest": "a4f2404f3e6ac1e9",
+        "final_fen": "8/8/k7/7P/P4P1P/4P3/3KN3/R1B2B1R w - - 16 50",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 13,
+        "pair": 6,
+        "candidate_white": false,
+        "seed": 23,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 152,
+        "moves_digest": "b7255bb608f2cee3",
+        "final_fen": "r1b1k2n/3p1qp1/8/p7/6K1/8/8/6qq w - - 8 80",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 14,
+        "pair": 7,
+        "candidate_white": true,
+        "seed": 24,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 122,
+        "moves_digest": "5d0021d118131cf0",
+        "final_fen": "8/6BN/3n4/k7/5P2/P7/2P3PP/3QK1R1 w - - 44 65",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 15,
+        "pair": 7,
+        "candidate_white": false,
+        "seed": 24,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 57,
+        "moves_digest": "47f3238cb8a52eec",
+        "final_fen": "r2qkbrn/p3p1pp/b2p4/1p6/7B/7n/3N2K1/R2Q3R b q - 9 32",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 16,
+        "pair": 8,
+        "candidate_white": true,
+        "seed": 25,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 285,
+        "moves_digest": "ba2513d03c23d059",
+        "final_fen": "5k2/8/8/7K/8/8/8/8 b - - 0 146",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 17,
+        "pair": 8,
+        "candidate_white": false,
+        "seed": 25,
+        "candidate_score": null,
+        "winner": null,
+        "termination": "truncated",
+        "plies": 400,
+        "moves_digest": "0dd50e7f3dda57a1",
+        "final_fen": "4r3/8/5q1q/3kp3/8/K4p2/8/8 w - - 11 204",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 18,
+        "pair": 9,
+        "candidate_white": true,
+        "seed": 26,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 71,
+        "moves_digest": "0d2f47001531ef62",
+        "final_fen": "k6R/2Q5/3P4/8/1P2P3/2B5/P1P2P2/R3KB2 b Q - 2 39",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 19,
+        "pair": 9,
+        "candidate_white": false,
+        "seed": 26,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "insufficient_material",
+        "plies": 342,
+        "moves_digest": "18d6909999c35cc7",
+        "final_fen": "8/5k2/8/8/8/K7/8/8 w - - 0 175",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 20,
+        "pair": 10,
+        "candidate_white": true,
+        "seed": 27,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 45,
+        "moves_digest": "82c44097f3aad1e7",
+        "final_fen": "n1k2R2/1R6/2P5/8/3p2P1/1P3N2/2PPPPP1/1N1QKB2 b - - 0 26",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 21,
+        "pair": 10,
+        "candidate_white": false,
+        "seed": 27,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 76,
+        "moves_digest": "0976df8606ea4a82",
+        "final_fen": "r2q4/p2p2k1/b2bp1p1/6p1/3pK3/3r4/5n2/8 w - - 6 42",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 22,
+        "pair": 11,
+        "candidate_white": true,
+        "seed": 28,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 284,
+        "moves_digest": "0c99304444b4b9f8",
+        "final_fen": "2N5/8/5k2/8/3N4/8/K7/8 w - - 56 146",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 23,
+        "pair": 11,
+        "candidate_white": false,
+        "seed": 28,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 224,
+        "moves_digest": "9e87186d8c686f43",
+        "final_fen": "4k3/r7/2K1p2b/3q4/5pp1/8/8/1q1q4 w - - 2 116",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 24,
+        "pair": 12,
+        "candidate_white": true,
+        "seed": 29,
+        "candidate_score": 1.0,
+        "winner": "white",
+        "termination": "checkmate",
+        "plies": 39,
+        "moves_digest": "09fdc18988900f51",
+        "final_fen": "r3kbn1/1R1Q4/p4p1p/2p1p1p1/7P/P2p4/P2P1Pb1/2B1KR2 b q - 0 23",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 25,
+        "pair": 12,
+        "candidate_white": false,
+        "seed": 29,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 313,
+        "moves_digest": "8752620a0d8080d7",
+        "final_fen": "8/2K1k3/6r1/8/6pp/8/3q4/8 b - - 14 160",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 26,
+        "pair": 13,
+        "candidate_white": true,
+        "seed": 30,
+        "candidate_score": null,
+        "winner": null,
+        "termination": "truncated",
+        "plies": 400,
+        "moves_digest": "5d7fb14cb04c314e",
+        "final_fen": "8/2R3N1/2B4P/P7/P3K2Q/8/3P4/6k1 w - - 71 204",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 27,
+        "pair": 13,
+        "candidate_white": false,
+        "seed": 30,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 281,
+        "moves_digest": "354f8d64c2b0a3cd",
+        "final_fen": "3k4/8/6pq/8/4K1p1/4p3/8/8 b - - 32 144",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 28,
+        "pair": 14,
+        "candidate_white": true,
+        "seed": 31,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "threefold_repetition",
+        "plies": 132,
+        "moves_digest": "6e9ee0ba549b0d0d",
+        "final_fen": "5k2/2n5/8/3R4/8/3P1B2/1BP5/3KQN1N w - - 47 70",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      },
+      {
+        "index": 29,
+        "pair": 14,
+        "candidate_white": false,
+        "seed": 31,
+        "candidate_score": 1.0,
+        "winner": "black",
+        "termination": "checkmate",
+        "plies": 54,
+        "moves_digest": "553f637031358e21",
+        "final_fen": "rnb1k1r1/3p3p/6p1/8/8/bq6/3K4/3q4 w q - 2 31",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 30,
+        "pair": 15,
+        "candidate_white": true,
+        "seed": 32,
+        "candidate_score": null,
+        "winner": null,
+        "termination": "truncated",
+        "plies": 400,
+        "moves_digest": "5de16df562461339",
+        "final_fen": "Q1R5/2P5/3P2k1/2P5/5Q2/8/5K2/8 w - - 23 204",
+        "adjudicated_score": 1.0,
+        "early_adjudication": null
+      },
+      {
+        "index": 31,
+        "pair": 15,
+        "candidate_white": false,
+        "seed": 32,
+        "candidate_score": 0.5,
+        "winner": "draw",
+        "termination": "fifty_move_rule",
+        "plies": 160,
+        "moves_digest": "e7fbe72d694bf94c",
+        "final_fen": "3qr3/r3p2n/1ppp2n1/p5p1/6b1/8/1bk5/7K w - - 100 84",
+        "adjudicated_score": 0.5,
+        "early_adjudication": null
+      }
+    ]
+  },
+  "reference_arena_is_parent_arena": false,
+  "raw": {
+    "games": 32,
+    "policy_wins": 4,
+    "random_wins": 1,
+    "draws": 22,
+    "truncated": 5,
+    "policy_score": 0.5555555555555556,
+    "decisive_games": 5,
+    "informative": true,
+    "terminations": {
+      "checkmate": 5,
+      "fifty_move_rule": 4,
+      "insufficient_material": 6,
+      "stalemate": 10,
+      "threefold_repetition": 2,
+      "truncated": 5
+    }
+  },
+  "raw_parent": {
+    "games": 32,
+    "candidate_wins": 0,
+    "parent_wins": 0,
+    "draws": 32,
+    "truncated": 0,
+    "candidate_score": 0.5,
+    "decisive_games": 0,
+    "informative": false,
+    "terminations": {
+      "threefold_repetition": 32
+    }
+  },
+  "parent_model_id": "d1880e042e9c8a3869c46a39cef32c168e2f9fdb4cf53d9f3f6b926795dee9d3",
+  "snapshot_model_id": "d1880e042e9c8a3869c46a39cef32c168e2f9fdb4cf53d9f3f6b926795dee9d3",
+  "candidate_model_id": "6cede81c34249e6161c68a3c1f3330f1654cb90ec714823d1eaf391a3297fb3b",
+  "replay_positions": 47810,
+  "replay_total_games": 224,
+  "reuse_ratio": 2.004665111629457,
+  "reuse_ratio_all_new_positions": 2.004665111629457,
+  "reuse_shortfall_reason": null,
+  "decision": "hold",
+  "hold_reasons": [
+    "score_not_above_parent"
+  ],
+  "optimizer_step_start": 655,
+  "lr_schedule": {
+    "warmup_updates": 40,
+    "planned_updates": 1400,
+    "step_start": 655,
+    "step_end": 749,
+    "fraction_end": 0.535,
+    "lr_first": 0.00004310947872333267,
+    "lr_last": 0.00003507619648712834,
+    "updates_at_zero_lr": 0
+  },
+  "accepted_optimizer_step_after": 655,
+  "eval_owners_spawned": 3,
+  "eval_max_resident_owners": 2,
+  "eval_inference": [
+    [
+      "parent",
+      {
+        "submitted": 84701,
+        "completed": 84701,
+        "errors": 0,
+        "batches": 13556,
+        "batch_size_mean": 6.2482295662437295,
+        "batch_size_max": 16,
+        "batch_size_p50": 6,
+        "batch_size_p95": 11,
+        "queue_wait_us_mean": 7444.017925641782,
+        "queue_wait_us_p50": 7116,
+        "queue_wait_us_p95": 17034,
+        "forward_us_mean": 15341.134036588965,
+        "peak_in_flight": 17
+      }
+    ],
+    [
+      "reference",
+      {
+        "submitted": 99475,
+        "completed": 99475,
+        "errors": 0,
+        "batches": 16173,
+        "batch_size_mean": 6.15068323749459,
+        "batch_size_max": 16,
+        "batch_size_p50": 6,
+        "batch_size_p95": 11,
+        "queue_wait_us_mean": 7178.846410684474,
+        "queue_wait_us_p50": 6973,
+        "queue_wait_us_p95": 16945,
+        "forward_us_mean": 14107.441229209177,
+        "peak_in_flight": 16
+      }
+    ],
+    [
+      "candidate",
+      {
+        "submitted": 186749,
+        "completed": 186749,
+        "errors": 0,
+        "batches": 29268,
+        "batch_size_mean": 6.380654639879732,
+        "batch_size_max": 16,
+        "batch_size_p50": 6,
+        "batch_size_p95": 12,
+        "queue_wait_us_mean": 7414.672167555009,
+        "queue_wait_us_p50": 7031,
+        "queue_wait_us_p95": 17226,
+        "forward_us_mean": 15010.373308733087,
+        "peak_in_flight": 30
+      }
+    ]
+  ],
+  "gpu": {
+    "vram_at_cycle_start_mb": 1543,
+    "collect": {
+      "peak_vram_mb": 1543,
+      "min_vram_mb": 1543,
+      "last_vram_mb": 1543,
+      "util_busy_mean": 71.2468694096601,
+      "util_max": 92,
+      "temp_max_c": 68,
+      "samples": 561
+    },
+    "train": {
+      "peak_vram_mb": 1543,
+      "min_vram_mb": 1543,
+      "last_vram_mb": 1543,
+      "util_busy_mean": 75.62121212121212,
+      "util_max": 100,
+      "temp_max_c": 66,
+      "samples": 135
+    },
+    "eval": {
+      "peak_vram_mb": 1543,
+      "min_vram_mb": 1543,
+      "last_vram_mb": 1543,
+      "util_busy_mean": 68.90352348993288,
+      "util_max": 100,
+      "temp_max_c": 70,
+      "samples": 1192
+    }
+  },
+  "collect_secs": 307.1774815,
+  "train_secs": 74.3142417,
+  "eval_secs": 657.8789765,
+  "wall_secs": 1040.0377222
+}
