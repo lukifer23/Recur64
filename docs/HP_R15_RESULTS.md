@@ -336,3 +336,44 @@ The first recurrence comparison that could support a claim.
   trajectory.
 - This decides whether P2 should also carry an R-scaled-LR arm. Changing LR
   per arm is a separate scientific choice, not a silent fix.
+
+## V1 — fast value-learning sweep (MEASURED; pre-registered `e48f1b9`, amended `6da2132`)
+
+**Setup:**
+- 16 cells of 2–6 minutes each: `bench-train` on one fixed replay (P1 R1,
+  96 games, about 13.9k positions), scored with `eval-value` on the fixed
+  held-out set (10,249 positions).
+- Metric: held-out WDL cross-entropy (uniform = 1.0986).
+- Evidence: `docs/evidence/hp-r15-v1/` (one `result.json` per cell).
+- The long P2 run was stopped by the owner in favor of this loop.
+
+| cell (100 updates) | seed 1 | seed 2 |
+|---|---|---|
+| R1 @ 3e-4 | 0.9597 | 0.9543 |
+| R1 @ 1.5e-4 | 0.9643 | — |
+| R2 @ 3e-4 | 1.0059 | 0.9720 |
+| R2 @ 1.5e-4 | 0.9633 | 0.9689 |
+| R2 @ 7.5e-5 | 0.9594 | — |
+| R4 @ 3e-4 | 0.9949 | **1.1487** (worse than uniform) |
+| R4 @ 1.5e-4 | 0.9844 | 0.9790 |
+| **R4 @ 7.5e-5** | **0.9535** | **0.9656** |
+
+| cell (200 updates, seed 1) | held-out | train WDL (last 20) |
+|---|---|---|
+| R1 @ 3e-4 | 0.9743 (worse than at 100) | 0.833 |
+| R4 @ 7.5e-5 | 0.9601 (worse than at 100) | 0.890 |
+
+**Findings:**
+1. **Seed-stability depends on recurrence at a fixed LR** (EXPLORATORY). At
+   3e-4 the seed spread is R1 0.005, R2 0.034, R4 0.154.
+2. **R4's best LR is lower** (CONFIRMED, ≥ 0.01 in both seeds). 7.5e-5 beats
+   1.5e-4 (−0.031 / −0.013), which beats 3e-4 (−0.011 / −0.170).
+   - The P1 R4 value stall was an LR artifact.
+3. **At each arm's best LR, value learning per update ties** (not shown by
+   the rule). R4 @ 7.5e-5 vs R1 @ 3e-4 is +0.006 / −0.011.
+   - Per unit of compute, R1 is ahead, since R4 costs 2.5× per update
+     (INFERRED from the measured step times).
+4. **The fixed-replay loop is exhausted.** By 200 updates (about 1.8 epochs)
+   both arms overfit: train loss falls while held-out loss rises.
+   - Longer offline training on these 96 games measures memorization. A
+     larger fixed dataset (or self-play) is needed to go further.
