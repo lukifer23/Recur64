@@ -48,6 +48,9 @@ pub struct BenchRuntimeArgs {
     /// Enable inference candidate-width bucketing (D55 perf pass).
     #[arg(long, default_value_t = false)]
     pub bucket_candidates: bool,
+    /// Override the self-play root Dirichlet epsilon (policy-target probes).
+    #[arg(long)]
+    pub noise_epsilon: Option<f32>,
 }
 
 fn run_impl<B: AutodiffBackend>(
@@ -191,6 +194,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if args.bucket_candidates {
         cfg.inference_candidate_buckets = true;
+    }
+    if let Some(e) = args.noise_epsilon {
+        cfg.root_dirichlet_epsilon = e;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
