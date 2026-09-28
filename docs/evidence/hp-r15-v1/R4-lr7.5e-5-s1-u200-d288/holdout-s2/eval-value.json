@@ -1,0 +1,14 @@
+{
+  "checkpoint": "runs/v1/R4-lr7.5e-5-s1-u200-d288",
+  "games": 32,
+  "git_revision": "eb6b784b3be9dab450cffc4d1e4c606a810b8c88",
+  "kind": "recur64-eval-value-v1",
+  "mean_policy_ce": 3.2001061071705883,
+  "mean_wdl_ce": 0.944828248385227,
+  "model_id": "937c14039406c8c5f7b0677d9320aec94494bff77fd4225278a226f96968de27",
+  "positions": 4356,
+  "recurrence": 4,
+  "replay": "runs/hp-r15-p2-holdout-s2",
+  "uniform_wdl_ce": 1.0986122886681098,
+  "update_counter": 202
+}
