@@ -594,3 +594,25 @@ is measurable in minutes on fixed data.
   with ≥ 0.01.
 - **Stopped P2 run:** partial outputs were deleted (never used). Its run
   directory is kept as `runs/hp-r15-p2-r1-s1-stopped`.
+
+## R15-L1 — does the V1 LR finding make a stronger network in self-play? (fixed before running)
+
+**Arms:**
+- **A** = the existing P1 R1 run (`configs/hp/r15-smoke-r1.toml`, LR 3e-4,
+  3 cycles). Its final trainer scores held-out WDL CE 0.9671 / 0.9777.
+- **B** = `configs/hp/r15-lr-r1-7p5e-5.toml`, identical except LR 7.5e-5, run
+  fresh for 3 cycles.
+
+**Measures:**
+- Held-out WDL CE (both sets, position-weighted) of B's final trainer.
+- A **96-game head-to-head** of B's final trainer vs A's final trainer:
+  R1 vs R1, root_player_v1, paired RNG, c8 / b16. Reported adjudicated, with
+  CI.
+
+**Rule:**
+- "The lower LR improves self-play learning" iff B's held-out WDL CE is
+  ≥ 0.01 below A's, **and** the head-to-head adjudicated CI lies above 0.5.
+- One held-out gain without an arena gain is reported as "value improves,
+  strength not shown."
+- This is single-seed, so it is exploratory; adoption as the default LR
+  needs a seed-2 repeat.
