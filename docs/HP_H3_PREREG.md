@@ -583,3 +583,14 @@ is measurable in minutes on fixed data.
   follow-up confirmation.
 - This measures offline value learning, not self-play dynamics. A
   self-play confirmation of the winners is a separate, later step.
+
+### R15-V1 amendment — the owner's fast loop (before any V1 cell ran)
+
+- **Cells:** one cell per run, **100 updates** (not 200), about 2–3 min each
+  including held-out scoring.
+- **Order:** chosen iteratively from the previous result.
+- **Status:** every V1 result is **EXPLORATORY**. An apparent effect is a
+  finding only after a seed-2 run of the same cells reproduces its direction
+  with ≥ 0.01.
+- **Stopped P2 run:** partial outputs were deleted (never used). Its run
+  directory is kept as `runs/hp-r15-p2-r1-s1-stopped`.
