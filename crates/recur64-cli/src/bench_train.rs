@@ -42,6 +42,9 @@ pub struct BenchTrainArgs {
     /// Untimed warmup updates per layout.
     #[arg(long, default_value_t = 2)]
     pub warmup_updates: usize,
+    /// Override the config's base learning rate (optimization probes).
+    #[arg(long)]
+    pub lr: Option<f64>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -58,6 +61,10 @@ struct LayoutResult {
     step_ms_mean: f64,
     first_loss: f32,
     last_loss: f32,
+    /// Per-update curves of the timed updates (optimization probes).
+    wdl_loss_curve: Vec<f32>,
+    policy_loss_curve: Vec<f32>,
+    grad_norm_curve: Vec<f32>,
     max_grad_norm: f32,
     all_finite: bool,
     error: Option<String>,
@@ -152,6 +159,9 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
                 step_ms_mean: secs * 1000.0 / report.updates.max(1) as f64,
                 first_loss: report.first_loss,
                 last_loss: report.last_loss,
+                wdl_loss_curve: report.metrics.iter().map(|m| m.wdl_loss).collect(),
+                policy_loss_curve: report.metrics.iter().map(|m| m.policy_loss).collect(),
+                grad_norm_curve: report.metrics.iter().map(|m| m.grad_norm).collect(),
                 max_grad_norm: report
                     .metrics
                     .iter()
@@ -179,6 +189,9 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
                 step_ms_mean: 0.0,
                 first_loss: f32::NAN,
                 last_loss: f32::NAN,
+                wdl_loss_curve: Vec::new(),
+                policy_loss_curve: Vec::new(),
+                grad_norm_curve: Vec::new(),
                 max_grad_norm: f32::NAN,
                 all_finite: false,
                 error: Some(e),
@@ -234,7 +247,10 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
 }
 
 pub fn run(args: BenchTrainArgs) -> anyhow::Result<()> {
-    let cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&args.config)?)?;
+    let mut cfg = RunConfig::from_toml_str(&std::fs::read_to_string(&args.config)?)?;
+    if let Some(lr) = args.lr {
+        cfg.lr = lr;
+    }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
         "cpu" => run_impl::<CpuTrain>(&cfg, &args),
