@@ -678,3 +678,22 @@ is measurable in minutes on fixed data.
   - "Training produced search strength" iff the CI lower bound is > 0.5.
   - "Training made it weaker" iff the CI upper bound is < 0.5.
   - "Not shown" otherwise.
+
+## P-3b — baseline strength check, fresh 192 games (fixed before running)
+- **Owner-approved policy (2026-09-28):**
+  - Short runs (≤ 3 min) for everything except playing strength.
+  - One large strength check per real change, with its time stated first.
+  - This is the baseline check: *does the current training produce strength
+    at all?*
+- **Arena:** same as P-3 (M vs untrained seed-1 reference, standard R1
+  contract, c8 / b16), **192 games**.
+  - `--seed-offset 10000`, so the seeds (base 10001 + i/2) are disjoint from
+    P-3's.
+  - Estimated 39 min, under the keep-awake hold, as the only GPU job.
+- **Primary result:** the fresh 192 games **alone**. P-3's result was already
+  seen, so pooling would be optional stopping.
+  - Adjudicated material_v1 score, game-level 95 % CI.
+  - "Training produced search strength" iff the CI lower bound is > 0.5.
+  - "Weaker" iff the CI upper bound is < 0.5.
+  - "Not shown" otherwise.
+- **Secondary (disclosed as pooled after a look):** P-3 + P-3b, 256 games.
