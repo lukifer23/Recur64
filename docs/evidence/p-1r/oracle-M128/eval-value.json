@@ -1,0 +1,14 @@
+{
+  "checkpoint": "runs/p1r-M128",
+  "games": 8,
+  "git_revision": "8fb55f3e3f49f4e4de69c272cec85df72b6223bb",
+  "kind": "recur64-eval-value-v1",
+  "mean_policy_ce": 2.701644006714945,
+  "mean_wdl_ce": 0.5427791517241737,
+  "model_id": "522952eddbd4139d6c8990139608b132406b88825c2503dae01462664ee3ca7f",
+  "positions": 1076,
+  "recurrence": 1,
+  "replay": "runs/p1x-oracle256",
+  "uniform_wdl_ce": 1.0986122886681098,
+  "update_counter": 42
+}

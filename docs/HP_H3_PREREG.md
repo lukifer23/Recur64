@@ -650,3 +650,20 @@ is measurable in minutes on fixed data.
   - Otherwise inconclusive.
 - **Only "confirmed" moves the pipeline** to higher simulation counts for
   training targets.
+
+## P-2 — has the raw policy learned anything? (fixed before running)
+- **Why:** held-out policy CE cannot measure policy learning. Its targets come
+  from the **untrained** reference's 32-sim search (target entropy
+  2.89 / 2.87), and the untrained net itself scores 3.163 / 3.175 on it (see
+  `HP_R15_RESULTS.md` §P-1r).
+- **Test:** a raw-policy arena between M (`runs/v1/R1-lr7.5e-5-s1-u400-d288`)
+  and the untrained seed-1 reference (`runs/hp-r15-p0-ref-r15-v2`), both at R1.
+  - Config `configs/probe/raw-policy-r1-s1.toml` is `r15-p2-r1-s1.toml`
+    with only `simulations_per_move = 2`.
+  - At 2 sims, one child is expanded and the move is the prior argmax
+    (`puct.rs::select`, all q = 0).
+  - `--noise-epsilon 0`, so play is deterministic given the opening.
+  - 32 games = 16 openings × 2 colours, paired, root_player_v1.
+- **Rule** (adjudicated material_v1 score, pair-level 95 % CI):
+  - "The raw policy learned" iff the CI lower bound is > 0.5.
+  - "Not shown" otherwise.

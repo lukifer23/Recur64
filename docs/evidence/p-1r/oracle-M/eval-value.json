@@ -1,0 +1,14 @@
+{
+  "checkpoint": "runs/v1/R1-lr7.5e-5-s1-u400-d288",
+  "games": 8,
+  "git_revision": "8fb55f3e3f49f4e4de69c272cec85df72b6223bb",
+  "kind": "recur64-eval-value-v1",
+  "mean_policy_ce": 2.738657462995735,
+  "mean_wdl_ce": 0.7229963120585481,
+  "model_id": "789bbce8df4374d5e34734e795abda2fac0d5fda1282aba21b10bb7ec5ed821c",
+  "positions": 1076,
+  "recurrence": 1,
+  "replay": "runs/p1x-oracle256",
+  "uniform_wdl_ce": 1.0986122886681098,
+  "update_counter": 402
+}
