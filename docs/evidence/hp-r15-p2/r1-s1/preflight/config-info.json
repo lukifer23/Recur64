@@ -1,0 +1,212 @@
+{
+  "arena": {
+    "games": 32,
+    "rng_policy": "paired_common_v1",
+    "root_dirichlet_epsilon": 0.25,
+    "sample_plies": 30
+  },
+  "config_path": "configs/hp/r15-p2-r1-s1.toml",
+  "execution_bounds": {
+    "cycles": 6,
+    "position_budget": 90000,
+    "run_budget_minutes": 150
+  },
+  "git_branch": "experiment/hp-r15-h3-integration",
+  "git_revision": "84b3fc19a587249f671d5fa8d43441780eaf2ab1",
+  "hardware_schedule": {
+    "accumulation_steps": 4,
+    "batch_timeout_us": 1000,
+    "collection_shape": [
+      32,
+      12
+    ],
+    "cpu_workers": 12,
+    "effective_batch": 128,
+    "max_inference_batch": 24,
+    "train_batch": 32
+  },
+  "head_version": 2,
+  "health_stops": {
+    "draw_share_two_cycles": 0.85,
+    "lr_schedule_end": true,
+    "threefold_fifty": 0.6,
+    "truncation": 0.25
+  },
+  "lr_schedule": {
+    "planned_updates": 800,
+    "warmup_updates": 80
+  },
+  "max_updates_per_cycle": 256,
+  "reference_model_id": "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965",
+  "resolved_config": {
+    "accumulation_steps": 4,
+    "active_games": 32,
+    "arena_games": 32,
+    "arena_rng_policy": "paired_common_v1",
+    "arena_root_dirichlet_epsilon": 0.25,
+    "arena_sample_plies": 30,
+    "arena_tree_policy": "root_player_v1",
+    "argmax_after_ply": 30,
+    "batch_timeout_us": 1000,
+    "c_puct": 1.0,
+    "concurrent_games": 12,
+    "cpu_workers": 12,
+    "cycles": 6,
+    "device": "cuda",
+    "eval_concurrency": 8,
+    "eval_max_inference_batch": 16,
+    "games_per_cycle": 32,
+    "hardware_profile": "hp-home",
+    "health_stops": {
+      "draw_share_two_cycles": 0.85,
+      "lr_schedule_end": true,
+      "threefold_fifty": 0.6,
+      "truncation": 0.25
+    },
+    "inference_candidate_buckets": true,
+    "lr": 0.0003,
+    "max_inference_batch": 24,
+    "max_updates": 256,
+    "model": {
+      "core_blocks": 4,
+      "ffn": 768,
+      "heads": 8,
+      "in_features": 119,
+      "input_blocks": 2,
+      "output_blocks": 2,
+      "policy_dim": 128,
+      "promo_codes": 5,
+      "rms_eps": 0.00001,
+      "squares": 64,
+      "wdl_classes": 3,
+      "width": 512
+    },
+    "model_profile": "r15",
+    "opening_suite": "configs/openings-v1.toml",
+    "planned_updates": 800,
+    "ply_cap": 400,
+    "position_budget": 90000,
+    "precision": "fp32",
+    "promotion_min_decisive_games": 4,
+    "promotion_score": "adjudicated_material_v1",
+    "promotion_score_floor": 0.5,
+    "recurrence": 1,
+    "reference_checkpoint": "runs/hp-r15-p0-ref-r15-v2",
+    "reference_model_id": "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965",
+    "replay_max_positions": 100000,
+    "replay_reuse_target": 2.0,
+    "replay_sampler": "position_recency_v2",
+    "root_dirichlet_alpha": 0.30000001192092896,
+    "root_dirichlet_epsilon": 0.25,
+    "run_budget_minutes": 150,
+    "run_id": "hp-r15-p2-r1-s1",
+    "search_leaves_in_flight": 2,
+    "seed": 1,
+    "shard_max_games": 256,
+    "simulations_per_move": 32,
+    "snapshot_policy": "conservative",
+    "start_fen": null,
+    "temperature": 1.0,
+    "train_batch": 32,
+    "trainer_policy": "continuous",
+    "warmup_updates": 80
+  },
+  "resolved_config_hash": "6b969de893740a7b2e177ab76a447832f02ace7911c731e81f2885f51565bcfe",
+  "scientific_config_hash": "11e8ec184789d7ad54acd25ce548c1a55a130b47f413cfe0e56fae5f14747201",
+  "scientific_identity": {
+    "collection": {
+      "games_per_cycle": 32,
+      "seed_policy": "base_seed_plus_global_game_id_v1"
+    },
+    "evaluation": {
+      "arena_exploration": {
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "sample_plies": 30
+      },
+      "arena_games": 32,
+      "arena_rng_policy": "paired_common_v1",
+      "arena_tree_policy": "root_player_v1",
+      "opening_suite_digest": "66d6dcf5cd805f3283c2d7a6d38305bdbdb3d3ae4b87585b46b596eaa78e327c"
+    },
+    "identity_version": 4,
+    "model": {
+      "core_blocks": 4,
+      "ffn": 768,
+      "heads": 8,
+      "in_features": 119,
+      "input_blocks": 2,
+      "output_blocks": 2,
+      "policy_dim": 128,
+      "promo_codes": 5,
+      "rms_eps": 0.00001,
+      "squares": 64,
+      "wdl_classes": 3,
+      "width": 512
+    },
+    "model_head_version": 2,
+    "optimizer": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "precision": "fp32",
+    "promotion": {
+      "min_decisive_games": 4,
+      "rule": "conservative-v3:audit_ok,inference_errors=0,updates>0,finite_metrics,achieved_reuse>=0.8*target,adjudicated_decisive>=min_decisive,adjudicated_score>0.5,adjudicated_score>=floor;adjudication=material_v1",
+      "score_floor": 0.5,
+      "snapshot_policy": "conservative"
+    },
+    "recurrence": 1,
+    "reference_model_id": "385f4f27b5e9d0540d0ed8db7e5d89178432adfd9c562cb25d268c66e77c7965",
+    "replay": {
+      "max_positions": 100000,
+      "sampler": "position_recency_weight_index_plus_1_v2",
+      "shard_max_games": 256
+    },
+    "search": {
+      "argmax_after_ply": 30,
+      "c_puct": 1.0,
+      "ply_cap": 400,
+      "root_dirichlet_alpha": 0.30000001192092896,
+      "root_dirichlet_epsilon": 0.25,
+      "simulations_per_move": 32,
+      "start_fen": null,
+      "temperature": 1.0
+    },
+    "search_execution": {
+      "leaves_in_flight": 2,
+      "virtual_loss": 1.0
+    },
+    "seed": 1,
+    "trainer_policy": "continuous",
+    "training": {
+      "effective_batch": 128,
+      "lr": 0.0003,
+      "planned_updates": 800,
+      "replay_reuse_target": 2.0,
+      "warmup_updates": 80
+    }
+  },
+  "search_leaves_in_flight": 2,
+  "simulations_per_move": 32,
+  "trainer_policy": "continuous",
+  "update_plans": [
+    {
+      "new_trainable_positions": 5247,
+      "plan": {
+        "cap_bound": false,
+        "max_updates": 256,
+        "requested_examples": 10494.0,
+        "requested_updates": 82,
+        "scheduled_updates": 82
+      }
+    },
+    {
+      "new_trainable_positions": 12800,
+      "plan": {
+        "cap_bound": false,
+        "max_updates": 256,
+        "requested_examples": 25600.0,
+        "requested_updates": 200,
+        "scheduled_updates": 200
+      }
+    }
+  ]
+}
