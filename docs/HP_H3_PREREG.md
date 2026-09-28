@@ -711,3 +711,27 @@ is measurable in minutes on fixed data.
     ≤ WDL(a) + 0.01.
   - "Rejected" if held-out WDL(b) > WDL(a) + 0.01.
   - Held-out policy CE is not used (see §P-1r measurement correction).
+
+## Train1 — first real training run from M (fixed before running)
+- **Owner-approved (2026-09-28):** "Real training run": about 2–3 h of
+  self-play and training, then one ~45 min strength check against M.
+- **Run:** `recur64 pilot --config configs/hp/r15-train1-r1.toml --run-dir
+  runs/hp-r15-train1-r1`.
+  - Warm start from M (`runs/t2-warm-ref`, model_id `789bbce8…`).
+  - Conservative promotion-v3 arenas (32 games per cycle), continuous trainer.
+  - Up to 12 cycles, 180 min wall budget, D49 health stops plus the schedule
+    guard.
+  - One GPU job under the keep-awake hold. Nothing is changed mid-run.
+- **Final check** (after the run, about 45 min):
+  - Train1's final trainer checkpoint (`checkpoints/trainer`) vs M, 192
+    games.
+  - Standard R1 contract (`configs/hp/r15-p2-r1-s1.toml`),
+    `--seed-offset 20000`.
+- **Rule** (adjudicated material_v1, game-level 95 % CI):
+  - "Train1 improved strength over M" iff the CI lower bound is > 0.5.
+  - "Weaker" iff the CI upper bound is < 0.5.
+  - "Not shown" otherwise.
+- **Secondary (reported, no claim threshold):**
+  - held-out WDL CE of the final trainer against M's 0.8887 / 0.9018;
+  - per-cycle promotions;
+  - truncation rate.
