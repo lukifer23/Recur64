@@ -1,0 +1,17 @@
+{
+ "arms": {
+  "a": {
+   "sampleable": 42544,
+   "heldout_wdl": 0.9514594925521164,
+   "finite": true,
+   "train_pol_last20": 3.1364136815071104
+  },
+  "b": {
+   "sampleable": 51744,
+   "heldout_wdl": 0.9520110873573989,
+   "finite": true,
+   "train_pol_last20": 3.0835567116737366
+  }
+ },
+ "verdict": "ADOPT"
+}

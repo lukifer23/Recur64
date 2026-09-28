@@ -554,3 +554,22 @@ The first recurrence comparison that could support a claim.
   - This is the baseline that later changes are compared against.
   - The 22 % truncation rate means many games are not converted. That is
     noted, and nothing has been changed because of it.
+
+## T-1 — truncated-game policy training (MEASURED; pre-registered) — **ADOPT**
+- **Change** (`c793b3a`): `truncated_games = "policy_only_v1"`.
+  - Truncated self-play games train the policy term, with the WDL term masked
+    (zero value and zero gradient on masked rows; unit-tested).
+  - Default off, and in the identity only when on.
+- **GPU smoke:** 100 updates from the seed-1 reference on `v1-train-288`,
+  3 min 46 s for both arms. Evidence: `docs/evidence/t-1/result.json`.
+
+| Arm | Sampleable positions | Held-out WDL CE |
+|---|---|---|
+| (a) exclude | 42,544 | 0.9515 |
+| (b) policy_only_v1 | **51,744** (+21.6 %) | 0.9520 (+0.0006) |
+
+- **Rule:** finite losses, expected counts, and ΔWDL ≤ 0.01, so **adopt** for
+  the training run.
+- No policy-quality claim: held-out policy CE cannot measure it.
+- **Also fixed:** the pilot trainer tests' fixture truncated every game on
+  HEAD (two tests failed 3/3). They now pass 5/5, with assertions unchanged.
