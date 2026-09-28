@@ -13,7 +13,7 @@ use std::time::Instant;
 use burn::tensor::backend::AutodiffBackend;
 use clap::Args;
 
-use recur64_model::checkpoint::load_training;
+use recur64_model::checkpoint::{CheckpointMeta, load_training, save_training};
 use recur64_model::train::adamw;
 use recur64_runtime::gpu_telemetry::{self, GpuSamples};
 use recur64_runtime::{LearnerConfig, ReplayStore, RunConfig, model_io, train_from_store};
@@ -45,6 +45,10 @@ pub struct BenchTrainArgs {
     /// Override the config's base learning rate (optimization probes).
     #[arg(long)]
     pub lr: Option<f64>,
+    /// Save the trained model after the timed updates (first layout only), for
+    /// held-out scoring with `recur64 eval-value` (fast value-learning loop).
+    #[arg(long)]
+    pub save_checkpoint: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -146,6 +150,27 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
             );
             (r, start.elapsed().as_secs_f64().max(1e-9))
         });
+        if let (Some(dir), Ok((trained, report))) = (&args.save_checkpoint, &timed)
+            && results.is_empty()
+        {
+            let steps = (args.warmup_updates + report.updates) as u64;
+            let mut meta = CheckpointMeta::new(
+                cfg.model.clone(),
+                cfg.recurrence,
+                false,
+                steps,
+                cfg.lr,
+                cfg.seed,
+                0,
+                format!("{} ({})", cfg.device, cfg.precision),
+                cfg.precision.clone(),
+            );
+            meta.run_id = format!("bench-train:{}", cfg.run_id);
+            meta.git_revision = recur64_runtime::provenance::git_revision().map(str::to_owned);
+            meta.update_counter = steps;
+            meta.lr_schedule_step = steps;
+            save_training(dir, trained, &optim, &meta)?;
+        }
         let r = match timed {
             Ok((_, report)) => LayoutResult {
                 physical_batch: physical,
