@@ -428,6 +428,31 @@ experiment** work, not a mainline gate, so mainline status above is unaffected.
   `docs/HP_H1_RESULTS.md`; measured H3 detail in `docs/HP_H3_RESULTS.md`,
   pre-registration in `docs/HP_H3_PREREG.md`.
 
+## HP R15 — learning-loop findings (2026-09-28; details in docs/HP_R15_RESULTS.md)
+
+- **P2 was stopped** (7+ h) under the owner's fast-iteration rule. Its V1 fast
+  sweep found that recurrence gives no value-learning benefit at 15M params
+  (R1 beat R4 in both seeds at a matched LR). LR 7.5e-5 is the best R1 LR.
+- **Retracted:** "the policy barely learns."
+  - Held-out policy CE cannot measure policy learning: its targets come from
+    the untrained reference's search.
+  - WDL conclusions are unaffected.
+- **P-1 / P-1r** (128 vs 32 sims for targets): the gain was consistent
+  (0.037 vs 0.014–0.019) but inconclusive under the rule. Not adopted.
+- **Strength chain (MEASURED, 192-game pre-registered checks):**
+  - Untrained → M (V1, 400 updates on 288 games): **0.617**, CI
+    [0.563, 0.671].
+  - M → Train1-final: **0.633**, CI [0.595, 0.671].
+- **T-1 (adopted):** `truncated_games = "policy_only_v1"` gives +21.6 %
+  policy data at no self-play cost, with held-out WDL +0.0006.
+- **Train1** (9 cycles, warm start from M) was stopped by the D49
+  `threefold_fifty` health stop (0.625).
+  - Open problems: repetition draws (58 % of final-arena games), and held-out
+    value worse than uniform (1.24 / 1.40) as the value head specialises to
+    its own play.
+- **Next:** find the repetition/conversion cause with short (≤ 3 min)
+  diagnostics, then one pre-registered strength check per real fix.
+
 ## Historical evidence note
 
 The Phase 3 F10 result above predates the seed and gradient fixes and head v2.
