@@ -377,3 +377,48 @@ The first recurrence comparison that could support a claim.
    both arms overfit: train loss falls while held-out loss rises.
    - Longer offline training on these 96 games measures memorization. A
      larger fixed dataset (or self-play) is needed to go further.
+
+## Learning-loop probes after V1 (2026-09-28, MEASURED; exploratory)
+
+### LR head-to-head
+- R1 trained at 7.5e-5 (held-out WDL 0.894) vs R1 at 3e-4 (0.963), same data
+  and 400 updates.
+- 32 games: adjudicated **0.516 [0.404, 0.628]**, a tie.
+- A better held-out value head **did not play stronger**. Evidence:
+  `hp-r15-v1/h2h-*`.
+
+### Policy diagnostic
+- The policy head learns clean targets perfectly: 1.04 → 0.0000 on a fixture
+  (`policy_learning.rs`, now a regression test).
+- **No code bug.**
+
+### T1 — **RETRACTED conclusion**
+- Training the V1 network further on trained-actor data moved its policy loss
+  (−0.023), while training on "reference-generated" data left it flat
+  (+0.003).
+- I first read this as "an untrained actor gives no policy signal."
+- **That reading was confounded.** The reference-generated replay (the P1 R1
+  replay) was already part of the V1 network's training set, so the flat
+  policy reflects data it had already fit.
+- The pilot data contradicts the claim. Policy loss falls at the same slow
+  rate under an untrained actor (P1 R1 c0: −0.019) and a trained one (T2 c0:
+  −0.015).
+
+### T2 — the latest-actor loop (`snapshot_policy = latest`, LR 7.5e-5, warm start from V1 R1)
+- 16 games × 2 cycles, 14.5 min. Evidence: `hp-r15-t2/`.
+- **Negative:**
+  - held-out WDL 0.889 / 0.902 → **1.041 / 1.138** (worse);
+  - held-out policy 3.161 / 3.206 → 3.231 / 3.343 (worse);
+  - self-play target entropy 2.16 → 1.77 (narrowing);
+  - raw vs random 0.50 → 0.50.
+- The network fits its own narrowing play. The `latest` option stays
+  implemented, but it is **not adopted**.
+
+### Where this leaves the project (MEASURED unless noted)
+1. **Recurrence** gives no value-learning benefit at 15M params at matched
+   LR, at 2.5× compute (V1, both seeds).
+2. **LR 7.5e-5** gives better held-out value but no strength gain.
+3. **The policy barely learns** under 32-simulation self-play targets in
+   every setup tried. The cause is **not established**. Candidates: too few
+   simulations for informative targets, target noise, or too little data.
+   Each needs a clean test.
