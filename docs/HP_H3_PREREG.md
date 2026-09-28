@@ -667,3 +667,14 @@ is measurable in minutes on fixed data.
 - **Rule** (adjudicated material_v1 score, pair-level 95 % CI):
   - "The raw policy learned" iff the CI lower bound is > 0.5.
   - "Not shown" otherwise.
+
+## P-3 — is the V1-trained network stronger than the untrained reference with search? (fixed before running)
+- **Arena:** M (`runs/v1/R1-lr7.5e-5-s1-u400-d288`) vs the untrained seed-1
+  reference (`runs/hp-r15-p0-ref-r15-v2`), both at R1.
+- **Settings:** the standard `configs/hp/r15-p2-r1-s1.toml` contract
+  (32 sims, D45 sampling and noise, paired_common_v1, root_player_v1,
+  c8 / b16), **64 games**.
+- **Rule** (adjudicated material_v1 score, pair-level 95 % CI):
+  - "Training produced search strength" iff the CI lower bound is > 0.5.
+  - "Training made it weaker" iff the CI upper bound is < 0.5.
+  - "Not shown" otherwise.
