@@ -418,10 +418,10 @@ The first recurrence comparison that could support a claim.
 1. **Recurrence** gives no value-learning benefit at 15M params at matched
    LR, at 2.5× compute (V1, both seeds).
 2. **LR 7.5e-5** gives better held-out value but no strength gain.
-3. **The policy barely learns** under 32-simulation self-play targets in
+3. **[RETRACTED, see §"Measurement correction" below: held-out policy CE cannot show policy learning.]** ~~**The policy barely learns** under 32-simulation self-play targets in
    every setup tried. The cause is **not established**. Candidates: too few
    simulations for informative targets, target noise, or too little data.
-   Each needs a clean test.
+   Each needs a clean test.~~
 
 ## P-1 — are 32 simulations the policy bottleneck? (MEASURED; pre-registered `8fb55f3`)
 - **Setup:**
@@ -513,3 +513,21 @@ The first recurrence comparison that could support a claim.
     it.
   - A raw-policy comparison needs sampled play, which the arena does not
     support at 2 sims (`sample_action` weights by visits).
+
+## P-3 — V1-trained network vs untrained reference, with search (MEASURED; pre-registered `c64dcc5`) — **not shown**
+- **Setup:** 64 games under the standard R1 contract (32 sims, D45), paired,
+  root_player_v1. Wall time **12.9 min**. Evidence:
+  `docs/evidence/p-3/eval-arena.json`.
+- **Outcomes:**
+  - M W/D/L 19/24/14, 7 truncated.
+  - Terminations: 33 checkmates, 15 insufficient material, 8 fifty-move, 1
+    stalemate.
+- **Scores:**
+  - Adjudicated (material_v1): **0.570**, game CI [0.478, 0.663].
+  - Complete-pair mean 0.600, pair CI [0.494, 0.706].
+- **Rule:** both CIs include 0.5, so the result is **"not shown"**. The
+  direction favours the trained network, but no strength claim is made.
+- **What this means (MEASURED):** 400 updates on 288 self-play games give at
+  most a modest strength gain, one that 64 games cannot resolve.
+  - At about 12 s per game, resolving a ~5-point edge needs a few hundred
+    games, which is roughly 40–60 min on this GPU.
