@@ -98,7 +98,7 @@ fn parse_layouts(s: &str) -> anyhow::Result<Vec<(usize, usize)>> {
 fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyhow::Result<()> {
     let device: B::Device = Default::default();
     let layouts = parse_layouts(&args.layouts)?;
-    let store = ReplayStore::open(&args.replay)?;
+    let store = ReplayStore::open_with(&args.replay, cfg.truncated_games)?;
     anyhow::ensure!(store.sampleable() > 0, "replay has no trainable positions");
     let (warmup, planned) = cfg.lr_schedule();
     let gpu_on = cfg.device == "cuda";

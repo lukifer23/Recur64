@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 
 use recur64_core::{
-    ActionId, Color, GameState, ObservationV1, StandardMove, encode_observation_v1,
+    ActionId, Color, GameState, ObservationV1, StandardMove, Termination, encode_observation_v1,
 };
 use recur64_search::Rng;
 
@@ -24,10 +24,32 @@ pub struct TrainingExample {
     /// Target distribution aligned to `legal`.
     pub policy: Vec<f32>,
     /// WDL class from the side-to-move perspective: 0 win, 1 draw, 2 loss.
+    /// Meaningful only when `wdl_valid`.
     pub wdl: i64,
+    /// False for a position of a game without a result (a truncated game
+    /// sampled under [`TruncatedGames::PolicyOnlyV1`]): its WDL term is masked.
+    pub wdl_valid: bool,
     /// Replay game id this example came from (in-memory provenance only; not
     /// part of the replay schema).
     pub source_game_id: u64,
+}
+
+/// Whether positions of truncated games (no result, so no WDL target) are
+/// sampled. Their search targets are as valid as any other ply's.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TruncatedGames {
+    /// Not sampled (every path before this option).
+    #[default]
+    Exclude,
+    /// Sampled for the policy term only; the WDL term is masked out.
+    PolicyOnlyV1,
+}
+
+impl TruncatedGames {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Exclude
+    }
 }
 
 /// WDL class from the side-to-move perspective.
@@ -72,6 +94,7 @@ pub fn example_for_ply(
         legal,
         policy,
         wdl: wdl_class(outcome, state.side_to_move()),
+        wdl_valid: true,
         source_game_id: 0,
     })
 }
@@ -244,8 +267,15 @@ pub struct ReplayStore {
 }
 
 impl ReplayStore {
-    /// Open a replay directory and index it.
+    /// Open a replay directory and index it (result games only).
     pub fn open(dir: &Path) -> anyhow::Result<Self> {
+        Self::open_with(dir, TruncatedGames::Exclude)
+    }
+
+    /// Open a replay directory, also indexing truncated games' plies when
+    /// `truncated` is [`TruncatedGames::PolicyOnlyV1`]. Aborted games are
+    /// never sampled.
+    pub fn open_with(dir: &Path, truncated: TruncatedGames) -> anyhow::Result<Self> {
         let reader = ReplayReader::open(dir)?;
         let mut games = Vec::new();
         for (shard_index, info) in reader.manifest().shards.iter().enumerate() {
@@ -263,7 +293,9 @@ impl ReplayStore {
         let mut coords_by_shard: Vec<Vec<(usize, usize)>> = vec![Vec::new(); shard_count];
         let mut total_positions = 0u64;
         for (gi, (si, g)) in games.iter().enumerate() {
-            if g.outcome.is_none() {
+            let policy_only = truncated == TruncatedGames::PolicyOnlyV1
+                && g.termination == Termination::Truncated.label();
+            if g.outcome.is_none() && !policy_only {
                 continue; // truncated/aborted: no WDL supervision
             }
             total_positions += g.plies.len() as u64;
@@ -299,7 +331,8 @@ impl ReplayStore {
             .count()
     }
 
-    /// Positions available for sampling (result games only).
+    /// Positions available for sampling (result games, plus truncated games
+    /// under [`TruncatedGames::PolicyOnlyV1`]).
     pub fn sampleable(&self) -> usize {
         self.coords_by_shard.iter().map(|v| v.len()).sum()
     }
@@ -324,12 +357,17 @@ impl ReplayStore {
     fn example_at(&self, coord: (usize, usize)) -> Result<TrainingExample, String> {
         let (gi, pi) = coord;
         let (_, game) = &self.games[gi];
-        let outcome = game.outcome.ok_or("no outcome")?;
+        // Only a PolicyOnlyV1 store indexes result-less (truncated) games.
+        let (outcome, wdl_valid) = match game.outcome {
+            Some(o) => (o, true),
+            None => (1, false),
+        };
         let mut state = GameState::from_fen(&game.start_fen).map_err(|e| e.to_string())?;
         for (i, ply) in game.plies.iter().enumerate() {
             if i == pi {
                 let mut example = example_for_ply(&state, outcome, ply)?;
                 example.source_game_id = game.game_id;
+                example.wdl_valid = wdl_valid;
                 return Ok(example);
             }
             let id = ActionId::from_index(ply.selected as u32).map_err(|e| e.to_string())?;

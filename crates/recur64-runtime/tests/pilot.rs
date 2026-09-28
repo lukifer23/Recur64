@@ -13,6 +13,14 @@ use recur64_runtime::{CancelToken, RunConfig, RunDir, model_io, run_pilot};
 /// (0 trainable positions) about one run in three. Serialize the pilots.
 static FLEX_RNG: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+// TRAINABLE_FIXTURE: the rook ending at 2 sims and ply cap 40 usually
+// truncates every game (a result needs the rooks traded), which leaves 0
+// result positions and no training. Measured on HEAD 8f6f1c1 before this
+// change: the two trainer tests below failed in 3 of 3 runs. They test trainer
+// continuity and actor lineage, not truncation handling, so they sample
+// truncated games for the policy term (WDL masked) and always train.
+use recur64_runtime::replay::TruncatedGames;
+
 fn cfg(root: &std::path::Path) -> RunConfig {
     let mut c = RunConfig::from_toml_str(
         r#"
@@ -158,6 +166,7 @@ fn continuous_trainer_carries_learning_across_held_cycles() {
     let reference_id = freeze(&c, &root.join("frozen"));
     c.reference_model_id = Some(reference_id.clone());
     c.trainer_policy = recur64_runtime::TrainerPolicy::Continuous;
+    c.truncated_games = TruncatedGames::PolicyOnlyV1; // see TRAINABLE_FIXTURE
     // Force every cycle to hold: promotion needs more decisive games than exist.
     c.promotion_min_decisive_games = 1_000;
     let dir = RunDir::create(&root.join("run"), false).unwrap();
@@ -199,6 +208,12 @@ fn latest_snapshot_policy_makes_the_trained_candidate_the_next_actor() {
     c.reference_model_id = Some(reference_id.clone());
     c.trainer_policy = recur64_runtime::TrainerPolicy::Continuous;
     c.snapshot_policy = recur64_runtime::config::SnapshotPolicy::Latest;
+    c.truncated_games = TruncatedGames::PolicyOnlyV1; // see TRAINABLE_FIXTURE
+    // A healthy candidate must meet the reuse check: up to 4 x 40 plies at
+    // reuse 2.0 and 8 examples per update need up to 80 updates, so the
+    // fixture's cap of 4 would bind and make every candidate unhealthy.
+    c.max_updates = 96;
+    c.planned_updates = Some(192);
     // The arena could never promote under conservative-v2 with this floor.
     c.promotion_min_decisive_games = 1_000;
     let dir = RunDir::create(&root.join("run"), false).unwrap();

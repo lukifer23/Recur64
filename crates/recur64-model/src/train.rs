@@ -10,7 +10,7 @@ use burn::optim::{
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 
-use crate::loss::{Targets, model_loss, policy_ce, wdl_ce};
+use crate::loss::{Targets, model_loss, policy_ce, wdl_ce_masked};
 use crate::model::{CandidateTensors, ProbeModel};
 
 /// CPU FP32 autodiff backend used for correctness work in Phase 0.
@@ -131,7 +131,11 @@ where
     let out = model.forward_r(board, cands, r, deep);
     let readout = &out.readouts[0];
     let policy_loss = scalar1(policy_ce(&readout.policy, &targets.policy_target));
-    let wdl_loss = scalar1(wdl_ce(&readout.wdl_logits, &targets.wdl_target));
+    let wdl_loss = scalar1(wdl_ce_masked(
+        &readout.wdl_logits,
+        &targets.wdl_target,
+        targets.wdl_mask.as_ref(),
+    ));
     let loss = model_loss(&out, targets);
     let total_loss = scalar1(loss.clone());
     let grads = GradientsParams::from_grads(loss.backward(), &model);

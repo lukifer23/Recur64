@@ -16,6 +16,10 @@ pub struct Targets<B: Backend> {
     pub policy_target: Tensor<B, 2>,
     /// `[batch]` WDL class index in `{0=win, 1=draw, 2=loss}`.
     pub wdl_target: Tensor<B, 1, Int>,
+    /// `[batch]` 1.0 where the WDL target is supervised, 0.0 where it is not
+    /// (a truncated game has no result). `None` = every row is supervised,
+    /// which keeps the unmasked mean bit-identical to every earlier path.
+    pub wdl_mask: Option<Tensor<B, 1>>,
 }
 
 /// Policy cross-entropy over legal candidates, averaged over valid positions.
@@ -37,6 +41,24 @@ pub fn wdl_ce<B: Backend>(logits: &Tensor<B, 2>, target: &Tensor<B, 1, Int>) -> 
     -picked.mean()
 }
 
+/// WDL cross-entropy averaged over supervised rows only (`mask` = 1.0).
+/// `None` is exactly [`wdl_ce`].
+pub fn wdl_ce_masked<B: Backend>(
+    logits: &Tensor<B, 2>,
+    target: &Tensor<B, 1, Int>,
+    mask: Option<&Tensor<B, 1>>,
+) -> Tensor<B, 1> {
+    let Some(mask) = mask else {
+        return wdl_ce(logits, target);
+    };
+    let logp = activation::log_softmax(logits.clone(), 1);
+    let picked = logp
+        .gather(1, target.clone().unsqueeze_dim::<2>(1))
+        .squeeze_dim::<1>(1);
+    let n = mask.clone().sum().clamp(1.0, f32::MAX);
+    -(picked * mask.clone()).sum() / n
+}
+
 /// Mean predicted-policy entropy over valid positions (nats).
 pub fn policy_entropy<B: Backend>(out: &PolicyOutput<B>) -> Tensor<B, 1> {
     let p = out.log_probs.clone().exp();
@@ -48,7 +70,8 @@ pub fn policy_entropy<B: Backend>(out: &PolicyOutput<B>) -> Tensor<B, 1> {
 
 /// Combined loss for one readout.
 pub fn readout_loss<B: Backend>(r: &Readout<B>, t: &Targets<B>) -> Tensor<B, 1> {
-    policy_ce(&r.policy, &t.policy_target) + wdl_ce(&r.wdl_logits, &t.wdl_target)
+    policy_ce(&r.policy, &t.policy_target)
+        + wdl_ce_masked(&r.wdl_logits, &t.wdl_target, t.wdl_mask.as_ref())
 }
 
 /// Mean of the per-readout losses. Averaging (rather than summing) means

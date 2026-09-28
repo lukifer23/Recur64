@@ -63,6 +63,9 @@ pub struct SelfPlayMetrics {
     /// Plies in games with a result (the learner's reuse denominator).
     pub trainable_positions: u64,
     pub trainable_games: u64,
+    /// Plies in truncated games: trainable for the policy term only under
+    /// `truncated_games = "policy_only_v1"`.
+    pub truncated_positions: u64,
     /// Search-target health over every generated ply and over trainable plies.
     pub target_health: TargetHealth,
     pub inference: MetricsSnapshot,
@@ -177,6 +180,11 @@ pub(crate) fn selfplay_metrics(
             .map(|g| g.plies.len() as u64)
             .sum(),
         trainable_games: games - truncated,
+        truncated_positions: records
+            .iter()
+            .filter(|g| g.termination == recur64_core::Termination::Truncated.label())
+            .map(|g| g.plies.len() as u64)
+            .sum(),
         target_health: target_health(records),
         inference,
     }
@@ -504,6 +512,12 @@ pub fn run<B: AutodiffBackend>(
     }
 
     // --- TRAIN ---
+    // This bounded Phase 2 path trains on result games only; refuse rather
+    // than silently ignore the pilot-only truncated-game policy option.
+    anyhow::ensure!(
+        cfg.truncated_games.is_default(),
+        "truncated_games = policy_only_v1 is supported by `pilot` and `bench-train`, not `run`"
+    );
     let all_games = crate::replay::ReplayReader::open(&run_dir.replay())?.read_all_games()?;
     let new_trainable_positions: u64 = all_games
         .iter()

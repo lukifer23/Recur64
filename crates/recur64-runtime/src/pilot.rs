@@ -29,7 +29,9 @@ use crate::gpu_telemetry::{self, GpuSamples};
 use crate::inference::{BatchedModel, InferenceConfig, InferenceOwner, MetricsSnapshot};
 use crate::learner::{LearnerConfig, TrainReport, train_from_store};
 use crate::model_io;
-use crate::replay::{ReplayHeader, ReplayStore, ReplayWriter, audit_dir, enforce_capacity};
+use crate::replay::{
+    ReplayHeader, ReplayStore, ReplayWriter, TruncatedGames, audit_dir, enforce_capacity,
+};
 use crate::run_dir::{LineageRecord, RunDir, RunStatus};
 
 /// One cycle's report.
@@ -609,7 +611,13 @@ pub fn run_pilot<B: AutodiffBackend>(
         let games = records.len() as u64;
         total_games_collected += games_per_cycle as u64;
         let positions: u64 = records.iter().map(|g| g.plies.len() as u64).sum();
-        let new_trainable_positions = selfplay.trainable_positions;
+        // Under policy_only_v1 a truncated game's plies are sampled (policy
+        // term only), so they count toward the update plan and the reuse check.
+        let new_trainable_positions = selfplay.trainable_positions
+            + match cfg.truncated_games {
+                TruncatedGames::Exclude => 0,
+                TruncatedGames::PolicyOnlyV1 => selfplay.truncated_positions,
+            };
         if games < games_per_cycle as u64 {
             status = "budget_exhausted_during_collect".into();
             break;
@@ -647,7 +655,7 @@ pub fn run_pilot<B: AutodiffBackend>(
 
         // TRAIN
         let train_start = Instant::now();
-        let store = ReplayStore::open(&run_dir.replay())?;
+        let store = ReplayStore::open_with(&run_dir.replay(), cfg.truncated_games)?;
         let replay_positions = store.total_positions();
         let replay_total_games = store.total_games() as u64;
         let (train_model, mut optim, parent_meta) = load_training(

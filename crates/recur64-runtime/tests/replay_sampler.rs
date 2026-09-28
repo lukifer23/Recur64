@@ -4,7 +4,8 @@ use std::path::PathBuf;
 
 use recur64_core::{ActionId, Color, GameState, PromotionCode, StandardMove};
 use recur64_runtime::replay::{
-    GameRecord, PlyRecord, ReplayHeader, ReplayStore, ReplayWriter, SearchRecord, enforce_capacity,
+    GameRecord, PlyRecord, ReplayHeader, ReplayStore, ReplayWriter, SearchRecord, TruncatedGames,
+    enforce_capacity,
 };
 use recur64_search::Rng;
 
@@ -259,4 +260,64 @@ fn position_recency_v2_skips_empty_shards() {
     // gets 2/3, and nothing is taken from the empty shard 2.
     assert!((newest - 2.0 / 3.0).abs() < 0.03, "newest share {newest}");
     assert!(b.iter().all(|e| e.source_game_id != 2));
+}
+
+/// Truncated-game policy training: only `policy_only_v1` samples a truncated
+/// game's plies, flags them as WDL-unsupervised, and keeps their search
+/// targets; aborted games are never sampled; result games are unchanged.
+#[test]
+fn policy_only_v1_samples_truncated_games_without_wdl() {
+    let dir = tmp("policy-only");
+    let mut w = ReplayWriter::new(&dir, header(), 8).unwrap();
+    w.push(record_from_uci(
+        0,
+        &["f2f3", "e7e5", "g2g4", "d8h4"],
+        Some(2),
+        "checkmate",
+    ))
+    .unwrap();
+    w.push(record_from_uci(
+        1,
+        &["e2e4", "e7e5", "g1f3"],
+        None,
+        "truncated",
+    ))
+    .unwrap();
+    w.push(record_from_uci(2, &["d2d4"], None, "aborted"))
+        .unwrap();
+    w.finish().unwrap();
+
+    let plain = ReplayStore::open(&dir).unwrap();
+    assert_eq!(plain.sampleable(), 4);
+    let excl = ReplayStore::open_with(&dir, TruncatedGames::Exclude).unwrap();
+    assert_eq!(excl.coordinates(), plain.coordinates());
+
+    let store = ReplayStore::open_with(&dir, TruncatedGames::PolicyOnlyV1).unwrap();
+    assert_eq!(
+        store.sampleable(),
+        4 + 3,
+        "truncated plies added, aborted not"
+    );
+    assert_eq!(store.trainable_games(), 1, "result games unchanged");
+    let mut truncated = 0;
+    for c in store.coordinates() {
+        let ex = store.example(c).unwrap();
+        assert!((ex.policy.iter().sum::<f32>() - 1.0).abs() < 1e-6);
+        if ex.source_game_id == 1 {
+            truncated += 1;
+            assert!(!ex.wdl_valid, "truncated ply must not carry a WDL target");
+        } else {
+            assert_eq!(ex.source_game_id, 0);
+            assert!(ex.wdl_valid);
+        }
+    }
+    assert_eq!(truncated, 3);
+    // Result-game examples are identical under both modes.
+    for c in plain.coordinates() {
+        let (a, b) = (plain.example(c).unwrap(), store.example(c).unwrap());
+        assert_eq!(
+            (a.policy, a.wdl, a.wdl_valid),
+            (b.policy, b.wdl, b.wdl_valid)
+        );
+    }
 }

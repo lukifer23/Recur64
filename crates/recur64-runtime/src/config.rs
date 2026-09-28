@@ -9,7 +9,7 @@ pub const SELFPLAY_SEED_POLICY: &str = "base_seed_plus_global_game_id_v1";
 
 use recur64_eval::{ArenaEarlyAdjudication, ArenaRngPolicy, ArenaTreePolicy};
 
-use crate::replay::ReplaySampler;
+use crate::replay::{ReplaySampler, TruncatedGames};
 use recur64_model::config::{DeviceKind, ModelConfig, Precision};
 
 fn default_recurrence() -> usize {
@@ -280,6 +280,11 @@ pub struct RunConfig {
     /// sampler; `position_recency_v2` enters the identity.
     #[serde(default, skip_serializing_if = "ReplaySampler::is_default")]
     pub replay_sampler: ReplaySampler,
+    /// Truncated games' plies train the policy only, with the WDL term masked
+    /// (their search targets are valid; only the result is missing). Enters
+    /// the scientific identity only when enabled.
+    #[serde(default, skip_serializing_if = "TruncatedGames::is_default")]
+    pub truncated_games: TruncatedGames,
     /// Round inference candidate widths up to fixed buckets (D55 perf pass;
     /// execution only: outputs equal to float noise, excluded from identity).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -653,6 +658,11 @@ impl RunConfig {
         // pre-D48 identity stays reproducible.
         if self.trainer_policy != TrainerPolicy::DiscardHeld {
             identity["trainer_policy"] = serde_json::to_value(self.trainer_policy)?;
+        }
+        // Truncated-game policy training is recorded only when enabled, so
+        // every earlier identity stays reproducible.
+        if !self.truncated_games.is_default() {
+            identity["replay"]["truncated_games"] = serde_json::to_value(self.truncated_games)?;
         }
         Ok(identity)
     }
@@ -1487,6 +1497,40 @@ truncaton = 0.25
         assert_ne!(
             base.scientific_config_hash().unwrap(),
             latest.scientific_config_hash().unwrap()
+        );
+    }
+
+    /// Truncated-game policy training is off by default (so the serialized
+    /// config and every earlier identity are unchanged) and a new identity
+    /// when enabled.
+    #[test]
+    fn truncated_games_policy_only_is_opt_in_and_a_new_identity() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert_eq!(base.truncated_games, TruncatedGames::Exclude);
+        assert!(
+            !serde_json::to_string(&base)
+                .unwrap()
+                .contains("truncated_games")
+        );
+        assert!(
+            base.scientific_identity().unwrap()["replay"]
+                .get("truncated_games")
+                .is_none()
+        );
+        let on = RunConfig::from_toml_str(&format!(
+            "truncated_games = \"policy_only_v1\"
+{}",
+            base_toml()
+        ))
+        .unwrap();
+        assert_eq!(on.truncated_games, TruncatedGames::PolicyOnlyV1);
+        assert_eq!(
+            on.scientific_identity().unwrap()["replay"]["truncated_games"],
+            "policy_only_v1"
+        );
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            on.scientific_config_hash().unwrap()
         );
     }
 

@@ -152,6 +152,7 @@ impl SynthFixture {
             Targets {
                 policy_target,
                 wdl_target,
+                wdl_mask: None,
             },
         )
     }

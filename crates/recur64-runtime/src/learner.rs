@@ -23,7 +23,7 @@ use std::time::Instant;
 
 use recur64_core::{ActionId, GameState, StandardMove};
 use recur64_model::action::CandidateBatch;
-use recur64_model::loss::{Targets, model_loss, policy_ce, policy_entropy, wdl_ce};
+use recur64_model::loss::{Targets, model_loss, policy_ce, policy_entropy, wdl_ce_masked};
 use recur64_model::model::{CandidateTensors, ProbeModel};
 use recur64_model::train::global_grad_norm;
 use recur64_search::Rng;
@@ -234,6 +234,15 @@ pub fn build_batch_tensors<B: Backend>(
         TensorData::new(batch.iter().map(|e| e.wdl).collect::<Vec<_>>(), [b]),
         device,
     );
+    // Masked only when a row lacks a WDL target, so result-only batches keep
+    // the exact unmasked mean.
+    let wdl_mask = batch.iter().any(|e| !e.wdl_valid).then(|| {
+        let m: Vec<f32> = batch
+            .iter()
+            .map(|e| if e.wdl_valid { 1.0 } else { 0.0 })
+            .collect();
+        Tensor::<B, 1>::from_data(TensorData::new(m, [b]), device)
+    });
 
     (
         board,
@@ -241,6 +250,7 @@ pub fn build_batch_tensors<B: Backend>(
         Targets {
             policy_target,
             wdl_target,
+            wdl_mask,
         },
     )
 }
@@ -308,7 +318,11 @@ where
             let out = model.forward_r(board, &cands, cfg.recurrence, false);
             let readout = &out.readouts[0];
             let policy_loss = scalar(policy_ce(&readout.policy, &targets.policy_target));
-            let wdl_loss = scalar(wdl_ce(&readout.wdl_logits, &targets.wdl_target));
+            let wdl_loss = scalar(wdl_ce_masked(
+                &readout.wdl_logits,
+                &targets.wdl_target,
+                targets.wdl_mask.as_ref(),
+            ));
             let entropy = scalar(policy_entropy(&readout.policy));
             let loss = model_loss(&out, &targets);
             let total = scalar(loss.clone());
