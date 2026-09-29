@@ -791,6 +791,28 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   deliberately pinned to CUDA 13.3 must refuse, and the 12.9 build must
   pass (recorded in PHASE4_RESULTS).
 
+## D53 - Throughput pass: owner pool, 48/96 schedule, flattened linears
+
+- **Status:** ACCEPTED (2026-09-29). Execution only: no change to the
+  scientific identity, and results are the same.
+- **Decision:**
+  - **T2:** self-play uses `inference_owners = 2`, two owner threads on one
+    queue, each with its own weights copy and device stream.
+  - **T3:** the self-play schedule is 48 concurrent games with batch cap 96.
+  - **T4:** every rank-3 `Linear` runs as one 2-D GEMM over `b * 64` rows
+    (`linear_rows`). This is bit-exact with the old code.
+- **Evidence:**
+  - T2 1.10x, T3 1.10x, T4 1.094x self-play and 1.20x training.
+  - Cumulative self-play: 22.8 -> 31.5 trainable pos/s. Games identical.
+  - T4 missed its pre-registered self-play bar by 0.6% and is kept by owner
+    decision.
+- **Not adopted:**
+  - Burn fusion (T1, 20-40% slower).
+  - Autotune (T1, below the bar, and it cannot guarantee FP32).
+  - TF32 (T5): the tensor-core kernels never win autotune on this model, so
+    TF32 is not achieved. The `tf32` mode and its refusal contract remain,
+    tested.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

@@ -2059,3 +2059,66 @@ cells have 0 errors and identical games (W/D/B 14 / 92 / 22, 215 plies).
 - **48 / 96 is adopted** (1.104x), for `f10-cur.toml`.
 - **Cumulative:** T2 + T3 give about 1.25x over the original single-owner
   32 / 64 schedule (22.8 trainable pos/s).
+
+### T4 forward-probe (MEASURED): bit-exact, 11-14% faster forward
+
+Pre-T4 binary `b592927` against the T4 binary `5bdcd4a`, the same 1,024
+positions, 60 reps.
+
+- **Parity:** max |policy difference| 0.0, max |WDL difference| 0.0, 0
+  argmax changes. Bit-exact.
+- **p50 forward latency:**
+
+| batch | pre-T4 | T4 | change |
+|---:|---:|---:|---:|
+| 32 | 16.8 ms | 14.7 ms | -13% |
+| 48 | 22.7 ms | 20.1 ms | -11% |
+| 64 | 29.7 ms | 25.6 ms | -14% |
+| 96 | 46.5 ms | 40.2 ms | -14% |
+| 128 | 70.1 ms | 61.0 ms | -13% |
+
+`bench-runtime` and `bench-train` decide adoption (below).
+
+### T5 result (MEASURED): TF32 is not achieved through Burn's public matmul path
+
+- **Contract check:** the `tf32` build refuses an FP32 config with a visible
+  error (verified).
+- **Kernels actually run** (CubeCL profiler, batch 64, `tf32` build): every
+  matmul launch is `SimpleMatmulFamily` / `PlaneMatmulFamily`, the same
+  FP32 kernels as the FP32 build. The TF32 `wmma` kernels compile as
+  autotune candidates, 8 times, but never win, so none is launched.
+- **Parity against FP32:** max difference 5.9e-5, identical to T1's
+  autotune build. This is FP32 kernel-order noise, not TF32 rounding.
+- **Speed:** the `tf32` build's p50 is 12% faster at batch 64 and 10% at
+  96. That gain is autotune choosing faster *FP32* kernels, not tensor
+  cores.
+- **Verdict:** T5 as defined, TF32 tensor-core matmuls, is not achieved.
+  - The `tf32` mode is not used for runs, because its label would claim a
+    precision that is not executing.
+  - An autotune build cannot guarantee FP32 either, since it may pick a
+    TF32 kernel for some other shape.
+  - So neither is adopted.
+  - Forcing an accelerated kernel would need a custom backend op against
+    CubeCL internals. Not pursued now.
+- The mode and its refusal contract stay in the code, tested.
+
+### T4 result (MEASURED): rule missed by 0.6%, kept by owner decision
+
+- **Self-play** (`bench-runtime`, 48 / 96, 2 owners, 128 games, 0 errors):
+  31.5 trainable pos/s against 28.78 for the pre-T4 binary, which is
+  **1.094x**. The pre-registered bar was >= 1.10x, so **the rule fails by
+  0.006**.
+- **Training** (`bench-train` 64x4, 20 updates, same checkpoint and replay):
+
+| | examples/s | step time | peak VRAM | loss (first -> last) |
+|---|---:|---:|---:|---|
+| pre-T4 | 432.6 | 592 ms | 3,021 MB | 3.197291 -> 3.271448 |
+| T4 | 520.9 (1.20x) | 491 ms | 2,061 MB | 3.197291 -> 3.271446 |
+
+- **Parity:** forward outputs bit-exact. Training losses and gradient norms
+  agree to 6 significant digits.
+- **Owner decision (2026-09-29):** keep T4 despite the narrow self-play
+  miss. It is bit-exact, with +9.4% self-play, +20% training and -32%
+  training VRAM, and it has no scientific effect.
+- **Cumulative self-play throughput** (the standard-start `snapshot-005`
+  cell): 22.8 -> 31.5 trainable pos/s (**1.38x**) from T2 + T3 + T4.

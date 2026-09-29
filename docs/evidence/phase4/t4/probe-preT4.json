@@ -1,0 +1,52 @@
+{
+  "checkpoint": "runs/phase4-f10-qual/checkpoints/snapshot-005",
+  "git_revision": null,
+  "positions": 1024,
+  "timings": [
+    {
+      "batch": 32,
+      "max_ms": 185.7112,
+      "mean_ms": 28.13724333333333,
+      "min_ms": 14.8623,
+      "p50_ms": 16.7921,
+      "positions_per_sec": 1137.28269755874,
+      "reps": 60
+    },
+    {
+      "batch": 48,
+      "max_ms": 92.3857,
+      "mean_ms": 23.489693333333342,
+      "min_ms": 20.6475,
+      "p50_ms": 22.6756,
+      "positions_per_sec": 2043.4494107202754,
+      "reps": 60
+    },
+    {
+      "batch": 64,
+      "max_ms": 31.3296,
+      "mean_ms": 29.506024999999998,
+      "min_ms": 27.1927,
+      "p50_ms": 29.7364,
+      "positions_per_sec": 2169.048524835182,
+      "reps": 60
+    },
+    {
+      "batch": 96,
+      "max_ms": 49.7031,
+      "mean_ms": 46.912758333333315,
+      "min_ms": 43.5154,
+      "p50_ms": 46.4923,
+      "positions_per_sec": 2046.3516410159218,
+      "reps": 60
+    },
+    {
+      "batch": 128,
+      "max_ms": 121.65520000000001,
+      "mean_ms": 70.96658333333332,
+      "min_ms": 68.138,
+      "p50_ms": 70.1045,
+      "positions_per_sec": 1803.6658098471232,
+      "reps": 60
+    }
+  ]
+}
