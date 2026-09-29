@@ -910,19 +910,13 @@ pub fn run_pilot<B: AutodiffBackend>(
         )?;
         // D49 health stops, checked at the cycle boundary after the report is
         // persisted, so the stopping cycle is fully recorded.
-        let sp = &cycle_report.selfplay;
-        let games_f = sp.games.max(1) as f64;
-        let threefold_fifty =
-            (sp.terminations
-                .get("threefold_repetition")
-                .copied()
-                .unwrap_or(0)
-                + sp.terminations.get("fifty_move_rule").copied().unwrap_or(0)) as f64
-                / games_f;
+        // They read standard-start games only (all games without a D51
+        // curriculum), so generated endgames never mask or trigger them.
+        let sp = &cycle_report.selfplay.standard_start;
         let health = cfg.health_stops.check(
             sp.draw_share,
-            threefold_fifty,
-            sp.truncated as f64 / games_f,
+            sp.threefold_fifty_share(),
+            sp.truncation_share(),
             draw_share_was_high,
         );
         draw_share_was_high = cfg.health_stops.draw_share_high(sp.draw_share);

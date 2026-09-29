@@ -18,6 +18,18 @@
 //! traversal descends to a leaf, expanding it (one neural evaluation) or
 //! stopping at a terminal leaf (no neural evaluation). A terminal root performs
 //! zero traversals and produces no policy target.
+//!
+//! # MCTS-solver (D50, optional)
+//!
+//! With `PuctConfig::solver`, exact game-theoretic results propagate up the
+//! tree: a node is a proven win when some move leads to a proven loss for the
+//! opponent, and is proven once every move is proven (a draw if any move
+//! draws, else a loss). A proven node is never expanded further; its exact
+//! value is backed up like a terminal. Selection always takes a proven
+//! winning move (the shortest) and never takes a proven losing move while an
+//! alternative exists. Proofs come from the rules profile's terminals only,
+//! never from the network, and are exact for the path-dependent tree (the
+//! game state carries its repetition history).
 
 use crate::evaluator::{EvalError, EvalResult};
 
@@ -56,6 +68,48 @@ pub struct PuctConfig {
     /// Leaves selected per round with virtual loss and evaluated together
     /// (D47). `1` is the original one-leaf-at-a-time search, unchanged.
     pub leaves_in_flight: u32,
+    /// Propagate proven results (D50 MCTS-solver). `false` is the original
+    /// search, unchanged.
+    pub solver: bool,
+}
+
+/// An exact game-theoretic result, from the side-to-move perspective of the
+/// node it is attached to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Proof {
+    Win,
+    Draw,
+    Loss,
+}
+
+impl Proof {
+    fn from_terminal(value: f32) -> Self {
+        if value > 0.0 {
+            Proof::Win
+        } else if value < 0.0 {
+            Proof::Loss
+        } else {
+            Proof::Draw
+        }
+    }
+
+    /// The exact value this result backs up.
+    pub fn value(self) -> f32 {
+        match self {
+            Proof::Win => 1.0,
+            Proof::Draw => 0.0,
+            Proof::Loss => -1.0,
+        }
+    }
+
+    /// The same result seen by the opponent.
+    pub fn flip(self) -> Self {
+        match self {
+            Proof::Win => Proof::Loss,
+            Proof::Draw => Proof::Draw,
+            Proof::Loss => Proof::Win,
+        }
+    }
 }
 
 impl Default for PuctConfig {
@@ -64,6 +118,7 @@ impl Default for PuctConfig {
             c_puct: 1.0,
             simulations: 16,
             leaves_in_flight: 1,
+            solver: false,
         }
     }
 }
@@ -74,6 +129,11 @@ pub struct RootEdge<A> {
     pub action: A,
     pub prior: f32,
     pub visits: u32,
+    /// Proven result of playing this move, for the root's side to move
+    /// (D50; always `None` without the solver).
+    pub proof: Option<Proof>,
+    /// Plies to the proving terminal along the proof, counting this move.
+    pub proof_plies: u32,
 }
 
 /// Result of a search.
@@ -88,6 +148,8 @@ pub struct SearchResult<A> {
     /// The network's own value at the root (before search), side-to-move
     /// perspective; 0 for terminal/empty roots.
     pub root_network_value: f32,
+    /// Proven result of the root (D50; always `None` without the solver).
+    pub root_proof: Option<Proof>,
 }
 
 impl<A: Copy + Ord> SearchResult<A> {
@@ -138,6 +200,10 @@ struct Node<G: PuctGame> {
     edges: Vec<Edge<G>>,
     visits_total: u32,
     eval_value: f32,
+    /// Exact result (terminals always; interior nodes only via the solver).
+    proof: Option<Proof>,
+    /// Plies from this node to the proving terminal.
+    proof_plies: u32,
 }
 
 impl<G: PuctGame> Node<G> {
@@ -150,6 +216,51 @@ impl<G: PuctGame> Node<G> {
             edges: Vec::new(),
             visits_total: 0,
             eval_value: 0.0,
+            proof: terminal.map(Proof::from_terminal),
+            proof_plies: 0,
+        }
+    }
+
+    /// The value a traversal reaching this node backs up without expanding
+    /// it: the terminal value, or (with the solver) the proven value.
+    fn known_value(&self, cfg: &PuctConfig) -> Option<f32> {
+        if cfg.solver {
+            self.proof.map(Proof::value)
+        } else {
+            self.terminal
+        }
+    }
+
+    /// D50: derive this node's proof from its children's, if now determined.
+    fn resolve(&mut self) {
+        if self.proof.is_some() || self.edges.is_empty() {
+            return;
+        }
+        let mut win: Option<u32> = None;
+        let mut draw: Option<u32> = None;
+        let mut loss: Option<u32> = None;
+        let mut all_proven = true;
+        for e in &self.edges {
+            let Some((p, plies)) = edge_proof(e) else {
+                all_proven = false;
+                continue;
+            };
+            match p {
+                Proof::Win => win = Some(win.map_or(plies, |w| w.min(plies))),
+                Proof::Draw => draw = Some(draw.map_or(plies, |d| d.min(plies))),
+                // The loser delays the loss as long as possible.
+                Proof::Loss => loss = Some(loss.map_or(plies, |l| l.max(plies))),
+            }
+        }
+        let proven = match (win, all_proven, draw, loss) {
+            (Some(w), _, _, _) => Some((Proof::Win, w)),
+            (None, true, Some(d), _) => Some((Proof::Draw, d)),
+            (None, true, None, Some(l)) => Some((Proof::Loss, l)),
+            _ => None,
+        };
+        if let Some((p, plies)) = proven {
+            self.proof = Some(p);
+            self.proof_plies = plies;
         }
     }
 
@@ -185,16 +296,47 @@ impl<G: PuctGame> Node<G> {
     }
 }
 
+/// Proven result of taking edge `e`, for the side choosing it, with the
+/// plies to the proving terminal (counting the move itself).
+fn edge_proof<G: PuctGame>(e: &Edge<G>) -> Option<(Proof, u32)> {
+    let child = e.child.as_deref()?;
+    child.proof.map(|p| (p.flip(), child.proof_plies + 1))
+}
+
 fn select<G: PuctGame>(node: &Node<G>, cfg: &PuctConfig) -> usize {
+    // D50: always take the shortest proven win; skip proven losses unless
+    // every move loses.
+    let mut skip_losses = false;
+    if cfg.solver {
+        let mut shortest_win: Option<(u32, usize)> = None;
+        let mut all_lose = true;
+        for (i, e) in node.edges.iter().enumerate() {
+            match edge_proof(e) {
+                Some((Proof::Win, plies)) if shortest_win.is_none_or(|(w, _)| plies < w) => {
+                    shortest_win = Some((plies, i));
+                }
+                Some((Proof::Win | Proof::Loss, _)) => {}
+                _ => all_lose = false,
+            }
+        }
+        if let Some((_, i)) = shortest_win {
+            return i;
+        }
+        skip_losses = !all_lose;
+    }
     let sqrt_total = (node.visits_total as f32).sqrt();
-    let mut best = 0usize;
+    let mut best = usize::MAX;
     let mut best_score = f32::NEG_INFINITY;
     for (i, e) in node.edges.iter().enumerate() {
+        if skip_losses && matches!(edge_proof(e), Some((Proof::Loss, _))) {
+            continue;
+        }
         let q = if e.n > 0 { e.w / e.n as f32 } else { 0.0 };
         let u = cfg.c_puct * e.prior * sqrt_total / (1.0 + e.n as f32);
         let score = q + u;
-        let better =
-            score > best_score || (score == best_score && e.prior > node.edges[best].prior);
+        let better = best == usize::MAX
+            || score > best_score
+            || (score == best_score && e.prior > node.edges[best].prior);
         if better {
             best = i;
             best_score = score;
@@ -219,7 +361,7 @@ fn simulate<G: PuctGame>(node: &mut Node<G>, cfg: &PuctConfig) -> Result<f32, Ev
     let child_value = if node.edges[idx].child.is_none() {
         let child_game = node.game.apply(node.edges[idx].action);
         let mut child = Node::new(child_game);
-        let value = match child.terminal {
+        let value = match child.known_value(cfg) {
             Some(t) => t,
             None => {
                 child.expand()?;
@@ -233,11 +375,14 @@ fn simulate<G: PuctGame>(node: &mut Node<G>, cfg: &PuctConfig) -> Result<f32, Ev
             .child
             .as_mut()
             .expect("checked is_some above");
-        match child.terminal {
+        match child.known_value(cfg) {
             Some(t) => t,
             None => simulate(child, cfg)?,
         }
     };
+    if cfg.solver {
+        node.resolve();
+    }
 
     // Child value is from the child's perspective; from this node's perspective
     // it is negated.
@@ -294,7 +439,7 @@ fn descend<G: PuctGame>(root: &mut Node<G>, cfg: &PuctConfig) -> Descent<G> {
             path.push(idx);
             if node.edges[idx].child.is_none() {
                 let child = Node::new(node.game.apply(node.edges[idx].action));
-                match child.terminal {
+                match child.known_value(cfg) {
                     Some(t) => {
                         node.edges[idx].child = Some(Box::new(child));
                         break PathEnd::Value(t);
@@ -303,7 +448,7 @@ fn descend<G: PuctGame>(root: &mut Node<G>, cfg: &PuctConfig) -> Descent<G> {
                 }
             }
             let child = node.edges[idx].child.as_deref_mut().expect("checked");
-            if let Some(t) = child.terminal {
+            if let Some(t) = child.known_value(cfg) {
                 break PathEnd::Value(t);
             }
             node = child;
@@ -312,6 +457,9 @@ fn descend<G: PuctGame>(root: &mut Node<G>, cfg: &PuctConfig) -> Descent<G> {
     match end {
         PathEnd::Value(v) => {
             backup(root, &path, v);
+            if cfg.solver {
+                propagate(root, &path);
+            }
             Descent::Resolved
         }
         PathEnd::Leaf(game) => Descent::Leaf(path, game),
@@ -342,6 +490,17 @@ fn backup<G: PuctGame>(root: &mut Node<G>, path: &[usize], leaf_value: f32) {
                 .as_deref_mut()
                 .expect("path child exists");
         }
+    }
+}
+
+/// D50: re-derive proofs bottom-up along `path` after a known value reached
+/// its end (only a proven end can prove its ancestors).
+fn propagate<G: PuctGame>(node: &mut Node<G>, path: &[usize]) {
+    if let Some((&idx, rest)) = path.split_first() {
+        if let Some(child) = node.edges[idx].child.as_deref_mut() {
+            propagate(child, rest);
+        }
+        node.resolve();
     }
 }
 
@@ -444,6 +603,7 @@ pub fn search_with_root_noise<G: PuctGame>(
             traversals: 0,
             root_value: t,
             root_network_value: 0.0,
+            root_proof: None,
         });
     }
     if cfg.simulations == 0 {
@@ -453,6 +613,7 @@ pub fn search_with_root_noise<G: PuctGame>(
             traversals: 0,
             root_value: 0.0,
             root_network_value: 0.0,
+            root_proof: None,
         });
     }
 
@@ -486,10 +647,15 @@ pub fn search_with_root_noise<G: PuctGame>(
     let edges = node
         .edges
         .iter()
-        .map(|e| RootEdge {
-            action: e.action,
-            prior: e.prior,
-            visits: e.n,
+        .map(|e| {
+            let proven = if cfg.solver { edge_proof(e) } else { None };
+            RootEdge {
+                action: e.action,
+                prior: e.prior,
+                visits: e.n,
+                proof: proven.map(|(p, _)| p),
+                proof_plies: proven.map_or(0, |(_, n)| n),
+            }
         })
         .collect();
 
@@ -499,6 +665,7 @@ pub fn search_with_root_noise<G: PuctGame>(
         traversals: cfg.simulations,
         root_value,
         root_network_value: node.eval_value,
+        root_proof: if cfg.solver { node.proof } else { None },
     })
 }
 
@@ -601,6 +768,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 8,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -631,6 +799,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 32,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -653,6 +822,7 @@ mod tests {
             c_puct: 1.0,
             simulations: 32,
             leaves_in_flight: 1,
+            solver: false,
         };
         let noise = RootNoise {
             epsilon: 0.25,
@@ -699,6 +869,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 4,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -738,6 +909,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 32,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -762,6 +934,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 16,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -792,6 +965,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 10,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -844,6 +1018,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: sims,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -872,6 +1047,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 9,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
@@ -895,12 +1071,136 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 9,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();
         assert_eq!(
             r.edges.iter().map(|e| e.visits).collect::<Vec<_>>(),
             r2.edges.iter().map(|e| e.visits).collect::<Vec<_>>()
+        );
+    }
+
+    fn inner(children: Vec<usize>, value: f32, policy: Option<Vec<f32>>) -> TreeNode {
+        TreeNode {
+            children,
+            terminal: None,
+            value,
+            policy,
+        }
+    }
+
+    fn terminal(value: f32) -> TreeNode {
+        TreeNode {
+            children: vec![],
+            terminal: Some(value),
+            value: 0.0,
+            policy: None,
+        }
+    }
+
+    fn solver_cfg(simulations: u32, leaves_in_flight: u32) -> PuctConfig {
+        PuctConfig {
+            c_puct: 1.0,
+            simulations,
+            leaves_in_flight,
+            solver: true,
+        }
+    }
+
+    /// Root move 0 walks into a mate in one for the opponent; the network
+    /// likes it (prior 0.9, the opponent's node looks bad for the opponent).
+    fn trap_tree() -> Vec<TreeNode> {
+        vec![
+            inner(vec![1, 2], 0.0, Some(vec![0.9, 0.1])),
+            // Opponent to move: move 0 mates the root side, move 1 is quiet.
+            inner(vec![3, 4], -0.8, Some(vec![0.05, 0.95])),
+            inner(vec![5], 0.0, None),
+            terminal(-1.0), // root side to move and checkmated
+            inner(vec![6], 0.0, None),
+            terminal(0.0),
+            terminal(0.0),
+        ]
+    }
+
+    #[test]
+    fn solver_proves_a_losing_move_and_stops_choosing_it() {
+        for k in [1, 4] {
+            let r = search(TreeGame::new(trap_tree()), &solver_cfg(64, k)).unwrap();
+            assert_eq!(r.edges[0].proof, Some(Proof::Loss), "K={k}");
+            assert_eq!(r.edges[0].proof_plies, 2, "K={k}");
+            assert_eq!(r.best_action(), Some(1), "K={k}: {:?}", r.edges);
+            // Once proven, the losing move receives no further visits.
+            let longer = search(TreeGame::new(trap_tree()), &solver_cfg(256, k)).unwrap();
+            assert_eq!(longer.edges[0].visits, r.edges[0].visits, "K={k}");
+        }
+        let off = search(
+            TreeGame::new(trap_tree()),
+            &PuctConfig {
+                c_puct: 1.0,
+                simulations: 64,
+                leaves_in_flight: 1,
+                solver: false,
+            },
+        )
+        .unwrap();
+        assert!(off.edges.iter().all(|e| e.proof.is_none()));
+        assert_eq!(off.root_proof, None);
+    }
+
+    #[test]
+    fn solver_proves_a_win_and_concentrates_visits_on_it() {
+        let nodes = vec![
+            inner(vec![1, 2], 0.0, Some(vec![0.2, 0.8])),
+            terminal(-1.0), // opponent checkmated
+            inner(vec![3], 0.0, None),
+            terminal(0.0),
+        ];
+        for k in [1, 4] {
+            let r = search(TreeGame::new(nodes.clone()), &solver_cfg(64, k)).unwrap();
+            assert_eq!(r.root_proof, Some(Proof::Win), "K={k}");
+            assert_eq!(r.edges[0].proof, Some(Proof::Win));
+            assert_eq!(r.edges[0].proof_plies, 1);
+            assert_eq!(r.best_action(), Some(0));
+            assert!(r.edges[0].visits > 55, "K={k}: {:?}", r.edges);
+        }
+    }
+
+    #[test]
+    fn solver_proves_draws_and_losses_when_every_move_is_proven() {
+        // Every move reaches a terminal: one draws, one loses -> draw.
+        let draw = vec![
+            inner(vec![1, 2], 0.0, None),
+            terminal(0.0),
+            inner(vec![3], 0.0, None),
+            terminal(-1.0), // after move 1 the opponent mates us next
+        ];
+        // `2` is an opponent node with one move (to 3) where the root side is
+        // checkmated: from the root that move is a proven loss.
+        let draw = {
+            let mut d = draw;
+            d[3] = terminal(-1.0);
+            d
+        };
+        let r = search(TreeGame::new(draw), &solver_cfg(64, 1)).unwrap();
+        assert_eq!(r.edges[1].proof, Some(Proof::Loss));
+        assert_eq!(r.edges[0].proof, Some(Proof::Draw));
+        assert_eq!(r.root_proof, Some(Proof::Draw));
+        assert_eq!(r.best_action(), Some(0));
+
+        let lost = vec![
+            inner(vec![1, 2], 0.0, None),
+            inner(vec![3], 0.0, None),
+            inner(vec![4], 0.0, None),
+            terminal(-1.0),
+            terminal(-1.0),
+        ];
+        let r = search(TreeGame::new(lost), &solver_cfg(64, 1)).unwrap();
+        assert_eq!(r.root_proof, Some(Proof::Loss));
+        assert!(
+            r.root_value < -0.9,
+            "exact losses back up: {}",
+            r.root_value
         );
     }
 
@@ -923,6 +1223,7 @@ mod tests {
                 c_puct: 1.0,
                 simulations: 16,
                 leaves_in_flight: 1,
+                solver: false,
             },
         )
         .unwrap();

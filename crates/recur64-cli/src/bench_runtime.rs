@@ -36,6 +36,9 @@ pub struct BenchRuntimeArgs {
     /// Override search_leaves_in_flight (D47 multi-leaf search) for every cell.
     #[arg(long)]
     pub leaves_in_flight: Option<u32>,
+    /// Override search_solver (D50 MCTS-solver) for every cell.
+    #[arg(long)]
+    pub search_solver: Option<bool>,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
     pub active: Option<u32>,
@@ -185,6 +188,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if let Some(k) = args.leaves_in_flight {
         cfg.search_leaves_in_flight = k;
+    }
+    if let Some(solver) = args.search_solver {
+        cfg.search_solver = solver;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {

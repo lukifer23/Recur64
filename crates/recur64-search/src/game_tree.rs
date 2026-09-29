@@ -104,6 +104,7 @@ mod tests {
             c_puct: 1.0,
             simulations: sims,
             leaves_in_flight: 1,
+            solver: false,
         }
     }
 
@@ -146,6 +147,7 @@ mod tests {
             c_puct: 1.0,
             simulations: 64,
             leaves_in_flight: 8,
+            solver: false,
         };
         let r = search(game, &cfg).unwrap();
         assert_eq!(r.traversals, 64);
@@ -178,11 +180,55 @@ mod tests {
             c_puct: 1.0,
             simulations: 64,
             leaves_in_flight: 4,
+            solver: false,
         };
         let r = search(game, &cfg).unwrap();
         assert_eq!(r.best_action(), Some(white_action(Square::A1, Square::A8)));
         assert!(r.root_value > 0.0);
         assert_eq!(r.total_visits, 63);
+    }
+
+    /// D50: the solver proves a mate in one at the root, for the sequential
+    /// and the multi-leaf search.
+    #[test]
+    fn solver_proves_mate_in_one() {
+        for k in [1, 4] {
+            let state = GameState::from_fen("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1").unwrap();
+            let ev = ScriptedEvaluator::new(vec![0.0]);
+            let cfg = PuctConfig {
+                solver: true,
+                leaves_in_flight: k,
+                ..config(64)
+            };
+            let r = search(ChessGame::new(state, &ev), &cfg).unwrap();
+            assert_eq!(r.root_proof, Some(crate::puct::Proof::Win), "K={k}");
+            let mate = white_action(Square::A1, Square::A8);
+            assert_eq!(r.best_action(), Some(mate));
+            let edge = r.edges.iter().find(|e| e.action == mate).unwrap();
+            assert_eq!(edge.proof_plies, 1);
+        }
+    }
+
+    /// D50: K+Q vs K with a mate in two and no mate in one: 1.Kc7 Ka7
+    /// 2.Qa2#. With the solver and a neutral network the search proves it.
+    #[test]
+    fn solver_proves_kqk_mate_in_two() {
+        let state = GameState::from_fen("k7/8/3K4/8/8/8/7Q/8 w - - 0 1").unwrap();
+        let ev = ScriptedEvaluator::new(vec![0.0]);
+        let cfg = PuctConfig {
+            solver: true,
+            ..config(4000)
+        };
+        let r = search(ChessGame::new(state, &ev), &cfg).unwrap();
+        assert_eq!(r.root_proof, Some(crate::puct::Proof::Win), "{:?}", r.edges);
+        let best = r
+            .edges
+            .iter()
+            .filter(|e| e.proof == Some(crate::puct::Proof::Win))
+            .map(|e| e.proof_plies)
+            .min()
+            .unwrap();
+        assert!(best <= 3, "shortest proven mate: {best} plies");
     }
 
     #[test]

@@ -115,6 +115,11 @@ pub enum TrainerPolicy {
     Continuous,
 }
 
+/// The D50 MCTS-solver contract recorded in the identity when enabled:
+/// terminal-only proofs, win if any move wins, proven once all moves are
+/// proven (draw if any draws), shortest win / longest loss.
+pub const SEARCH_SOLVER_VERSION: &str = "mcts_solver_v1";
+
 /// Self-play health thresholds that stop a pilot at a cycle boundary (D49).
 /// `None` disables a check. These bound execution; they never change what a
 /// cycle does, so they are excluded from the scientific identity.
@@ -292,6 +297,17 @@ pub struct RunConfig {
     /// original one-leaf search; values above 1 are a new identity.
     #[serde(default = "default_leaves_in_flight")]
     pub search_leaves_in_flight: u32,
+    /// MCTS-solver (D50) in self-play and arena search: proven results
+    /// propagate, a proven win is always played, proven losses are avoided.
+    /// `false` (default) is the original search; `true` is a new identity.
+    #[serde(default)]
+    pub search_solver: bool,
+    /// Endgame curriculum (D51): a share of self-play games starts from a
+    /// generated won-material endgame. `None` (default) = every game starts
+    /// from `start_fen` / the standard start; `Some` is a new identity.
+    /// Arenas are unaffected.
+    #[serde(default)]
+    pub endgame_curriculum: Option<crate::curriculum::EndgameCurriculum>,
     /// Learner continuity across held cycles (D48). The default keeps D31.
     #[serde(default)]
     pub trainer_policy: TrainerPolicy,
@@ -423,6 +439,7 @@ impl RunConfig {
             root_dirichlet_epsilon: self.arena_root_dirichlet_epsilon,
             deadline: None,
             leaves_in_flight: self.search_leaves_in_flight,
+            solver: self.search_solver,
         }
     }
 
@@ -547,6 +564,20 @@ impl RunConfig {
                 "virtual_loss": 1.0,
             });
         }
+        // The MCTS-solver (D50) applies to self-play and arenas alike; it is
+        // recorded only when enabled, so every pre-D50 identity stays
+        // reproducible.
+        if self.search_solver {
+            identity["search_solver"] = serde_json::json!(SEARCH_SOLVER_VERSION);
+        }
+        // The endgame curriculum (D51) is recorded only when enabled.
+        if let Some(c) = &self.endgame_curriculum {
+            identity["endgame_curriculum"] = serde_json::json!({
+                "version": crate::curriculum::ENDGAME_CURRICULUM_VERSION,
+                "fraction": c.fraction,
+                "families": c.families,
+            });
+        }
         // Continuous training (D48) is recorded only when enabled, so every
         // pre-D48 identity stays reproducible.
         if self.trainer_policy != TrainerPolicy::DiscardHeld {
@@ -605,6 +636,14 @@ impl RunConfig {
                 || (self.root_dirichlet_alpha > 0.0 && self.root_dirichlet_alpha.is_finite()),
             "root_dirichlet_alpha must be finite and > 0 when root noise is enabled"
         );
+        if let Some(c) = &self.endgame_curriculum {
+            c.validate()?;
+            anyhow::ensure!(
+                self.start_fen.is_none(),
+                "endgame_curriculum mixes generated endgames with the standard start; \
+                 it cannot be combined with start_fen"
+            );
+        }
         Ok(())
     }
 }
@@ -892,6 +931,67 @@ openings = ['{e4}']
         assert_eq!(cfg.reuse_updates(65).unwrap(), (5, 130.0));
         cfg.max_updates = 3;
         assert_eq!(cfg.reuse_updates(65).unwrap().0, 3);
+    }
+
+    #[test]
+    fn search_solver_is_a_new_identity_only_when_enabled() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert!(!base.search_solver);
+        assert!(
+            base.scientific_identity()
+                .unwrap()
+                .get("search_solver")
+                .is_none()
+        );
+        assert!(!base.arena_config(0, Vec::new(), 1).solver);
+        let mut on = base.clone();
+        on.search_solver = true;
+        assert_eq!(
+            on.scientific_identity().unwrap()["search_solver"],
+            SEARCH_SOLVER_VERSION
+        );
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            on.scientific_config_hash().unwrap()
+        );
+        assert!(
+            on.arena_config(0, Vec::new(), 1).solver,
+            "arenas use it too"
+        );
+    }
+
+    #[test]
+    fn endgame_curriculum_is_a_validated_new_identity_only_when_enabled() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert!(base.endgame_curriculum.is_none());
+        assert!(
+            base.scientific_identity()
+                .unwrap()
+                .get("endgame_curriculum")
+                .is_none()
+        );
+        let toml = format!(
+            "{}\n[endgame_curriculum]\nfraction = 0.25\nfamilies = [\"KQvK\", \"KRvK\"]\n",
+            base_toml()
+        );
+        let on = RunConfig::from_toml_str(&toml).unwrap();
+        let id = on.scientific_identity().unwrap();
+        assert_eq!(id["endgame_curriculum"]["fraction"], 0.25);
+        assert_eq!(
+            id["endgame_curriculum"]["version"],
+            crate::curriculum::ENDGAME_CURRICULUM_VERSION
+        );
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            on.scientific_config_hash().unwrap()
+        );
+        on.ensure_supported().unwrap();
+        let mut bad = on.clone();
+        bad.endgame_curriculum.as_mut().unwrap().families = vec!["KBvK".into()];
+        assert!(bad.ensure_supported().is_err());
+        let mut both = on.clone();
+        both.start_fen = Some("8/8/8/4k3/8/8/8/3QK3 w - - 0 1".into());
+        assert!(both.ensure_supported().is_err());
     }
 
     #[test]

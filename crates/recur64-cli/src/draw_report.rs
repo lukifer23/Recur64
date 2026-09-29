@@ -3,7 +3,9 @@
 //! Reconstructs every replay game and, per cycle, classifies each draw by
 //! how it arose: a *failed conversion* (one side held a decisive material
 //! advantage, a rook or more, at some point in the final 100 plies and still
-//! drew) versus a *balanced* draw. Diagnostic only: CPU, no network.
+//! drew) versus a *balanced* draw. Games from any other start (D51 endgame
+//! curriculum, configured start FENs) are reported separately, so the
+//! standard-start series stays comparable. Diagnostic only: CPU, no network.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -64,10 +66,15 @@ pub fn run(args: DrawReportArgs) -> anyhow::Result<()> {
     }
     games.sort_by_key(|g| g.game_id);
     games.dedup_by_key(|g| g.game_id);
-    let mut cycles: BTreeMap<u64, CycleDraws> = BTreeMap::new();
-    let mut sums: BTreeMap<u64, (f64, f64, f64, f64)> = BTreeMap::new();
+    let standard_fen = GameState::startpos().to_fen();
+    // Keyed by (standard start?, cycle).
+    let mut cycles: BTreeMap<(bool, u64), CycleDraws> = BTreeMap::new();
+    let mut sums: BTreeMap<(bool, u64), (f64, f64, f64, f64)> = BTreeMap::new();
     for game in &games {
-        let cycle = game.game_id / args.games_per_cycle.max(1);
+        let cycle = (
+            game.start_fen == standard_fen,
+            game.game_id / args.games_per_cycle.max(1),
+        );
         let mut state = GameState::from_fen(&game.start_fen)?;
         let mut balances = vec![material_balance(state.board())];
         for ply in &game.plies {
@@ -109,15 +116,17 @@ pub fn run(args: DrawReportArgs) -> anyhow::Result<()> {
             None => {}
         }
     }
-    for (cycle, c) in cycles.iter_mut() {
-        let s = sums[cycle];
+    for (key, c) in cycles.iter_mut() {
+        let s = sums[key];
+        let (standard, cycle) = *key;
         let d = c.draws.max(1) as f64;
         c.mean_draw_plies = s.0 / d;
         c.mean_final_material_draws = s.1 / d;
         c.mean_peak_advantage_draws = s.2 / d;
         c.mean_decisive_plies = s.3 / c.decisive_games.max(1) as f64;
         println!(
-            "cycle {cycle}: games {} draws {} (failed conversions {} = {:.0}%) by term {:?} | draw plies {:.0} final material {:.1} peak adv {:.1} | decisive {} plies {:.0}",
+            "{} cycle {cycle}: games {} draws {} (failed conversions {} = {:.0}%) by term {:?} | draw plies {:.0} final material {:.1} peak adv {:.1} | decisive {} plies {:.0}",
+            if standard { "standard" } else { "other-start" },
             c.games,
             c.draws,
             c.failed_conversions,
@@ -130,13 +139,21 @@ pub fn run(args: DrawReportArgs) -> anyhow::Result<()> {
             c.mean_decisive_plies
         );
     }
+    let split = |standard: bool| -> BTreeMap<u64, CycleDraws> {
+        cycles
+            .iter()
+            .filter(|((s, _), _)| *s == standard)
+            .map(|((_, cycle), c)| (*cycle, c.clone()))
+            .collect()
+    };
     std::fs::create_dir_all(&args.output)?;
     let report = serde_json::json!({
         "replay": args.replay,
         "games_per_cycle": args.games_per_cycle,
         "decisive_advantage": args.decisive_advantage,
         "window": args.window,
-        "cycles": cycles,
+        "cycles": split(true),
+        "other_start_cycles": split(false),
     });
     std::fs::write(
         args.output.join("draw-report.json"),

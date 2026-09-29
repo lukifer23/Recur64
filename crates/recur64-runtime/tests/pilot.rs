@@ -17,7 +17,10 @@ simulations_per_move = 2
 games_per_cycle = 4
 concurrent_games = 2
 cpu_workers = 2
-ply_cap = 40
+# From K+R vs K+R every game ends by ply 300 (fifty-move rule; at most two
+# captures, then insufficient material), so this cap never truncates and
+# every cycle trains.
+ply_cap = 320
 start_fen = "8/8/8/3k4/3r4/3R4/8/3K4 w - - 0 1"
 train_batch = 4
 accumulation_steps = 2
@@ -41,9 +44,19 @@ output_blocks = 0
     c
 }
 
+/// Serializes seeded initialization: the backend RNG is process-global and
+/// the tests in this file run in parallel.
+static FREEZE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn freeze(c: &RunConfig, dir: &std::path::Path) -> String {
     let device = Default::default();
-    let model = model_io::build::<CpuTrainBackend>(&c.model, &device);
+    // Seeded like `freeze-reference`: unseeded weights made every run a
+    // different fixture, and some fixtures never finish a game in the ply cap.
+    let model = {
+        let _guard = FREEZE.lock().unwrap();
+        <CpuTrainBackend as burn::tensor::backend::Backend>::seed(&device, c.seed);
+        model_io::build::<CpuTrainBackend>(&c.model, &device)
+    };
     let meta = CheckpointMeta::new(c.model.clone(), 1, false, 0, c.lr, c.seed, 0, "cpu", "fp32");
     save_training(dir, &model, &adamw::<CpuTrainBackend, _>(), &meta).unwrap();
     let meta: serde_json::Value =

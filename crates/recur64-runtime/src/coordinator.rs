@@ -65,7 +65,87 @@ pub struct SelfPlayMetrics {
     pub trainable_games: u64,
     /// Search-target health over every generated ply and over trainable plies.
     pub target_health: TargetHealth,
+    /// Games from the configured start (all games without a curriculum).
+    /// Health stops and cross-run comparisons read this subset.
+    pub standard_start: StartSubset,
+    /// Games from generated endgames (D51); `None` without a curriculum.
+    pub curriculum: Option<StartSubset>,
     pub inference: MetricsSnapshot,
+}
+
+/// Outcome summary for the games of one start kind.
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct StartSubset {
+    pub games: u64,
+    pub draws: u64,
+    pub decisive: u64,
+    pub truncated: u64,
+    pub draw_share: f64,
+    pub mean_game_plies: f64,
+    pub terminations: BTreeMap<String, u64>,
+    /// Wins by the side with more material at the start, and by the other
+    /// side (curriculum conversion; both 0 for balanced starts).
+    pub stronger_side_wins: u64,
+    pub weaker_side_wins: u64,
+}
+
+impl StartSubset {
+    fn push(&mut self, r: &GameRecord) {
+        self.games += 1;
+        *self.terminations.entry(r.termination.clone()).or_insert(0) += 1;
+        self.mean_game_plies += r.plies.len() as f64;
+        match r.outcome {
+            Some(1) => self.draws += 1,
+            Some(o) => {
+                self.decisive += 1;
+                let balance = GameState::from_fen(&r.start_fen)
+                    .map(|s| recur64_core::material_balance(s.board()))
+                    .unwrap_or(0);
+                let white_won = o == 0;
+                if balance != 0 {
+                    if (balance > 0) == white_won {
+                        self.stronger_side_wins += 1;
+                    } else {
+                        self.weaker_side_wins += 1;
+                    }
+                }
+            }
+            None => self.truncated += 1,
+        }
+    }
+
+    fn finish(mut self) -> Self {
+        let n = self.games.max(1) as f64;
+        self.draw_share = self.draws as f64 / n;
+        self.mean_game_plies /= n;
+        self
+    }
+
+    /// `(threefold + fifty-move) / games`.
+    pub fn threefold_fifty_share(&self) -> f64 {
+        let t = |k: &str| self.terminations.get(k).copied().unwrap_or(0);
+        (t("threefold_repetition") + t("fifty_move_rule")) as f64 / self.games.max(1) as f64
+    }
+
+    pub fn truncation_share(&self) -> f64 {
+        self.truncated as f64 / self.games.max(1) as f64
+    }
+}
+
+/// Split records into standard-start and curriculum games (by game id).
+fn start_subsets(cfg: &RunConfig, records: &[GameRecord]) -> (StartSubset, Option<StartSubset>) {
+    let mut standard = StartSubset::default();
+    let mut curriculum = StartSubset::default();
+    for r in records {
+        match &cfg.endgame_curriculum {
+            Some(c) if c.is_curriculum_game(r.game_id) => curriculum.push(r),
+            _ => standard.push(r),
+        }
+    }
+    (
+        standard.finish(),
+        cfg.endgame_curriculum.as_ref().map(|_| curriculum.finish()),
+    )
 }
 
 /// Mean visit-target entropy and top-1 share over a set of plies.
@@ -144,6 +224,7 @@ pub(crate) fn selfplay_metrics(
     }
     let plies: u64 = records.iter().map(|r| r.plies.len() as u64).sum();
     let games = records.len() as u64;
+    let (standard_start, curriculum) = start_subsets(cfg, records);
     let repetition_share = terminations
         .get("threefold_repetition")
         .copied()
@@ -178,6 +259,8 @@ pub(crate) fn selfplay_metrics(
             .sum(),
         trainable_games: games - truncated,
         target_health: target_health(records),
+        standard_start,
+        curriculum,
         inference,
     }
 }
@@ -296,6 +379,7 @@ pub(crate) fn collect_parallel_diag(
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
         search_leaves_in_flight: cfg.search_leaves_in_flight,
+        search_solver: cfg.search_solver,
     };
     let search_record = SearchRecord {
         simulations: cfg.simulations_per_move,
@@ -342,7 +426,20 @@ pub(crate) fn collect_parallel_diag(
                     let game_id = game_id_base.wrapping_add(game_index as u64);
                     let game_seed = selfplay_game_seed(seed, game_id);
                     let mut rng = recur64_search::Rng::new(game_seed);
-                    match play_game_from(ev, &sp, &mut rng, start_state.clone()) {
+                    // D51: curriculum games start from a generated endgame.
+                    let start = match &cfg.endgame_curriculum {
+                        Some(c) if c.is_curriculum_game(game_id) => {
+                            match c.start_position(seed, game_id) {
+                                Ok(s) => s,
+                                Err(e) => {
+                                    failures.push(format!("game {game_id}: curriculum: {e}"));
+                                    continue;
+                                }
+                            }
+                        }
+                        _ => start_state.clone(),
+                    };
+                    match play_game_from(ev, &sp, &mut rng, start) {
                         Ok(mut g) => {
                             g.seed = game_seed;
                             diag_all.lock().expect("diag mutex").add(&g.root_diag);
@@ -804,6 +901,59 @@ mod collection_tests {
         let err =
             collect_parallel(&config, &Failing, &CancelToken::new(), deadline, 0).unwrap_err();
         assert!(err.to_string().contains("2 self-play games failed"));
+    }
+
+    /// D51: curriculum games start from generated endgames at the scheduled
+    /// game ids (across cycles), the rest from the standard start, and the
+    /// metrics split them.
+    #[test]
+    fn curriculum_games_start_from_generated_endgames_and_are_split() {
+        let mut config = cfg();
+        config.games_per_cycle = Some(8);
+        config.concurrent_games = Some(4);
+        config.cpu_workers = 4;
+        config.simulations_per_move = 4;
+        config.ply_cap = 16;
+        config.endgame_curriculum = Some(crate::curriculum::EndgameCurriculum {
+            fraction: 0.5,
+            families: vec!["KQvK".into(), "KRvK".into()],
+        });
+        let ev = recur64_search::FixedEvaluator::uniform(0.0);
+        let deadline = Instant::now() + Duration::from_secs(60);
+        let (records, _) =
+            collect_parallel_diag(&config, &ev, &CancelToken::new(), deadline, 8).unwrap();
+        assert_eq!(records.len(), 8);
+        let startpos = GameState::startpos().to_fen();
+        let c = config.endgame_curriculum.as_ref().unwrap();
+        for r in &records {
+            if c.is_curriculum_game(r.game_id) {
+                assert_eq!(
+                    r.start_fen,
+                    c.start_position(config.seed, r.game_id).unwrap().to_fen()
+                );
+            } else {
+                assert_eq!(r.start_fen, startpos);
+            }
+        }
+        let m = selfplay_metrics(
+            &config,
+            &records,
+            crate::inference::InferenceMetrics::default().snapshot(),
+        );
+        assert_eq!(m.standard_start.games, 4);
+        let cur = m.curriculum.expect("curriculum subset");
+        assert_eq!(cur.games, 4);
+        assert_eq!(cur.games, cur.draws + cur.decisive + cur.truncated);
+        assert_eq!(cur.decisive, cur.stronger_side_wins + cur.weaker_side_wins);
+        // Without a curriculum the standard subset is every game.
+        config.endgame_curriculum = None;
+        let m = selfplay_metrics(
+            &config,
+            &records,
+            crate::inference::InferenceMetrics::default().snapshot(),
+        );
+        assert_eq!(m.standard_start.games, 8);
+        assert!(m.curriculum.is_none());
     }
 
     #[test]

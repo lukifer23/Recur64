@@ -1685,3 +1685,40 @@ identities:
 Both keep outcomes-from-own-play labels: no material shaping, contempt,
 tablebases or engine labels. The solver's effect is measured on its own
 first, so the two changes can be attributed separately.
+
+## D50/D51 stage 1: conversion probe (pre-registration, written before the run)
+
+No training takes place: fixed networks, the `f10-qual` self-play contract
+(64 sims, K = 2, root noise 0.25, sampling for 30 plies), 64 games per cell,
+identical seeds, and every game starting from a generated endgame (D51
+generator, fraction 1.0).
+
+- **Configs:**
+  - `configs/phase4/conversion-probe-target.toml`: K+Q / K+R vs K
+  - `configs/phase4/conversion-probe-heavy.toml`: K+Q+Q / K+Q+R / K+R+R vs K
+- **Networks:** `snapshot-005` (P4.6, latest promoted) and reference v2.
+- **Cells:** each probe x network, with the solver off and on (8 cells),
+  plus the standard start (`f10-qual.toml`) on `snapshot-005` with the
+  solver off and on (throughput and draws).
+- **Metric:** stronger-side wins out of 64 (conversion).
+
+**D50 rule.** Adopt the solver when all of these hold:
+
+1. On every probe cell pair, conversion with the solver is at least
+   conversion without it.
+2. On the standard start, trainable pos/s with the solver is at least 0.90x
+   of without, and there are 0 inference errors.
+3. The standard-start draw share with the solver is not higher by more than
+   0.10.
+
+Effect sizes are reported either way.
+
+**D51 family rule (for the stage 2 pilot).** A family set enters the
+curriculum only if, with the solver on and on `snapshot-005`, it converts at
+least 8 of 64. If only the heavy set qualifies, the pilot uses the heavy set
+plus the target set, so the target families are trained, not just measured.
+If neither qualifies, stop and report: the curriculum cannot produce a
+conversion signal at this scale.
+
+Stage 2 (a curriculum pilot against P4.6 cycles 0-5) is pre-registered
+separately, after stage 1, with the measured family choice.

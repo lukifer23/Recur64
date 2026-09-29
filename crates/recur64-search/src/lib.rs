@@ -19,6 +19,6 @@ pub use play::{
     play_game_from, play_game_seeded,
 };
 pub use puct::{
-    PuctConfig, PuctGame, RootEdge, RootNoise, SearchResult, search, search_with_root_noise,
+    Proof, PuctConfig, PuctGame, RootEdge, RootNoise, SearchResult, search, search_with_root_noise,
 };
 pub use rng::Rng;

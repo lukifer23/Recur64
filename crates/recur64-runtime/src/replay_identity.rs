@@ -34,6 +34,12 @@ pub struct ReplayIdentityEntry {
     pub recurrence: usize,
     pub ply_cap: u32,
     pub start_fen: Option<String>,
+    /// D50 MCTS-solver; absent (false) in pre-D50 sidecars.
+    #[serde(default)]
+    pub search_solver: bool,
+    /// D51 endgame curriculum; absent (none) in pre-D51 sidecars.
+    #[serde(default)]
+    pub endgame_curriculum: Option<crate::curriculum::EndgameCurriculum>,
     pub git_revision: Option<String>,
 }
 
@@ -62,6 +68,8 @@ impl ReplayIdentityEntry {
             recurrence: cfg.recurrence,
             ply_cap: cfg.ply_cap,
             start_fen: cfg.start_fen.clone(),
+            search_solver: cfg.search_solver,
+            endgame_curriculum: cfg.endgame_curriculum.clone(),
             git_revision: option_env!("RECUR64_GIT_SHA").map(str::to_owned),
         })
     }

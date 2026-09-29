@@ -40,6 +40,8 @@ pub struct ArenaConfig {
     pub deadline: Option<std::time::Instant>,
     /// Leaves per search round (D47); `1` = original search.
     pub leaves_in_flight: u32,
+    /// MCTS-solver for both sides (D50); `false` = original search.
+    pub solver: bool,
 }
 
 impl Default for ArenaConfig {
@@ -58,6 +60,7 @@ impl Default for ArenaConfig {
             root_dirichlet_epsilon: 0.0,
             deadline: None,
             leaves_in_flight: 1,
+            solver: false,
         }
     }
 }
@@ -144,6 +147,7 @@ pub fn run_arena(
         root_dirichlet_alpha: cfg.root_dirichlet_alpha,
         root_dirichlet_epsilon: cfg.root_dirichlet_epsilon,
         search_leaves_in_flight: cfg.leaves_in_flight,
+        search_solver: cfg.solver,
     };
 
     let openings: Vec<String> = if cfg.openings.is_empty() {

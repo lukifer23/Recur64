@@ -673,6 +673,91 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     has to stop with the evidence recorded.
 - **Test:** `health_stops_trigger_on_the_preregistered_conditions`.
 
+## D50 - MCTS-solver (proven-result propagation)
+
+- **Status:** IMPLEMENTED, measurement pending (2026-09-29; owner-chosen fix
+  for the draw drift, with D51)
+- **Decision:** `search_solver = true` enables an MCTS-solver in self-play
+  and arena search (`mcts_solver_v1`):
+  - Proofs come only from the rules profile's terminals, never from the
+    network. The tree is path-dependent, so repetition draws are exact.
+  - A node is a proven win when some move reaches a proven loss for the
+    opponent. It is proven once every move is proven: a draw if any move
+    draws, otherwise a loss.
+  - A proven node is not expanded further. Traversals reaching it back up
+    its exact value, as for a terminal.
+  - Selection always takes the shortest proven win and never a proven loss
+    while an alternative exists.
+  - Self-play and arena move choice play a proven root win (the shortest)
+    regardless of temperature, and never sample a proven losing move while an
+    alternative exists.
+  - The default `false` is the original search, unchanged (tested). The
+    identity records the solver only when it is enabled.
+- **Why:** checkmate is the only signal in the system. At 64 sims a found
+  mate is still averaged with network values and diluted by root noise and
+  sampling, so near-horizon mates are missed. The solver makes every found
+  forced result exact and decisive.
+- **Limit (INFERRED):** losing the queen in K+Q vs K reaches K vs K, a
+  terminal *draw*. The solver values that exactly at 0, which is what the
+  network already believes of the position with the queen. The solver
+  therefore cannot by itself stop material being thrown away; only a value
+  head that knows material wins can. That is D51's job.
+- **Tests:**
+  - puct: `solver_proves_a_losing_move_and_stops_choosing_it`,
+    `solver_proves_a_win_and_concentrates_visits_on_it`,
+    `solver_proves_draws_and_losses_when_every_move_is_proven`
+  - game_tree: `solver_proves_mate_in_one` (K = 1 and 4),
+    `solver_proves_kqk_mate_in_two`
+  - play: `solver_always_plays_a_found_mate`,
+    `solver_avoids_proven_losses_and_is_inert_when_off`
+  - config: `search_solver_is_a_new_identity_only_when_enabled`
+
+## D51 - Endgame curriculum (generated won-material starts)
+
+- **Status:** IMPLEMENTED, measurement pending (2026-09-29; owner-chosen fix
+  for the draw drift, with D50)
+- **Decision:** `[endgame_curriculum] fraction, families` starts that share
+  of self-play games from a generated endgame (`endgame_curriculum_v1`):
+  - **Families:** `K<pieces>vK<pieces>`, stronger side first (e.g. `KQvK`,
+    `KRRvK`, `KRPvKP`). The stronger side needs a queen, rook or pawn, and
+    more material.
+  - **Selection:** exactly `floor(n * fraction)` of the first n games by
+    global game id, spread evenly.
+  - **Generation:** positions are uniform random placements, deterministic
+    from the run seed and game id. Both colours and both sides to move occur.
+  - **Rejected placements:**
+    - adjacent kings
+    - pawns on the first or last rank
+    - illegal positions (the side not to move in check)
+    - terminal positions
+    - the side to move in check
+    - any capture available
+  - **Unchanged:** moves, search targets and outcome labels all come from
+    the network's own play. There is no tablebase, engine label, material
+    reward, contempt or adjudication, and a drawn won-material game is
+    labelled a draw.
+  - **Scope:** arenas are unaffected, and `start_fen` cannot be combined
+    with the curriculum.
+  - **Metrics:** self-play reports `standard_start` and `curriculum` subsets
+    (with stronger- and weaker-side wins). D49 health stops read the
+    standard-start subset, and `draw-report` reports other starts
+    separately.
+- **Why:** P4.6 self-play almost never mates (1-6 of 64 K+Q vs K games), so
+  won endgames are labelled draws. Games that start in simplified won
+  positions put mates within reach of 64-sim search, especially with D50,
+  and give the value head outcome-labelled evidence that material converts.
+- **Risk (pre-registered):** if the network cannot convert even the
+  simplified starts, the curriculum only adds draws. Stage 1 measures
+  conversion per family before any training run.
+- **Tests:**
+  - curriculum: `families_parse_and_invalid_ones_are_refused`,
+    `curriculum_games_are_an_exact_even_share`,
+    `generated_positions_are_legal_quiet_decisive_and_reproducible`
+  - coordinator:
+    `curriculum_games_start_from_generated_endgames_and_are_split`
+  - config:
+    `endgame_curriculum_is_a_validated_new_identity_only_when_enabled`
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

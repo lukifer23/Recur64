@@ -8,7 +8,7 @@ use recur64_core::{ActionId, Color, GameState, Outcome, StandardMove, Terminatio
 
 use crate::evaluator::Evaluator;
 use crate::game_tree::ChessGame;
-use crate::puct::{PuctConfig, RootEdge, RootNoise, search_with_root_noise};
+use crate::puct::{Proof, PuctConfig, RootEdge, RootNoise, search_with_root_noise};
 use crate::rng::Rng;
 
 /// Game-play configuration.
@@ -31,6 +31,9 @@ pub struct SelfPlayConfig {
     pub root_dirichlet_epsilon: f32,
     /// Leaves evaluated together per search round (D47); `1` = original search.
     pub search_leaves_in_flight: u32,
+    /// MCTS-solver (D50): propagate proven results in search, always play a
+    /// proven win and avoid proven losses. `false` = original search.
+    pub search_solver: bool,
 }
 
 impl Default for SelfPlayConfig {
@@ -45,6 +48,7 @@ impl Default for SelfPlayConfig {
             root_dirichlet_alpha: 0.3,
             root_dirichlet_epsilon: 0.0,
             search_leaves_in_flight: 1,
+            search_solver: false,
         }
     }
 }
@@ -210,6 +214,34 @@ fn sample_action(edges: &[RootEdge<ActionId>], temperature: f32, rng: &mut Rng) 
     best.action
 }
 
+/// D50 move choice: the shortest proven win if any (then most visits, then
+/// lower action); otherwise the edges that are not proven losses (all edges
+/// if every move loses). Without proofs this is every edge.
+fn solver_candidates(edges: &[RootEdge<ActionId>]) -> Result<ActionId, Vec<RootEdge<ActionId>>> {
+    let win = edges
+        .iter()
+        .filter(|e| e.proof == Some(Proof::Win))
+        .min_by(|a, b| {
+            a.proof_plies
+                .cmp(&b.proof_plies)
+                .then_with(|| b.visits.cmp(&a.visits))
+                .then_with(|| a.action.cmp(&b.action))
+        });
+    if let Some(w) = win {
+        return Ok(w.action);
+    }
+    let alive: Vec<RootEdge<ActionId>> = edges
+        .iter()
+        .filter(|e| e.proof != Some(Proof::Loss))
+        .cloned()
+        .collect();
+    Err(if alive.is_empty() {
+        edges.to_vec()
+    } else {
+        alive
+    })
+}
+
 /// Play one complete game from the standard start position.
 pub fn play_game(
     evaluator: &dyn Evaluator,
@@ -254,6 +286,7 @@ pub fn play_game_from(
                 c_puct: cfg.c_puct,
                 simulations: cfg.simulations_per_move,
                 leaves_in_flight: cfg.search_leaves_in_flight,
+                solver: cfg.search_solver,
             },
             root_noise.as_ref(),
         )?;
@@ -288,7 +321,14 @@ pub fn play_game_from(
         }
         let target = sparse_target(&result.edges, result.total_visits);
         let temperature = cfg.temperature_at(state.ply() - start_ply);
-        let selected = sample_action(&result.edges, temperature, rng);
+        let selected = if cfg.search_solver {
+            match solver_candidates(&result.edges) {
+                Ok(win) => win,
+                Err(alive) => sample_action(&alive, temperature, rng),
+            }
+        } else {
+            sample_action(&result.edges, temperature, rng)
+        };
         plies.push(SelfPlayPly {
             selected,
             target,
@@ -344,6 +384,66 @@ mod tests {
         assert_eq!(cfg.temperature_at(200), 0.0);
         let always = SelfPlayConfig::default();
         assert_eq!(always.temperature_at(500), always.temperature);
+    }
+
+    /// D50: with the solver, K+Q vs K positions with a mate in one are always
+    /// converted, even when sampling at temperature 1 with a neutral network.
+    #[test]
+    fn solver_always_plays_a_found_mate() {
+        let ev = crate::evaluator::FixedEvaluator::uniform(0.0);
+        // White: Kb6, Qh7 (Qb7# and Qa7# are both mate); Black: Ka8.
+        let fen = "k7/7Q/1K6/8/8/8/8/8 w - - 0 1";
+        let solver = SelfPlayConfig {
+            simulations_per_move: 64,
+            temperature: 1.0,
+            ply_cap: 40,
+            search_solver: true,
+            ..SelfPlayConfig::default()
+        };
+        for seed in 0..16 {
+            let state = GameState::from_fen(fen).unwrap();
+            let g = play_game_from(&ev, &solver, &mut Rng::new(seed), state).unwrap();
+            assert_eq!(g.termination, Termination::Checkmate, "seed {seed}");
+            assert_eq!(g.plies.len(), 1, "mate is played at once, seed {seed}");
+        }
+    }
+
+    /// D50: a proven losing move is never chosen while an alternative exists,
+    /// and the solver is inert when disabled (same game as the original).
+    #[test]
+    fn solver_avoids_proven_losses_and_is_inert_when_off() {
+        let ev = crate::evaluator::FixedEvaluator::uniform(0.0);
+        let proven_loss = RootEdge {
+            action: ActionId::from_index(1).unwrap(),
+            prior: 0.5,
+            visits: 60,
+            proof: Some(Proof::Loss),
+            proof_plies: 2,
+        };
+        let open = RootEdge {
+            action: ActionId::from_index(2).unwrap(),
+            prior: 0.5,
+            visits: 3,
+            proof: None,
+            proof_plies: 0,
+        };
+        let alive = solver_candidates(&[proven_loss.clone(), open.clone()]).unwrap_err();
+        assert_eq!(alive.len(), 1);
+        assert_eq!(alive[0].action, open.action);
+        let all_lose = solver_candidates(std::slice::from_ref(&proven_loss)).unwrap_err();
+        assert_eq!(all_lose.len(), 1, "every move loses: keep them all");
+
+        let base = SelfPlayConfig {
+            simulations_per_move: 16,
+            ply_cap: 10,
+            ..SelfPlayConfig::default()
+        };
+        let a = play_game(&ev, &base, &mut Rng::new(3)).unwrap();
+        let b = play_game(&ev, &base, &mut Rng::new(3)).unwrap();
+        assert_eq!(
+            a.plies.iter().map(|p| p.selected).collect::<Vec<_>>(),
+            b.plies.iter().map(|p| p.selected).collect::<Vec<_>>()
+        );
     }
 
     #[test]
