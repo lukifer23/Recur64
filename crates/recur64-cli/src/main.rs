@@ -14,6 +14,7 @@ mod cuda_smoke;
 mod doctor;
 mod draw_report;
 mod eval_arena;
+mod forward_probe;
 mod inspect;
 mod model_info;
 mod perft;
@@ -75,6 +76,8 @@ enum Commands {
     EvalArena(eval_arena::EvalArenaArgs),
     /// Classify self-play draws per cycle (failed conversion vs balanced).
     DrawReport(draw_report::DrawReportArgs),
+    /// Raw network outputs (parity) and forward latency vs batch size.
+    ForwardProbe(forward_probe::ForwardProbeArgs),
     /// Generate the frozen evaluation opening suite.
     GenOpenings(phase3::GenOpeningsArgs),
     /// Evaluate a checkpoint's raw policy (no search) vs random legal play.
@@ -110,6 +113,7 @@ fn main() -> anyhow::Result<()> {
         Commands::SearchGain(args) => search_gain::run(args),
         Commands::EvalArena(args) => eval_arena::run(args),
         Commands::DrawReport(args) => draw_report::run(args),
+        Commands::ForwardProbe(args) => forward_probe::run(args),
         Commands::GenOpenings(args) => phase3::run_gen_openings(args),
         Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
         Commands::Pilot(args) => phase3::run_pilot_cmd(args),

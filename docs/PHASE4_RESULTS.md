@@ -1739,3 +1739,88 @@ conversion signal at this scale.
 
 Stage 2 (a curriculum pilot against P4.6 cycles 0-5) is pre-registered
 separately, after stage 1, with the measured family choice.
+
+## D50/D51 stage 1 result (MEASURED)
+
+Binary `a14c343` (D52-fixed), the `f10-qual` contract, 64 games per cell,
+identical seeds, 0 inference errors in every cell. Artifacts:
+`docs/evidence/phase4/stage1/`.
+
+**Conversion probes** (stronger-side wins of 64):
+
+| starts | network | solver off | solver on |
+|---|---|---:|---:|
+| target: K+Q / K+R vs K | snapshot-005 | 1 | 1 |
+| target | reference v2 | 2 | 2 |
+| heavy: K+Q+Q / K+Q+R / K+R+R vs K | snapshot-005 | 35 | 34 |
+| heavy | reference v2 | 36 | 35 |
+
+- In the target families about 50 of 64 games end in insufficient
+  material: the extra piece is given away.
+- The trained and untrained networks convert equally. Training taught no
+  conversion, which confirms the root cause.
+
+**Standard start, snapshot-005:**
+
+| solver | draws / 64 | failed conversions | decisive | trainable pos/s |
+|---|---:|---:|---:|---:|
+| off | 45 | 31 | 19 | 22.6 |
+| on | 43 | 30 | 21 | 21.5 |
+
+The solver-off cell reproduces the depth-comparison cell A exactly (45 / 31
+/ 19, 226 plies). The D52 binary and the D50/D51 code leave the
+default-off behaviour unchanged.
+
+**D50 rule: FAILS, not adopted.**
+
+- Rule 1 fails on both heavy pairs: 34 < 35 and 35 < 36. Those differences
+  are one game each, within noise, but the pre-registered rule is applied
+  as written.
+- Rules 2 and 3 pass: throughput 0.95x, draw share lower.
+- The code stays, off by default. As D50 anticipated, conversion is lost by
+  giving material away, not by missing found mates.
+
+**D51 family rule.**
+
+- Heavy qualifies: 34 with the solver on `snapshot-005` (35 without).
+- Target does not: 1 of 64.
+- Per the rule, the stage 2 pilot uses heavy + target families, without the
+  solver.
+
+## Throughput pass T1: Burn kernel fusion and autotune (pre-registration, written before the run)
+
+**Finding (MEASURED, `cargo tree`).**
+
+- The CUDA build enables only `burn-cuda/std`: no `fusion` and no
+  `autotune`, which are Burn's defaults. `default-features = false` drops
+  them.
+- Forward latency is about 16 ms per batch and nearly flat from batch 18 to
+  32, with GPU utilization around 56% (D47 cells). That points to
+  launch-bound unfused kernels.
+
+**Builds (same source, same commit):**
+
+- A: `--features cuda`, the current build
+- B: `--features cuda,burn/fusion,burn/autotune`
+
+**Measurements:**
+
+1. `recur64 forward-probe` on the same 1,024 replay positions
+   (`runs/depth-A/replay`, network `snapshot-005`):
+   - raw outputs, for numerical parity
+   - forward latency at batch 1 / 8 / 16 / 32 / 64 / 128 / 256
+2. `bench-runtime`, standard start, `snapshot-005`, the stage 1
+   standard-start cell settings (64 games, 64 sims, K = 2, 32 x 64 x 500 us):
+   trainable pos/s.
+3. `bench-train` on the same replay, 64x4, effective batch 256:
+   examples/s, and the loss trajectory against A.
+
+**Adopt B as the CUDA build (a new ADR) only if all hold:**
+
+- Parity: max |policy probability difference| <= 1e-3 and max |WDL
+  difference| <= 1e-3 over the 1,024 positions (FP32 reordering only).
+- `bench-runtime`: 0 errors and trainable pos/s >= 1.10x A.
+- `bench-train`: finite losses, and first and last loss within 2% of A.
+  Examples/s is reported.
+
+Otherwise B is not adopted and the numbers are reported.

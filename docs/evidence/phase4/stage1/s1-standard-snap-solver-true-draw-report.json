@@ -1,0 +1,31 @@
+{
+  "cycles": {
+    "0": {
+      "decisive_games": 21,
+      "draws": 43,
+      "draws_by_termination": {
+        "fifty_move_rule": 13,
+        "insufficient_material": 26,
+        "stalemate": 1,
+        "threefold_repetition": 3
+      },
+      "failed_conversions": 30,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 5,
+        "insufficient_material": 23,
+        "stalemate": 1,
+        "threefold_repetition": 1
+      },
+      "games": 64,
+      "mean_decisive_plies": 115.66666666666667,
+      "mean_draw_plies": 269.90697674418607,
+      "mean_final_material_draws": 3.953488372093023,
+      "mean_peak_advantage_draws": 6.976744186046512
+    }
+  },
+  "decisive_advantage": 5,
+  "games_per_cycle": 64,
+  "other_start_cycles": {},
+  "replay": "runs/s1-standard-snap-solver-true/replay",
+  "window": 100
+}

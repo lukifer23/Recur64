@@ -97,6 +97,11 @@ pub struct RootSearchDiag {
     pub argmax_changed_total: u64,
     pub abs_network_value: f64,
     pub abs_root_value: f64,
+    /// D50 solver engagement: searched roots with any proven move, roots
+    /// proven won, and moves played because they were a proven win.
+    pub roots_with_proven_move: u64,
+    pub roots_proven_win: u64,
+    pub moves_by_proven_win: u64,
 }
 
 impl RootSearchDiag {
@@ -110,6 +115,9 @@ impl RootSearchDiag {
         self.argmax_changed_total += o.argmax_changed_total;
         self.abs_network_value += o.abs_network_value;
         self.abs_root_value += o.abs_root_value;
+        self.roots_with_proven_move += o.roots_with_proven_move;
+        self.roots_proven_win += o.roots_proven_win;
+        self.moves_by_proven_win += o.moves_by_proven_win;
     }
 
     fn push(&mut self, network: &[f32], noisy: &[f32], target: &[f32], net_v: f32, root_v: f32) {
@@ -321,9 +329,18 @@ pub fn play_game_from(
         }
         let target = sparse_target(&result.edges, result.total_visits);
         let temperature = cfg.temperature_at(state.ply() - start_ply);
+        if result.edges.iter().any(|e| e.proof.is_some()) {
+            root_diag.roots_with_proven_move += 1;
+        }
+        if result.root_proof == Some(Proof::Win) {
+            root_diag.roots_proven_win += 1;
+        }
         let selected = if cfg.search_solver {
             match solver_candidates(&result.edges) {
-                Ok(win) => win,
+                Ok(win) => {
+                    root_diag.moves_by_proven_win += 1;
+                    win
+                }
                 Err(alive) => sample_action(&alive, temperature, rng),
             }
         } else {
@@ -405,6 +422,8 @@ mod tests {
             let g = play_game_from(&ev, &solver, &mut Rng::new(seed), state).unwrap();
             assert_eq!(g.termination, Termination::Checkmate, "seed {seed}");
             assert_eq!(g.plies.len(), 1, "mate is played at once, seed {seed}");
+            assert_eq!(g.root_diag.roots_proven_win, 1);
+            assert_eq!(g.root_diag.moves_by_proven_win, 1);
         }
     }
 

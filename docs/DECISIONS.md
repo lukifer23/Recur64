@@ -675,8 +675,9 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 
 ## D50 - MCTS-solver (proven-result propagation)
 
-- **Status:** IMPLEMENTED, measurement pending (2026-09-29; owner-chosen fix
-  for the draw drift, with D51)
+- **Status:** IMPLEMENTED, NOT ADOPTED (2026-09-29). Stage 1: no conversion
+  gain (every probe pair within one game; the pre-registered rule fails on both
+  heavy pairs). It stays available, off by default.
 - **Decision:** `search_solver = true` enables an MCTS-solver in self-play
   and arena search (`mcts_solver_v1`):
   - Proofs come only from the rules profile's terminals, never from the
@@ -714,8 +715,9 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 
 ## D51 - Endgame curriculum (generated won-material starts)
 
-- **Status:** IMPLEMENTED, measurement pending (2026-09-29; owner-chosen fix
-  for the draw drift, with D50)
+- **Status:** IMPLEMENTED; stage 2 pilot pending (2026-09-29). Stage 1: the
+  heavy families convert 34-36 of 64 and the target families 1-2, so the pilot
+  uses heavy + target.
 - **Decision:** `[endgame_curriculum] fraction, families` starts that share
   of self-play games from a generated endgame (`endgame_curriculum_v1`):
   - **Families:** `K<pieces>vK<pieces>`, stronger side first (e.g. `KQvK`,

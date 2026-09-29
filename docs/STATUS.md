@@ -355,6 +355,26 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
 - **Owner-approved fix:** MCTS-solver (D50) plus endgame curriculum (D51),
   measured separately.
 
+## D50/D51 STAGE 1 + D52 (2026-09-29; details in docs/PHASE4_RESULTS.md)
+
+- **D52 (fixed):**
+  - Builds now pin CUDA 12.9 through `CUDARC_CUDA_VERSION`.
+  - Every model build and load runs a known-answer device check. A dead JIT,
+    which silently computed zeros, now refuses in 3 s.
+- **Stage 1 conversion probes (MEASURED):**
+  - Single major piece vs K: 1-2 of 64 conversions for both the trained
+    and the untrained network.
+  - Two majors vs K: 34-36 of 64.
+- **D50 MCTS-solver:** no conversion gain; the pre-registered rule fails.
+  Not adopted, and kept off by default.
+- **D51 curriculum:** the heavy families qualify. The stage 2 pilot (heavy
+  + target, no solver) is pending.
+- **Gate:** dependencies are now optimized in test builds, so the gate takes
+  about 3 minutes instead of 15.
+- **Next:**
+  - throughput pass T1 (Burn fusion and autotune, pre-registered)
+  - then the stage 2 curriculum pilot
+
 ## NOT RUN
 
 - P4.6 bounded qualification and the P4.7 R10 entry decision.

@@ -332,6 +332,10 @@ pub struct RootSearchStats {
     /// Mean |network value| and |backed-up root value| at searched roots.
     pub mean_abs_network_value: f64,
     pub mean_abs_root_value: f64,
+    /// D50 solver engagement (counts; always 0 without the solver).
+    pub roots_with_proven_move: u64,
+    pub roots_proven_win: u64,
+    pub moves_by_proven_win: u64,
 }
 
 impl RootSearchStats {
@@ -347,6 +351,9 @@ impl RootSearchStats {
             argmax_changed_total: d.argmax_changed_total as f64 / n,
             mean_abs_network_value: d.abs_network_value / n,
             mean_abs_root_value: d.abs_root_value / n,
+            roots_with_proven_move: d.roots_with_proven_move,
+            roots_proven_win: d.roots_proven_win,
+            moves_by_proven_win: d.moves_by_proven_win,
         }
     }
 }
