@@ -758,6 +758,37 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   - config:
     `endgame_curriculum_is_a_validated_new_identity_only_when_enabled`
 
+## D52 - Pinned build-time CUDA version and a behavioral device check
+
+- **Status:** ACCEPTED (2026-09-29; root-cause fix for an aborted stage 1
+  run)
+- **Found:**
+  - A release build from a shell without the CUDA toolkit on PATH made
+    cudarc (0.19.9, `cuda-version-from-build-system` via CubeCL) fall back
+    to "latest" (CUDA 13.3).
+  - The binary then searched for CUDA 13 NVRTC names. It could not load the
+    pinned user-space 12.9.1 runtime (`nvrtc64_120_0.dll`) and panicked on
+    the device thread in a loop.
+  - The existing guard only checked that *some* `nvrtc*` file is on PATH,
+    so it passed.
+  - The run was stopped at once and produced no results. No earlier log
+    shows this failure: every earlier GPU run was built with the CUDA
+    environment set.
+- **Decision:**
+  1. `.cargo/config.toml` sets `CUDARC_CUDA_VERSION = "12090"`, so every
+     build targets the pinned CUDA 12.9.1 runtime (D3) regardless of the
+     shell.
+  2. `model_io::verify_device` runs elementwise, reduction and matmul
+     kernels with known results on the device, on a helper thread with a
+     timeout. Every model build and load goes through it. A panic, a hang
+     or a wrong result is a visible error, never a silent run.
+- **Why:** AGENTS.md forbids a device claim unless the graph actually ran,
+  and forbids silent failure. A file-name check cannot prove that kernels
+  run; a computation with a known answer can.
+- **Tests:** `device_check_passes_on_a_working_backend` (CPU). GPU: a build
+  deliberately pinned to CUDA 13.3 must refuse, and the 12.9 build must
+  pass (recorded in PHASE4_RESULTS).
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

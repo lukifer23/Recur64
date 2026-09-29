@@ -68,7 +68,7 @@ fn freeze_reference_impl<B: AutodiffBackend>(
     );
     let device: B::Device = Default::default();
     B::seed(&device, cfg.seed);
-    let model = model_io::build::<B>(&cfg.model, &device);
+    let model = model_io::build::<B>(&cfg.model, &device)?;
     let optim = adamw::<B, _>();
     let mut meta = CheckpointMeta::new(
         cfg.model.clone(),

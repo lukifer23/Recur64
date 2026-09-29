@@ -1686,6 +1686,23 @@ Both keep outcomes-from-own-play labels: no material shaping, contempt,
 tablebases or engine labels. The solver's effect is measured on its own
 first, so the two changes can be attributed separately.
 
+## D52: aborted stage 1 launch, pinned CUDA build and device check (MEASURED)
+
+- **First stage 1 launch (binary `23f33d5`):**
+  - This build ran in a shell without the CUDA toolkit on PATH. cudarc
+    therefore fell back to CUDA 13.3 names and could not load the pinned
+    12.9.1 NVRTC.
+  - The name-only guard passed, and the device thread panicked repeatedly.
+  - The run was stopped within a minute and produced no results
+    (`runs/s1.log`). No earlier run log contains this failure.
+- **Negative test:** a build deliberately pinned to CUDA 13.3 now refuses
+  after 3 s with `device check computed wrong results (sum 0, matmul
+  [0.0, 0.0, 0.0, 0.0] ...)`, exit 1. The dead JIT had silently produced
+  zeros. Evidence: `docs/evidence/phase4/d52/negative-cuda13-build.txt`.
+- **Positive test:** the pinned 12.9 build, deliberately built with
+  `CUDA_PATH` unset, passes the check. It then completes a 4-game cell with
+  0 errors and 0 panics (`docs/evidence/phase4/d52/positive-sweep.json`).
+
 ## D50/D51 stage 1: conversion probe (pre-registration, written before the run)
 
 No training takes place: fixed networks, the `f10-qual` self-play contract

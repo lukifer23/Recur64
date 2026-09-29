@@ -508,7 +508,7 @@ pub fn run<B: AutodiffBackend>(
     B::seed(&b_device, cfg.seed);
 
     // --- Save the reference checkpoint (fresh Micro weights). ---
-    let reference_model = model_io::build::<B>(&cfg.model, &b_device);
+    let reference_model = model_io::build::<B>(&cfg.model, &b_device)?;
     let reference_optim = adamw::<B, _>();
     let meta = CheckpointMeta::new(
         cfg.model.clone(),
@@ -806,7 +806,7 @@ pub fn collect_only<B: AutodiffBackend>(
 ) -> anyhow::Result<SelfPlayMetrics> {
     let inner_device: Device<B::InnerBackend> = Default::default();
     let b_device: B::Device = Default::default();
-    let reference_model = model_io::build::<B>(&cfg.model, &b_device);
+    let reference_model = model_io::build::<B>(&cfg.model, &b_device)?;
     let reference_optim = adamw::<B, _>();
     let mut meta = CheckpointMeta::new(
         cfg.model.clone(),

@@ -55,7 +55,7 @@ fn freeze(c: &RunConfig, dir: &std::path::Path) -> String {
     let model = {
         let _guard = FREEZE.lock().unwrap();
         <CpuTrainBackend as burn::tensor::backend::Backend>::seed(&device, c.seed);
-        model_io::build::<CpuTrainBackend>(&c.model, &device)
+        model_io::build::<CpuTrainBackend>(&c.model, &device).unwrap()
     };
     let meta = CheckpointMeta::new(c.model.clone(), 1, false, 0, c.lr, c.seed, 0, "cpu", "fp32");
     save_training(dir, &model, &adamw::<CpuTrainBackend, _>(), &meta).unwrap();

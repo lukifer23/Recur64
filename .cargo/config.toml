@@ -1,0 +1,9 @@
+# Repository build environment (see docs/DECISIONS.md D52).
+#
+# cudarc picks the CUDA API version it loads at *build* time: from
+# CUDARC_CUDA_VERSION, else from `nvcc --version`, else "latest" (13.x). A
+# build from a shell without the CUDA toolkit on PATH therefore produced a
+# binary that searches for CUDA 13 NVRTC names and cannot load the pinned
+# user-space CUDA 12.9.1 runtime (D3). Pin it so every build targets 12.9.
+[env]
+CUDARC_CUDA_VERSION = "12090"

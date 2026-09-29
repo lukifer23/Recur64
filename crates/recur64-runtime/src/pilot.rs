@@ -374,7 +374,7 @@ fn install_reference<B: AutodiffBackend>(
         cfg.reference_model_id.is_none(),
         "reference_model_id is set but reference_checkpoint is not"
     );
-    let reference_model = model_io::build::<B>(&cfg.model, device);
+    let reference_model = model_io::build::<B>(&cfg.model, device)?;
     let reference_optim = adamw::<B, _>();
     let mut ref_meta = CheckpointMeta::new(
         cfg.model.clone(),
@@ -585,7 +585,7 @@ pub fn run_pilot<B: AutodiffBackend>(
         let replay_total_games = store.total_games() as u64;
         let (train_model, mut optim, parent_meta) = load_training(
             &train_from,
-            model_io::build::<B>(&cfg.model, &b_device),
+            model_io::build::<B>(&cfg.model, &b_device)?,
             adamw::<B, _>(),
             &b_device,
         )?;
