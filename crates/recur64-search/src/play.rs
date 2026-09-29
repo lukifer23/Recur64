@@ -264,6 +264,40 @@ pub fn play_game_from(
     evaluator: &dyn Evaluator,
     cfg: &SelfPlayConfig,
     rng: &mut Rng,
+    state: GameState,
+) -> Result<SelfPlayGame, crate::EvalError> {
+    play_game_routed(&|_| evaluator, cfg, rng, state)
+}
+
+/// Play one game in which each side searches its *own* tree with its own
+/// network at every depth (the AlphaZero evaluation contract; ported from the
+/// HP branch's D54 as mainline D54). With [`play_game_from`] and a
+/// side-routing evaluator, every tree node would instead go to the network of
+/// that node's side to move, mixing both networks inside each search.
+pub fn play_game_per_side(
+    white: &dyn Evaluator,
+    black: &dyn Evaluator,
+    cfg: &SelfPlayConfig,
+    rng: &mut Rng,
+    state: GameState,
+) -> Result<SelfPlayGame, crate::EvalError> {
+    play_game_routed(
+        &|side| match side {
+            Color::White => white,
+            Color::Black => black,
+        },
+        cfg,
+        rng,
+        state,
+    )
+}
+
+/// The game loop; `pick` chooses the evaluator for the whole search tree
+/// from the root's side to move.
+fn play_game_routed<'e>(
+    pick: &dyn Fn(Color) -> &'e dyn Evaluator,
+    cfg: &SelfPlayConfig,
+    rng: &mut Rng,
     mut state: GameState,
 ) -> Result<SelfPlayGame, crate::EvalError> {
     let start_fen = state.to_fen();
@@ -287,7 +321,7 @@ pub fn play_game_from(
             epsilon: cfg.root_dirichlet_epsilon,
             noise: rng.dirichlet(cfg.root_dirichlet_alpha as f64, state.legal_actions().len()),
         });
-        let game = ChessGame::new(state.clone(), evaluator);
+        let game = ChessGame::new(state.clone(), pick(side_to_move));
         let result = search_with_root_noise(
             game,
             &PuctConfig {
@@ -462,6 +496,67 @@ mod tests {
         assert_eq!(
             a.plies.iter().map(|p| p.selected).collect::<Vec<_>>(),
             b.plies.iter().map(|p| p.selected).collect::<Vec<_>>()
+        );
+    }
+
+    /// D54: under per-side play each network evaluates both parities of its
+    /// own tree; a side router passed to `play_game_from` only ever sends a
+    /// network the nodes whose side to move is its own colour.
+    #[test]
+    fn per_side_play_gives_each_player_its_own_tree() {
+        use crate::evaluator::{EvalRequest, EvalResult};
+        use std::sync::Mutex;
+        struct Recorder(Mutex<[u64; 2]>);
+        impl Evaluator for Recorder {
+            fn evaluate(&self, r: EvalRequest<'_>) -> Result<EvalResult, crate::EvalError> {
+                self.0.lock().unwrap()[usize::from(r.side_to_move == Color::Black)] += 1;
+                Ok(EvalResult::uniform(r.legal.len(), 0.0))
+            }
+        }
+        struct Router<'a>(&'a Recorder, &'a Recorder);
+        impl Evaluator for Router<'_> {
+            fn evaluate(&self, r: EvalRequest<'_>) -> Result<EvalResult, crate::EvalError> {
+                match r.side_to_move {
+                    Color::White => self.0.evaluate(r),
+                    Color::Black => self.1.evaluate(r),
+                }
+            }
+        }
+        let cfg = SelfPlayConfig {
+            simulations_per_move: 16,
+            ply_cap: 8,
+            ..SelfPlayConfig::default()
+        };
+        let (w, b) = (Recorder(Mutex::new([0; 2])), Recorder(Mutex::new([0; 2])));
+        let routed = play_game_from(
+            &Router(&w, &b),
+            &cfg,
+            &mut Rng::new(1),
+            GameState::startpos(),
+        )
+        .unwrap();
+        assert_eq!(
+            w.0.lock().unwrap()[1],
+            0,
+            "old routing: White's net sees only White-to-move"
+        );
+        assert_eq!(b.0.lock().unwrap()[0], 0);
+        let (w2, b2) = (Recorder(Mutex::new([0; 2])), Recorder(Mutex::new([0; 2])));
+        let own =
+            play_game_per_side(&w2, &b2, &cfg, &mut Rng::new(1), GameState::startpos()).unwrap();
+        let (wc, bc) = (*w2.0.lock().unwrap(), *b2.0.lock().unwrap());
+        assert!(
+            wc[0] > 0 && wc[1] > 0,
+            "White's tree has both parities: {wc:?}"
+        );
+        assert!(
+            bc[0] > 0 && bc[1] > 0,
+            "Black's tree has both parities: {bc:?}"
+        );
+        // Identical networks: the routing does not change the game.
+        assert_eq!(
+            routed.plies.iter().map(|p| p.selected).collect::<Vec<_>>(),
+            own.plies.iter().map(|p| p.selected).collect::<Vec<_>>()
         );
     }
 

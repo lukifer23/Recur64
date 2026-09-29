@@ -12,7 +12,22 @@ use std::collections::BTreeMap;
 use recur64_core::{Color, GameState, Outcome};
 use recur64_search::{
     EvalError, EvalRequest, EvalResult, Evaluator, Rng, SelfPlayConfig, play_game_from,
+    play_game_per_side,
 };
+
+/// Which network evaluates the nodes of each player's search tree (D54).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArenaTreePolicy {
+    /// Historical: every tree node goes to the network of that node's side
+    /// to move, so both networks mix inside each player's search, pulling
+    /// scores toward 0.5. Kept to reproduce earlier identities.
+    #[default]
+    PerNodeSideV1,
+    /// Each player searches its own tree with its own network at every
+    /// depth (the AlphaZero evaluation contract).
+    RootPlayerV1,
+}
 
 /// Arena configuration.
 #[derive(Debug, Clone)]
@@ -42,6 +57,8 @@ pub struct ArenaConfig {
     pub leaves_in_flight: u32,
     /// MCTS-solver for both sides (D50); `false` = original search.
     pub solver: bool,
+    /// Tree ownership (D54); the default is the historical mixed routing.
+    pub tree_policy: ArenaTreePolicy,
 }
 
 impl Default for ArenaConfig {
@@ -61,6 +78,7 @@ impl Default for ArenaConfig {
             deadline: None,
             leaves_in_flight: 1,
             solver: false,
+            tree_policy: ArenaTreePolicy::PerNodeSideV1,
         }
     }
 }
@@ -173,7 +191,14 @@ pub fn run_arena(
         let opening = &openings[(i as usize / 2) % openings.len()];
         let start = GameState::from_fen(opening)
             .map_err(|e| EvalError::Invalid(format!("invalid opening FEN: {e}")))?;
-        play_game_from(&router, &sp, &mut Rng::new(seed), start)
+        match cfg.tree_policy {
+            ArenaTreePolicy::PerNodeSideV1 => {
+                play_game_from(&router, &sp, &mut Rng::new(seed), start)
+            }
+            ArenaTreePolicy::RootPlayerV1 => {
+                play_game_per_side(router.white, router.black, &sp, &mut Rng::new(seed), start)
+            }
+        }
     };
     let games = play_indexed_until(cfg.games, cfg.concurrency, cfg.deadline, play_one)?;
 

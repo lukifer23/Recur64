@@ -311,6 +311,11 @@ pub struct RunConfig {
     /// original single owner.
     #[serde(default = "default_inference_owners")]
     pub inference_owners: usize,
+    /// Arena tree ownership (D54): `root_player_v1` gives each player its
+    /// own search tree. The default keeps the historical mixed routing; any
+    /// other value is recorded in the evaluation identity.
+    #[serde(default)]
+    pub arena_tree_policy: recur64_eval::ArenaTreePolicy,
     /// Endgame curriculum (D51): a share of self-play games starts from a
     /// generated won-material endgame. `None` (default) = every game starts
     /// from `start_fen` / the standard start; `Some` is a new identity.
@@ -416,6 +421,10 @@ impl RunConfig {
             "opening_suite_digest": self.opening_suite_digest()?,
             "arena_games": self.arena_games,
         });
+        // D54: recorded only when it differs from the historical routing.
+        if self.arena_tree_policy != recur64_eval::ArenaTreePolicy::PerNodeSideV1 {
+            v["arena_tree_policy"] = serde_json::to_value(self.arena_tree_policy)?;
+        }
         if self.arena_sample_plies.is_some() || self.arena_root_dirichlet_epsilon != 0.0 {
             v["arena_exploration"] = serde_json::json!({
                 "sample_plies": self.arena_sample_plies,
@@ -449,6 +458,7 @@ impl RunConfig {
             deadline: None,
             leaves_in_flight: self.search_leaves_in_flight,
             solver: self.search_solver,
+            tree_policy: self.arena_tree_policy,
         }
     }
 
@@ -947,6 +957,38 @@ openings = ['{e4}']
         assert_eq!(cfg.reuse_updates(65).unwrap(), (5, 130.0));
         cfg.max_updates = 3;
         assert_eq!(cfg.reuse_updates(65).unwrap().0, 3);
+    }
+
+    #[test]
+    fn arena_tree_policy_enters_the_identity_only_when_changed() {
+        let base = RunConfig::from_toml_str(base_toml()).unwrap();
+        assert_eq!(
+            base.arena_tree_policy,
+            recur64_eval::ArenaTreePolicy::PerNodeSideV1
+        );
+        assert!(
+            base.scientific_identity().unwrap()["evaluation"]
+                .get("arena_tree_policy")
+                .is_none()
+        );
+        let toml = format!(
+            "arena_tree_policy = \"root_player_v1\"
+{}",
+            base_toml()
+        );
+        let own = RunConfig::from_toml_str(&toml).unwrap();
+        assert_eq!(
+            own.arena_config(0, Vec::new(), 1).tree_policy,
+            recur64_eval::ArenaTreePolicy::RootPlayerV1
+        );
+        assert_eq!(
+            own.scientific_identity().unwrap()["evaluation"]["arena_tree_policy"],
+            "root_player_v1"
+        );
+        assert_ne!(
+            base.scientific_config_hash().unwrap(),
+            own.scientific_config_hash().unwrap()
+        );
     }
 
     #[test]

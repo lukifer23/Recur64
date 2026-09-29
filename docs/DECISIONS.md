@@ -813,6 +813,40 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     TF32 is not achieved. The `tf32` mode and its refusal contract remain,
     tested.
 
+## D54 - Arena players search their own trees; no hidden non-finite output
+
+- **Status:** ACCEPTED (2026-09-29). Ported from the HP integration branch
+  (its D54 and core review; `docs/HP_BRANCH_COMPARISON.md`) and verified on
+  mainline code.
+- **Found (mainline has the same code):**
+  - `run_arena` passed a `SideRouter` into `play_game_from` as the search
+    evaluator, so every tree node went to the network of that node's side to
+    move.
+  - Each player's search therefore evaluated half its nodes with the
+    opponent's network.
+  - This pulls arena scores toward 0.5. It affects every mainline searched
+    arena since Phase 3, D45 included. Self-vs-self results are unaffected.
+- **Decision:**
+  1. `arena_tree_policy = "root_player_v1"`: each player searches its own
+     tree with its own network (`play_game_per_side`), the AlphaZero
+     evaluation contract.
+     - The default `per_node_side_v1` reproduces every earlier identity.
+     - Any other value enters the evaluation identity.
+     - New runs use `root_player_v1`.
+     - Earlier arena scores and promotions are **mixed-tree measurements**.
+       They are labelled as such, not invalidated.
+  2. `evaluate_batch` refuses non-finite or zero policy mass and non-finite
+     WDL. Before, it fell back to a uniform policy and a value of 0: a
+     silent fallback.
+  3. The inference owner counts `completed`/`errors` before replying (a
+     metrics race).
+- **Tests:**
+  - `per_side_play_gives_each_player_its_own_tree`: the old routing sends a
+    network only its own colour's nodes; per-side play gives each network
+    both parities of its own tree. With identical networks the games are
+    identical.
+  - `arena_tree_policy_enters_the_identity_only_when_changed`.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
