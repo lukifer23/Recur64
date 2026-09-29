@@ -18,7 +18,7 @@ Phase 4 results.
 | 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
 | 2 | first vertical slice (Micro model) | GO |
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
-| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; post-smoke fixes; F10 smoke v2 GO for the learning mechanism (strength not yet shown) |
+| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum pilot running |
 
 Phase 4 so far:
 
@@ -43,6 +43,27 @@ Phase 4 so far:
   - Once the promoted value head guides self-play, search moves the policy
     target on 37% of positions (11% before).
   - Playing strength over the untrained reference is not yet demonstrated.
+- **P4.6 qualification, stopped after 6 cycles:**
+  - 3 promotions; 0.578 and then 0.594 against the frozen reference.
+  - Self-play drifted into draws.
+- **Root cause (MEASURED): there is no conversion signal at this scale.**
+  - Most draws are won endgames that were never converted.
+  - The value head learns "big lead = draw".
+  - Neither the trained nor the untrained network can convert K+Q or K+R
+    vs K: 1-2 of 64.
+  - Deeper search (128 sims) and an MCTS-solver (D50, not adopted) do not
+    help.
+- **Fix under test:** an endgame curriculum (D51). A quarter of self-play
+  games start from generated won endgames. Search alone converts the
+  two-major-piece endgames 34-36 of 64, which gives the value head real
+  outcome evidence that material wins. The stage 2 pilot is running.
+- **Throughput pass (D53):** 1.38x self-play throughput and 1.20x training,
+  all bit-exact or execution-only:
+  - two inference owner threads
+  - a 48 / 96 schedule
+  - flattened linear layers
+- **Also not adopted:** Burn fusion, autotune and TF32, all measured and
+  documented.
 
 This is a research laboratory, **not** a chess engine. It has no UCI engine
 loop and makes no strength claims.
