@@ -2163,3 +2163,78 @@ start, `snapshot-005`, 48 / 96, 2 owners, 128 games.
   - `bench-train` first and last loss within 1%;
   - the D44 lifecycle plateau is re-checked (`bench-lifecycle`), because of
     the fusion drop-order leak the HP branch found.
+
+## D51 stage 2 result (MEASURED): NO-GO, the curriculum does not create a conversion signal at this scale
+
+**Run.**
+
+- `runs/phase4-f10-cur`, binary `92cc60f`, identity `ccc72535...`,
+  reference v2.
+- 6 cycles, 0 inference errors, status completed, no health stop, no
+  budget overrun.
+- Throughput: collection took 325-504 s per cycle, against 450-665 s in
+  P4.6, with the D53 execution changes.
+- Evidence: `docs/evidence/phase4/stage2/`.
+
+**Per cycle** (standard-start games only; the P4.6 column is its
+all-standard draw share; the arenas are mixed-tree, pre-D54):
+
+| cycle | std draws | std draw share | P4.6 draw share | std terminations | curriculum conv | decision | vs parent | vs reference |
+|---:|---:|---:|---:|---|---:|---|---:|---:|
+| 0 | 14/48 | 0.292 | 0.281 | check 34, fifty 2, insuf 12 | 6/16 | promote | 0.688 | 0.688 |
+| 1 | 16/48 | 0.333 | 0.25 | check 32, fifty 2, insuf 13, three 1 | 4/16 | promote | 0.516 | 0.375 |
+| 2 | 28/48 | 0.583 | 0.312 | check 15, fifty 14, insuf 12, three 2, trunc 5 | 3/16 | promote | 0.613 | 0.550 |
+| 3 | 33/48 | 0.688 | 0.234 | check 13, fifty 2, insuf 28, stale 1, three 2, trunc 2 | 4/16 | hold | 0.500 | 0.453 |
+| 4 | 34/48 | 0.708 | 0.719 | check 14, fifty 8, insuf 24, three 2 | 2/16 | promote | 0.613 | 0.609 |
+| 5 | 22/48 | 0.458 | 0.781 | check 26, fifty 9, insuf 12, three 1 | 4/16 | hold | 0.453 | 0.609 |
+
+**Pre-registered criteria.**
+
+| criterion | P4.6 | required | stage 2 | result |
+|---|---:|---:|---:|---|
+| P1: failed conversions per standard game, cycles 4-5 | 0.586 | <= 0.41 | (25 + 18) / 96 = 0.448 | **FAIL** (-24%) |
+| P2: P(win for leader) at a 5-8 lead, snapshot-004 on its own cycle-5 standard games | 0.115 | >= 0.30 | 0.110 (draw 0.83) | **FAIL** |
+| P3: target probe, K+Q / K+R vs K, snapshot-004 | 1 / 64 | >= 8 / 64 | 1 / 64 (52 insufficient material) | **FAIL** |
+
+**Verdict: NO-GO** under the pre-registered rule (none of P1-P3).
+
+**Secondary (MEASURED).**
+
+- **Heavy probe** (two majors vs K), snapshot-004: **18 / 64**. Stage 1
+  gave 35 for snapshot-005 and 36 for the untrained reference. A network
+  trained *with* the curriculum converts the curriculum's own endgames
+  *worse* than an untrained one.
+- **The drift arrived earlier than in P4.6:** standard draws were 0.58 at
+  cycle 2 against 0.31, with promotions every cycle from cycle 0. It then
+  reached the same level: 0.71 against 0.72 at cycle 4. The cycle-5 draw
+  share (0.458) comes from a held cycle and is not gating.
+- **Curriculum conversion fell** from 6 to 2-4 of 16 per cycle as training
+  proceeded.
+
+**Analysis (INFERRED from the measurements above).**
+
+1. **The dose was small, and net-negative for the target lesson.**
+   - Curriculum games were 5.8-9.8% of positions, and most of them were
+     *drawn* despite a decisive material lead: 10-14 of 16 per cycle.
+   - So the curriculum added more "big lead -> draw" value labels than
+     "big lead -> win" labels.
+   - The single-major families converted at about 3% even in stage 1. They
+     were pure draw-label generators.
+2. **The exploration schedule was built for openings.**
+   - `argmax_after_ply = 30` counts from the game's start, so curriculum
+     endgames of about 50 plies were played mostly at temperature 1, with
+     root noise on every move.
+   - The stage 1 probes used the same contract, so those numbers are
+     comparable. But it throws away conversions the search could have
+     made.
+3. **The loop degrades technique.** The trained value head scores material
+   leads as draws. Search, guided by it, has no pull toward mate, and the
+   policy trained on those visits hangs material more often: 52 of 64
+   target-probe games ended in insufficient material. Stage 2 did not break
+   this loop.
+4. **An independent confirmation** from the HP branch (HP D56, Train1): at
+   this strength a material lead does not predict a win, and repetition and
+   draw endings follow.
+
+Proposed next changes: see `docs/STATUS.md`. Each is a new identity and
+needs an owner decision.

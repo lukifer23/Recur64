@@ -1,0 +1,183 @@
+{
+  "cells": [
+    {
+      "active_games": 32,
+      "batch_max": 63,
+      "batch_mean": 35.88099921321794,
+      "batch_p50": 40,
+      "batch_p95": 51,
+      "batch_timeout_us": 500,
+      "batches": 5084,
+      "collect_secs": 94.3343009,
+      "effective_concurrency": 32,
+      "errors": 0,
+      "evaluations_per_sec": 1933.7504837543138,
+      "forward_us_mean": 15948.422895357986,
+      "games": 64,
+      "games_per_hour": 2442.3777756538184,
+      "gpu_samples": 174,
+      "gpu_temp_max_c": 71,
+      "gpu_util_busy_mean": 58.514619883040936,
+      "gpu_util_max": 70,
+      "max_batch": 64,
+      "mean_target_entropy": 2.1883707586325705,
+      "mean_top1_visit_share": 0.2440664198007611,
+      "peak_in_flight": 64,
+      "peak_vram_mb": 767,
+      "positions": 2956,
+      "positions_per_sec": 31.33536764250298,
+      "queue_wait_us_p50": 17672,
+      "queue_wait_us_p95": 21606,
+      "requested_concurrency": 32,
+      "requested_games": 64,
+      "requests": 182419,
+      "resolved_config_hash": "325aeab48b47eaf72a3230d917dd476f7384dbe6038ff36e1e719f5e19ce5d34",
+      "root_search": {
+        "all": {
+          "argmax_changed_by_noise": 0.8223951285520974,
+          "argmax_changed_by_search": 0.12043301759133965,
+          "argmax_changed_total": 0.807510148849797,
+          "mean_abs_network_value": 0.0264900911779613,
+          "mean_abs_root_value": 0.02536308318787697,
+          "mean_kl_noisy_vs_network": 0.05678190217458651,
+          "mean_kl_target_vs_network": 0.08496003323250101,
+          "mean_kl_target_vs_noisy": 0.015689789136979694,
+          "moves_by_proven_win": 0,
+          "plies": 2956,
+          "roots_proven_win": 0,
+          "roots_with_proven_move": 0
+        },
+        "trainable": {
+          "argmax_changed_by_noise": 0.8223951285520974,
+          "argmax_changed_by_search": 0.12043301759133965,
+          "argmax_changed_total": 0.807510148849797,
+          "mean_abs_network_value": 0.0264900911779613,
+          "mean_abs_root_value": 0.02536308318787697,
+          "mean_kl_noisy_vs_network": 0.05678190217458651,
+          "mean_kl_target_vs_network": 0.08496003323250101,
+          "mean_kl_target_vs_noisy": 0.015689789136979694,
+          "moves_by_proven_win": 0,
+          "plies": 2956,
+          "roots_proven_win": 0,
+          "roots_with_proven_move": 0
+        }
+      },
+      "scientific_config_hash": "d64f4c0259e73f636a41bca224631c5a5338b8fd4bfde42a6fb57dead1c6c0e5",
+      "selfplay": {
+        "black_wins": 0,
+        "concurrent_games": 32,
+        "cpu_workers": 32,
+        "curriculum": {
+          "decisive": 1,
+          "draw_share": 0.984375,
+          "draws": 63,
+          "games": 64,
+          "mean_game_plies": 46.1875,
+          "stronger_side_wins": 1,
+          "terminations": {
+            "checkmate": 1,
+            "fifty_move_rule": 9,
+            "insufficient_material": 52,
+            "stalemate": 1,
+            "threefold_repetition": 1
+          },
+          "truncated": 0,
+          "weaker_side_wins": 0
+        },
+        "draw_share": 0.984375,
+        "draws": 63,
+        "failed_games": 0,
+        "games": 64,
+        "games_completed": 64,
+        "games_requested": 64,
+        "inference": {
+          "batch_size_max": 63,
+          "batch_size_mean": 35.88099921321794,
+          "batch_size_p50": 40,
+          "batch_size_p95": 51,
+          "batches": 5084,
+          "completed": 182419,
+          "errors": 0,
+          "forward_us_mean": 15948.422895357986,
+          "owners": 1,
+          "peak_in_flight": 64,
+          "queue_wait_us_mean": 15043.587136113296,
+          "queue_wait_us_p50": 17672,
+          "queue_wait_us_p95": 21606,
+          "submitted": 182419
+        },
+        "mean_game_plies": 46.1875,
+        "peak_in_flight_evaluations": 64,
+        "plies": 2956,
+        "repetition_share": 0.015625,
+        "requested_active_games": 32,
+        "standard_start": {
+          "decisive": 0,
+          "draw_share": 0.0,
+          "draws": 0,
+          "games": 0,
+          "mean_game_plies": 0.0,
+          "stronger_side_wins": 0,
+          "terminations": {},
+          "truncated": 0,
+          "weaker_side_wins": 0
+        },
+        "target_health": {
+          "all": {
+            "mean_entropy": 2.1883707586325705,
+            "mean_top1_visit_share": 0.2440664198007611,
+            "positions": 2956
+          },
+          "trainable": {
+            "mean_entropy": 2.1883707586325705,
+            "mean_top1_visit_share": 0.2440664198007611,
+            "positions": 2956
+          }
+        },
+        "terminations": {
+          "checkmate": 1,
+          "fifty_move_rule": 9,
+          "insufficient_material": 52,
+          "stalemate": 1,
+          "threefold_repetition": 1
+        },
+        "trainable_games": 64,
+        "trainable_positions": 2956,
+        "truncated": 0,
+        "white_wins": 1
+      },
+      "simulations": 64,
+      "terminations": {
+        "checkmate": 1,
+        "fifty_move_rule": 9,
+        "insufficient_material": 52,
+        "stalemate": 1,
+        "threefold_repetition": 1
+      },
+      "trainable_positions": 2956,
+      "trainable_positions_per_sec": 31.33536764250298
+    }
+  ],
+  "checkpoint": "runs/phase4-f10-cur/checkpoints/snapshot-004",
+  "checkpoint_model_id": "9dc3868e425d88a8b5b4745582f82d80730b062c24b5d7196044886e56a70d73",
+  "device": "cuda",
+  "games_per_cell": 64,
+  "git_revision": "92cc60f7ed4f9c81ecc340e7817006a8cee5dfbd",
+  "model": {
+    "core_blocks": 8,
+    "ffn": 768,
+    "heads": 12,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 384
+  },
+  "resolved_config_hash": "325aeab48b47eaf72a3230d917dd476f7384dbe6038ff36e1e719f5e19ce5d34",
+  "scientific_config_hash": "d64f4c0259e73f636a41bca224631c5a5338b8fd4bfde42a6fb57dead1c6c0e5",
+  "warmup_secs": 4.5557193
+}

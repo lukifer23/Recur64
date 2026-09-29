@@ -1,0 +1,241 @@
+{
+  "cycles": {
+    "0": {
+      "decisive_games": 34,
+      "draws": 14,
+      "draws_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 12
+      },
+      "failed_conversions": 11,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 10
+      },
+      "games": 48,
+      "mean_decisive_plies": 126.55882352941177,
+      "mean_draw_plies": 332.57142857142856,
+      "mean_final_material_draws": 3.357142857142857,
+      "mean_peak_advantage_draws": 6.928571428571429
+    },
+    "1": {
+      "decisive_games": 32,
+      "draws": 16,
+      "draws_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 13,
+        "threefold_repetition": 1
+      },
+      "failed_conversions": 14,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 13
+      },
+      "games": 48,
+      "mean_decisive_plies": 119.96875,
+      "mean_draw_plies": 306.0625,
+      "mean_final_material_draws": 3.125,
+      "mean_peak_advantage_draws": 7.75
+    },
+    "2": {
+      "decisive_games": 15,
+      "draws": 28,
+      "draws_by_termination": {
+        "fifty_move_rule": 14,
+        "insufficient_material": 12,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 17,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 8,
+        "insufficient_material": 8,
+        "threefold_repetition": 1
+      },
+      "games": 48,
+      "mean_decisive_plies": 144.8,
+      "mean_draw_plies": 359.10714285714283,
+      "mean_final_material_draws": 5.357142857142857,
+      "mean_peak_advantage_draws": 5.5
+    },
+    "3": {
+      "decisive_games": 13,
+      "draws": 33,
+      "draws_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 28,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 27,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 23,
+        "stalemate": 1,
+        "threefold_repetition": 2
+      },
+      "games": 48,
+      "mean_decisive_plies": 147.30769230769232,
+      "mean_draw_plies": 268.4848484848485,
+      "mean_final_material_draws": 3.8181818181818183,
+      "mean_peak_advantage_draws": 9.363636363636363
+    },
+    "4": {
+      "decisive_games": 14,
+      "draws": 34,
+      "draws_by_termination": {
+        "fifty_move_rule": 8,
+        "insufficient_material": 24,
+        "threefold_repetition": 2
+      },
+      "failed_conversions": 25,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 20,
+        "threefold_repetition": 1
+      },
+      "games": 48,
+      "mean_decisive_plies": 86.35714285714286,
+      "mean_draw_plies": 284.2647058823529,
+      "mean_final_material_draws": 3.5588235294117645,
+      "mean_peak_advantage_draws": 7.5588235294117645
+    },
+    "5": {
+      "decisive_games": 26,
+      "draws": 22,
+      "draws_by_termination": {
+        "fifty_move_rule": 9,
+        "insufficient_material": 12,
+        "threefold_repetition": 1
+      },
+      "failed_conversions": 18,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 6,
+        "insufficient_material": 11,
+        "threefold_repetition": 1
+      },
+      "games": 48,
+      "mean_decisive_plies": 149.53846153846155,
+      "mean_draw_plies": 283.8181818181818,
+      "mean_final_material_draws": 5.0,
+      "mean_peak_advantage_draws": 7.2727272727272725
+    }
+  },
+  "decisive_advantage": 5,
+  "games_per_cycle": 64,
+  "other_start_cycles": {
+    "0": {
+      "decisive_games": 6,
+      "draws": 10,
+      "draws_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 9
+      },
+      "failed_conversions": 10,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 9
+      },
+      "games": 16,
+      "mean_decisive_plies": 22.5,
+      "mean_draw_plies": 63.2,
+      "mean_final_material_draws": 0.5,
+      "mean_peak_advantage_draws": 8.5
+    },
+    "1": {
+      "decisive_games": 4,
+      "draws": 12,
+      "draws_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 8
+      },
+      "failed_conversions": 12,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 8
+      },
+      "games": 16,
+      "mean_decisive_plies": 7.5,
+      "mean_draw_plies": 76.41666666666667,
+      "mean_final_material_draws": 2.0,
+      "mean_peak_advantage_draws": 7.416666666666667
+    },
+    "2": {
+      "decisive_games": 3,
+      "draws": 13,
+      "draws_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 6,
+        "stalemate": 2,
+        "threefold_repetition": 1
+      },
+      "failed_conversions": 13,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 4,
+        "insufficient_material": 6,
+        "stalemate": 2,
+        "threefold_repetition": 1
+      },
+      "games": 16,
+      "mean_decisive_plies": 27.333333333333332,
+      "mean_draw_plies": 64.0,
+      "mean_final_material_draws": 5.0,
+      "mean_peak_advantage_draws": 8.0
+    },
+    "3": {
+      "decisive_games": 4,
+      "draws": 12,
+      "draws_by_termination": {
+        "insufficient_material": 12
+      },
+      "failed_conversions": 12,
+      "failed_conversions_by_termination": {
+        "insufficient_material": 12
+      },
+      "games": 16,
+      "mean_decisive_plies": 48.25,
+      "mean_draw_plies": 79.16666666666667,
+      "mean_final_material_draws": 0.0,
+      "mean_peak_advantage_draws": 10.583333333333334
+    },
+    "4": {
+      "decisive_games": 2,
+      "draws": 14,
+      "draws_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 12
+      },
+      "failed_conversions": 14,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 2,
+        "insufficient_material": 12
+      },
+      "games": 16,
+      "mean_decisive_plies": 41.0,
+      "mean_draw_plies": 48.0,
+      "mean_final_material_draws": 1.6428571428571428,
+      "mean_peak_advantage_draws": 8.785714285714286
+    },
+    "5": {
+      "decisive_games": 4,
+      "draws": 12,
+      "draws_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 9,
+        "stalemate": 2
+      },
+      "failed_conversions": 12,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 1,
+        "insufficient_material": 9,
+        "stalemate": 2
+      },
+      "games": 16,
+      "mean_decisive_plies": 13.75,
+      "mean_draw_plies": 43.416666666666664,
+      "mean_final_material_draws": 3.4166666666666665,
+      "mean_peak_advantage_draws": 9.0
+    }
+  },
+  "replay": "runs/phase4-f10-cur/replay",
+  "window": 100
+}

@@ -715,9 +715,11 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 
 ## D51 - Endgame curriculum (generated won-material starts)
 
-- **Status:** IMPLEMENTED; stage 2 pilot pending (2026-09-29). Stage 1: the
-  heavy families convert 34-36 of 64 and the target families 1-2, so the pilot
-  uses heavy + target.
+- **Status:** IMPLEMENTED; stage 2 **NO-GO** (2026-09-29). All of P1-P3
+  fail, and the trained network converts heavy endgames worse (18 of 64,
+  against 36 untrained). The curriculum dose was 6-10% of positions and
+  mostly drawn. It stays available, off by default; see PHASE4_RESULTS for
+  the analysis.
 - **Decision:** `[endgame_curriculum] fraction, families` starts that share
   of self-play games from a generated endgame (`endgame_curriculum_v1`):
   - **Families:** `K<pieces>vK<pieces>`, stronger side first (e.g. `KQvK`,

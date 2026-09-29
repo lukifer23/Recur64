@@ -375,6 +375,38 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
   - throughput pass T1 (Burn fusion and autotune, pre-registered)
   - then the stage 2 curriculum pilot
 
+## D51 STAGE 2 + THROUGHPUT + HP COMPARISON (2026-09-29; details in docs/PHASE4_RESULTS.md)
+
+- **Stage 2 curriculum pilot (6 cycles): NO-GO.**
+  - P1 failed conversions: 0.448 against the 0.41 required.
+  - P2 win estimate at a 5-8 lead: 0.110 against the 0.30 required.
+  - P3 K+Q / K+R conversion: 1 / 64 against the 8 required.
+  - The trained network converts two-major endgames worse (18 / 64)
+    than the untrained one (36).
+  - The drift came earlier and reached P4.6's level.
+- **Throughput (D53):** self-play 22.8 -> 31.5 trainable pos/s (1.38x)
+  and training 1.20x, from two owners, the 48 / 96 schedule and flattened
+  linears (bit-exact). Fusion, autotune and TF32 are not adopted (TF32
+  kernels never win autotune). T6 candidate buckets are implemented and
+  pre-registered, not yet measured.
+- **HP branch comparison** (`docs/HP_BRANCH_COMPARISON.md`):
+  - **D54 ported:** arena players now search their own trees. Every earlier
+    mainline arena mixed both networks and is labelled mixed-tree.
+  - Non-finite outputs are no longer hidden, and the metrics race is fixed.
+  - The branch independently confirms the conversion weakness.
+- **Next: owner decision needed.** Proposed changes to break the draw loop,
+  each a new identity:
+  1. **Reverse curriculum from near-mate positions.** Curriculum starts
+     where our own search can prove a short forced mate: the D50 solver at
+     high sims as a filter, with no external labels. The distance then
+     grows as conversion succeeds, so the curriculum produces mostly *won*
+     labels, not drawn ones.
+  2. **Endgame-appropriate exploration.** Curriculum games play argmax from
+     ply 0 instead of 30 sampled plies.
+  3. **Lower LR** (the HP finding: 7.5e-5 was best at 15M), as a
+     pre-registered A/B.
+  4. **`root_player_v1` arenas** (D54) for all new runs.
+
 ## NOT RUN
 
 - P4.6 bounded qualification and the P4.7 R10 entry decision.

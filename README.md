@@ -18,7 +18,7 @@ Phase 4 results.
 | 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
 | 2 | first vertical slice (Micro model) | GO |
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
-| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum pilot running |
+| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum NO-GO; next fix pending owner decision |
 
 Phase 4 so far:
 
@@ -53,10 +53,13 @@ Phase 4 so far:
     vs K: 1-2 of 64.
   - Deeper search (128 sims) and an MCTS-solver (D50, not adopted) do not
     help.
-- **Fix under test:** an endgame curriculum (D51). A quarter of self-play
-  games start from generated won endgames. Search alone converts the
-  two-major-piece endgames 34-36 of 64, which gives the value head real
-  outcome evidence that material wins. The stage 2 pilot is running.
+- **Endgame curriculum (D51): NO-GO** in its stage 2 pilot.
+  - Too few curriculum positions, and most of them drawn.
+  - The trained network converted endgames *worse* than the untrained one.
+  - Next steps (a reverse curriculum from near-mate positions,
+    endgame-appropriate exploration, an LR A/B) await an owner decision.
+- **Arena fix (D54, from the HP branch):** players now search their own
+  trees. Earlier arenas mixed both networks.
 - **Throughput pass (D53):** 1.38x self-play throughput and 1.20x training,
   all bit-exact or execution-only:
   - two inference owner threads
