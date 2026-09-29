@@ -322,3 +322,55 @@ Established, with evidence in `docs/STATUS.md` and
   learning mechanism working (value learning, promotions, value-guided
   search), but 0.500 against the untrained reference.
 - that recurrence helps (the R10 R1/R2/R4 experiments have not started)
+
+---
+
+## X15 / "Chimera" — the experimental novel-architecture line
+
+Branch `experiment/hp-r15-h3-integration` is the deliberately experimental
+Recur64 line; `main` is the conservative conventional control line. X15 combines
+four independently gated pathways:
+
+1. a symbolic geometry-aware square-token transformer prelude;
+2. an explicit recurrent latent reasoning scratchpad (`K` persistent thought
+   slots, position-conditioned at thought 0);
+3. a deterministic chess coprocessor exposed through cross-attention, with a
+   **real WebAssembly** implementation (`wasm_v1`) and a native one (`native_v1`)
+   that is byte-identical to it;
+4. a literal canonical visual-board pathway: a small residual CNN over a
+   deterministic top-down render.
+
+**Probe harness** (the owner's philosophy: long runs do not come first):
+
+```bash
+# parameter accounting by subsystem, and the T1/T2/T4 block accounting
+recur64 x15 info    --config configs/x15.toml
+
+# P0: finite forward at T1/T2/T4, policy normalizes, WDL neutral at init
+recur64 x15 sanity  --config configs/x15.toml --thoughts 1,2,4
+
+# P0 gate: native vs WebAssembly ComputeBankV1, byte for byte
+recur64 x15 parity  --positions 200
+
+# P0: every gated subsystem gets a non-zero gradient on the first step
+recur64 x15 grads   --config configs/x15.toml --thoughts 4
+
+# P1: per-thought metrics (entropy, WDL, latent norm/delta, pathway scales)
+recur64 x15 thoughts --config configs/x15.toml --thoughts 4
+```
+
+Current measured state (see `docs/HP_X1_BUILD_RESULTS.md` for the full
+MEASURED / INFERRED / NOT RUN split):
+
+- **16,018,606 parameters**, identical at T = 1/2/4/8; the R15 trunk geometry is
+  unchanged, so the new subsystems are additive and reported separately.
+- Forward sanity and the module-gradient gate **pass on CPU**.
+- Native and WASM coprocessor outputs are **byte-identical on 253 positions**
+  (including castling, en passant, promotions, checks, pins and mate-in-1/2).
+- WASM costs ~16x native per position, so `native_v1` is the practical training
+  provider and `wasm_v1` is the real-WebAssembly experiment.
+
+**Not** established: any CUDA X15 execution, any X15 training, peak VRAM, or
+that the architecture works at all. X15 is wired into batched inference and the
+probe harness, not the pilot. The historical F15/R15 model is untouched and old
+checkpoints are refused by the X15 loader (and vice versa).

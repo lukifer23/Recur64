@@ -970,3 +970,89 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
 - **0.22.0-pre.x Burn**: deferred until a stable release or a demonstrated need.
 - **Docker, Python trainer, custom CUDA kernels**: rejected.
+
+## D57 - Selective mainline port (X0)
+
+- **Status:** ACCEPTED (2026-09-29) on `experiment/hp-r15-h3-integration`.
+- **Context:** the branch and mainline have diverged; mainline carries four
+  generic engineering wins that are absent here. The owner authorised porting
+  **only** those, explicitly not a wholesale merge. Note that mainline and this
+  branch use overlapping ADR numbers (mainline D52 = the CUDA pin; this branch
+  D52 = truncated self-play games), so this line continues from its own D56 and
+  the collision is recorded here rather than renumbered.
+- **Ported:**
+  - `[profile.dev.package."*"] opt-level = 2`. MEASURED: the full workspace test
+    gate could not complete in 1452 s before (it was stuck inside one CPU-Flex
+    arena test); that test now runs in **64.42 s and passes**. Workspace crates
+    keep `opt-level = 0` with debug assertions and overflow checks, so test
+    semantics are unchanged.
+  - `.cargo/config.toml` with `CUDARC_CUDA_VERSION = 12090`. This machine has
+    **no `nvcc` on PATH** and uses the pinned user-space CUDA 12.9.1 runtime, so
+    the pin was verified, not copied blindly.
+  - `model_io::verify_device`: a behavioural elementwise/reduction/matmul
+    known-answer check on a helper thread with a timeout, run before every model
+    build/load. `model_io::build` returns `Result`. A dead CUDA/JIT path now
+    fails visibly instead of silently computing zeros.
+  - `InferenceOwner::spawn_pool` + `inference_owners` (default **1**,
+    execution-only, never in the scientific identity) and
+    `pilot::spawn_selfplay_owner`. Evaluation owners stay single, so the
+    at-most-two-resident-models bound is unchanged.
+  - `linear_rows`: rank-3 `Linear` operations as one 2-D GEMM over `b * s` rows,
+    for the input projection, Q/K/V/out, both FFNs, the policy
+    source/destination projections and the promotion MLP. Unit-tested to
+    = 1e-5 against Burn's rank-3 form. **Only this change** was ported; the
+    bundled TF32 and curriculum work was not.
+- **Rejected:** mainline's 48/96 scheduling (this branch has its own measured
+  c12/b24 schedule), the D50 solver decisions, the D51 curriculum as a training
+  recipe, TF32 as active precision, T6 candidate buckets.
+- **Evidence:** `docs/HP_X1_BUILD_RESULTS.md` (MEASURED section).
+
+## D58 - X15 / "Chimera": the novel-architecture laboratory
+
+- **Status:** ACCEPTED (2026-09-29). This branch is no longer required to stay
+  scientifically parallel to mainline; it is the novel-architecture line.
+- **Why the direction changed:** the HP evidence removed "more of the same
+  recurrence" (untrained ? M = 0.617; M ? Train1-final = 0.633; Train1 stopped
+  by the threefold/fifty health stop at 0.625; 109 of 111 repetition draws had
+  the trained side = +3 material, median ˜ +20; held-out value worse than
+  uniform late; R1 beat R4 at a matched LR in both seeds).
+- **Decision:** add a new model family `ChimeraV1` with four independently
+  gated pathways — symbolic square-token prelude, explicit recurrent latent
+  reasoning, a deterministic chess coprocessor through cross-attention, and a
+  literal canonical visual-board CNN — with a *new* architecture id and its own
+  readout-head lineage (`CHIMERA_HEAD_VERSION = 1`).
+- **Boundary:** `ProbeModel` is **not mutated**. The historical model keeps its
+  checkpoints; `Architecture` is recorded in every checkpoint and a mismatch is
+  refused in both directions, so an F15/R15 checkpoint can never silently run
+  as X15 and vice versa.
+- **Measured:** 16,018,606 parameters (trunk geometry unchanged at R15's
+  512/8/768 2-4-2), identical at T = 1/2/4/8; forward sanity and the
+  module-gradient gate both pass on CPU; every gated subsystem receives a
+  non-zero gradient on the first step.
+- **Honest scope:** X15 is wired into batched inference and a probe harness, not
+  the pilot. No training run has happened and **no claim is made that the
+  architecture works**. Peak VRAM is unmeasured.
+
+## D59 - Deterministic compute provider semantics and WASM parity
+
+- **Status:** ACCEPTED (2026-09-29) for the HP branch.
+- **Decision:** `ComputeBankV1` is computed by one source (`recur64-coproc`)
+  compiled twice: natively (`NativeV1`) and to `wasm32-unknown-unknown` run by
+  the pure-Rust `wasmi` interpreter (`WasmV1`). The WASM artifact is committed
+  and SHA-256 pinned, and a test recomputes the digest.
+- **Gate:** `NativeV1` bytes must equal `WasmV1` bytes exactly. MEASURED: equal
+  on 253 positions (special-move and tactic set plus random legal playouts at
+  mate depths 1 and 2), 1728 bytes each. If this gate ever fails, **do not
+  train**.
+- **Cost:** MEASURED, WASM is ~16× native (4.35 ms vs 0.27 ms per position).
+  `native_v1` is therefore the practical training provider; `wasm_v1` is the
+  real-WebAssembly implementation. Provider labels are recorded in the identity
+  today; demoting the choice to execution-only would require this parity
+  evidence in an ADR, exactly as D55 did for fusion/autotune/candidate buckets.
+- **No external runtime, no Docker, no `build.rs`:** the artifact is produced by
+  the standalone `scripts/build-compute-wasm.ps1`, so the normal cargo build is
+  never recursive.
+- **Contents:** exact chess facts only — piece identity, attack/defence
+  relations, legal geometry, check relations, bounded exact tactics, piece
+  counts by type and side. No engine evaluation, no tablebase, no book value,
+  no human labels and no hand-tuned material scalar.

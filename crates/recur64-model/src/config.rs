@@ -6,6 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::experimental::ExperimentalConfig;
+
 fn d_squares() -> usize {
     64
 }
@@ -114,7 +116,11 @@ impl ModelConfig {
 }
 
 /// A complete Phase 0 probe configuration.
+///
+/// Unknown keys are refused (as for `ModelConfig`): a misspelled X15 option
+/// must not silently run the historical probe graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProbeConfig {
     pub name: String,
     pub model: ModelConfig,
@@ -132,6 +138,10 @@ pub struct ProbeConfig {
     pub batch_size: usize,
     #[serde(default)]
     pub seed: u64,
+    /// The X15 / Chimera experimental block. Absent = the historical probe
+    /// architecture, so every existing probe config is unchanged.
+    #[serde(default, skip_serializing_if = "ExperimentalConfig::is_default")]
+    pub experimental: ExperimentalConfig,
 }
 
 fn default_recurrence() -> Vec<usize> {

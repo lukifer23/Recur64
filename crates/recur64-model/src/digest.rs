@@ -39,9 +39,20 @@ fn put_str(h: &mut Sha256, s: &str) {
 
 /// Digest of already-extracted parameters (exposed for tests).
 pub fn digest_named_params(config_json: &str, params: &[NamedParam]) -> SemanticDigest {
+    digest_named_params_with(SEMANTIC_DIGEST_VERSION, HEAD_VERSION, config_json, params)
+}
+
+/// Digest of already-extracted parameters under an explicit encoding version
+/// and head version.
+pub fn digest_named_params_with(
+    version: &'static str,
+    head_version: u32,
+    config_json: &str,
+    params: &[NamedParam],
+) -> SemanticDigest {
     let mut h = Sha256::new();
-    put_str(&mut h, SEMANTIC_DIGEST_VERSION);
-    put_u64(&mut h, HEAD_VERSION as u64);
+    put_str(&mut h, version);
+    put_u64(&mut h, head_version as u64);
     put_str(&mut h, config_json);
     put_u64(&mut h, params.len() as u64);
     let mut tensors = 0;
@@ -67,9 +78,9 @@ pub fn digest_named_params(config_json: &str, params: &[NamedParam]) -> Semantic
         }
     }
     SemanticDigest {
-        version: SEMANTIC_DIGEST_VERSION,
+        version,
         digest: format!("{:x}", h.finalize()),
-        head_version: HEAD_VERSION,
+        head_version,
         tensor_count: tensors,
         element_count: elements,
     }
@@ -81,6 +92,25 @@ pub fn semantic_weights_digest<B: Backend>(
 ) -> anyhow::Result<SemanticDigest> {
     let config_json = serde_json::to_string(model.config())?;
     Ok(digest_named_params(
+        &config_json,
+        &model.named_float_params()?,
+    ))
+}
+
+/// Version tag of the Chimera semantic digest encoding.
+pub const CHIMERA_SEMANTIC_DIGEST_VERSION: &str = "recur64-semantic-weights-chimera-v1";
+
+/// Semantic weight digest of an X15 / Chimera model. The hashed config is the
+/// pair `(trunk geometry, experimental contract)`, and the head version is the
+/// Chimera one, so a Chimera digest can never be confused with a probe digest.
+pub fn semantic_weights_digest_chimera<B: Backend>(
+    model: &crate::chimera::ChimeraModel<B>,
+) -> anyhow::Result<SemanticDigest> {
+    let config_json =
+        serde_json::to_string(&(model.config().clone(), model.experimental().clone()))?;
+    Ok(digest_named_params_with(
+        CHIMERA_SEMANTIC_DIGEST_VERSION,
+        crate::experimental::CHIMERA_HEAD_VERSION,
         &config_json,
         &model.named_float_params()?,
     ))

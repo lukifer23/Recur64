@@ -23,6 +23,7 @@ pub mod replay_identity;
 pub mod run_dir;
 pub mod search_gain;
 pub mod sweep;
+pub mod x15_inputs;
 
 pub use cancel::CancelToken;
 pub use config::{HealthStops, PromotionScore, RunConfig, TrainerPolicy};
@@ -46,6 +47,9 @@ pub use pilot::{
 pub use replay::{ReplayStore, TrainingExample};
 pub use run_dir::{LineageRecord, RunDir, RunMetadata, RunStatus, read_metadata, write_metadata};
 pub use sweep::{SweepCellResult, SweepCellSpec};
+pub use x15_inputs::{
+    X15Batch, X15PhaseTimes, build_x15_batch, probe_positions, provider_for_config,
+};
 
 // Re-exported from `recur64-search` for convenience.
 pub use recur64_search::{

@@ -14,6 +14,8 @@ cuda = ["recur64-model/cuda"]
 recur64-core = { path = "../recur64-core" }
 recur64-search = { path = "../recur64-search" }
 recur64-model = { path = "../recur64-model", default-features = false }
+recur64-compute = { path = "../recur64-compute" }
+recur64-coproc = { path = "../recur64-coproc" }
 burn = { workspace = true, features = ["std", "autodiff"] }
 anyhow = { workspace = true }
 serde = { workspace = true }

@@ -7,6 +7,9 @@ members = [
     "crates/recur64-runtime",
     "crates/recur64-eval",
     "crates/recur64-cli",
+    "crates/recur64-coproc",
+    "crates/recur64-coproc-guest",
+    "crates/recur64-compute",
 ]
 
 [workspace.package]
@@ -26,3 +29,23 @@ serde_json = "1"
 toml = "0.9"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
+
+# Dev/test builds optimize dependencies (Burn tensor kernels, cozy-chess
+# movegen, wasmi) so the CPU training tests in the gate run in minutes.
+# Workspace crates keep opt-level 0 with debug assertions and overflow checks.
+# Ported from mainline (a14c343): mainline measured the gate at ~900 s -> ~194 s
+# with no test-semantics change. Release builds are unaffected.
+[profile.dev.package."*"]
+opt-level = 2
+
+# Profile for the WebAssembly coprocessor guest only (see
+# scripts/build-compute-wasm.ps1). Size-oriented: the artifact is committed and
+# embedded with `include_bytes!`, and the guest is called per position, so a
+# small module keeps the repo and the load cheap. Not used by any host build.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

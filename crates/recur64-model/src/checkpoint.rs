@@ -14,6 +14,7 @@ use burn::record::{FullPrecisionSettings, NamedMpkFileRecorder, Recorder};
 use burn::tensor::backend::AutodiffBackend;
 
 use crate::config::ModelConfig;
+use crate::experimental::{Architecture, ExperimentalConfig};
 use crate::model::ProbeModel;
 
 /// Current checkpoint schema version. Bump on any breaking change.
@@ -60,10 +61,21 @@ pub struct CheckpointMeta {
     /// Position of the LR schedule.
     #[serde(default)]
     pub lr_schedule_step: u64,
-    /// Readout-head function version ([`crate::model::HEAD_VERSION`]).
+    /// Readout-head function version ([`crate::model::HEAD_VERSION`] for the
+    /// probe, [`crate::experimental::CHIMERA_HEAD_VERSION`] for X15).
     /// Metadata written before the field existed is head v1.
     #[serde(default = "legacy_head_version")]
     pub head_version: u32,
+    /// Which model family these weights are. Metadata written before the field
+    /// existed is the historical probe model, and it can never be loaded as
+    /// X15 (and vice versa).
+    #[serde(default)]
+    pub architecture: Architecture,
+    /// The X15 experimental contract (provider selection, thought steps,
+    /// coprocessor and renderer versions, deep supervision). Defaults to the
+    /// probe architecture.
+    #[serde(default)]
+    pub experimental: ExperimentalConfig,
 }
 
 fn legacy_head_version() -> u32 {
@@ -107,7 +119,44 @@ impl CheckpointMeta {
             update_counter: step,
             lr_schedule_step: step,
             head_version: crate::model::HEAD_VERSION,
+            architecture: Architecture::ProbeV1,
+            experimental: ExperimentalConfig::default(),
         }
+    }
+
+    /// Mark this metadata as an X15 / Chimera checkpoint, recording the whole
+    /// experimental contract and that architecture's head version. A probe
+    /// loader refuses it, and this loader refuses a probe checkpoint.
+    pub fn with_experimental(mut self, experimental: ExperimentalConfig) -> Self {
+        self.architecture = experimental.architecture;
+        self.head_version = experimental.architecture.head_version();
+        self.experimental = experimental;
+        self
+    }
+
+    /// Refuse a checkpoint recorded for a different architecture. This is what
+    /// stops an F15/R15 checkpoint from ever silently running as X15.
+    pub fn check_architecture(&self, requested: Architecture) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.architecture == requested,
+            "checkpoint architecture {} is not the requested architecture {}: its \
+             weights are not interchangeable and are refused",
+            self.architecture.label(),
+            requested.label()
+        );
+        Ok(())
+    }
+
+    /// Refuse a checkpoint whose experimental contract differs from the one it
+    /// is being loaded into (provider selection, thought steps, head function).
+    pub fn check_experimental(&self, requested: &ExperimentalConfig) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            &self.experimental == requested,
+            "checkpoint experimental contract {} differs from the requested {}",
+            serde_json::to_value(&self.experimental)?,
+            serde_json::to_value(requested)?
+        );
+        Ok(())
     }
 
     /// Refuse a checkpoint whose recorded model configuration differs from
@@ -130,11 +179,14 @@ impl CheckpointMeta {
     /// training-data provenance, not part of the network's function, so it
     /// is recorded but does not block loading.
     pub fn check_contracts(&self) -> anyhow::Result<()> {
+        let expected = self.architecture.head_version();
         anyhow::ensure!(
-            self.head_version == crate::model::HEAD_VERSION,
-            "checkpoint head version {} is not the current head version {}: its weights were trained for a different readout function and are refused",
+            self.head_version == expected,
+            "checkpoint head version {} is not the current head version {} for architecture {}: \
+             its weights were trained for a different readout function and are refused",
             self.head_version,
-            crate::model::HEAD_VERSION
+            expected,
+            self.architecture.label()
         );
         let v = recur64_core::ContractVersions::V1;
         anyhow::ensure!(
@@ -151,6 +203,77 @@ impl CheckpointMeta {
         );
         Ok(())
     }
+}
+
+/// Save a full X15 / Chimera training checkpoint.
+///
+/// The metadata must already carry the Chimera architecture
+/// ([`CheckpointMeta::with_experimental`]); this is what makes the artifact
+/// refusable by every probe loader.
+pub fn save_training_chimera<B, O>(
+    dir: &Path,
+    model: &crate::chimera::ChimeraModel<B>,
+    optim: &O,
+    meta: &CheckpointMeta,
+) -> anyhow::Result<()>
+where
+    B: AutodiffBackend,
+    O: burn::optim::Optimizer<crate::chimera::ChimeraModel<B>, B>,
+{
+    meta.check_architecture(Architecture::ChimeraV1)?;
+    std::fs::create_dir_all(dir)?;
+    let (model_path, optim_path, meta_path) = paths(dir);
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    model
+        .clone()
+        .save_file(model_path.clone(), &recorder)
+        .map_err(|e| anyhow::anyhow!("save model to {}: {e}", model_path.display()))?;
+    recorder
+        .record(optim.to_record(), optim_path.clone())
+        .map_err(|e| anyhow::anyhow!("save optimizer to {}: {e}", optim_path.display()))?;
+    let mut meta = meta.clone();
+    let with_mpk = model_path.with_extension("mpk");
+    let model_file = if with_mpk.exists() {
+        with_mpk
+    } else {
+        model_path.clone()
+    };
+    meta.model_id = hash_file(&model_file)
+        .map_err(|e| anyhow::anyhow!("hash {}: {e}", model_file.display()))?;
+    std::fs::write(&meta_path, serde_json::to_vec_pretty(&meta)?)
+        .map_err(|e| anyhow::anyhow!("write {}: {e}", meta_path.display()))?;
+    Ok(())
+}
+
+/// Load a full X15 / Chimera training checkpoint, refusing a probe checkpoint
+/// and any experimental-contract mismatch.
+pub fn load_training_chimera<B, O>(
+    dir: &Path,
+    template: crate::chimera::ChimeraModel<B>,
+    optim: O,
+    device: &B::Device,
+) -> anyhow::Result<(crate::chimera::ChimeraModel<B>, O, CheckpointMeta)>
+where
+    B: AutodiffBackend,
+    O: burn::optim::Optimizer<crate::chimera::ChimeraModel<B>, B>,
+{
+    let (model_path, optim_path, meta_path) = paths(dir);
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
+    anyhow::ensure!(
+        meta.schema_version == SCHEMA_VERSION,
+        "checkpoint schema mismatch: found {} expected {}",
+        meta.schema_version,
+        SCHEMA_VERSION
+    );
+    meta.check_architecture(Architecture::ChimeraV1)?;
+    meta.check_experimental(template.experimental())?;
+    meta.check_contracts()?;
+    meta.check_model(template.config())?;
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    let model = template.load_file(model_path, &recorder, device)?;
+    let optim_record = recorder.load(optim_path, device)?;
+    let optim = optim.load_record(optim_record);
+    Ok((model, optim, meta))
 }
 
 fn paths(dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
@@ -181,6 +304,7 @@ where
     B: AutodiffBackend,
     O: Optimizer<ProbeModel<B>, B>,
 {
+    meta.check_architecture(Architecture::ProbeV1)?;
     std::fs::create_dir_all(dir)?;
     let (model_path, optim_path, meta_path) = paths(dir);
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
@@ -228,6 +352,7 @@ where
         meta.schema_version,
         SCHEMA_VERSION
     );
+    meta.check_architecture(Architecture::ProbeV1)?;
     meta.check_contracts()?;
     meta.check_model(template.config())?;
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();

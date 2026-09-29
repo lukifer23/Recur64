@@ -122,7 +122,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &BenchTrainArgs) -> anyho
         };
         let (model, mut optim, _) = load_training(
             &args.checkpoint,
-            model_io::build::<B>(&cfg.model, &device),
+            model_io::build::<B>(&cfg.model, &device)?,
             adamw::<B, _>(),
             &device,
         )?;

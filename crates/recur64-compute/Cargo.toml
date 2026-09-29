@@ -1,0 +1,20 @@
+[package]
+name = "recur64-compute"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+# Host-side deterministic-compute providers (None / NativeV1 / WasmV1). CPU only,
+# Burn-free, no GPU and no system runtime: wasmi is a pure-Rust interpreter and
+# the module bytes are committed in `assets/`.
+[dependencies]
+recur64-coproc = { path = "../recur64-coproc" }
+recur64-core = { path = "../recur64-core" }
+anyhow = { workspace = true }
+wasmi = "0.36"
+sha2 = "0.10"
+
+[dev-dependencies]
+recur64-search = { path = "../recur64-search" }
+serde_json = { workspace = true }

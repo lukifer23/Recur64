@@ -24,6 +24,7 @@ mod phase2;
 mod phase3;
 mod replay_merge;
 mod search_gain;
+mod x15;
 
 #[derive(Parser)]
 #[command(
@@ -98,6 +99,8 @@ enum Commands {
     /// GPU backend proof: forward/backward/AdamW/checkpoint on the CUDA device.
     #[cfg(feature = "cuda")]
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
+    /// X15 / Chimera fast probe harness (info/sanity/parity/grads/thoughts).
+    X15(x15::X15Args),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -132,5 +135,6 @@ fn main() -> anyhow::Result<()> {
         Commands::FreezeReference(args) => phase3::run_freeze_reference(args),
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
+        Commands::X15(args) => x15::run(args),
     }
 }

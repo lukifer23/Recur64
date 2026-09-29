@@ -233,3 +233,91 @@ fn evaluate_many_shares_a_batch_and_answers_in_order() {
     assert_eq!(m.completed, 5);
     assert!(m.peak_in_flight >= 5);
 }
+
+/// X0.3: the multi-owner pool. Every request must be answered exactly once,
+/// every owner in the pool must actually serve batches, the configured cap must
+/// still be respected, and the pool must shut down cleanly (no leaked threads,
+/// no dropped request).
+#[test]
+fn owner_pool_answers_every_request_and_every_owner_serves() {
+    // Four independent fake models, each counting its own batches, so we can
+    // prove more than one owner did work rather than assuming it.
+    let mut models = Vec::new();
+    let mut counters = Vec::new();
+    for _ in 0..4 {
+        let (m, calls, sizes) = fake();
+        models.push(m);
+        counters.push((calls, sizes));
+    }
+    let owner = InferenceOwner::spawn_pool(models, config());
+    let ev = owner.evaluator();
+
+    let obs = ObservationV1::zeroed();
+    let legal = legal3();
+    let request = EvalRequest {
+        observation: &obs,
+        legal: &legal,
+        side_to_move: recur64_core::Color::White,
+    };
+    // Enough requests that every owner is overwhelmingly likely to be handed a
+    // batch; the assertions below do not depend on which one served which.
+    let total = 64usize;
+    let results: Vec<_> = std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..4)
+            .map(|_| {
+                scope.spawn(|| {
+                    (0..total / 4)
+                        .map(|_| ev.evaluate(request))
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .flat_map(|h| h.join().unwrap())
+            .collect()
+    });
+
+    assert_eq!(results.len(), total, "every request produced a result");
+    for (i, r) in results.iter().enumerate() {
+        let r = r
+            .as_ref()
+            .unwrap_or_else(|e| panic!("request {i} failed: {e}"));
+        assert_eq!(r.policy.len(), 3, "request {i} policy is aligned");
+    }
+
+    let m = owner.metrics().snapshot();
+    assert_eq!(
+        m.completed, total as u64,
+        "every request completed exactly once"
+    );
+    assert_eq!(m.errors, 0, "no request errored");
+    assert_eq!(m.owners, 4, "the pool reports its size");
+    assert!(m.batches >= 1);
+
+    // The cap is per batch, whichever owner formed it.
+    for (_, sizes) in &counters {
+        assert!(
+            sizes.lock().unwrap().iter().all(|&n| n <= 8),
+            "an owner exceeded max_batch"
+        );
+    }
+    let served = counters
+        .iter()
+        .filter(|(calls, _)| calls.load(Ordering::SeqCst) > 0)
+        .count();
+    assert!(
+        served >= 2,
+        "expected real multi-owner service, only {served} of 4 owners served a batch"
+    );
+
+    // Shutdown joins every owner thread and answers any straggler.
+    owner.shutdown();
+    // Pool size 1 must still behave exactly like the single owner.
+    let (m1, _, _) = fake();
+    let single = InferenceOwner::spawn_pool(vec![m1], config());
+    let ev1 = single.evaluator();
+    assert!(ev1.evaluate(request).is_ok());
+    assert_eq!(single.metrics().snapshot().owners, 1);
+    single.shutdown();
+}

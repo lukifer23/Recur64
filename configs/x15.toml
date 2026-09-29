@@ -1,0 +1,79 @@
+# Recur64 X15 / "Chimera" probe configuration.
+#
+# The new-architecture laboratory: a symbolic geometry-aware square-token
+# transformer prelude, an explicit recurrent latent reasoning scratchpad, a
+# deterministic chess coprocessor exposed through cross-attention (with a real
+# WebAssembly implementation), and a literal canonical visual-board pathway.
+# All four pathways are independently gated so a later agent can ablate them.
+#
+# The trunk geometry matches R15 (2 + 4 shared + 2 = 8 unique blocks,
+# width 512) so the parameter accounting is directly comparable; the new
+# subsystems are additive and reported separately by `recur64 x15 info`.
+#
+# This is a *probe* config (it carries `name`, not `run_id`): it drives
+# `recur64 x15 ...` and `recur64 model-info`. X15 is not wired into the
+# pilot/self-play loop in X1.
+
+name = "x15"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 2
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5
+
+[experimental]
+architecture = "chimera_v1"
+# T=4 thoughts by default; T1/T2/T4/T8 are all supported at a fixed parameter
+# count. `T = 1` with `reasoning.enabled = false` is the square-token
+# transformer control.
+thought_steps = 4
+reasoning_tokens = 4
+deep_supervision = "final_only_v1"
+
+[experimental.reasoning]
+mode = "latent_v1"
+enabled = true
+# Auxiliary attention width: the cross-attention paths work here rather than at
+# the trunk width, which is what keeps three extra attention paths affordable.
+aux_width = 128
+aux_heads = 4
+latent_ffn = 256
+
+[experimental.compute]
+# "wasm_v1" runs the WebAssembly implementation; "native_v1" runs the same
+# source natively. `x15 parity` proves they are byte-identical.
+provider = "wasm_v1"
+enabled = true
+# Bounded exact tactics: 1 = mate-in-1. Depth 2 (mate-in-2) is an exhaustive
+# exact search and is for diagnostics only.
+mate_depth = 1
+
+[experimental.visual]
+provider = "render_v1"
+enabled = true
+# 64 or 128, and 8 * 2^k generally; the residual encoder's stride-2 plan needs
+# a power-of-two token grid.
+resolution = 64
+channels = 48
+blocks = 3
+
+[experimental.retrieval]
+# Retrieval is NOT active in X1. The interface exists so a later X2 can add
+# self-generated solved-position retrieval without touching the bus.
+provider = "none"
+memory_tokens = 0

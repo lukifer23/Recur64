@@ -30,7 +30,7 @@ const REL_BUCKETS: usize = 225;
 
 /// Row-major relative-displacement bucket index for each `(from, to)` square
 /// pair, repeated for every attention head. Shape `[heads, squares*squares]`.
-fn rel_index_data(heads: usize, squares: usize) -> Vec<i32> {
+pub(crate) fn rel_index_data(heads: usize, squares: usize) -> Vec<i32> {
     assert_eq!(squares, 64, "Phase 0 probe assumes an 8x8 board");
     let mut v = Vec::with_capacity(heads * squares * squares);
     for _h in 0..heads {
@@ -116,19 +116,13 @@ impl<B: Backend> Block<B> {
         let h = self.heads;
         let hd = self.head_dim;
 
-        let q = self
-            .q_proj
-            .forward(x.clone())
+        let q = linear_rows(&self.q_proj, x.clone())
             .reshape([b, s, h, hd])
             .swap_dims(1, 2); // [b, h, s, hd]
-        let k = self
-            .k_proj
-            .forward(x.clone())
+        let k = linear_rows(&self.k_proj, x.clone())
             .reshape([b, s, h, hd])
             .swap_dims(1, 2);
-        let v = self
-            .v_proj
-            .forward(x)
+        let v = linear_rows(&self.v_proj, x)
             .reshape([b, s, h, hd])
             .swap_dims(1, 2);
 
@@ -139,17 +133,132 @@ impl<B: Backend> Block<B> {
         let attn = activation::softmax(logits, 3);
         let out = attn.matmul(v); // [b,h,s,hd]
         let out = out.swap_dims(1, 2).reshape([b, s, d]);
-        self.out_proj.forward(out)
+        linear_rows(&self.out_proj, out)
     }
 
     fn ffn(&self, x: Tensor<B, 3>) -> Tensor<B, 3> {
-        let h = self.ffn1.forward(x);
-        self.ffn2.forward(activation::gelu(h))
+        let h = linear_rows(&self.ffn1, x);
+        linear_rows(&self.ffn2, activation::gelu(h))
     }
 
     pub fn forward(&self, x: Tensor<B, 3>, rel_idx: Tensor<B, 2, Int>) -> Tensor<B, 3> {
         let a = x.clone() + self.attention(self.norm1.forward(x), rel_idx);
         a.clone() + self.ffn(self.norm2.forward(a))
+    }
+}
+
+/// Apply `linear` over the last dimension of a rank-3 tensor as one 2-D
+/// matmul over all `b * s` rows.
+///
+/// Burn's `Linear` on a rank-3 input runs a broadcast batched matmul with
+/// `m = s` (64 squares), a small-GEMM shape the kernels handle poorly;
+/// flattening computes the same linear map with `m = b * s`. Parameters,
+/// checkpoints and the head version are unchanged, and the output is identical
+/// to float rounding (`linear_rows_matches_rank3_linear`).
+pub(crate) fn linear_rows<B: Backend>(linear: &Linear<B>, x: Tensor<B, 3>) -> Tensor<B, 3> {
+    let [b, s, d] = x.dims();
+    let y = linear.forward(x.reshape([b * s, d]));
+    let out = y.dims()[1];
+    y.reshape([b, s, out])
+}
+
+/// The head parameters the sparse legal-candidate readout needs. Shared by the
+/// probe model and by Chimera so the policy path cannot drift between them.
+pub(crate) struct ReadoutHeads<'a, B: Backend> {
+    pub final_norm: &'a RmsNorm<B>,
+    pub wdl: &'a Linear<B>,
+    pub source_proj: &'a Linear<B>,
+    pub dest_proj: &'a Linear<B>,
+    pub promo1: &'a Linear<B>,
+    pub promo2: &'a Linear<B>,
+}
+
+/// The sparse legal-candidate readout: final pre-head normalization, a pooled
+/// WDL head (plus an optional extra WDL term, used by Chimera's reasoning
+/// state), and the 64x64 source/destination policy grid with promotion deltas.
+pub(crate) fn sparse_readout<B: Backend>(
+    heads: &ReadoutHeads<'_, B>,
+    y: Tensor<B, 3>,
+    wdl_extra: Option<Tensor<B, 2>>,
+    cands: &CandidateTensors<B>,
+) -> Readout<B> {
+    assert!(
+        cands.width > 0,
+        "candidate batch contains no legal candidates; terminal-only batches \
+         have no policy path and must bypass neural evaluation"
+    );
+    let y = heads.final_norm.forward(y);
+    let [b, _s, d] = y.dims();
+
+    // Pooled WDL. `None` keeps the historical probe path exactly as it was.
+    let pooled = y.clone().mean_dim(1).squeeze_dim::<2>(1); // [b, d]
+    let wdl_logits = match wdl_extra {
+        None => heads.wdl.forward(pooled.clone()),
+        Some(extra) => heads.wdl.forward(pooled.clone()) + extra,
+    };
+
+    // Base 64x64 source/destination score grid.
+    let source = linear_rows(heads.source_proj, y.clone()); // [b, s, pd]
+    let dest = linear_rows(heads.dest_proj, y.clone());
+    // Scaled like attention logits (head v2): unit-variance source/dest
+    // features give O(1) logits at init instead of O(sqrt(policy_dim)).
+    let policy_scale = 1.0 / (source.dims()[2] as f32).sqrt();
+    let base_all = source.matmul(dest.swap_dims(1, 2)).mul_scalar(policy_scale); // [b, s, s]
+    let pd = base_all.dims()[2];
+    let base_flat = base_all.clone().reshape([b, pd * pd]); // [b, 4096]
+    let base = base_flat.gather(1, cands.base_idx.clone()); // [b, width]
+
+    // Promotion deltas: gather h_from, h_to and concat with pooled board.
+    let from3 = cands
+        .from_idx
+        .clone()
+        .unsqueeze_dim::<3>(2)
+        .expand([b, cands.width, d]);
+    let to3 = cands
+        .to_idx
+        .clone()
+        .unsqueeze_dim::<3>(2)
+        .expand([b, cands.width, d]);
+    let h_from = y.clone().gather(1, from3); // [b, width, d]
+    let h_to = y.clone().gather(1, to3);
+    let pooled3 = pooled.unsqueeze_dim::<3>(1).expand([b, cands.width, d]);
+    let joined = Tensor::cat(vec![h_from, h_to, pooled3], 2); // [b, width, 3d]
+    let promo_h = activation::gelu(linear_rows(heads.promo1, joined));
+    let promo_delta = linear_rows(heads.promo2, promo_h); // [b, width, promo_codes-1]
+
+    let sel = promo_delta
+        .gather(2, cands.promo_idx.clone().unsqueeze_dim::<3>(2))
+        .squeeze_dim::<2>(2); // [b, width]
+    let is_promo = {
+        // 1.0 where promo code > 0.
+        let p = cands.promo_idx.clone(); // [b,width], 0 for none
+        p.greater_elem(0).float()
+    };
+    let logits = base + sel * is_promo;
+
+    // Mask padding with -inf; replace fully-terminal rows with 0 so the
+    // softmax is never all-masked.
+    let invalid = cands.mask.clone().bool_not(); // [b,width]
+    let logits = logits.mask_fill(invalid.clone(), f32::NEG_INFINITY);
+    let terminal_row = cands
+        .valid
+        .clone()
+        .bool_not()
+        .unsqueeze_dim::<2>(1)
+        .expand([b, cands.width]);
+    let logits = logits.mask_fill(terminal_row, 0.0);
+
+    let log_probs = activation::log_softmax(logits, 1);
+    let log_probs = log_probs.mask_fill(invalid, 0.0);
+
+    Readout {
+        policy: PolicyOutput {
+            log_probs,
+            mask: cands.mask.clone(),
+            valid: cands.valid.clone(),
+            base_all,
+        },
+        wdl_logits,
     }
 }
 
@@ -336,7 +445,7 @@ impl<B: Backend> ProbeModel<B> {
     }
 
     fn embed(&self, board: Tensor<B, 3>) -> Tensor<B, 3> {
-        let p = self.input_proj.forward(board); // [b, s, d]
+        let p = linear_rows(&self.input_proj, board); // [b, s, d]
         let [b, s, d] = p.dims();
         let emb = self.square_emb.val().reshape([1, s, d]).expand([b, s, d]);
         p + emb
@@ -356,81 +465,19 @@ impl<B: Backend> ProbeModel<B> {
     }
 
     fn readout(&self, y: Tensor<B, 3>, cands: &CandidateTensors<B>) -> Readout<B> {
-        assert!(
-            cands.width > 0,
-            "candidate batch contains no legal candidates; terminal-only batches \
-             have no policy path and must bypass neural evaluation"
-        );
-        let y = self.final_norm.forward(y);
-        let [b, _s, d] = y.dims();
-
-        // Pooled WDL.
-        let pooled = y.clone().mean_dim(1).squeeze_dim::<2>(1); // [b, d]
-        let wdl_logits = self.wdl.forward(pooled.clone());
-
-        // Base 64x64 source/destination score grid.
-        let source = self.source_proj.forward(y.clone()); // [b, s, pd]
-        let dest = self.dest_proj.forward(y.clone());
-        // Scaled like attention logits (head v2): unit-variance source/dest
-        // features give O(1) logits at init instead of O(sqrt(policy_dim)).
-        let policy_scale = 1.0 / (source.dims()[2] as f32).sqrt();
-        let base_all = source.matmul(dest.swap_dims(1, 2)).mul_scalar(policy_scale); // [b, s, s]
-        let pd = base_all.dims()[2];
-        let base_flat = base_all.clone().reshape([b, pd * pd]); // [b, 4096]
-        let base = base_flat.gather(1, cands.base_idx.clone()); // [b, width]
-
-        // Promotion deltas: gather h_from, h_to and concat with pooled board.
-        let from3 = cands
-            .from_idx
-            .clone()
-            .unsqueeze_dim::<3>(2)
-            .expand([b, cands.width, d]);
-        let to3 = cands
-            .to_idx
-            .clone()
-            .unsqueeze_dim::<3>(2)
-            .expand([b, cands.width, d]);
-        let h_from = y.clone().gather(1, from3); // [b, width, d]
-        let h_to = y.clone().gather(1, to3);
-        let pooled3 = pooled.unsqueeze_dim::<3>(1).expand([b, cands.width, d]);
-        let joined = Tensor::cat(vec![h_from, h_to, pooled3], 2); // [b, width, 3d]
-        let promo_h = activation::gelu(self.promo1.forward(joined));
-        let promo_delta = self.promo2.forward(promo_h); // [b, width, promo_codes-1]
-
-        let sel = promo_delta
-            .gather(2, cands.promo_idx.clone().unsqueeze_dim::<3>(2))
-            .squeeze_dim::<2>(2); // [b, width]
-        let is_promo = {
-            // 1.0 where promo code > 0.
-            let p = cands.promo_idx.clone(); // [b,width], 0 for none
-            p.greater_elem(0).float()
-        };
-        let logits = base + sel * is_promo;
-
-        // Mask padding with -inf; replace fully-terminal rows with 0 so the
-        // softmax is never all-masked.
-        let invalid = cands.mask.clone().bool_not(); // [b,width]
-        let logits = logits.mask_fill(invalid.clone(), f32::NEG_INFINITY);
-        let terminal_row = cands
-            .valid
-            .clone()
-            .bool_not()
-            .unsqueeze_dim::<2>(1)
-            .expand([b, cands.width]);
-        let logits = logits.mask_fill(terminal_row, 0.0);
-
-        let log_probs = activation::log_softmax(logits, 1);
-        let log_probs = log_probs.mask_fill(invalid, 0.0);
-
-        Readout {
-            policy: PolicyOutput {
-                log_probs,
-                mask: cands.mask.clone(),
-                valid: cands.valid.clone(),
-                base_all,
+        sparse_readout(
+            &ReadoutHeads {
+                final_norm: &self.final_norm,
+                wdl: &self.wdl,
+                source_proj: &self.source_proj,
+                dest_proj: &self.dest_proj,
+                promo1: &self.promo1,
+                promo2: &self.promo2,
             },
-            wdl_logits,
-        }
+            y,
+            None,
+            cands,
+        )
     }
 
     /// Forward with a given recurrence count.
@@ -663,6 +710,25 @@ mod tests {
     use crate::action::CandidateBatch;
 
     type B = burn::backend::Flex;
+
+    /// The flattened 2-D form computes the same linear map as Burn's rank-3
+    /// broadcast form.
+    #[test]
+    fn linear_rows_matches_rank3_linear() {
+        let device = Default::default();
+        let linear = LinearConfig::new(24, 40).with_bias(true).init::<B>(&device);
+        let x = Tensor::<B, 3>::random([5, 64, 24], Distribution::Normal(0.0, 1.0), &device);
+        let reference: Vec<f32> = linear.forward(x.clone()).into_data().to_vec().unwrap();
+        let rows = linear_rows(&linear, x);
+        assert_eq!(rows.dims(), [5, 64, 40]);
+        let rows: Vec<f32> = rows.into_data().to_vec().unwrap();
+        let max = reference
+            .iter()
+            .zip(&rows)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(max <= 1e-5, "max |difference| {max}");
+    }
 
     fn tiny_cfg() -> ModelConfig {
         ModelConfig {

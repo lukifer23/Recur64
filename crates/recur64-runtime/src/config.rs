@@ -84,6 +84,9 @@ fn default_min_decisive_games() -> u32 {
 fn default_root_dirichlet_alpha() -> f32 {
     0.3
 }
+fn default_inference_owners() -> usize {
+    1
+}
 fn default_leaves_in_flight() -> u32 {
     1
 }
@@ -268,6 +271,11 @@ pub struct RunConfig {
     // Inference batching.
     #[serde(default = "default_max_batch")]
     pub max_inference_batch: usize,
+    /// Inference owner threads serving one self-play request queue. Execution
+    /// only, never in the scientific identity: `1` (default) is the single
+    /// owner, and any value above 1 leaves every output unchanged.
+    #[serde(default = "default_inference_owners")]
+    pub inference_owners: usize,
     /// Evaluation scheduling (execution only, excluded from the scientific
     /// identity): games played at once in pilot evaluation matches, and the
     /// evaluation owners' batch cap. `None` keeps the historical schedule
@@ -725,6 +733,10 @@ impl RunConfig {
         anyhow::ensure!(
             self.search_leaves_in_flight >= 1,
             "search_leaves_in_flight must be >= 1"
+        );
+        anyhow::ensure!(
+            (1..=8).contains(&self.inference_owners),
+            "inference_owners must be in 1..=8"
         );
         anyhow::ensure!(
             (0.0..=1.0).contains(&self.root_dirichlet_epsilon)

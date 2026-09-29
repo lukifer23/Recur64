@@ -460,3 +460,36 @@ It is not a clean modern baseline, and its checkpoints are head v1. The HP
 F15/R15 H1/H2 record lives on `experiment/hp-r15` (head v1); the H3 head-v2
 requalification lives on `experiment/hp-r15-h3-integration`. Both are external
 HP experiment evidence, not mainline results.
+
+## X15 / "Chimera" — novel-architecture laboratory (2026-09-29)
+
+Branch `experiment/hp-r15-h3-integration`. The owner has designated this branch
+the deliberately experimental / novel Recur64 line; mainline stays the
+conservative conventional control line. This is **HP experiment** work, not a
+mainline gate.
+
+- **X0 selective mainline port (D57):** dev/test profile, CUDA-12.9 pin +
+  behavioural device check, multi-owner inference pool (default 1), flattened
+  rank-3 linears. MEASURED: the workspace test gate went from *unable to finish
+  in 1452 s* to that same test passing in **64.42 s**.
+- **X15 architecture (D58):** symbolic prelude + shared recurrent square core +
+  explicit latent reasoning bus + deterministic compute coprocessor +
+  canonical visual-board CNN, all four independently gated.
+  **16,018,606 parameters**, identical at T = 1/2/4/8; trunk geometry still
+  R15's. `ProbeModel` is untouched and old checkpoints are refused both ways.
+- **Deterministic coprocessor (D59):** `ComputeBankV1` native vs real
+  WebAssembly, **byte-identical on 253 positions**, artifact digest-pinned.
+  MEASURED: WASM is ~16× native per position.
+- **Smoke (MEASURED, CPU):** `x15 sanity` passes at T=1/2/4 (finite, policy
+  normalizes, WDL exactly neutral at init); `x15 grads` shows every gated
+  subsystem — including compute, visual and the gates — receiving a non-zero
+  gradient on the first step.
+- **NOT RUN:** no CUDA execution of X15, no training of any kind, no peak-VRAM
+  measurement, no `ReasoningTargetsV1` generation, no tactical-fixture or
+  conversion-pathology suite, no `inference_owners = 2` throughput measurement.
+  X15 is not wired into the pilot.
+- **No success claim.** Whether recurrent latent reasoning with exact computed
+  facts and an independent visual pathway actually helps is the next agent's
+  question, and the owner's fast-probe ladder is the intended way to ask it.
+- Details: `docs/HP_X1_ARCHITECTURE.md` (contract) and
+  `docs/HP_X1_BUILD_RESULTS.md` (MEASURED / INFERRED / NOT RUN).

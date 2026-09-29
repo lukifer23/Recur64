@@ -57,7 +57,7 @@ output_blocks = 0
 
 fn freeze(c: &RunConfig, dir: &std::path::Path) -> String {
     let device = Default::default();
-    let model = model_io::build::<CpuTrainBackend>(&c.model, &device);
+    let model = model_io::build::<CpuTrainBackend>(&c.model, &device).expect("cpu device check");
     let meta = CheckpointMeta::new(c.model.clone(), 1, false, 0, c.lr, c.seed, 0, "cpu", "fp32");
     save_training(dir, &model, &adamw::<CpuTrainBackend, _>(), &meta).unwrap();
     let meta: serde_json::Value =

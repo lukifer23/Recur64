@@ -1,0 +1,16 @@
+[package]
+name = "recur64-coproc-guest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+# The WebAssembly guest. Built for `wasm32-unknown-unknown` by
+# `scripts/build-compute-wasm.ps1` (never by a `build.rs`, so the normal cargo
+# build is not recursive). `rlib` is kept so the same source is unit-testable
+# on the host.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+recur64-coproc = { path = "../recur64-coproc" }

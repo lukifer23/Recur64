@@ -13,8 +13,10 @@ pub const BURN_VERSION: &str = "0.21.0";
 
 pub mod action;
 pub mod checkpoint;
+pub mod chimera;
 pub mod config;
 pub mod digest;
+pub mod experimental;
 pub mod fixture;
 pub mod loss;
 pub mod model;
@@ -22,3 +24,7 @@ pub mod precision;
 pub mod train;
 
 pub use config::{DeviceKind, ModelConfig, Precision, ProbeConfig};
+pub use experimental::{
+    Architecture, ComputeConfig, DeepSupervisionMode, ExperimentalConfig, ReasoningConfig,
+    RetrievalConfig, VisualConfig, VisualProviderKind,
+};

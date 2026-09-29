@@ -1,0 +1,18 @@
+[package]
+name = "recur64-coproc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+# Pure Rust, CPU-only, Burn-free. Compiled both natively (the NativeV1
+# provider) and to wasm32-unknown-unknown (the WasmV1 provider guest), so the
+# two providers run literally the same code and produce identical bytes.
+[dependencies]
+cozy-chess = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+# Tests build inputs from real positions through the real observation encoder.
+# The WASM guest never links this.
+recur64-core = { path = "../recur64-core" }

@@ -171,7 +171,7 @@ pub fn warmup<B: AutodiffBackend>(
 ) -> anyhow::Result<f64> {
     let inner_device: Device<B::InnerBackend> = Default::default();
     <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
-    let model = model_io::build::<B::InnerBackend>(&cfg.model, &inner_device);
+    let model = model_io::build::<B::InnerBackend>(&cfg.model, &inner_device)?;
     let batched = BatchedModel::new(model, cfg.recurrence, inner_device)
         .with_candidate_buckets(cfg.inference_candidate_buckets);
     let legal: Vec<ActionId> = (0..20).map(|i| ActionId::from_index(i).unwrap()).collect();
@@ -219,7 +219,7 @@ pub fn run_cell<B: AutodiffBackend>(
     <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
     let model = match checkpoint {
         Some(path) => model_io::load::<B::InnerBackend>(path, &cfg.model, &inner_device)?,
-        None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device),
+        None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device)?,
     };
     let batched = BatchedModel::new(model, cfg.recurrence, inner_device)
         .with_candidate_buckets(cfg.inference_candidate_buckets);

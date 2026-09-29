@@ -1,0 +1,10 @@
+# Repository build environment (ported from mainline D52; see docs/DECISIONS.md).
+#
+# cudarc picks the CUDA API version it loads at *build* time: from
+# CUDARC_CUDA_VERSION, else from `nvcc --version`, else "latest" (13.x). This
+# machine has no nvcc on PATH and uses the pinned user-space CUDA 12.9.1
+# runtime (docs/HARDWARE.md, scripts/hp-cuda-env.sh), so an unpinned build
+# could search for CUDA 13 NVRTC names and fail to load 12.9.1 at run time.
+# Pin it so every build targets 12.9.
+[env]
+CUDARC_CUDA_VERSION = "12090"

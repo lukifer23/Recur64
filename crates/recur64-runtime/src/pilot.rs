@@ -281,6 +281,36 @@ pub fn spawn_owner<B: Backend>(
     ))
 }
 
+/// Spawn the self-play collection owner: a pool of `cfg.inference_owners`
+/// owner threads over copies of the same checkpoint. Evaluation owners stay
+/// single ([`spawn_owner`]), so the at-most-two-resident-models bound is
+/// unchanged.
+///
+/// Execution only: the pool is a scheduling change, and every evaluator output
+/// is identical to the single-owner path.
+pub fn spawn_selfplay_owner<B: Backend>(
+    dir: &Path,
+    cfg: &RunConfig,
+    device: &B::Device,
+) -> anyhow::Result<InferenceOwner> {
+    // The device check runs once for the whole pool, not once per copy.
+    model_io::verify_device::<B>(device)?;
+    let models = (0..cfg.inference_owners.max(1))
+        .map(|_| {
+            model_io::load_unverified::<B>(dir, &cfg.model, device)
+                .map(|m| BatchedModel::new(m, cfg.recurrence, device.clone()))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(InferenceOwner::spawn_pool(
+        models,
+        InferenceConfig {
+            max_batch: cfg.max_inference_batch,
+            batch_timeout: Duration::from_micros(cfg.batch_timeout_us),
+            ..InferenceConfig::default()
+        },
+    ))
+}
+
 /// Evaluate a candidate against its parent, the frozen reference, and random
 /// play: searched candidate-vs-parent, searched candidate-vs-reference (reused
 /// when parent == reference), raw candidate-vs-random and raw
@@ -443,7 +473,7 @@ fn install_reference<B: AutodiffBackend>(
         cfg.reference_model_id.is_none(),
         "reference_model_id is set but reference_checkpoint is not"
     );
-    let reference_model = model_io::build::<B>(&cfg.model, device);
+    let reference_model = model_io::build::<B>(&cfg.model, device)?;
     let reference_optim = adamw::<B, _>();
     let mut ref_meta = CheckpointMeta::new(
         cfg.model.clone(),
@@ -595,7 +625,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             ..CycleGpu::default()
         };
         let first_game_id = total_games_collected;
-        let owner = spawn_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
+        let owner = spawn_selfplay_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
         let evaluator = owner.evaluator();
         let ((collected, collect_secs), collect_gpu) = gpu_telemetry::monitor(gpu_on, || {
             let collect_start = Instant::now();
@@ -660,7 +690,7 @@ pub fn run_pilot<B: AutodiffBackend>(
         let replay_total_games = store.total_games() as u64;
         let (train_model, mut optim, parent_meta) = load_training(
             &train_from,
-            model_io::build::<B>(&cfg.model, &b_device),
+            model_io::build::<B>(&cfg.model, &b_device)?,
             adamw::<B, _>(),
             &b_device,
         )?;

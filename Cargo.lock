@@ -483,7 +483,7 @@ dependencies = [
  "num-traits",
  "parking_lot",
  "portable-atomic",
- "spin",
+ "spin 0.10.1",
 ]
 
 [[package]]
@@ -503,7 +503,7 @@ dependencies = [
  "rand 0.10.3",
  "rand_distr 0.6.0",
  "serde",
- "spin",
+ "spin 0.10.1",
  "thiserror 2.0.20",
 ]
 
@@ -544,7 +544,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "spin",
+ "spin 0.10.1",
  "uuid",
 ]
 
@@ -595,7 +595,7 @@ dependencies = [
  "derive-new",
  "hashbrown 0.16.1",
  "serde",
- "spin",
+ "spin 0.10.1",
 ]
 
 [[package]]
@@ -673,7 +673,7 @@ dependencies = [
  "log",
  "serde",
  "smallvec",
- "spin",
+ "spin 0.10.1",
  "tracing",
 ]
 
@@ -758,7 +758,7 @@ dependencies = [
  "burn-std",
  "hashbrown 0.16.1",
  "log",
- "spin",
+ "spin 0.10.1",
 ]
 
 [[package]]
@@ -776,7 +776,7 @@ dependencies = [
  "num-traits",
  "serde",
  "smallvec",
- "spin",
+ "spin 0.10.1",
 ]
 
 [[package]]
@@ -1367,7 +1367,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "spin",
+ "spin 0.10.1",
  "toml 1.1.6+spec-1.1.0",
  "tracing",
  "tynm",
@@ -1585,7 +1585,7 @@ dependencies = [
  "md5",
  "serde",
  "serde_json",
- "spin",
+ "spin 0.10.1",
  "thiserror 2.0.20",
  "toml 1.1.6+spec-1.1.0",
  "tracing",
@@ -1606,7 +1606,7 @@ dependencies = [
  "num-traits",
  "paste",
  "serde",
- "spin",
+ "spin 0.10.1",
  "variadics_please",
 ]
 
@@ -2079,6 +2079,12 @@ checksum = "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61"
 dependencies = [
  "litrs",
 ]
+
+[[package]]
+name = "downcast-rs"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 
 [[package]]
 name = "dyn-stack"
@@ -2746,6 +2752,15 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
+version = "0.14.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
+dependencies = [
+ "ahash",
+]
+
+[[package]]
+name = "hashbrown"
 version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
@@ -3057,6 +3072,12 @@ dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
 ]
+
+[[package]]
+name = "indexmap-nostd"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e04e2fd2b8188ea827b32ef11de88377086d690286ab35747ef7f9bf3ccb590"
 
 [[package]]
 name = "inflections"
@@ -3478,6 +3499,12 @@ dependencies = [
  "num-traits",
  "pxfm",
 ]
+
+[[package]]
+name = "multi-stash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f"
 
 [[package]]
 name = "naga"
@@ -4465,13 +4492,45 @@ dependencies = [
  "anyhow",
  "burn",
  "clap",
+ "recur64-compute",
+ "recur64-coproc",
  "recur64-core",
  "recur64-eval",
  "recur64-model",
  "recur64-runtime",
+ "recur64-search",
  "serde",
  "serde_json",
  "toml 0.9.12+spec-1.1.0",
+]
+
+[[package]]
+name = "recur64-compute"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "recur64-coproc",
+ "recur64-core",
+ "recur64-search",
+ "serde_json",
+ "sha2",
+ "wasmi",
+]
+
+[[package]]
+name = "recur64-coproc"
+version = "0.1.0"
+dependencies = [
+ "cozy-chess",
+ "recur64-core",
+ "serde",
+]
+
+[[package]]
+name = "recur64-coproc-guest"
+version = "0.1.0"
+dependencies = [
+ "recur64-coproc",
 ]
 
 [[package]]
@@ -4502,6 +4561,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "burn",
+ "recur64-coproc",
  "recur64-core",
  "serde",
  "serde_json",
@@ -4518,6 +4578,8 @@ dependencies = [
  "burn",
  "crc32fast",
  "ctrlc",
+ "recur64-compute",
+ "recur64-coproc",
  "recur64-core",
  "recur64-eval",
  "recur64-model",
@@ -5008,6 +5070,12 @@ dependencies = [
 
 [[package]]
 name = "spin"
+version = "0.9.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3763264f6b73151db08c50ff20d7d8a0b8796e021cdea7ceedad07b80155fa0e"
+
+[[package]]
+name = "spin"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "023a211cb3138dbc438680b32560ad89f699977624c9f8dbb95a47d5b4c07dd3"
@@ -5054,6 +5122,17 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "string-interner"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c6a0d765f5807e98a091107bae0a56ea3799f66a5de47b2c84c94a39c09974e"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.5",
+ "serde",
+]
 
 [[package]]
 name = "strsim"
@@ -5904,6 +5983,55 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81941cd78d0c92026c33e5e01312845a4cb1e9af3407f9134b100dd03144103e"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasmi"
+version = "0.36.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "446ddc18185880ff32de907a809864283d18f9de568c23d46464b6231973d595"
+dependencies = [
+ "arrayvec",
+ "multi-stash",
+ "num-derive",
+ "num-traits",
+ "smallvec",
+ "spin 0.9.9",
+ "wasmi_collections",
+ "wasmi_core",
+ "wasmparser-nostd",
+]
+
+[[package]]
+name = "wasmi_collections"
+version = "0.36.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eddc10bfb0069e913399ebd66c5a72c7d9aceabddcaa0296f062a55ab61d404"
+dependencies = [
+ "ahash",
+ "hashbrown 0.14.5",
+ "string-interner",
+]
+
+[[package]]
+name = "wasmi_core"
+version = "0.36.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f08b12621457c17cfd5349cce25029eeac3769b63b1b02bd850d595a00f375ff"
+dependencies = [
+ "downcast-rs",
+ "libm",
+ "num-traits",
+ "paste",
+]
+
+[[package]]
+name = "wasmparser-nostd"
+version = "0.100.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5a015fe95f3504a94bb1462c717aae75253e39b9dd6c3fb1062c934535c64aa"
+dependencies = [
+ "indexmap-nostd",
 ]
 
 [[package]]
