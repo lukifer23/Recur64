@@ -76,8 +76,35 @@ pub struct CandidateBatch {
 impl CandidateBatch {
     /// Build from per-position candidate vectors.
     pub fn from_lists(lists: &[Vec<(u32, u32, u8)>]) -> Self {
+        Self::from_lists_min_width(lists, 0)
+    }
+
+    /// Candidate widths used by [`Self::from_lists_bucketed`]. Chess has at
+    /// most 218 legal moves, so 224 covers every position.
+    pub const WIDTH_BUCKETS: [usize; 8] = [16, 32, 48, 64, 96, 128, 160, 224];
+
+    /// Like [`Self::from_lists`], but the width is rounded up to a fixed
+    /// bucket, so the backend sees few distinct tensor shapes (T6; ported
+    /// from the HP branch's D55). Padded slots are masked exactly like short
+    /// rows (log-prob -inf, probability 0).
+    pub fn from_lists_bucketed(lists: &[Vec<(u32, u32, u8)>]) -> Self {
+        let max = lists.iter().map(|l| l.len()).max().unwrap_or(0);
+        let width = Self::WIDTH_BUCKETS
+            .iter()
+            .copied()
+            .find(|&w| w >= max)
+            .unwrap_or(max);
+        Self::from_lists_min_width(lists, width)
+    }
+
+    fn from_lists_min_width(lists: &[Vec<(u32, u32, u8)>], min_width: usize) -> Self {
         let batch = lists.len();
-        let width = lists.iter().map(|l| l.len()).max().unwrap_or(0);
+        let width = lists
+            .iter()
+            .map(|l| l.len())
+            .max()
+            .unwrap_or(0)
+            .max(min_width);
         let mut from = vec![0u32; batch * width];
         let mut to = vec![0u32; batch * width];
         let mut promo = vec![0u8; batch * width];

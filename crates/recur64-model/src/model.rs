@@ -580,6 +580,47 @@ mod tests {
 
     type B = burn::backend::Flex;
 
+    /// T6: bucketed candidate widths give the same legal-move log-probs and
+    /// WDL as exact widths; padded slots are masked like short-row padding.
+    #[test]
+    fn bucketed_candidates_match_exact_width() {
+        let device = Default::default();
+        let cfg = tiny_cfg();
+        let model = ProbeModel::<B>::new(cfg.clone(), &device);
+        let lists: Vec<Vec<(u32, u32, u8)>> = vec![
+            vec![(12, 28, 0), (6, 21, 0), (1, 18, 0)],
+            vec![(52, 36, 0), (57, 42, 0)],
+        ];
+        let board = Tensor::<B, 3>::random(
+            [2, cfg.squares, cfg.in_features],
+            burn::tensor::Distribution::Normal(0.0, 1.0),
+            &device,
+        );
+        let run = |cb: CandidateBatch| {
+            let c = CandidateTensors::from_batch(&cb, &device);
+            let out = model.forward_r(board.clone(), &c, 1, false);
+            let r = &out.readouts[0];
+            let lp: Vec<f32> = r.policy.log_probs.clone().into_data().to_vec().unwrap();
+            let wdl: Vec<f32> = r.wdl_logits.clone().into_data().to_vec().unwrap();
+            (cb.width, lp, wdl)
+        };
+        let (w0, lp0, wdl0) = run(CandidateBatch::from_lists(&lists));
+        let (w1, lp1, wdl1) = run(CandidateBatch::from_lists_bucketed(&lists));
+        assert_eq!((w0, w1), (3, 16));
+        for (i, l) in lists.iter().enumerate() {
+            for k in 0..l.len() {
+                let (a, b) = (lp0[i * w0 + k], lp1[i * w1 + k]);
+                assert!((a - b).abs() <= 1e-5, "row {i} cand {k}: {a} vs {b}");
+            }
+            // Padded slots carry the masked filler (log-prob 0.0, excluded by
+            // the mask), exactly like the padding of short rows.
+            for k in l.len()..w1 {
+                assert_eq!(lp1[i * w1 + k], 0.0, "padded slot is masked");
+            }
+        }
+        assert!(wdl0.iter().zip(&wdl1).all(|(a, b)| (a - b).abs() <= 1e-6));
+    }
+
     /// T4: the flattened 2-D form computes the same linear map as Burn's
     /// rank-3 broadcast form.
     #[test]

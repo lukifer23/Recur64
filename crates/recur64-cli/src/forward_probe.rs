@@ -42,6 +42,9 @@ pub struct ForwardProbeArgs {
     /// Timed repetitions per batch size (after 3 warmup calls).
     #[arg(long, default_value_t = 20)]
     pub reps: usize,
+    /// Round candidate widths up to fixed buckets (T6).
+    #[arg(long)]
+    pub candidate_buckets: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -84,7 +87,8 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &ForwardProbeArgs) -> any
 
     let device = Default::default();
     let model = model_io::load::<B::InnerBackend>(&args.checkpoint, &cfg.model, &device)?;
-    let batched = BatchedModel::new(model, cfg.recurrence, device);
+    let batched = BatchedModel::new(model, cfg.recurrence, device)
+        .with_candidate_buckets(args.candidate_buckets);
 
     // Outputs in fixed batches of 64, the same inputs for every build.
     let mut outputs = Vec::with_capacity(positions.len());

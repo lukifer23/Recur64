@@ -68,6 +68,8 @@ pub struct BatchedModel<B: Backend> {
     model: ProbeModel<B>,
     recurrence: usize,
     device: B::Device,
+    /// Round the candidate width up to fixed buckets (T6, execution only).
+    bucket_candidates: bool,
 }
 
 impl<B: Backend> BatchedModel<B> {
@@ -76,7 +78,14 @@ impl<B: Backend> BatchedModel<B> {
             model,
             recurrence,
             device,
+            bucket_candidates: false,
         }
+    }
+
+    /// Enable candidate-width bucketing (fewer distinct tensor shapes, T6).
+    pub fn with_candidate_buckets(mut self, on: bool) -> Self {
+        self.bucket_candidates = on;
+        self
     }
 }
 
@@ -128,7 +137,11 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
                     .collect()
             })
             .collect();
-        let cb = CandidateBatch::from_lists(&lists);
+        let cb = if self.bucket_candidates {
+            CandidateBatch::from_lists_bucketed(&lists)
+        } else {
+            CandidateBatch::from_lists(&lists)
+        };
         if cb.width == 0 {
             return Err(EvalError::Invalid("batch has no legal candidates".into()));
         }

@@ -2122,3 +2122,44 @@ positions, 60 reps.
   training VRAM, and it has no scientific effect.
 - **Cumulative self-play throughput** (the standard-start `snapshot-005`
   cell): 22.8 -> 31.5 trainable pos/s (**1.38x**) from T2 + T3 + T4.
+
+## Throughput pass T6: candidate-width buckets, with and without autotune/fusion (pre-registration, written before the run)
+
+**Why.**
+
+- The HP branch's D55 measured +30% self-play from fusion + autotune
+  *together with* candidate-width buckets on the RTX 2050.
+- On this GPU, fusion and autotune without buckets were slower or
+  marginal (T1).
+- Exact-width batching changes the candidate tensor shape on almost every
+  batch.
+
+**Change.**
+
+- `inference_candidate_buckets = true` rounds the width up to 16 / 32 / 48 /
+  64 / 96 / 128 / 160 / 224.
+- Padded slots are masked like short-row padding.
+- Test: `bucketed_candidates_match_exact_width` (log-probs 1e-5, WDL 1e-6).
+- Execution only.
+
+**Cells.** `forward-probe` (parity + p50), then `bench-runtime`: standard
+start, `snapshot-005`, 48 / 96, 2 owners, 128 games.
+
+- B0: FP32 build, buckets off. The T4 state, re-measured in the same session.
+- B1: FP32 build, buckets on.
+- B2: `--features cuda,burn/autotune`, buckets on.
+- B3: `--features cuda,burn/fusion,burn/autotune`, buckets on.
+
+**Adopt the fastest cell only if all hold:**
+
+- Trainable pos/s >= 1.10x B0.
+- 0 errors.
+- Parity against B0: max |policy difference| and max |WDL difference|
+  <= 1e-4 for B1, and <= 1e-3 for B2 / B3.
+- For B2 / B3 (autotune):
+  - a CubeCL profile at the production batch sizes shows **no**
+    accelerated (`cmma` / `mma`, TF32) matmul launches, since precision
+    must stay FP32;
+  - `bench-train` first and last loss within 1%;
+  - the D44 lifecycle plateau is re-checked (`bench-lifecycle`), because of
+    the fusion drop-order leak the HP branch found.

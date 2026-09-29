@@ -223,11 +223,10 @@ pub fn run_cell<B: AutodiffBackend>(
             Some(path) => model_io::load::<B::InnerBackend>(path, &cfg.model, &inner_device)?,
             None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device)?,
         };
-        models.push(BatchedModel::new(
-            model,
-            cfg.recurrence,
-            inner_device.clone(),
-        ));
+        models.push(
+            BatchedModel::new(model, cfg.recurrence, inner_device.clone())
+                .with_candidate_buckets(cfg.inference_candidate_buckets),
+        );
     }
     anyhow::ensure!(
         checkpoint.is_some() || models.len() == 1,

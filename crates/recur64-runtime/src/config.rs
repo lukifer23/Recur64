@@ -311,6 +311,10 @@ pub struct RunConfig {
     /// original single owner.
     #[serde(default = "default_inference_owners")]
     pub inference_owners: usize,
+    /// Round inference candidate widths up to fixed buckets (T6). Execution
+    /// only; `false` (default) is the original exact-width batching.
+    #[serde(default)]
+    pub inference_candidate_buckets: bool,
     /// Arena tree ownership (D54): `root_player_v1` gives each player its
     /// own search tree. The default keeps the historical mixed routing; any
     /// other value is recorded in the evaluation identity.

@@ -222,7 +222,8 @@ pub fn spawn_owner<B: Backend>(
 ) -> anyhow::Result<InferenceOwner> {
     let model = model_io::load::<B>(dir, &cfg.model, device)?;
     Ok(InferenceOwner::spawn(
-        BatchedModel::new(model, cfg.recurrence, device.clone()),
+        BatchedModel::new(model, cfg.recurrence, device.clone())
+            .with_candidate_buckets(cfg.inference_candidate_buckets),
         InferenceConfig {
             max_batch: cfg.max_inference_batch,
             batch_timeout: Duration::from_micros(cfg.batch_timeout_us),
@@ -241,8 +242,10 @@ pub fn spawn_selfplay_owner<B: Backend>(
 ) -> anyhow::Result<InferenceOwner> {
     let models = (0..cfg.inference_owners.max(1))
         .map(|_| {
-            model_io::load::<B>(dir, &cfg.model, device)
-                .map(|m| BatchedModel::new(m, cfg.recurrence, device.clone()))
+            model_io::load::<B>(dir, &cfg.model, device).map(|m| {
+                BatchedModel::new(m, cfg.recurrence, device.clone())
+                    .with_candidate_buckets(cfg.inference_candidate_buckets)
+            })
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
     Ok(InferenceOwner::spawn_pool(

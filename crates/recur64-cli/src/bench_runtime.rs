@@ -42,6 +42,9 @@ pub struct BenchRuntimeArgs {
     /// Override inference_owners (T2 owner pool; execution only).
     #[arg(long)]
     pub inference_owners: Option<usize>,
+    /// Override inference_candidate_buckets (T6; execution only).
+    #[arg(long)]
+    pub candidate_buckets: Option<bool>,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
     pub active: Option<u32>,
@@ -197,6 +200,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if let Some(n) = args.inference_owners {
         cfg.inference_owners = n;
+    }
+    if let Some(on) = args.candidate_buckets {
+        cfg.inference_candidate_buckets = on;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
