@@ -11,6 +11,9 @@ default = ["cpu"]
 cpu = ["burn/flex"]
 # NVIDIA CUDA backend (requires a CUDA 12.x runtime on PATH; see docs/DECISIONS.md).
 cuda = ["burn/cuda"]
+# TF32 tensor-core matmuls (T5): autotune with accelerated kernels. A tf32
+# binary serves only precision = "tf32" (see precision::ensure_supported).
+tf32 = ["cuda", "burn/autotune"]
 # Safetensors / model-store checkpoint formats.
 store = ["burn/store"]
 

@@ -116,19 +116,13 @@ impl<B: Backend> Block<B> {
         let h = self.heads;
         let hd = self.head_dim;
 
-        let q = self
-            .q_proj
-            .forward(x.clone())
+        let q = linear_rows(&self.q_proj, x.clone())
             .reshape([b, s, h, hd])
             .swap_dims(1, 2); // [b, h, s, hd]
-        let k = self
-            .k_proj
-            .forward(x.clone())
+        let k = linear_rows(&self.k_proj, x.clone())
             .reshape([b, s, h, hd])
             .swap_dims(1, 2);
-        let v = self
-            .v_proj
-            .forward(x)
+        let v = linear_rows(&self.v_proj, x)
             .reshape([b, s, h, hd])
             .swap_dims(1, 2);
 
@@ -139,18 +133,30 @@ impl<B: Backend> Block<B> {
         let attn = activation::softmax(logits, 3);
         let out = attn.matmul(v); // [b,h,s,hd]
         let out = out.swap_dims(1, 2).reshape([b, s, d]);
-        self.out_proj.forward(out)
+        linear_rows(&self.out_proj, out)
     }
 
     fn ffn(&self, x: Tensor<B, 3>) -> Tensor<B, 3> {
-        let h = self.ffn1.forward(x);
-        self.ffn2.forward(activation::gelu(h))
+        let h = linear_rows(&self.ffn1, x);
+        linear_rows(&self.ffn2, activation::gelu(h))
     }
 
     pub fn forward(&self, x: Tensor<B, 3>, rel_idx: Tensor<B, 2, Int>) -> Tensor<B, 3> {
         let a = x.clone() + self.attention(self.norm1.forward(x), rel_idx);
         a.clone() + self.ffn(self.norm2.forward(a))
     }
+}
+
+/// Apply `linear` over the last dimension of a rank-3 tensor as one 2-D
+/// matmul over all `b * s` rows (T4). Burn's `Linear` on a rank-3 input runs
+/// a broadcast batched matmul with `m = s` (64 squares), a small-GEMM shape
+/// the kernels handle poorly; flattening computes the same linear map with
+/// `m = b * s`. Parameters, checkpoints and the head version are unchanged.
+fn linear_rows<B: Backend>(linear: &Linear<B>, x: Tensor<B, 3>) -> Tensor<B, 3> {
+    let [b, s, d] = x.dims();
+    let y = linear.forward(x.reshape([b * s, d]));
+    let out = y.dims()[1];
+    y.reshape([b, s, out])
 }
 
 /// Candidate-index tensors for the sparse policy path.
@@ -336,7 +342,7 @@ impl<B: Backend> ProbeModel<B> {
     }
 
     fn embed(&self, board: Tensor<B, 3>) -> Tensor<B, 3> {
-        let p = self.input_proj.forward(board); // [b, s, d]
+        let p = linear_rows(&self.input_proj, board); // [b, s, d]
         let [b, s, d] = p.dims();
         let emb = self.square_emb.val().reshape([1, s, d]).expand([b, s, d]);
         p + emb
@@ -369,8 +375,8 @@ impl<B: Backend> ProbeModel<B> {
         let wdl_logits = self.wdl.forward(pooled.clone());
 
         // Base 64x64 source/destination score grid.
-        let source = self.source_proj.forward(y.clone()); // [b, s, pd]
-        let dest = self.dest_proj.forward(y.clone());
+        let source = linear_rows(&self.source_proj, y.clone()); // [b, s, pd]
+        let dest = linear_rows(&self.dest_proj, y.clone());
         // Scaled like attention logits (head v2): unit-variance source/dest
         // features give O(1) logits at init instead of O(sqrt(policy_dim)).
         let policy_scale = 1.0 / (source.dims()[2] as f32).sqrt();
@@ -394,8 +400,8 @@ impl<B: Backend> ProbeModel<B> {
         let h_to = y.clone().gather(1, to3);
         let pooled3 = pooled.unsqueeze_dim::<3>(1).expand([b, cands.width, d]);
         let joined = Tensor::cat(vec![h_from, h_to, pooled3], 2); // [b, width, 3d]
-        let promo_h = activation::gelu(self.promo1.forward(joined));
-        let promo_delta = self.promo2.forward(promo_h); // [b, width, promo_codes-1]
+        let promo_h = activation::gelu(linear_rows(&self.promo1, joined));
+        let promo_delta = linear_rows(&self.promo2, promo_h); // [b, width, promo_codes-1]
 
         let sel = promo_delta
             .gather(2, cands.promo_idx.clone().unsqueeze_dim::<3>(2))
@@ -573,6 +579,29 @@ mod tests {
     use crate::action::CandidateBatch;
 
     type B = burn::backend::Flex;
+
+    /// T4: the flattened 2-D form computes the same linear map as Burn's
+    /// rank-3 broadcast form.
+    #[test]
+    fn linear_rows_matches_rank3_linear() {
+        let device = Default::default();
+        let linear = LinearConfig::new(24, 40).with_bias(true).init::<B>(&device);
+        let x = Tensor::<B, 3>::random(
+            [5, 64, 24],
+            burn::tensor::Distribution::Normal(0.0, 1.0),
+            &device,
+        );
+        let reference: Vec<f32> = linear.forward(x.clone()).into_data().to_vec().unwrap();
+        let rows = linear_rows(&linear, x);
+        assert_eq!(rows.dims(), [5, 64, 40]);
+        let rows: Vec<f32> = rows.into_data().to_vec().unwrap();
+        let max = reference
+            .iter()
+            .zip(&rows)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(max <= 1e-5, "max |difference| {max}");
+    }
 
     fn tiny_cfg() -> ModelConfig {
         ModelConfig {

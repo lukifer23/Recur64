@@ -1928,3 +1928,134 @@ Artifacts: `docs/evidence/phase4/t2/`.
 - **Rule:** adopt the cell with the highest trainable pos/s if it is at
   least 1.10x the 32 / 64 cell, with 0 errors and peak VRAM <= 8 GB.
   Otherwise keep 32 / 64. Self-play aggregates are reported side by side.
+
+## Throughput pass T4: flattened linear layers, FP32 (pre-registration, written before the run)
+
+**Finding (source + CubeCL autotune log).**
+
+- Burn's `Linear` on a `[b, 64, d]` input runs a broadcast batched matmul
+  with m = 64, one small GEMM per position.
+- `linear_rows` flattens to `[b * 64, d]`, a single GEMM with m = 2,048 to
+  4,096, and reshapes back. The linear map is the same, and parameters,
+  checkpoints and the head version are unchanged.
+- It is used for every rank-3 linear: q / k / v / out, FFN, input
+  projection, source / destination, and promotion.
+- Unit test: `linear_rows_matches_rank3_linear`, max difference <= 1e-5 on
+  CPU.
+
+**Measurements.** Same commit, FP32 build, T4 against the pre-T4 binary:
+
+1. `forward-probe`, the same 1,024 positions: parity, and p50 latency at
+   32 / 48 / 64 / 96 / 128.
+2. `bench-runtime`, standard start, `snapshot-005`, 2 owners, at the
+   schedule T3 selects: trainable pos/s.
+3. `bench-train` on 64x4.
+
+**Keep T4 only if all hold:**
+
+- Parity: max |policy difference| and max |WDL difference| <= 1e-4 (FP32
+  accumulation order only).
+- `bench-runtime`: trainable pos/s >= 1.10x the pre-T4 binary at the same
+  schedule, and 0 errors.
+- `bench-train`: finite, and first and last loss within 1%.
+
+Otherwise T4 is reverted.
+
+## Throughput pass T5: TF32 tensor-core matmuls (owner-approved 2026-09-29; pre-registration, written before the run)
+
+**Mechanism.**
+
+- CubeCL's accelerated (`cmma` / `mma`) matmul kernels round f32 inputs to
+  TF32 (10-bit mantissa) and accumulate in FP32. They exist in the autotune
+  candidate set: the T1 log shows `wmma ... precision::tf32` kernels
+  compiling on this GPU.
+- The FP32 build has autotune off and uses only non-accelerated kernels, so
+  it never uses TF32 (the T1 profile: Simple / Plane families).
+
+**Contract (no silent precision change in either direction).**
+
+- `precision = "tf32"` is a new precision mode. It requires a binary built
+  with the `tf32` feature (autotune on, TF32 candidates allowed).
+- `precision = "fp32"` refuses a `tf32` binary.
+- Precision is already part of the scientific identity.
+
+**Keep TF32 as an available, validated mode only if all hold, against the
+FP32 build at the adopted T4 state:**
+
+- Parity on 1,024 positions:
+  - max |policy difference| <= 1e-2
+  - max |WDL difference| <= 1e-2
+  - argmax changes <= 2%
+- `bench-runtime`: trainable pos/s >= 1.15x FP32 at the same schedule, 0
+  errors, and self-play aggregates reported.
+- `bench-train` 64x4, from the same checkpoint and the same replay:
+  - first loss within 1%
+  - last loss within 2%
+  - finite gradients, examples/s reported
+
+**Use in a learning run** is a separate identity (`precision = "tf32"`)
+and is reported as such. FP32 stays the reference precision.
+
+## D51 stage 2: endgame curriculum pilot (pre-registration, written before the run)
+
+**Config:** `configs/phase4/f10-cur.toml`.
+
+- The P4.6 contract unchanged, including the LR schedule, plus
+  `[endgame_curriculum] fraction = 0.25` with the families KQQvK, KQRvK,
+  KRRvK, KQvK and KRvK (from the stage 1 family rule). No D50 solver. FP32.
+- 6 cycles of 64 games: 48 from the standard start and 16 curriculum games.
+- The comparison is P4.6 cycles 0-5: same seeds, reference and schedule.
+- Execution-only throughput settings (T2 / T3 / T4) are recorded but do not
+  enter the identity.
+
+**P4.6 baselines (MEASURED):**
+
+| metric | P4.6 value |
+|---|---|
+| failed-conversion draws per standard-start game, cycles 4-5 | (37 + 38) / 128 = 0.586 |
+| value head at a 5-8 material lead, snapshot-005: P(win for leader) | 0.115 (draw 0.84) |
+| target conversion probe (K+Q / K+R vs K, 64 games, no solver), snapshot-005 | 1 / 64 |
+
+**Primary criteria, on standard-start games only:**
+
+- **P1:** failed-conversion draws per standard-start game, mean of cycles
+  4-5, <= 0.70 x 0.586 = 0.41 (`draw-report`, standard series).
+- **P2:** the latest promoted network, measured on the standard-start
+  self-play it generated (`search-gain --standard-start-only`, its cycle's
+  game range), gives P(win for leader) >= 0.30 in the 5-8 material bucket.
+- **P3:** the same network converts >= 8 / 64 on the target probe
+  (`conversion-probe-target.toml`, solver off).
+
+If no candidate is promoted by the end, P2 and P3 use the trainer's last
+candidate, reported as such.
+
+**Secondary, reported but not gating:**
+
+- promotions
+- searched arena against the frozen reference, and informativeness
+- curriculum-subset conversion per cycle
+- standard-start draw share and terminations
+- throughput
+
+**Verdict:**
+
+- P1 + P2 + P3: the curriculum creates a conversion signal at this scale.
+- Any one or two: partial. Report, and propose the next change.
+- None: NO-GO. Stop and report.
+
+D49 health stops apply, reading standard-start games.
+
+### T3 result (MEASURED): 48 concurrent games, batch cap 96 adopted (+10%)
+
+Binary `b592927`, 2 owners, 128 games per cell, cells run back to back. All
+cells have 0 errors and identical games (W/D/B 14 / 92 / 22, 215 plies).
+
+| concurrency / cap | trainable pos/s | vs 32 / 64 | GPU util | mean batch | peak VRAM |
+|---|---:|---:|---:|---:|---:|
+| 32 / 64 | 26.1 | - | 66% | 23.2 | 1,207 MB |
+| 48 / 96 | 28.8 | 1.10x | 71% | 25.3 | 1,211 MB |
+| 64 / 128 | 28.3 | 1.09x | 74% | 26.1 | 1,282 MB |
+
+- **48 / 96 is adopted** (1.104x), for `f10-cur.toml`.
+- **Cumulative:** T2 + T3 give about 1.25x over the original single-owner
+  32 / 64 schedule (22.8 trainable pos/s).

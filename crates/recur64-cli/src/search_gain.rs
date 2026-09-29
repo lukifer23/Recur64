@@ -40,6 +40,11 @@ pub struct SearchGainArgs {
     pub first_game_id: Option<u64>,
     #[arg(long)]
     pub games: Option<u64>,
+    /// Only games from the standard start position (excludes D51 curriculum
+    /// and other configured starts), so diagnostics stay comparable with
+    /// standard-start runs.
+    #[arg(long)]
+    pub standard_start_only: bool,
 }
 
 fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &SearchGainArgs) -> anyhow::Result<()> {
@@ -94,10 +99,12 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &SearchGainArgs) -> anyho
             "legacy/unverified search contract (no replay-identity.json)"
         }
     };
+    let standard_fen = recur64_core::GameState::startpos().to_fen();
     let games: Vec<_> = reader
         .read_all_games()?
         .into_iter()
         .filter(|g| g.game_id >= lo && g.game_id < hi)
+        .filter(|g| !args.standard_start_only || g.start_fen == standard_fen)
         .collect();
     anyhow::ensure!(!games.is_empty(), "no replay games in the requested range");
     let search = games.first().map(|g| g.search.clone());
@@ -113,6 +120,7 @@ fn run_impl<B: AutodiffBackend>(cfg: &RunConfig, args: &SearchGainArgs) -> anyho
         "replay": args.replay,
         "game_range": {"first_game_id": lo, "end_exclusive": (hi != u64::MAX).then_some(hi)},
         "games": games.len(),
+        "standard_start_only": args.standard_start_only,
         "search": search,
         "model_id": checkpoint_model_id,
         "gain": gain,

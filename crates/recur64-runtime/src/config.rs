@@ -617,9 +617,12 @@ impl RunConfig {
     pub fn precision_kind(&self) -> anyhow::Result<Precision> {
         match self.precision.as_str() {
             "fp32" => Ok(Precision::Fp32),
+            "tf32" => Ok(Precision::Tf32),
             "bf16" => Ok(Precision::Bf16),
             "fp16" => Ok(Precision::Fp16),
-            other => anyhow::bail!("unknown precision '{other}' (expected fp32, bf16 or fp16)"),
+            other => {
+                anyhow::bail!("unknown precision '{other}' (expected fp32, tf32, bf16 or fp16)")
+            }
         }
     }
 

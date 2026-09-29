@@ -32,6 +32,10 @@ fn d_epsilon() -> f64 {
 pub enum Precision {
     #[default]
     Fp32,
+    /// FP32 storage and accumulation; matmul inputs may be rounded to TF32
+    /// (10-bit mantissa) on tensor cores (T5, owner-approved). Requires a
+    /// binary built with the `tf32` feature.
+    Tf32,
     Bf16,
     Fp16,
 }
@@ -40,6 +44,7 @@ impl Precision {
     pub fn label(&self) -> &'static str {
         match self {
             Precision::Fp32 => "fp32",
+            Precision::Tf32 => "tf32",
             Precision::Bf16 => "bf16",
             Precision::Fp16 => "fp16",
         }

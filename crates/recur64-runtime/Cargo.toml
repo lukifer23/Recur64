@@ -9,6 +9,7 @@ description.workspace = true
 default = ["cpu"]
 cpu = ["recur64-model/cpu"]
 cuda = ["recur64-model/cuda"]
+tf32 = ["cuda", "recur64-model/tf32"]
 
 [dependencies]
 recur64-core = { path = "../recur64-core" }
