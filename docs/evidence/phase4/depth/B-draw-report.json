@@ -1,0 +1,28 @@
+{
+  "cycles": {
+    "0": {
+      "decisive_games": 20,
+      "draws": 44,
+      "draws_by_termination": {
+        "fifty_move_rule": 11,
+        "insufficient_material": 30,
+        "threefold_repetition": 3
+      },
+      "failed_conversions": 34,
+      "failed_conversions_by_termination": {
+        "fifty_move_rule": 6,
+        "insufficient_material": 26,
+        "threefold_repetition": 2
+      },
+      "games": 64,
+      "mean_decisive_plies": 131.25,
+      "mean_draw_plies": 263.5,
+      "mean_final_material_draws": 3.977272727272727,
+      "mean_peak_advantage_draws": 7.704545454545454
+    }
+  },
+  "decisive_advantage": 5,
+  "games_per_cycle": 64,
+  "replay": "runs/depth-B/replay",
+  "window": 100
+}

@@ -38,7 +38,9 @@ pub struct GainStats {
 }
 
 /// (observation, legal, target, from a result game)
-type Pending = (ObservationV1, Vec<ActionId>, Vec<f32>, bool);
+/// (observation, legal, target, from a result game, material balance from
+/// the side to move's perspective)
+type Pending = (ObservationV1, Vec<ActionId>, Vec<f32>, bool, i32);
 
 /// Network value and repetition indicators over generated positions.
 #[derive(Debug, Clone, Copy, Default, serde::Serialize)]
@@ -53,13 +55,31 @@ pub struct PositionStats {
     pub repeated_position_share: f64,
 }
 
+/// Network value by material advantage: for positions where one side is
+/// ahead, the value and draw probability from the *ahead* side's point of
+/// view. A value head that has learned "a big material lead is a draw" shows
+/// near-zero value and high draw probability in the large buckets.
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct ValueByMaterial {
+    /// Bucket label (absolute material advantage, pawn units).
+    pub bucket: String,
+    pub positions: u64,
+    pub mean_value_for_leader: f64,
+    pub mean_win_for_leader: f64,
+    pub mean_draw: f64,
+    pub mean_loss_for_leader: f64,
+}
+
+const BUCKETS: [(i32, i32, &str); 4] = [(0, 2, "0-2"), (3, 4, "3-4"), (5, 8, "5-8"), (9, 99, "9+")];
+
 /// Network-to-target divergence over every ply and over trainable
 /// (result-game) plies, plus value / repetition indicators over all plies.
-#[derive(Debug, Clone, Copy, Default, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct SearchGain {
     pub all: GainStats,
     pub trainable: GainStats,
     pub positions: PositionStats,
+    pub value_by_material: Vec<ValueByMaterial>,
 }
 
 #[derive(Default)]
@@ -138,11 +158,14 @@ pub fn search_gain(
     let mut all = Acc::default();
     let mut trainable = Acc::default();
     let mut pos = PosAcc::default();
+    // Per bucket: (n, value_for_leader, win, draw, loss) sums.
+    let mut vbm = [(0u64, 0f64, 0f64, 0f64, 0f64); 4];
     let mut pending: Vec<Pending> = Vec::new();
     let flush = |pending: &mut Vec<Pending>,
                  all: &mut Acc,
                  trainable: &mut Acc,
-                 pos: &mut PosAcc|
+                 pos: &mut PosAcc,
+                 vbm: &mut [(u64, f64, f64, f64, f64); 4]|
      -> anyhow::Result<()> {
         if pending.is_empty() {
             return Ok(());
@@ -152,7 +175,25 @@ pub fn search_gain(
         let out = model
             .evaluate_batch(&obs, &legal)
             .map_err(|e| anyhow::anyhow!("search-gain evaluation failed: {e}"))?;
-        for ((_, _, target, is_trainable), r) in pending.drain(..).zip(out) {
+        for ((_, _, target, is_trainable, balance), r) in pending.drain(..).zip(out) {
+            let adv = balance.abs();
+            if let Some(b) = BUCKETS
+                .iter()
+                .position(|(lo, hi, _)| adv >= *lo && adv <= *hi)
+            {
+                // Leader's view: flip the side-to-move WDL when it is behind.
+                let (w, l) = if balance >= 0 {
+                    (r.wdl[0], r.wdl[2])
+                } else {
+                    (r.wdl[2], r.wdl[0])
+                };
+                let e = &mut vbm[b];
+                e.0 += 1;
+                e.1 += (w - l) as f64;
+                e.2 += w as f64;
+                e.3 += r.wdl[1] as f64;
+                e.4 += l as f64;
+            }
             pos.n += 1;
             for (acc, p) in pos.wdl.iter_mut().zip(r.wdl) {
                 *acc += p as f64;
@@ -173,9 +214,21 @@ pub fn search_gain(
                 .map_err(|e| anyhow::anyhow!("game {} ply {i}: {e}", game.game_id))?;
             pos.halfmove += state.board().halfmove_clock() as f64;
             pos.repeated += u64::from(state.repetition_count() > 1);
-            pending.push((ex.observation, ex.legal, ex.policy, game.outcome.is_some()));
+            let white_balance = recur64_core::material_balance(state.board());
+            let stm_balance = if state.side_to_move() == recur64_core::Color::White {
+                white_balance
+            } else {
+                -white_balance
+            };
+            pending.push((
+                ex.observation,
+                ex.legal,
+                ex.policy,
+                game.outcome.is_some(),
+                stm_balance,
+            ));
             if pending.len() >= batch.max(1) {
-                flush(&mut pending, &mut all, &mut trainable, &mut pos)?;
+                flush(&mut pending, &mut all, &mut trainable, &mut pos, &mut vbm)?;
             }
             let id = ActionId::from_index(ply.selected as u32)
                 .map_err(|e| anyhow::anyhow!("game {} ply {i}: {e}", game.game_id))?;
@@ -186,7 +239,7 @@ pub fn search_gain(
                 .map_err(|e| anyhow::anyhow!("game {} ply {i}: {e}", game.game_id))?;
         }
     }
-    flush(&mut pending, &mut all, &mut trainable, &mut pos)?;
+    flush(&mut pending, &mut all, &mut trainable, &mut pos, &mut vbm)?;
     let n = pos.n.max(1) as f64;
     Ok(SearchGain {
         all: all.stats(),
@@ -198,6 +251,21 @@ pub fn search_gain(
             mean_halfmove_clock: pos.halfmove / n,
             repeated_position_share: pos.repeated as f64 / n,
         },
+        value_by_material: BUCKETS
+            .iter()
+            .zip(vbm)
+            .map(|((_, _, label), (k, v, w, d, l))| {
+                let k1 = k.max(1) as f64;
+                ValueByMaterial {
+                    bucket: label.to_string(),
+                    positions: k,
+                    mean_value_for_leader: v / k1,
+                    mean_win_for_leader: w / k1,
+                    mean_draw: d / k1,
+                    mean_loss_for_leader: l / k1,
+                }
+            })
+            .collect(),
     })
 }
 

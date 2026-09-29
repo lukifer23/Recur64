@@ -1588,3 +1588,100 @@ INFERRED:
 by >= 30% (relative) **and** the draw share drops by >= 0.15 (absolute), with
 0 inference errors. The throughput cost is reported. Adoption is an owner
 decision.
+
+### Search-depth comparison result (MEASURED): 128 sims does not fix the drift
+
+Binary `0435d9b`, the `f10-qual.toml` self-play contract, 64 games, same
+seeds, 0 inference errors in every cell. Artifacts:
+`docs/evidence/phase4/depth/`.
+
+| cell | network | sims | draws / 64 | failed conversions | draw share | trainable pos/s | mean plies |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A | snapshot-005 | 64 | 45 | 31 (69%) | 0.703 | 23.0 | 226 |
+| B | snapshot-005 | 128 | 44 | 34 (77%) | 0.688 | 12.6 | 222 |
+| C | reference v2 | 128 | 12 | 11 (92%) | 0.188 | 10.8 | 137 |
+| (qualification cycle 0) | reference v2 | 64 | 18 | 15 (83%) | 0.281 | - | 184 |
+
+**Rule: FAILS.**
+
+- The draw share moved by -0.015 (the rule required -0.15).
+- Failed conversions did not drop (31 to 34).
+- Throughput fell by 45%.
+- At the same 128 sims the trained network draws 69% of games and the
+  untrained one 19%. The draws come from what the network learned, not from
+  search depth.
+
+### Root cause (MEASURED): the value head evaluates winning material as a draw
+
+`search-gain` value by material advantage. Each network is measured on the
+self-play it generated, from the leading side's point of view.
+
+| network (self-play cycle) | lead 0-2: draw | 3-4: draw | 5-8: draw / value | 9+: draw / value |
+|---|---:|---:|---|---|
+| snapshot-003 (cycle 4) | 0.57 | 0.63 | 0.69 / +0.10 | 0.53 / +0.31 |
+| snapshot-004 (cycle 5) | 0.71 | 0.82 | 0.80 / +0.08 | 0.71 / +0.17 |
+| snapshot-005 (cycle 6) | 0.80 | 0.85 | 0.84 / +0.07 | 0.72 / +0.19 |
+
+- Up a rook or more, the latest network gives the leading side about an 11%
+  win chance and an 84% draw chance.
+- The draw prior strengthens with every promotion.
+
+**K+Q vs K conversion probe.** 64 sims, the self-play contract (sampling for
+30 plies, root noise), 64 games:
+
+| network | K+Q vs K result |
+|---|---|
+| snapshot-005 | 3 mates, 61 draws (51 insufficient material) |
+| reference | 3 mates, 61 draws (48 insufficient material) |
+
+The lone king captures the queen in most games.
+
+**Mechanism (INFERRED from the measurements above).**
+
+1. Neither network places any value on material. Keeping the queen evaluates
+   as about a draw, and losing it (K vs K) is a terminal draw, so search is
+   indifferent to hanging it.
+2. Only checkmate (+1) carries signal, and at 64-128 sims it is usually too
+   deep to find.
+3. Winning endgames therefore end drawn.
+4. The outcome-trained value head then learns, correctly for its own play,
+   that big leads are draws.
+5. Every leaf reads "draw", deeper search has nothing to follow, and the
+   drift compounds with each promotion.
+
+The value head is honest about the policy; the policy cannot mate. A fix must
+create a conversion signal rather than add depth.
+
+**K+Q vs K with argmax from ply 0 (MEASURED).** Root noise is kept, so the
+64 games differ. This rules out temperature sampling as the cause.
+
+| network | sims | mates | draws (insufficient material) |
+|---|---:|---:|---|
+| snapshot-005 | 64 | 3 | 61 (58) |
+| reference | 64 | 1 | 63 (49) |
+| reference | 256 | 6 | 58 (48) |
+
+**Root cause.** The system has no signal that rewards converting an
+advantage.
+
+- Only checkmate carries value, and a K+Q vs K mate is about 10 moves deep:
+  out of reach of 64-256 simulations when every intermediate position
+  evaluates as about a draw.
+- Losing the queen (K vs K) is a terminal draw that looks as good as keeping
+  it, so search does not avoid it.
+- Almost no winning endgame converts, so the outcome labels teach the value
+  head that material leads are draws, and the loop tightens with every
+  promotion.
+- This is the self-play bootstrapping problem that AlphaZero-scale compute
+  overcomes by brute force. It is neither a harness bug nor a model defect.
+
+**Owner decision (2026-09-29): endgame curriculum + MCTS-solver.** Two new
+identities:
+
+- D50 MCTS-solver: proven-mate propagation in search.
+- D51 endgame curriculum: a fraction of self-play games start from generated
+  simplified won-material endgames.
+
+Both keep outcomes-from-own-play labels: no material shaping, contempt,
+tablebases or engine labels. The solver's effect is measured on its own
+first, so the two changes can be attributed separately.

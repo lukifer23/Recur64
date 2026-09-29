@@ -342,13 +342,18 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
   - Watch item: self-play draw share 0.25 to 0.73 in cycle 3.
 - Gate: fmt/clippy clean; 207 tests passed, 0 failed, 1 ignored.
 
-## NEXT (owner decision)
+## DRAW-DRIFT ROOT CAUSE (2026-09-29; details in docs/PHASE4_RESULTS.md)
 
-- P4.6 bounded qualification, with the self-play draw share as an explicit
-  monitored health metric.
-- Remaining owner-approved item: cross-cycle tail waste.
-- The 48-way concurrency lead is unconfirmed; K=2 now gives 64 leaves in
-  flight.
+- P4.6 was stopped by the owner after 6 cycles: 3 promotions; vs the frozen
+  reference 0.578 then 0.594; self-play draws rose to 0.72-0.78.
+- **Draw diagnostic:** 74-90% of draws are failed conversions (a rook-or-more
+  lead that still drew).
+- **Search depth:** 128 sims did not help (draw share 0.70 to 0.69).
+- **Value head:** it evaluates leads of a rook or more as about 84% draw.
+- **K+Q vs K:** 1-6 mates in 64 games even at 256 sims.
+- **Root cause:** there is no conversion signal at this scale.
+- **Owner-approved fix:** MCTS-solver (D50) plus endgame curriculum (D51),
+  measured separately.
 
 ## NOT RUN
 

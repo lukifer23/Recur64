@@ -1,0 +1,228 @@
+{
+  "gain": {
+    "all": {
+      "argmax_changed_fraction": 0.8856024358416703,
+      "mean_kl_target_prior": 0.615925243767575,
+      "mean_prior_entropy": 2.7903879723944196,
+      "mean_prior_top1": 0.10289460498456972,
+      "mean_target_entropy": 2.171511123754638,
+      "mean_target_top1": 0.2817581223030765,
+      "positions": 16093
+    },
+    "positions": {
+      "mean_abs_value": 0.14168303935885623,
+      "mean_halfmove_clock": 11.668800099422109,
+      "mean_wdl": [
+        0.2176176159790527,
+        0.5980960902916683,
+        0.184286294025551
+      ],
+      "positions": 16093,
+      "repeated_position_share": 0.006959547629404089
+    },
+    "trainable": {
+      "argmax_changed_fraction": 0.8856024358416703,
+      "mean_kl_target_prior": 0.615925243767575,
+      "mean_prior_entropy": 2.7903879723944196,
+      "mean_prior_top1": 0.10289460498456972,
+      "mean_target_entropy": 2.171511123754638,
+      "mean_target_top1": 0.2817581223030765,
+      "positions": 16093
+    },
+    "value_by_material": [
+      {
+        "bucket": "0-2",
+        "mean_draw": 0.5741433094205207,
+        "mean_loss_for_leader": 0.19587574782009112,
+        "mean_value_for_leader": 0.03410519523518997,
+        "mean_win_for_leader": 0.22998094304290334,
+        "positions": 6151
+      },
+      {
+        "bucket": "3-4",
+        "mean_draw": 0.62639970556413,
+        "mean_loss_for_leader": 0.16183545797177776,
+        "mean_value_for_leader": 0.04992937896937746,
+        "mean_win_for_leader": 0.21176483689410958,
+        "positions": 2185
+      },
+      {
+        "bucket": "5-8",
+        "mean_draw": 0.6940598018983647,
+        "mean_loss_for_leader": 0.10513063211669318,
+        "mean_value_for_leader": 0.09567893456198168,
+        "mean_win_for_leader": 0.20080956666560248,
+        "positions": 3767
+      },
+      {
+        "bucket": "9+",
+        "mean_draw": 0.5289218682730407,
+        "mean_loss_for_leader": 0.08232460457155887,
+        "mean_value_for_leader": 0.3064289224720362,
+        "mean_win_for_leader": 0.3887535270351921,
+        "positions": 3990
+      }
+    ]
+  },
+  "game_range": {
+    "end_exclusive": 320,
+    "first_game_id": 256
+  },
+  "games": 64,
+  "metric": "network_to_target_divergence",
+  "model_id": "d05c10f7c91ef0d47653358caecba00cbd3bfa8cfd58965668711bf4518764a3",
+  "replay": "runs/phase4-f10-qual/replay",
+  "replay_identity": {
+    "entries": [
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 0,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 64,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 128,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 192,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "d22c78bda8fb8fa1214c6868de18b8d07f5c50e6fa00aff43fc74688f7726448",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 256,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "d05c10f7c91ef0d47653358caecba00cbd3bfa8cfd58965668711bf4518764a3",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 320,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "488306e246a287c58dc2573bab4942faf4d890b3e86b242c8135e27b1184d3e6",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      },
+      {
+        "argmax_after_ply": 30,
+        "c_puct": 1.0,
+        "first_game_id": 384,
+        "games": 64,
+        "git_revision": "03e62f7312650722138e0b59db924d0197ec2baf",
+        "head_version": 2,
+        "model_id": "3da3072d6160cf8285d6223d200cd53302175c7c30ec719d8c4cf1db4720f919",
+        "ply_cap": 512,
+        "recurrence": 1,
+        "resolved_config_hash": "6d18f0b42b4223af362de91660c19cf795517f381295bea52af3b7912644ebd5",
+        "root_dirichlet_alpha": 0.30000001192092896,
+        "root_dirichlet_epsilon": 0.25,
+        "scientific_config_hash": "4850e133599e10997b8f608af9d05399cfd2393fc4a1906983df7de5e4dc2198",
+        "seed": 1,
+        "seed_policy": "base_seed_plus_global_game_id_v1",
+        "simulations": 64,
+        "start_fen": null,
+        "temperature": 1.0
+      }
+    ],
+    "kind": "recur64-replay-identity-v1"
+  },
+  "search": {
+    "c_puct": 1.0,
+    "recurrence": 1,
+    "simulations": 64,
+    "temperature": 1.0
+  },
+  "search_contract": "verified (replay-identity.json)",
+  "semantics": "visit target vs RAW network policy; includes root exploration noise (D41) and tree-search movement; see self-play root_search for the exact split"
+}
