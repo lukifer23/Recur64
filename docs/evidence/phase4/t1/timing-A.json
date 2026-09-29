@@ -1,0 +1,61 @@
+{
+  "checkpoint": "runs/phase4-f10-qual/checkpoints/snapshot-005",
+  "git_revision": null,
+  "positions": 1024,
+  "timings": [
+    {
+      "batch": 16,
+      "max_ms": 138.5782,
+      "mean_ms": 21.310660000000006,
+      "min_ms": 10.672600000000001,
+      "p50_ms": 12.5164,
+      "positions_per_sec": 750.7979574541565,
+      "reps": 60
+    },
+    {
+      "batch": 32,
+      "max_ms": 29.0902,
+      "mean_ms": 17.737624999999998,
+      "min_ms": 16.3374,
+      "p50_ms": 16.870199999999997,
+      "positions_per_sec": 1804.074671778212,
+      "reps": 60
+    },
+    {
+      "batch": 48,
+      "max_ms": 26.3634,
+      "mean_ms": 24.365388333333325,
+      "min_ms": 22.5595,
+      "p50_ms": 24.3575,
+      "positions_per_sec": 1970.0075920535646,
+      "reps": 60
+    },
+    {
+      "batch": 64,
+      "max_ms": 33.6223,
+      "mean_ms": 30.860493333333338,
+      "min_ms": 29.584300000000002,
+      "p50_ms": 30.4804,
+      "positions_per_sec": 2073.8488950489877,
+      "reps": 60
+    },
+    {
+      "batch": 96,
+      "max_ms": 53.318200000000004,
+      "mean_ms": 49.595485000000004,
+      "min_ms": 47.378,
+      "p50_ms": 49.4787,
+      "positions_per_sec": 1935.6600706697393,
+      "reps": 60
+    },
+    {
+      "batch": 128,
+      "max_ms": 141.7851,
+      "mean_ms": 77.01104333333333,
+      "min_ms": 73.9393,
+      "p50_ms": 75.6623,
+      "positions_per_sec": 1662.0992842022267,
+      "reps": 60
+    }
+  ]
+}

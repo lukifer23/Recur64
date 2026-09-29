@@ -81,6 +81,10 @@ fn default_min_decisive_games() -> u32 {
 fn default_root_dirichlet_alpha() -> f32 {
     0.3
 }
+fn default_inference_owners() -> usize {
+    1
+}
+
 fn default_leaves_in_flight() -> u32 {
     1
 }
@@ -302,6 +306,11 @@ pub struct RunConfig {
     /// `false` (default) is the original search; `true` is a new identity.
     #[serde(default)]
     pub search_solver: bool,
+    /// Inference owner threads serving one self-play request queue (T2).
+    /// Execution only, never in the scientific identity. 1 (default) is the
+    /// original single owner.
+    #[serde(default = "default_inference_owners")]
+    pub inference_owners: usize,
     /// Endgame curriculum (D51): a share of self-play games starts from a
     /// generated won-material endgame. `None` (default) = every game starts
     /// from `start_fen` / the standard start; `Some` is a new identity.
@@ -625,6 +634,10 @@ impl RunConfig {
         anyhow::ensure!(
             self.search_leaves_in_flight >= 1,
             "search_leaves_in_flight must be >= 1"
+        );
+        anyhow::ensure!(
+            (1..=8).contains(&self.inference_owners),
+            "inference_owners must be in 1..=8"
         );
         anyhow::ensure!(
             (0.0..=1.0).contains(&self.root_dirichlet_epsilon)

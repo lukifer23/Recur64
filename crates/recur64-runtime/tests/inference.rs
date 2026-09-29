@@ -233,3 +233,65 @@ fn evaluate_many_shares_a_batch_and_answers_in_order() {
     assert_eq!(m.completed, 5);
     assert!(m.peak_in_flight >= 5);
 }
+
+/// T2: an owner pool answers every request exactly once, every owner serves
+/// batches, batches respect the cap, and shutdown joins all owners.
+#[test]
+fn owner_pool_serves_one_queue_with_every_owner() {
+    let (a, calls_a, sizes_a) = fake();
+    let (b, calls_b, sizes_b) = fake();
+    // Slow forwards so that one owner's batch overlaps the other's.
+    struct Slow(FakeModel);
+    impl BatchEvaluator for Slow {
+        fn evaluate_batch(
+            &self,
+            observations: &[ObservationV1],
+            legal: &[Vec<ActionId>],
+        ) -> Result<Vec<EvalResult>, EvalError> {
+            std::thread::sleep(Duration::from_millis(3));
+            self.0.evaluate_batch(observations, legal)
+        }
+    }
+    let owner = InferenceOwner::spawn_pool(vec![Slow(a), Slow(b)], config());
+    let ev = owner.evaluator();
+    let obs = ObservationV1::zeroed();
+    let legal = legal3();
+    std::thread::scope(|s| {
+        for _ in 0..16 {
+            let (ev, obs, legal) = (&ev, &obs, &legal);
+            s.spawn(move || {
+                for _ in 0..25 {
+                    let r = ev
+                        .evaluate(EvalRequest {
+                            observation: obs,
+                            legal,
+                            side_to_move: recur64_core::Color::White,
+                        })
+                        .unwrap();
+                    assert_eq!(r.policy.len(), 3);
+                }
+            });
+        }
+    });
+    let m = owner.metrics().snapshot();
+    assert_eq!(m.owners, 2);
+    assert_eq!((m.submitted, m.completed, m.errors), (400, 400, 0));
+    assert!(calls_a.load(Ordering::SeqCst) > 0, "owner 0 served batches");
+    assert!(calls_b.load(Ordering::SeqCst) > 0, "owner 1 served batches");
+    let served: usize = sizes_a
+        .lock()
+        .unwrap()
+        .iter()
+        .chain(sizes_b.lock().unwrap().iter())
+        .sum();
+    assert_eq!(served, 400, "every request evaluated exactly once");
+    assert!(
+        sizes_a
+            .lock()
+            .unwrap()
+            .iter()
+            .chain(sizes_b.lock().unwrap().iter())
+            .all(|&n| n <= 8)
+    );
+    owner.shutdown();
+}

@@ -205,6 +205,8 @@ pub struct InferenceMetrics {
     /// actually rises above 1 (and batch p50 rises with it).
     pub in_flight: AtomicUsize,
     pub peak_in_flight: AtomicUsize,
+    /// Owner threads serving the queue (T2 owner pool).
+    pub owners: AtomicUsize,
     samples: Mutex<SampleBuffer>,
 }
 
@@ -258,6 +260,7 @@ impl InferenceMetrics {
                 self.batches.load(Ordering::Relaxed),
             ),
             peak_in_flight: self.peak_in_flight.load(Ordering::Relaxed),
+            owners: self.owners.load(Ordering::Relaxed),
         }
     }
 }
@@ -303,36 +306,60 @@ pub struct MetricsSnapshot {
     pub forward_us_mean: f64,
     /// Peak simultaneous in-flight evaluator calls (real concurrency gauge).
     pub peak_in_flight: usize,
+    /// Owner threads that served the queue (1 = the original single owner).
+    pub owners: usize,
 }
 
-/// Owns the inference thread and its channel.
+/// Owns the inference thread(s) and their shared request channel.
 pub struct InferenceOwner {
     tx: SyncSender<Request>,
     cancel: Arc<AtomicBool>,
     metrics: Arc<InferenceMetrics>,
-    handle: Option<JoinHandle<()>>,
+    handles: Vec<JoinHandle<()>>,
 }
 
 impl InferenceOwner {
     /// Spawn the owner thread with the given model.
     pub fn spawn<M: BatchEvaluator>(model: M, cfg: InferenceConfig) -> Self {
+        Self::spawn_pool(vec![model], cfg)
+    }
+
+    /// Spawn one owner thread per model, all serving one request queue (T2).
+    ///
+    /// Each owner forms a batch while holding the queue, then releases it and
+    /// runs its forward, so one owner's batch assembly and kernel submission
+    /// overlap another's GPU execution. Every model must be the same network;
+    /// each owner's thread has its own device stream. Batching rules
+    /// (`max_batch`, `batch_timeout`) apply per batch, as for one owner.
+    pub fn spawn_pool<M: BatchEvaluator>(models: Vec<M>, cfg: InferenceConfig) -> Self {
+        assert!(
+            !models.is_empty(),
+            "an inference pool needs at least one model"
+        );
         let (tx, rx) = sync_channel::<Request>(cfg.channel_bound.max(1));
+        let rx = Arc::new(Mutex::new(rx));
         let cancel = Arc::new(AtomicBool::new(false));
         let metrics = Arc::new(InferenceMetrics::default());
-        let thread_tx = tx.clone();
-        let thread_cancel = cancel.clone();
-        let thread_metrics = metrics.clone();
-        let handle = std::thread::Builder::new()
-            .name("recur64-inference".into())
-            .spawn(move || {
-                owner_loop(model, rx, thread_tx, thread_cancel, thread_metrics, cfg);
+        metrics.owners.store(models.len(), Ordering::Relaxed);
+        let handles = models
+            .into_iter()
+            .enumerate()
+            .map(|(i, model)| {
+                let (rx, thread_tx) = (rx.clone(), tx.clone());
+                let (thread_cancel, thread_metrics) = (cancel.clone(), metrics.clone());
+                std::thread::Builder::new()
+                    .name(format!("recur64-inference-{i}"))
+                    .spawn(move || {
+                        owner_loop(model, rx, thread_tx, thread_cancel, thread_metrics, cfg);
+                    })
+                    .expect("spawn inference owner")
             })
-            .expect("spawn inference owner");
+            .collect();
         Self {
             tx,
             cancel,
             metrics,
-            handle: Some(handle),
+            handles,
         }
     }
 
@@ -350,8 +377,12 @@ impl InferenceOwner {
 
     /// Signal cancellation, drain pending requests with `Shutdown`, and join.
     pub fn shutdown(mut self) {
+        self.stop();
+    }
+
+    fn stop(&mut self) {
         self.cancel.store(true, Ordering::SeqCst);
-        if let Some(h) = self.handle.take() {
+        for h in self.handles.drain(..) {
             let _ = h.join();
         }
     }
@@ -359,22 +390,22 @@ impl InferenceOwner {
 
 impl Drop for InferenceOwner {
     fn drop(&mut self) {
-        self.cancel.store(true, Ordering::SeqCst);
-        if let Some(h) = self.handle.take() {
-            let _ = h.join();
-        }
+        self.stop();
     }
 }
 
 fn owner_loop<M: BatchEvaluator>(
     model: M,
-    rx: Receiver<Request>,
+    shared_rx: Arc<Mutex<Receiver<Request>>>,
     _keepalive: SyncSender<Request>,
     cancel: Arc<AtomicBool>,
     metrics: Arc<InferenceMetrics>,
     cfg: InferenceConfig,
 ) {
     loop {
+        // Form one batch while holding the queue; the forward runs after the
+        // lock is released, so other owners can form the next batch meanwhile.
+        let rx = shared_rx.lock().unwrap_or_else(|p| p.into_inner());
         // Wait for the first request of a batch, checking cancellation.
         let first = match rx.recv_timeout(cfg.idle_timeout) {
             Ok(r) => r,
@@ -418,6 +449,7 @@ fn owner_loop<M: BatchEvaluator>(
         if timed_out && batch.len() < cfg.max_batch {
             metrics.timeout_flushes.fetch_add(1, Ordering::Relaxed);
         }
+        drop(rx);
 
         let size = batch.len();
         let queue_wait = batch

@@ -1824,3 +1824,72 @@ default-off behaviour unchanged.
   Examples/s is reported.
 
 Otherwise B is not adopted and the numbers are reported.
+
+### T1 result (MEASURED): fusion and autotune not adopted; the bottleneck is FP32 matmul efficiency and GPU idle time
+
+`recur64 forward-probe` on 1,024 `snapshot-005` replay positions. Every
+build is from the same commit `7451831`, 60 timed reps per size. Values are
+p50 ms per `evaluate_batch` (upload + forward + readback):
+
+| batch | A (current) | autotune only | fusion only | B: fusion + autotune |
+|---:|---:|---:|---:|---:|
+| 16 | 12.5 | 13.7 | 19.3 | 20.8 |
+| 32 | 16.9 | 16.4 | 24.1 | 22.9 |
+| 48 | 24.4 | 22.5 | 29.9 | 28.9 |
+| 64 | 30.5 | 28.5 | 36.5 | 35.3 |
+| 96 | 49.5 | 46.0 | 53.0 | 52.3 |
+| 128 | 75.7 | 73.9 | 72.7 | 75.4 |
+
+- **Parity (B vs A):** max |policy difference| 5.9e-5, max |WDL
+  difference| 5.8e-5, 1 argmax change in 1,024. Passes.
+- **Verdict:** B is slower at the production batch sizes (26-64), so it
+  fails the >= 1.10x rule and is not adopted. bench-runtime and bench-train
+  were not run: the forward itself fails.
+- **Fusion** costs 20-40% here. **Autotune alone** gains 3-8% and adds
+  one-off tuning stalls up to 0.7 s per new shape. That is below the 10%
+  bar, so it is not adopted either.
+- **Kernel profile** (CubeCL profiler, batch 64):
+  - 51% of GPU time is matmul, using `SimpleMatmulFamily` (about 425 kernel
+    launches per forward). The rest is small elementwise and reduction
+    kernels.
+  - With autotune, most matmuls stay on the simple kernel.
+    `OrderedDoubleBuffering` is chosen for some shapes.
+- **Achieved throughput:** about 2.5 TFLOPS FP32 (about 19.6 MFLOP per
+  position), roughly 20% of this GPU's peak. Per-position cost rises above
+  batch 64.
+- **Correction:** the earlier note that forward latency is "nearly flat in
+  batch size" was wrong. It compared only batches 18-32. Latency grows with
+  batch size, and the forward is compute- and dispatch-bound.
+- **Where the headroom is:**
+  1. **GPU idle time.** Production shows about 56% GPU utilization while
+     the inference thread spends about 88% of wall time in forward calls.
+     Kernel submission and batch assembly are serialized with GPU execution.
+     Next, T2: two inference owners on separate streams.
+  2. **Matmul precision.** TF32 tensor cores would be the large matmul
+     lever. That is a precision change, so it is an owner decision; it is
+     not proposed here.
+  3. **Search-side reuse** (tree reuse) reduces evaluations per move. That
+     is a new identity, measured separately.
+
+Artifacts: `docs/evidence/phase4/t1/`.
+
+## Throughput pass T2: inference owner pool (pre-registration, written before the run)
+
+- **Change (execution only, never in the scientific identity):**
+  - `inference_owners = N` runs N owner threads, each with its own copy of
+    the same weights and its own device stream, all serving one request
+    queue.
+  - An owner forms a batch while holding the queue and runs its forward
+    after releasing it. Kernel submission and batch assembly then overlap
+    another owner's GPU work.
+- **Cells:**
+  - `bench-runtime`, standard start, `snapshot-005`, the f10-qual contract
+    (64 sims, K = 2)
+  - 64 games, concurrency 32, batch cap 64, 500 us
+  - `--inference-owners 1 | 2 | 3`, run back to back in one session
+- **Adopt the smallest N that achieves:**
+  - trainable pos/s >= 1.10x the N = 1 cell
+  - 0 inference errors
+  - no change in self-play aggregates beyond batch-composition numerics
+    (D8): draws, terminations and mean plies are reported side by side
+- **Otherwise:** keep N = 1 and report.

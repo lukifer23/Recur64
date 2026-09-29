@@ -216,13 +216,25 @@ pub fn run_cell<B: AutodiffBackend>(
 ) -> anyhow::Result<SweepCellResult> {
     let inner_device: Device<B::InnerBackend> = Default::default();
     <B::InnerBackend as Backend>::seed(&inner_device, cfg.seed);
-    let model = match checkpoint {
-        Some(path) => model_io::load::<B::InnerBackend>(path, &cfg.model, &inner_device)?,
-        None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device)?,
-    };
-    let batched = BatchedModel::new(model, cfg.recurrence, inner_device);
-    let owner = InferenceOwner::spawn(
-        batched,
+    // T2: one model copy per owner thread (same weights).
+    let mut models = Vec::with_capacity(cfg.inference_owners.max(1));
+    for _ in 0..cfg.inference_owners.max(1) {
+        let model = match checkpoint {
+            Some(path) => model_io::load::<B::InnerBackend>(path, &cfg.model, &inner_device)?,
+            None => model_io::build::<B::InnerBackend>(&cfg.model, &inner_device)?,
+        };
+        models.push(BatchedModel::new(
+            model,
+            cfg.recurrence,
+            inner_device.clone(),
+        ));
+    }
+    anyhow::ensure!(
+        checkpoint.is_some() || models.len() == 1,
+        "inference_owners > 1 needs a checkpoint (fresh builds would differ per owner)"
+    );
+    let owner = InferenceOwner::spawn_pool(
+        models,
         InferenceConfig {
             max_batch: cell.max_batch,
             batch_timeout: Duration::from_micros(cell.batch_timeout_us),

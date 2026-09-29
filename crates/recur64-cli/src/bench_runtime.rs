@@ -39,6 +39,9 @@ pub struct BenchRuntimeArgs {
     /// Override search_solver (D50 MCTS-solver) for every cell.
     #[arg(long)]
     pub search_solver: Option<bool>,
+    /// Override inference_owners (T2 owner pool; execution only).
+    #[arg(long)]
+    pub inference_owners: Option<usize>,
     /// If any override is given, run a single cell built from these values.
     #[arg(long)]
     pub active: Option<u32>,
@@ -191,6 +194,9 @@ pub fn run(args: BenchRuntimeArgs) -> anyhow::Result<()> {
     }
     if let Some(solver) = args.search_solver {
         cfg.search_solver = solver;
+    }
+    if let Some(n) = args.inference_owners {
+        cfg.inference_owners = n;
     }
     cfg.ensure_supported()?;
     match cfg.device.as_str() {
