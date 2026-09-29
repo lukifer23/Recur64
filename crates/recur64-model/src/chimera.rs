@@ -100,20 +100,16 @@ impl<B: Backend> CrossAttn<B> {
         let h = self.heads;
         let hd = self.head_dim;
 
-        let qh = self
-            .q_proj
-            .forward(self.norm_q.forward(q))
+        // Flattened to one 2-D matmul per projection (same map as the rank-3
+        // `Linear::forward`; see `linear_rows`).
+        let qh = linear_rows(&self.q_proj, self.norm_q.forward(q))
             .reshape([b, k, h, hd])
             .swap_dims(1, 2); // [b, h, k, hd]
         let src_n = self.norm_src.forward(src);
-        let kh = self
-            .k_proj
-            .forward(src_n.clone())
+        let kh = linear_rows(&self.k_proj, src_n.clone())
             .reshape([b, n, h, hd])
             .swap_dims(1, 2);
-        let vh = self
-            .v_proj
-            .forward(src_n)
+        let vh = linear_rows(&self.v_proj, src_n)
             .reshape([b, n, h, hd])
             .swap_dims(1, 2);
 
@@ -122,7 +118,7 @@ impl<B: Backend> CrossAttn<B> {
         let attn = activation::softmax(logits, 3);
         let out = attn.matmul(vh); // [b, h, k, hd]
         let out = out.swap_dims(1, 2).reshape([b, k, self.head_dim * h]);
-        self.out_proj.forward(out)
+        linear_rows(&self.out_proj, out)
     }
 }
 
@@ -268,14 +264,32 @@ pub struct ThoughtMetrics<B: Backend> {
     pub gate_compute: Tensor<B, 1>,
     pub gate_visual: Tensor<B, 1>,
     pub gate_reason: Tensor<B, 1>,
+    /// `KL(policy_t || policy_{t-1})` over legal candidates (nats), per
+    /// position. Zero on the first row of a forward pass.
+    pub policy_kl_prev: Tensor<B, 1>,
+    /// L1 distance between this and the previous row's WDL probabilities,
+    /// per position. Zero on the first row of a forward pass.
+    pub wdl_l1_prev: Tensor<B, 1>,
+}
+
+/// Forward-pass options. These affect only what is *observed*, never the
+/// function the network computes or the gradients of the normal path.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ForwardOptions {
+    /// Read out (policy + WDL + metrics) after **every** thought regardless of
+    /// the configured deep-supervision mode. This is a measurement mode: it
+    /// costs `output_blocks` extra block evaluations per intermediate thought
+    /// and does not change the final readout, the parameters, or the
+    /// checkpoint/scientific identity.
+    pub diagnostic_readouts: bool,
 }
 
 /// The result of a Chimera forward pass.
 pub struct ChimeraOutput<B: Backend> {
     /// One readout per thought that reads out (only the last for
-    /// `final_only_v1`).
+    /// `final_only_v1`; every thought in diagnostic mode).
     pub readouts: Vec<Readout<B>>,
-    /// One metrics row per executed thought.
+    /// One metrics row per readout, aligned with `readouts`.
     pub thoughts: Vec<ThoughtMetrics<B>>,
     /// Transformer blocks executed (accounting only).
     pub executed_blocks: usize,
@@ -529,13 +543,42 @@ impl<B: Backend> ChimeraModel<B> {
         proj + te
     }
 
-    /// Forward with `t` thoughts. `t == 1` with the reasoning latents disabled
-    /// is the square-token transformer control.
+    /// Training-semantics forward with `t` thoughts: readouts follow the
+    /// configured deep-supervision mode. With `reasoning.enabled = false` this
+    /// is the symbolic-only control (see `forward_symbolic`).
     pub fn forward_thoughts(
         &self,
         input: &ChimeraInput<B>,
         cands: &CandidateTensors<B>,
         t: usize,
+    ) -> ChimeraOutput<B> {
+        self.forward_with(input, cands, t, ForwardOptions::default())
+    }
+
+    /// Measurement forward: identical network, identical final readout, but a
+    /// policy/WDL readout and metrics row after every thought.
+    pub fn forward_thoughts_diagnostic(
+        &self,
+        input: &ChimeraInput<B>,
+        cands: &CandidateTensors<B>,
+        t: usize,
+    ) -> ChimeraOutput<B> {
+        self.forward_with(
+            input,
+            cands,
+            t,
+            ForwardOptions {
+                diagnostic_readouts: true,
+            },
+        )
+    }
+
+    pub fn forward_with(
+        &self,
+        input: &ChimeraInput<B>,
+        cands: &CandidateTensors<B>,
+        t: usize,
+        opts: ForwardOptions,
     ) -> ChimeraOutput<B> {
         assert!(t >= 1, "thought steps must be >= 1");
         assert!(
@@ -560,6 +603,10 @@ impl<B: Backend> ChimeraModel<B> {
         };
         let mut s_state = self.run_blocks(&self.input_blocks, x.clone(), &rel);
         let inject = x * self.alpha();
+
+        if !exp.reasoning.enabled {
+            return self.forward_symbolic(s_state, inject, &rel, cands);
+        }
 
         // Position-conditioned latent initialization.
         let pooled = Self::mean_over_tokens(s_state.clone()); // [b, D]
@@ -595,6 +642,7 @@ impl<B: Backend> ChimeraModel<B> {
         let mut readouts = Vec::new();
         let mut thoughts = Vec::new();
         let mut prev_z: Option<Tensor<B, 3>> = None;
+        let mut prev_readout: Option<(Tensor<B, 2>, Tensor<B, 2>)> = None;
 
         for step in 1..=t {
             s_state = self.run_blocks(
@@ -634,14 +682,14 @@ impl<B: Backend> ChimeraModel<B> {
                 .map(|p| Self::mean_abs(z.clone() - p.clone()));
             prev_z = Some(z.clone());
 
-            if exp.reasoning.enabled {
-                let fb = self.feedback.forward(z.clone()); // [b, K, D]
+            {
+                let fb = linear_rows(&self.feedback, z.clone()); // [b, K, D]
                 let fb = Self::mean_over_tokens(fb).unsqueeze_dim::<3>(1); // [b, 1, D]
                 let g = g_reason.clone().reshape([1, 1, 1]);
                 s_state = s_state + fb * g;
             }
 
-            if step == t || exp.deep_supervision.reads_intermediate() {
+            if step == t || exp.deep_supervision.reads_intermediate() || opts.diagnostic_readouts {
                 let y = self.run_blocks(&self.output_blocks, s_state.clone(), &rel);
                 let latent_wdl = self
                     .wdl_from_latent
@@ -654,9 +702,23 @@ impl<B: Backend> ChimeraModel<B> {
                         &readout.wdl_logits.device(),
                     )
                 };
+                let wdl_now = activation::softmax(readout.wdl_logits.clone(), 1);
+                let (policy_kl_prev, wdl_l1_prev) = match prev_readout.as_ref() {
+                    Some((prev_readout_policy, prev_wdl)) => (
+                        Self::policy_kl(&readout, prev_readout_policy),
+                        (wdl_now.clone() - prev_wdl.clone())
+                            .abs()
+                            .sum_dim(1)
+                            .squeeze_dim::<1>(1),
+                    ),
+                    None => (zeros(), zeros()),
+                };
+                prev_readout = Some((readout.policy.log_probs.clone(), wdl_now.clone()));
                 thoughts.push(ThoughtMetrics {
                     policy_entropy: entropy,
-                    wdl: activation::softmax(readout.wdl_logits.clone(), 1),
+                    wdl: wdl_now,
+                    policy_kl_prev,
+                    wdl_l1_prev,
                     latent_norm: Self::mean_abs(z.clone()),
                     latent_delta_norm: delta.unwrap_or_else(zeros),
                     square_pathway: square_pathway.clone(),
@@ -670,11 +732,78 @@ impl<B: Backend> ChimeraModel<B> {
             }
         }
 
+        let intermediate_reads =
+            exp.deep_supervision.reads_intermediate() || opts.diagnostic_readouts;
         ChimeraOutput {
             readouts,
             thoughts,
-            executed_blocks: executed_blocks(&self.cfg, exp, t),
+            executed_blocks: self.cfg.executed_blocks_final(t)
+                + if intermediate_reads {
+                    self.cfg.output_blocks * (t - 1)
+                } else {
+                    0
+                },
         }
+    }
+
+    /// The symbolic-only control: symbolic input/prelude, the shared square
+    /// core once, the output blocks, and the historical-style sparse head.
+    ///
+    /// No latent state is created, no cross-attention, latent FFN, compute or
+    /// visual path runs, there is no latent feedback, and no latent WDL term
+    /// is added. The output is therefore a function of the symbolic
+    /// parameters only (`input_proj`, `square_emb`, input/core/output blocks,
+    /// `inject_norm`, `alpha_logit`, and the heads other than
+    /// `wdl_from_latent`).
+    fn forward_symbolic(
+        &self,
+        s_state: Tensor<B, 3>,
+        inject: Tensor<B, 3>,
+        rel: &Tensor<B, 2, Int>,
+        cands: &CandidateTensors<B>,
+    ) -> ChimeraOutput<B> {
+        let s_state = self.run_blocks(
+            &self.core_blocks,
+            self.inject_norm.forward(s_state + inject),
+            rel,
+        );
+        let y = self.run_blocks(&self.output_blocks, s_state, rel);
+        let readout = sparse_readout(&self.readout_heads(), y, None, cands);
+        let device = readout.wdl_logits.device();
+        let b = readout.wdl_logits.dims()[0];
+        let zeros = || Tensor::<B, 1>::zeros([b], &device);
+        let one_zero = || Tensor::<B, 1>::zeros([1], &device);
+        let thoughts = vec![ThoughtMetrics {
+            policy_entropy: self.policy_entropy(&readout),
+            wdl: activation::softmax(readout.wdl_logits.clone(), 1),
+            latent_norm: zeros(),
+            latent_delta_norm: zeros(),
+            square_pathway: zeros(),
+            compute_pathway: zeros(),
+            visual_pathway: zeros(),
+            gate_compute: one_zero(),
+            gate_visual: one_zero(),
+            gate_reason: one_zero(),
+            policy_kl_prev: zeros(),
+            wdl_l1_prev: zeros(),
+        }];
+        ChimeraOutput {
+            readouts: vec![readout],
+            thoughts,
+            executed_blocks: self.cfg.executed_blocks_final(1),
+        }
+    }
+
+    /// `KL(current || previous)` over legal candidates, per position. Padded
+    /// candidates hold `log_prob = 0` and are masked out, as are terminal rows.
+    fn policy_kl(current: &Readout<B>, prev_log_probs: &Tensor<B, 2>) -> Tensor<B, 1> {
+        let lp = current.policy.log_probs.clone();
+        let p = lp.clone().exp();
+        let mask = current.policy.mask.clone().float();
+        let per = (p * (lp - prev_log_probs.clone()) * mask)
+            .sum_dim(1)
+            .squeeze_dim::<1>(1);
+        per * current.policy.valid.clone().float()
     }
 
     fn policy_entropy(&self, readout: &Readout<B>) -> Tensor<B, 1> {

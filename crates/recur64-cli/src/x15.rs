@@ -102,11 +102,9 @@ fn build_chimera<B: Backend>(
     cfg: &ProbeConfig,
     device: &B::Device,
 ) -> anyhow::Result<ChimeraModel<B>> {
-    Ok(ChimeraModel::<B>::new(
-        cfg.model.clone(),
-        cfg.experimental.clone(),
-        device,
-    ))
+    // Every X15 build goes through the runtime boundary, which runs the
+    // behavioural device check (D57) before any weights are created.
+    recur64_runtime::model_io::build_chimera::<B>(&cfg.model, &cfg.experimental, device)
 }
 
 /// Build a uniform policy target and neutral WDL target over a real batch.
@@ -476,10 +474,16 @@ fn run_thoughts_impl<B: Backend>(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow:
     let batch = build_x15_batch::<B>(&states, &cfg.experimental, provider.as_ref(), &device)?;
 
     let t = args.thoughts.max(1);
-    let out = model.forward_thoughts(&batch.input, &batch.cands, t);
-    println!("thought progression (T={t}, batch={}):", batch.batch);
+    // Diagnostic forward: a readout after EVERY thought, whatever the
+    // configured deep-supervision mode. Same network, same final output.
+    let out = model.forward_thoughts_diagnostic(&batch.input, &batch.cands, t);
     println!(
-        "  {:<4} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>8} {:>8} {:>8}",
+        "thought progression (T={t}, batch={}, deep_supervision={}, diagnostic readouts):",
+        batch.batch,
+        cfg.experimental.deep_supervision.label()
+    );
+    println!(
+        "  {:<4} {:>9} {:>8} {:>8} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9} {:>8}",
         "t",
         "entropy",
         "p(win)",
@@ -489,6 +493,8 @@ fn run_thoughts_impl<B: Backend>(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow:
         "square",
         "compute",
         "visual",
+        "KL(t|t-1)",
+        "dWDL(L1)",
         "g_reason"
     );
     let mean = |v: Vec<f32>| {
@@ -509,7 +515,7 @@ fn run_thoughts_impl<B: Backend>(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow:
         let batch_rows = wdl.len() / 3;
         let col = |c: usize| (0..batch_rows).map(|r| wdl[r * 3 + c]).collect::<Vec<_>>();
         println!(
-            "  {:<4} {:>10.4} {:>10.4} {:>10.4} {:>10.4} {:>10.2e} {:>10.2e} {:>8.2e} {:>8.2e} {:>8.3}",
+            "  {:<4} {:>9.4} {:>8.4} {:>8.4} {:>9.4} {:>9.2e} {:>9.2e} {:>9.2e} {:>9.2e} {:>9.2e} {:>9.2e} {:>8.3}",
             i + 1,
             mean(read(&m.policy_entropy)),
             mean(col(0)),
@@ -519,45 +525,12 @@ fn run_thoughts_impl<B: Backend>(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow:
             mean(read(&m.square_pathway)),
             mean(read(&m.compute_pathway)),
             mean(read(&m.visual_pathway)),
+            mean(read(&m.policy_kl_prev)),
+            mean(read(&m.wdl_l1_prev)),
             mean(read(&m.gate_reason)),
         );
     }
-    // Policy divergence between consecutive thoughts: thought progression.
-    for (i, pair) in out.readouts.windows(2).enumerate() {
-        let (a, b) = (&pair[0], &pair[1]);
-        let kl = kl_divergence(
-            &a.policy
-                .log_probs
-                .clone()
-                .into_data()
-                .to_vec::<f32>()
-                .unwrap_or_default(),
-            &b.policy
-                .log_probs
-                .clone()
-                .into_data()
-                .to_vec::<f32>()
-                .unwrap_or_default(),
-        );
-        println!("  KL(readout {} || readout {}) = {kl:.6}", i + 1, i + 2);
-    }
     Ok(())
-}
-
-/// Mean per-position KL between two log-probabilities over the same candidates.
-fn kl_divergence(p_log_probs: &[f32], q_log_probs: &[f32]) -> f32 {
-    if p_log_probs.is_empty() || p_log_probs.len() != q_log_probs.len() {
-        return f32::NAN;
-    }
-    let total: f32 = p_log_probs
-        .iter()
-        .zip(q_log_probs)
-        .map(|(p, q)| {
-            let pp = p.exp();
-            if pp > 0.0 { pp * (p - q) } else { 0.0 }
-        })
-        .sum();
-    total / p_log_probs.len() as f32
 }
 
 // --- parity ----------------------------------------------------------------

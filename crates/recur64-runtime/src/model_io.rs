@@ -6,8 +6,20 @@ use burn::prelude::*;
 use burn::record::{FullPrecisionSettings, NamedMpkFileRecorder};
 use burn::tensor::ElementConversion;
 
+use recur64_model::chimera::ChimeraModel;
 use recur64_model::config::ModelConfig;
+use recur64_model::experimental::{Architecture, ExperimentalConfig};
 use recur64_model::model::ProbeModel;
+
+thread_local! {
+    static DEVICE_CHECKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many device checks the *calling thread* has started. A test seam that
+/// proves a build/load path goes through [`verify_device`].
+pub fn device_checks_run() -> usize {
+    DEVICE_CHECKS.with(|c| c.get())
+}
 
 /// How long the device check may take (first-use JIT compilation included).
 const DEVICE_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
@@ -20,6 +32,7 @@ const DEVICE_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 /// device's worker thread and JIT kernels silently do nothing. The check runs
 /// on a helper thread with a timeout, so a panic or a hang becomes an error.
 pub fn verify_device<B: Backend>(device: &B::Device) -> anyhow::Result<()> {
+    DEVICE_CHECKS.with(|c| c.set(c.get() + 1));
     let device = device.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -97,13 +110,158 @@ pub fn load_unverified<B: Backend>(
     Ok(model)
 }
 
+/// Build a fresh X15 / Chimera model after validating its experimental
+/// contract and verifying that the device runs kernels correctly.
+pub fn build_chimera<B: Backend>(
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraModel<B>> {
+    verify_device::<B>(device)?;
+    build_chimera_unverified(cfg, exp, device)
+}
+
+/// [`build_chimera`] without the behavioural device check, for callers that
+/// already ran it (an owner pool builds several copies of one network).
+pub fn build_chimera_unverified<B: Backend>(
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraModel<B>> {
+    anyhow::ensure!(
+        exp.is_chimera(),
+        "build_chimera requires architecture = chimera_v1 (got {:?})",
+        exp.architecture
+    );
+    exp.validate(cfg.width)?;
+    Ok(ChimeraModel::<B>::new(cfg.clone(), exp.clone(), device))
+}
+
+/// Load X15 weights (no optimizer) from a checkpoint directory after the
+/// device check. Refuses probe checkpoints and any model or experimental
+/// contract mismatch.
+pub fn load_chimera<B: Backend>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraModel<B>> {
+    verify_device::<B>(device)?;
+    load_chimera_unverified(dir, cfg, exp, device)
+}
+
+/// [`load_chimera`] without the behavioural device check.
+pub fn load_chimera_unverified<B: Backend>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraModel<B>> {
+    let meta = read_meta(dir)?;
+    meta.check_contracts()?;
+    meta.check_model(cfg)?;
+    meta.check_architecture(Architecture::ChimeraV1)?;
+    meta.check_experimental(exp)?;
+    let template = build_chimera_unverified::<B>(cfg, exp, device)?;
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    Ok(template.load_file(dir.join("model"), &recorder, device)?)
+}
+
+/// Resume an X15 training checkpoint (weights, optimizer state and metadata)
+/// after the device check.
+pub fn load_chimera_training<B, O>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    optim: O,
+    device: &B::Device,
+) -> anyhow::Result<(
+    ChimeraModel<B>,
+    O,
+    recur64_model::checkpoint::CheckpointMeta,
+)>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    O: burn::optim::Optimizer<ChimeraModel<B>, B>,
+{
+    verify_device::<B>(device)?;
+    let template = build_chimera_unverified::<B>(cfg, exp, device)?;
+    recur64_model::checkpoint::load_training_chimera(dir, template, optim, device)
+}
+
+fn read_meta(dir: &Path) -> anyhow::Result<recur64_model::checkpoint::CheckpointMeta> {
+    let bytes = std::fs::read(dir.join("meta.json")).map_err(|e| {
+        anyhow::anyhow!(
+            "checkpoint {} has no readable meta.json: {e}",
+            dir.display()
+        )
+    })?;
+    Ok(serde_json::from_slice(&bytes)?)
+}
+
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
+    use recur64_model::experimental::{Architecture, ExperimentalConfig};
+
+    type Cpu = recur64_model::train::CpuTrainBackend;
+
+    fn tiny_model_cfg() -> ModelConfig {
+        ModelConfig {
+            width: 32,
+            heads: 4,
+            ffn: 48,
+            input_blocks: 1,
+            core_blocks: 1,
+            output_blocks: 1,
+            squares: 64,
+            in_features: 119,
+            policy_dim: 8,
+            wdl_classes: 3,
+            promo_codes: 5,
+            rms_eps: 1e-5,
+        }
+    }
+
+    fn tiny_exp() -> ExperimentalConfig {
+        let mut e = ExperimentalConfig::default();
+        e.architecture = Architecture::ChimeraV1;
+        e.thought_steps = 2;
+        e.reasoning_tokens = 2;
+        e.reasoning.aux_width = 16;
+        e.reasoning.aux_heads = 4;
+        e.reasoning.latent_ffn = 32;
+        e.visual.channels = 4;
+        e.visual.blocks = 1;
+        e
+    }
 
     #[test]
     fn device_check_passes_on_a_working_backend() {
         let device = Default::default();
-        verify_device::<recur64_model::train::CpuTrainBackend>(&device).unwrap();
+        verify_device::<Cpu>(&device).unwrap();
+    }
+
+    #[test]
+    fn chimera_build_and_load_run_the_device_check_at_the_runtime_boundary() {
+        let device = Default::default();
+        let (cfg, exp) = (tiny_model_cfg(), tiny_exp());
+        let before = device_checks_run();
+        build_chimera::<Cpu>(&cfg, &exp, &device).unwrap();
+        assert_eq!(device_checks_run(), before + 1, "build_chimera must verify");
+        build_chimera_unverified::<Cpu>(&cfg, &exp, &device).unwrap();
+        assert_eq!(
+            device_checks_run(),
+            before + 1,
+            "unverified must not repeat"
+        );
+    }
+
+    #[test]
+    fn a_probe_config_is_refused_by_the_chimera_builder() {
+        let device = Default::default();
+        let err = build_chimera::<Cpu>(&tiny_model_cfg(), &ExperimentalConfig::default(), &device);
+        assert!(err.is_err());
     }
 }

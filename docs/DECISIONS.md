@@ -1056,3 +1056,53 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
   relations, legal geometry, check relations, bounded exact tactics, piece
   counts by type and side. No engine evaluation, no tablebase, no book value,
   no human labels and no hand-tuned material scalar.
+
+## D60 - ComputeBankV1 hanging-piece correction (corrected inside V1)
+
+- **Status:** ACCEPTED (2026-09-29) for the HP branch.
+- **Finding (MEASURED by test):** the T3 "hanging" counts used
+  `att.iter().any(|v| v == 0)` for "no defenders". That is true for almost every
+  square (a single pawn defender still leaves five zero channels), so
+  `own_hanging` / `opp_hanging` degraded to "attacked by the opponent".
+- **Decision:** correct it inside `compute_bank_v1` (`all(v == 0)`, factored into
+  `is_hanging`) instead of minting `compute_bank_v2`. Reason: no X15 model has
+  ever been trained or evaluated on these bytes, so no result, checkpoint or
+  published number depends on the old semantics. Fixtures cover attacked+0
+  defenders (hanging), attacked+1 defender (not), unattacked+0 (not) and
+  own/opponent symmetry.
+- **Artifact:** the WASM artifact was rebuilt with `scripts/build-compute-wasm.ps1`;
+  new SHA-256 `a405d873386675cdfc90b8acc264b2a1a32cf84d3cdfbb28cd6958e6afab1063`.
+  Native vs WASM byte parity re-verified (`native_and_wasm_agree_byte_exactly`,
+  `x15_modules` end-to-end test).
+- **Not changed:** native and WASM providers stay identity-distinct; no
+  execution-only demotion is adopted (that needs a separate ADR).
+- **Known limits, unchanged:** pins and x-rays are ignored by the attack tables,
+  and kings count as attackers and defenders.
+
+## D61 - X15 symbolic-only control, diagnostic readouts, supervision weights
+
+- **Status:** ACCEPTED (2026-09-29) for the HP branch.
+- **Symbolic-only control:** with `reasoning.enabled = false` (T must be 1) the
+  forward pass creates no latent state and runs no cross-attention, latent FFN,
+  compute/visual path, latent feedback or latent WDL term. Output depends only
+  on the symbolic parameters. Tested by scrambling every auxiliary parameter and
+  requiring a bit-identical output (and by showing the same scrambling changes a
+  latent-enabled model). Config validation now refuses compute/visual enabled
+  with reasoning disabled, because their tokens only feed the latent state.
+- **Diagnostic readouts:** `forward_thoughts_diagnostic` /
+  `ForwardOptions { diagnostic_readouts }` reads out policy, WDL and metrics after
+  every thought under any supervision mode. It is a measurement mode: same
+  weights, same final output, same identity and checkpoints, extra output-block
+  cost. `ThoughtMetrics` gained `policy_kl_prev` and `wdl_l1_prev`.
+- **Supervision:** `loss::thought_loss` / `thought_supervision` implement
+  `final_only_v1`, `same_target_v1` and `progressive_search_v1`. The intermediate
+  weight is the versioned config field `intermediate_weight` (default 0.25), part
+  of the scientific identity. `progressive_search_v1` requires exactly one search
+  rung per thought and never reuses a target. Diagnostic readouts are refused by
+  the training loss.
+- **Identity change:** adding `intermediate_weight` changes the X15 identity
+  hash. No X15 checkpoint existed, so nothing is invalidated. The probe
+  architecture's identity is unchanged.
+- **Visual resolution:** X1 accepts only 64 (renderable AND encodable).
+- **Runtime:** `model_io::build_chimera` / `load_chimera` /
+  `load_chimera_training` run the D57 device check before any X15 build or load.

@@ -66,8 +66,9 @@ mate_depth = 1
 [experimental.visual]
 provider = "render_v1"
 enabled = true
-# 64 or 128, and 8 * 2^k generally; the residual encoder's stride-2 plan needs
-# a power-of-two token grid.
+# X1 accepts exactly 64: VisualBoardV1 renders 64/96 and the stride-2 encoder
+# needs 8 * 2^k (64, 128, ...), so 64 is the only size that both renders and
+# encodes.
 resolution = 64
 channels = 48
 blocks = 3

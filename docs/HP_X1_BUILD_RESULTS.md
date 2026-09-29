@@ -141,7 +141,7 @@ PASS: native == wasm on 253 positions (1728 bytes each)
 |---|---|
 | path | `crates/recur64-compute/assets/compute_bank_v1.wasm` |
 | bytes | 1,577,622 |
-| sha256 | `f96b5e555c9cbf7203d62244e0dca825b10a63411f94107971798003114ebeab` |
+| sha256 | `a405d873386675cdfc90b8acc264b2a1a32cf84d3cdfbb28cd6958e6afab1063` |
 | built by | `scripts/build-compute-wasm.ps1` (profile `wasm-release`) |
 
 An embedded-artifact test recomputes the digest, so a rebuilt-but-unpinned
@@ -245,3 +245,18 @@ buckets.
 6. `ComputeBankV1` derives the halfmove clock and repetition count from the
    normalized observation features, so they are lossy beyond the observation's
    own clamps (150, 5).
+
+## P0 corrections (2026-09-29, after c60103b)
+
+MEASURED by tests on CPU unless stated. See D60 and D61.
+
+| Item | Result |
+|---|---|
+| Symbolic-only control | output bit-identical after scrambling every auxiliary parameter |
+| Diagnostic readouts | T=4 under `final_only_v1`: 1 normal readout, 4 diagnostic readouts and 4 metric rows; final output identical |
+| ComputeBank hanging bug | confirmed and fixed; WASM rebuilt; native/WASM parity holds |
+| CUDA device check | X15 builds/loads go through `model_io::build_chimera` (counter-tested) |
+| Visual resolution | only 64 accepted; config->render->encode test |
+| Flattened linears | cross-attention Q/K/V/out and feedback use `linear_rows` |
+| Deep supervision | loss API with mapping unit tests |
+| Parameters | 16,018,606, unchanged |

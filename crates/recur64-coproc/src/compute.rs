@@ -71,6 +71,14 @@ fn attacks(piece: Piece, square: Square, occupied: BitBoard, color: Color) -> Bi
     }
 }
 
+/// A piece is "hanging" when the opponent attacks its square and none of its
+/// own side's pieces (of any type) attack it: every per-piece-type defender
+/// channel is zero. Pins and x-rays are ignored, exactly as in the attack
+/// tables, and kings count as attackers and defenders.
+fn is_hanging(defenders: &[u8; 6], attackers: &[u8; 6]) -> bool {
+    defenders.iter().all(|&v| v == 0) && attackers.iter().any(|&v| v > 0)
+}
+
 /// The exact facts a single pass over the legal moves yields.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct MoveAnalysis {
@@ -412,15 +420,15 @@ pub fn compute_bank(input: &[u8], out: &mut [u8]) -> Result<(), CoprocError> {
         let mut own_hanging = 0u16;
         let mut opp_hanging = 0u16;
         for s in 0..SQUARES {
-            let undefended = |att: &[u8; 6]| att.iter().copied().any(|v| v == 0);
-            let attacked = |att: &[u8; 6]| att.iter().copied().any(|v| v > 0);
+            // A piece's defenders are its own side's attackers of its square;
+            // its attackers are the other side's.
             match board.color_on(s.from_index()) {
                 Some(c) if c == own => {
-                    if undefended(&own_att[s]) && attacked(&opp_att[s]) {
+                    if is_hanging(&own_att[s], &opp_att[s]) {
                         own_hanging += 1;
                     }
                 }
-                Some(_) if undefended(&opp_att[s]) && attacked(&own_att[s]) => {
+                Some(_) if is_hanging(&opp_att[s], &own_att[s]) => {
                     opp_hanging += 1;
                 }
                 _ => {}
@@ -577,6 +585,42 @@ mod tests {
         let mut out = crate::empty_output();
         compute_bank(&input, &mut out).unwrap();
         out
+    }
+
+    fn hanging_counts(fen: &str) -> (u16, u16) {
+        let bank = bank_for(fen, 1);
+        let t = global_token(&bank, global::TACTICAL);
+        (
+            u16::from_le_bytes([t[10], t[11]]),
+            u16::from_le_bytes([t[12], t[13]]),
+        )
+    }
+
+    #[test]
+    fn is_hanging_requires_every_defender_channel_to_be_zero() {
+        let none = [0u8; 6];
+        let one_pawn = [1, 0, 0, 0, 0, 0];
+        // attacked + zero defenders => hanging
+        assert!(is_hanging(&none, &one_pawn));
+        // attacked + one defender (in any channel) => not hanging
+        assert!(!is_hanging(&one_pawn, &one_pawn));
+        assert!(!is_hanging(&[0, 0, 0, 0, 0, 1], &one_pawn));
+        // unattacked + zero defenders => not hanging
+        assert!(!is_hanging(&none, &none));
+    }
+
+    #[test]
+    fn hanging_counts_follow_defenders_and_attackers_on_real_boards() {
+        // White knight d4 attacked by Bg7, no white defender.
+        assert_eq!(hanging_counts("7k/6b1/8/8/3N4/8/8/K7 w - - 0 1"), (1, 0));
+        // A pawn on c3 defends it: attacked but defended => not hanging.
+        assert_eq!(hanging_counts("7k/6b1/8/8/3N4/2P5/8/K7 w - - 0 1"), (0, 0));
+        // Undefended but unattacked => not hanging.
+        assert_eq!(hanging_counts("7k/8/8/8/3N4/8/8/K7 w - - 0 1"), (0, 0));
+        // Same position, black to move: the knight is now the opponent's.
+        assert_eq!(hanging_counts("7k/6b1/8/8/3N4/8/8/K7 b - - 0 1"), (0, 1));
+        // Colour/rank mirror with black to move is the same as the first case.
+        assert_eq!(hanging_counts("k7/8/8/3n4/8/8/6B1/7K b - - 0 1"), (1, 0));
     }
 
     #[test]

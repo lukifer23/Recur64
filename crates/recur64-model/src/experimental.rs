@@ -61,6 +61,9 @@ pub const CHIMERA_HEAD_VERSION: u32 = 1;
 /// thought). Bump when the documented order changes.
 pub const REASONING_CONTRACT_VERSION: &str = "chimera-thought-loop-v1";
 
+/// The single visual resolution X1 accepts (renderable AND encodable).
+pub const VISUAL_RESOLUTION_X1: usize = 64;
+
 /// How the reasoning latents are maintained across thoughts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -91,15 +94,6 @@ impl DeepSupervisionMode {
             DeepSupervisionMode::FinalOnlyV1 => "final_only_v1",
             DeepSupervisionMode::SameTargetV1 => "same_target_v1",
             DeepSupervisionMode::ProgressiveSearchV1 => "progressive_search_v1",
-        }
-    }
-
-    /// Weight applied to an intermediate thought's loss.
-    pub fn intermediate_weight(self) -> f32 {
-        match self {
-            DeepSupervisionMode::FinalOnlyV1 => 0.0,
-            DeepSupervisionMode::SameTargetV1 => 0.25,
-            DeepSupervisionMode::ProgressiveSearchV1 => 1.0,
         }
     }
 
@@ -178,6 +172,10 @@ fn d_compute_tokens() -> usize {
 fn d_compute_fields() -> usize {
     recur64_coproc::SQ_FIELDS
 }
+fn d_intermediate_weight() -> f32 {
+    0.25
+}
+
 fn d_visual_resolution() -> usize {
     64
 }
@@ -314,6 +312,11 @@ pub struct ExperimentalConfig {
     pub reasoning_tokens: usize,
     #[serde(default)]
     pub deep_supervision: DeepSupervisionMode,
+    /// Loss weight of each intermediate thought (the final thought is always
+    /// weight 1). Used by `same_target_v1` and `progressive_search_v1`; part of
+    /// the scientific identity.
+    #[serde(default = "d_intermediate_weight")]
+    pub intermediate_weight: f32,
     #[serde(default)]
     pub reasoning: ReasoningConfig,
     #[serde(default)]
@@ -331,6 +334,7 @@ impl Default for ExperimentalConfig {
             thought_steps: d_thought_steps(),
             reasoning_tokens: d_reasoning_tokens(),
             deep_supervision: DeepSupervisionMode::FinalOnlyV1,
+            intermediate_weight: d_intermediate_weight(),
             reasoning: ReasoningConfig::default(),
             compute: ComputeConfig::default(),
             visual: VisualConfig::default(),
@@ -409,19 +413,15 @@ impl ExperimentalConfig {
             self.compute.fields,
             d_compute_fields()
         );
+        // X1 supports exactly one visual resolution: the one that is both
+        // renderable (VisualBoardV1 supports 64 and 96) and encodable (the
+        // stride-2 encoder needs 8 * 2^k with at least two stages: 64, 128,
+        // ...). The intersection is 64. A config that validates must render
+        // AND encode; `tests/x15_modules.rs` checks this end to end.
         anyhow::ensure!(
-            self.visual.resolution >= 64 && self.visual.resolution.is_multiple_of(8),
-            "experimental.visual.resolution {} is not supported (>= 64 and a multiple of 8)",
-            self.visual.resolution
-        );
-        // The visual encoder downsamples by exactly 2 per stage, so the
-        // resolution must be 8 * 2^k for the 8x8 token grid to line up.
-        let cells = self.visual.resolution / 8;
-        anyhow::ensure!(
-            cells.is_power_of_two(),
-            "experimental.visual.resolution {} gives a {cells}x{cells} grid at stride 1, \
-             which is not a power of two; the residual encoder's stride-2 plan needs \
-             64, 128, ... (96 is renderable but not encodable in X1)",
+            self.visual.resolution == VISUAL_RESOLUTION_X1,
+            "experimental.visual.resolution {} is not supported in X1 (only {VISUAL_RESOLUTION_X1}: \
+             the renderer supports 64/96, the encoder 64/128/...)",
             self.visual.resolution
         );
         anyhow::ensure!(
@@ -433,6 +433,19 @@ impl ExperimentalConfig {
                 && self.retrieval.memory_tokens == 0,
             "no retrieval provider is implemented in X1; retrieval must stay \
              \"none\" with memory_tokens = 0"
+        );
+        anyhow::ensure!(
+            self.intermediate_weight.is_finite() && (0.0..=1.0).contains(&self.intermediate_weight),
+            "experimental.intermediate_weight {} must be in [0, 1]",
+            self.intermediate_weight
+        );
+        // Compute and visual tokens are consumed only by the latent thought
+        // loop; with the latents off they would be dead weight, and a
+        // "symbolic-only control" must be independent of them.
+        anyhow::ensure!(
+            self.reasoning.enabled || (!self.compute.enabled && !self.visual.enabled),
+            "experimental.compute/visual.enabled require reasoning.enabled = true: \
+             their tokens only feed the latent reasoning state"
         );
         anyhow::ensure!(
             !self.compute.enabled || self.compute.provider.is_active(),
@@ -460,6 +473,7 @@ impl ExperimentalConfig {
             "thought_steps": self.thought_steps,
             "reasoning_tokens": self.reasoning_tokens,
             "deep_supervision": self.deep_supervision,
+            "intermediate_weight": self.intermediate_weight,
             "reasoning": self.reasoning,
             "compute": self.compute,
             "visual": self.visual,

@@ -493,3 +493,15 @@ mainline gate.
   question, and the owner's fast-probe ladder is the intended way to ask it.
 - Details: `docs/HP_X1_ARCHITECTURE.md` (contract) and
   `docs/HP_X1_BUILD_RESULTS.md` (MEASURED / INFERRED / NOT RUN).
+
+## HP X1 - P0 corrections after c60103b (2026-09-29)
+
+Branch `experiment/hp-r15-h3-integration`. Historical R15 conclusions above are
+unchanged.
+
+- **COMPLETED / TESTED (CPU):** true symbolic-only control, diagnostic
+  per-thought readouts, ComputeBank hanging fix (D60, WASM rebuilt, parity
+  holds), Chimera build/load through the device check, single visual resolution
+  (64), flattened cross-attention linears, deep-supervision loss API (D61).
+- **NOT RUN:** X15 on CUDA, any training, ReasoningTargetsV1, tactical suite.
+- Ledger: `docs/HP_X1_EXPERIMENTS.md`.

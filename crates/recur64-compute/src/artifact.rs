@@ -6,7 +6,7 @@
 // silently changing what the model sees.
 
 pub const WASM_ARTIFACT: &[u8] = include_bytes!("../assets/compute_bank_v1.wasm");
-pub const WASM_SHA256: &str = "f96b5e555c9cbf7203d62244e0dca825b10a63411f94107971798003114ebeab";
-pub const WASM_ARTIFACT_BYTES: usize = 1577622;
+pub const WASM_SHA256: &str = "a405d873386675cdfc90b8acc264b2a1a32cf84d3cdfbb28cd6958e6afab1063";
+pub const WASM_ARTIFACT_BYTES: usize = 1577475;
 /// Git revision the artifact was built from (provenance only).
-pub const WASM_BUILT_FROM: &str = "a8aef66899c2cca9aaf79a897656d09246b17903";
+pub const WASM_BUILT_FROM: &str = "c60103bd95b4f535b381f2f1cd985ea9e2998984";
