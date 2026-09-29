@@ -357,6 +357,7 @@ recur64 x15 grads   --config configs/x15.toml --thoughts 4
 
 # P1: per-thought metrics (entropy, WDL, latent norm/delta, pathway scales)
 recur64 x15 thoughts --config configs/x15.toml --thoughts 4
+recur64 x15 bench --mode infer --config configs/x15_cuda.toml   # or --mode train --batch 32 --accum 4
 ```
 
 Current measured state (see `docs/HP_X1_BUILD_RESULTS.md` for the full

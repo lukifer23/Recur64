@@ -42,6 +42,8 @@ pub enum X15Command {
     Sanity(SanityArgs),
     /// Native vs WebAssembly `ComputeBankV1` parity, byte for byte (P0 gate).
     Parity(ParityArgs),
+    /// Steady-state latency / throughput / VRAM (normal forward or train step).
+    Bench(crate::x15_bench::BenchArgs),
     /// Module gradient probe: every gated subsystem must receive a non-zero
     /// gradient on the first training step.
     Grads(BatchArgs),
@@ -130,6 +132,7 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::Grads(a) => dispatch_device(&a.config, &a, run_grads),
         X15Command::Thoughts(a) => dispatch_device(&a.config, &a, run_thoughts),
         X15Command::Parity(a) => run_parity(a),
+        X15Command::Bench(a) => run_bench(a),
     }
 }
 
@@ -143,7 +146,14 @@ where
         recur64_model::config::DeviceKind::Cuda => {
             #[cfg(feature = "cuda")]
             {
-                f(&cfg, args)
+                // In-process, scoped telemetry: the sampler thread is joined
+                // when the work ends, so nothing outlives the command.
+                let (result, gpu) = recur64_runtime::gpu_telemetry::monitor(true, || f(&cfg, args));
+                println!(
+                    "gpu telemetry   : peak_vram={:?} MiB util_max={:?}% util_busy_mean={:?} temp_max={:?} C ({} samples)",
+                    gpu.peak_vram_mb, gpu.util_max, gpu.util_busy_mean, gpu.temp_max_c, gpu.samples
+                );
+                result
             }
             #[cfg(not(feature = "cuda"))]
             {
@@ -313,13 +323,19 @@ fn run_sanity_impl<B: Backend>(cfg: &ProbeConfig, args: &SanityArgs) -> anyhow::
         // Legal policy mass per row must be exactly 1. Padded entries carry
         // exactly 0 log-probability by design, so the mask must be applied.
         let width = batch.cands.width;
-        let mask = batch
+        // Read the mask back as floats: a device boolean tensor comes back as
+        // `Bool(U8)` data on CUDA, which `to_vec::<bool>` refuses.
+        let mask: Vec<bool> = batch
             .cands
             .mask
             .clone()
+            .float()
             .into_data()
-            .to_vec::<bool>()
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            .to_vec::<f32>()
+            .map_err(|e| anyhow::anyhow!("{e}"))?
+            .into_iter()
+            .map(|v| v > 0.5)
+            .collect();
         for row in 0..batch.batch {
             let sum: f32 = (0..width)
                 .filter(|k| mask[row * width + k])
@@ -633,4 +649,31 @@ fn run_parity(args: ParityArgs) -> anyhow::Result<()> {
 #[allow(dead_code)]
 pub fn default_experimental() -> recur64_model::experimental::ExperimentalConfig {
     recur64_model::experimental::ExperimentalConfig::default()
+}
+
+// --- bench -----------------------------------------------------------------
+
+fn run_bench(args: crate::x15_bench::BenchArgs) -> anyhow::Result<()> {
+    use crate::x15_bench::{BenchMode, run_infer, run_train};
+    let cfg = load_config(&args.config)?;
+    match (cfg.device, args.mode) {
+        (recur64_model::config::DeviceKind::Cpu, BenchMode::Infer) => {
+            run_infer::<burn::backend::Flex>(&cfg, &args)
+        }
+        (recur64_model::config::DeviceKind::Cpu, BenchMode::Train) => {
+            run_train::<recur64_model::train::CpuTrainBackend>(&cfg, &args)
+        }
+        #[cfg(feature = "cuda")]
+        (recur64_model::config::DeviceKind::Cuda, BenchMode::Infer) => {
+            run_infer::<burn::backend::Cuda>(&cfg, &args)
+        }
+        #[cfg(feature = "cuda")]
+        (recur64_model::config::DeviceKind::Cuda, BenchMode::Train) => {
+            run_train::<burn::backend::Autodiff<burn::backend::Cuda>>(&cfg, &args)
+        }
+        #[cfg(not(feature = "cuda"))]
+        (recur64_model::config::DeviceKind::Cuda, _) => {
+            anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+        }
+    }
 }

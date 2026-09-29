@@ -25,6 +25,7 @@ mod phase3;
 mod replay_merge;
 mod search_gain;
 mod x15;
+mod x15_bench;
 
 #[derive(Parser)]
 #[command(

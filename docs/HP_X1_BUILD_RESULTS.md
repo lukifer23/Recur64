@@ -260,3 +260,10 @@ MEASURED by tests on CPU unless stated. See D60 and D61.
 | Flattened linears | cross-attention Q/K/V/out and feedback use `linear_rows` |
 | Deep supervision | loss API with mapping unit tests |
 | Parameters | 16,018,606, unchanged |
+
+## First CUDA resource results (2026-09-29)
+MEASURED on RTX 2050 4 GB, FP32, `native_v1`: see `docs/HP_X1_EXPERIMENTS.md`
+E1/E2. Normal forward batch 32: 91.5 / 108 / 142.5 ms at T=1/2/4, 517 MiB.
+Training 32x4 (eff 128) at T=4: 1.47 s/update, 87 ex/s, 2.38 GB peak. New
+command `recur64 x15 bench --mode infer|train`. In-process GPU telemetry is
+printed by every CUDA `x15` command.
