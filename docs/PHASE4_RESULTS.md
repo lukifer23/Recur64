@@ -1893,3 +1893,38 @@ Artifacts: `docs/evidence/phase4/t1/`.
   - no change in self-play aggregates beyond batch-composition numerics
     (D8): draws, terminations and mean plies are reported side by side
 - **Otherwise:** keep N = 1 and report.
+
+### T2 result (MEASURED): 2 owners adopted (+10%)
+
+Binary `e508730`. Standard start, `snapshot-005`, 64 games, concurrency 32,
+batch cap 64, K = 2; cells run back to back.
+
+| owners | trainable pos/s | vs 1 owner | GPU util | mean batch | forward ms | errors | draws / failed conversions / plies |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 1 | 22.8 | - | 57% | 25.7 | 15.5 | 0 | 45 / 31 / 226 |
+| 2 | 25.2 | 1.10x | 64% | 20.6 | 18.0 | 0 | 45 / 31 / 226 |
+| 3 | 25.9 | 1.13x | 65% | 17.5 | 19.8 | 0 | 45 / 31 / 226 |
+
+- **Rule met by N = 2 (1.103x), so it is adopted.** The margin is thin
+  given the few-percent run-to-run variance seen before, so this is a
+  modest gain.
+- **Self-play data is identical** across N: draws, terminations, plies and
+  failed conversions.
+- **The pool shrinks batches** (25.7 to 20.6), so the next step (T3) is
+  more concurrent games to refill them.
+- **Pilot wiring:** self-play collection uses the pool
+  (`spawn_selfplay_owner`). Evaluation owners stay single, so the D46
+  residency bound is unchanged.
+
+Artifacts: `docs/evidence/phase4/t2/`.
+
+## Throughput pass T3: concurrency with 2 owners (pre-registration, written before the run)
+
+- **Setup:** `bench-runtime`, standard start, `snapshot-005`, the f10-qual
+  contract, `--inference-owners 2`, K = 2, 500 us, and 128 games per cell,
+  so every cell runs at least two waves.
+- **Cells (concurrency / batch cap):** 32 / 64 (the baseline, run in the
+  same session), 48 / 96, and 64 / 128.
+- **Rule:** adopt the cell with the highest trainable pos/s if it is at
+  least 1.10x the 32 / 64 cell, with 0 errors and peak VRAM <= 8 GB.
+  Otherwise keep 32 / 64. Self-play aggregates are reported side by side.

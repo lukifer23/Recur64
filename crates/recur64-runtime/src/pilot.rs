@@ -231,6 +231,30 @@ pub fn spawn_owner<B: Backend>(
     ))
 }
 
+/// Spawn the self-play collection owner: a pool of `cfg.inference_owners`
+/// owner threads over copies of the same checkpoint (T2). Evaluation owners
+/// stay single ([`spawn_owner`]), so D46's residency bound is unchanged.
+pub fn spawn_selfplay_owner<B: Backend>(
+    dir: &Path,
+    cfg: &RunConfig,
+    device: &B::Device,
+) -> anyhow::Result<InferenceOwner> {
+    let models = (0..cfg.inference_owners.max(1))
+        .map(|_| {
+            model_io::load::<B>(dir, &cfg.model, device)
+                .map(|m| BatchedModel::new(m, cfg.recurrence, device.clone()))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(InferenceOwner::spawn_pool(
+        models,
+        InferenceConfig {
+            max_batch: cfg.max_inference_batch,
+            batch_timeout: Duration::from_micros(cfg.batch_timeout_us),
+            ..InferenceConfig::default()
+        },
+    ))
+}
+
 /// Evaluate a candidate against its parent, the frozen reference, and random
 /// play: searched candidate-vs-parent, searched candidate-vs-reference (reused
 /// when parent == reference), raw candidate-vs-random and raw
@@ -526,7 +550,7 @@ pub fn run_pilot<B: AutodiffBackend>(
             ..CycleGpu::default()
         };
         let first_game_id = total_games_collected;
-        let owner = spawn_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
+        let owner = spawn_selfplay_owner::<B::InnerBackend>(&snapshot_dir, cfg, &inner_device)?;
         let evaluator = owner.evaluator();
         let ((collected, collect_secs), collect_gpu) = gpu_telemetry::monitor(gpu_on, || {
             let collect_start = Instant::now();
