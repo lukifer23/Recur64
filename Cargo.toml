@@ -26,3 +26,10 @@ serde_json = "1"
 toml = "0.9"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
+
+# Dev/test builds optimize dependencies (Burn tensor kernels, cozy-chess
+# movegen) so the CPU training tests in the gate run in minutes. Workspace
+# crates keep opt-level 0 with debug assertions and overflow checks, so test
+# semantics are unchanged. Release builds are unaffected.
+[profile.dev.package."*"]
+opt-level = 2
