@@ -101,6 +101,9 @@ pub struct BatchArgs {
     pub thoughts: usize,
     #[arg(long, default_value_t = 8)]
     pub batch: usize,
+    /// `thoughts` only: inspect a trained checkpoint instead of a fresh network.
+    #[arg(long)]
+    pub checkpoint: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]
@@ -520,10 +523,25 @@ fn run_thoughts(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow::Result<()> {
 
 fn run_thoughts_impl<B: Backend>(cfg: &ProbeConfig, args: &BatchArgs) -> anyhow::Result<()> {
     let device: B::Device = Default::default();
-    let model = build_chimera::<B>(cfg, &device)?;
-    let provider = provider_for_config(&cfg.experimental)?;
+    // A trained checkpoint carries its own experimental contract; a fresh network
+    // is built from the config.
+    let (model, exp) = match &args.checkpoint {
+        Some(ck) => {
+            let meta: recur64_model::checkpoint::CheckpointMeta =
+                serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+            let m = recur64_runtime::model_io::load_chimera::<B>(
+                ck,
+                &cfg.model,
+                &meta.experimental,
+                &device,
+            )?;
+            (m, meta.experimental)
+        }
+        None => (build_chimera::<B>(cfg, &device)?, cfg.experimental.clone()),
+    };
+    let provider = provider_for_config(&exp)?;
     let states = probe_positions(args.batch.max(1), 40);
-    let batch = build_x15_batch::<B>(&states, &cfg.experimental, provider.as_ref(), &device)?;
+    let batch = build_x15_batch::<B>(&states, &exp, provider.as_ref(), &device)?;
 
     let t = args.thoughts.max(1);
     // Diagnostic forward: a readout after EVERY thought, whatever the

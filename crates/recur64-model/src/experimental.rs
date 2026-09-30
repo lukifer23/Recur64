@@ -206,6 +206,12 @@ pub struct ReasoningConfig {
     pub aux_heads: usize,
     #[serde(default = "d_latent_ffn")]
     pub latent_ffn: usize,
+    /// Re-normalise the latent state (the existing `latent_norm` RMSNorm) after
+    /// every thought. Off (the historical loop) lets `Z` grow without bound across
+    /// thoughts, which was measured at about 1.3x per thought in trained networks.
+    /// Part of the scientific identity.
+    #[serde(default)]
+    pub normalize_latent: bool,
 }
 
 impl Default for ReasoningConfig {
@@ -216,6 +222,7 @@ impl Default for ReasoningConfig {
             aux_width: d_aux_width(),
             aux_heads: d_aux_heads(),
             latent_ffn: d_latent_ffn(),
+            normalize_latent: false,
         }
     }
 }

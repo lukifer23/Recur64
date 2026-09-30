@@ -747,3 +747,29 @@ INTERPRETATION: with exact labels, plenty of data and one-ply facts, the one-pas
 network reaches 0.79 on forced mates in two and the recurrent network does not beat it,
 at 1.8x the training time. E14 (deep supervision) is the remaining pre-registered
 attempt to make recurrence useful on this task.
+
+## E14 status note and a MEASURED stability finding (recorded while E14 trains)
+`x15 thoughts --checkpoint` on trained E12 networks (batch 16, evaluated to T=8): the
+latent state `Z` (mean |Z|) grows about 1.3x per thought in EVERY network, with nothing
+bounding it: T_train=4 net 1.01 -> 6.20 by thought 8; T_train=8 net 0.95 -> 3.63 (it
+learned to damp it); T_train=1 net 0.90 -> 8.78 (its p(win) saturates to 0.965). `Z`
+only ever receives residual additions (cross-attention, latent FFN) and is normalised
+once, at initialisation. Unbounded growth across a shared-parameter loop is a standard
+optimisation hazard, and it fits the T=8 collapse in E12 (higher training loss, lower
+accuracy). This is a measurement plus a hypothesis, not a proof.
+
+## E15 - PRE-REGISTERED: does bounding the latent rescue recurrence? (before any result)
+- CHANGE (versioned, default off): `[experimental.reasoning] normalize_latent = true`
+  re-applies the existing `latent_norm` RMSNorm to `Z` after every thought. Off is the
+  historical loop, bit-identical. Test: with it on, mean |Z| stays in (0.4, 1.3) for all 8
+  thoughts, with it off it grows > 1.5x. Config: `configs/x15_facts_g128_norm_cuda.toml`.
+- DESIGN: identical to E12 (train960 + 1,500 exact mate-in-2 positions, gain 128,
+  `final_only_v1`, lr 1e-4, 600 updates x 96, seeds 1 and 2, non-streaming) except
+  `normalize_latent = true`: C1F-N (T=1), C4F-N (T=4), C8F-N (T=8, micro-batch 16).
+- DECISION: NORMALISATION RESCUES RECURRENCE iff C4F-N beats E12's C1F (the standing
+  one-pass baseline) on mate-in-2 top-1 with a fixture-clustered paired 95% CI wholly
+  above 0 and both seeds positive AND the same holds against C1F-N (matched one-pass).
+  Reported regardless: C8F-N vs E12 C8F (is the T=8 collapse fixed), the per-T curves, and
+  retention.
+- If it does not rescue: recurrence stays NO SIGNAL at this scale under final-only
+  supervision (E12), deep supervision (E14) and a bounded latent (E15).

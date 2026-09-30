@@ -888,3 +888,42 @@ fn the_facts_gain_scales_the_bias_linearly() {
         );
     }
 }
+
+#[test]
+fn normalizing_the_latent_bounds_its_growth_and_off_keeps_the_v1_loop() {
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let states = probe_positions(3, 12);
+    let norm_at = |normalize: bool| -> Vec<f32> {
+        let mut e = exp();
+        e.thought_steps = 8;
+        e.reasoning.normalize_latent = normalize;
+        e.validate(cfg.width).unwrap();
+        let model = ChimeraModel::<EvalB>::new(cfg.clone(), e.clone(), &device);
+        let provider = provider_for_config(&e).unwrap();
+        let batch = build_x15_batch::<EvalB>(&states, &e, provider.as_ref(), &device).unwrap();
+        let out = model.forward_thoughts_diagnostic(&batch.input, &batch.cands, 8);
+        out.thoughts
+            .iter()
+            .map(|m| metric_vec(m.latent_norm.clone()).iter().sum::<f32>() / 3.0)
+            .collect()
+    };
+    let off = norm_at(false);
+    let on = norm_at(true);
+    // Off: the residual stream keeps growing thought over thought.
+    assert!(
+        off[7] > off[0] * 1.5,
+        "the v1 latent should grow across thoughts: {off:?}"
+    );
+    // On: every thought's latent has (near) unit RMS, whatever the depth.
+    for (i, v) in on.iter().enumerate() {
+        assert!(
+            *v > 0.4 && *v < 1.3,
+            "normalised latent norm at thought {} is {v}: {on:?}",
+            i + 1
+        );
+    }
+    // The first thought's readout differs from the un-normalised loop only via the
+    // latent, so the option is a real change, not a no-op.
+    assert_ne!(off, on);
+}

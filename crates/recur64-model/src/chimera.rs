@@ -718,6 +718,9 @@ impl<B: Backend> ChimeraModel<B> {
                 activation::gelu(linear_rows(&self.latent_ffn1, z.clone())),
             );
             z = z + ff;
+            if exp.reasoning.normalize_latent {
+                z = self.latent_norm.forward(z);
+            }
 
             let delta = prev_z
                 .as_ref()
