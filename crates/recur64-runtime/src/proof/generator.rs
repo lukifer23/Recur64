@@ -662,8 +662,6 @@ pub fn enumerate_pool(
                                                             * moves.len() as f32
                                                         && root_fact_ambiguous(&state, &correct));
                                             }
-                                            let keep =
-                                                if eligible { fen.clone() } else { String::new() };
                                             slot.insert((depth, eligible, String::new()));
                                         }
                                     }
