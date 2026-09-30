@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use burn::module::AutodiffModule;
-use burn::optim::{GradientsParams, Optimizer};
+use burn::optim::{GradientsAccumulator, GradientsParams, Optimizer};
 use burn::prelude::*;
 use burn::tensor::activation;
 use burn::tensor::backend::AutodiffBackend;
@@ -23,6 +23,9 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use recur64_model::checkpoint::{CheckpointMeta, save_training_chimera};
+
+/// Hard maximum thought count the model supports.
+const MAX_THOUGHTS: usize = 8;
 use recur64_model::chimera::ChimeraModel;
 use recur64_model::config::ProbeConfig;
 use recur64_model::experimental::DeepSupervisionMode;
@@ -72,6 +75,9 @@ pub struct TrainProbeArgs {
     /// Train on this many train positions only (micro-overfit); 0 = all.
     #[arg(long, default_value_t = 0)]
     pub limit: usize,
+    /// Positions per forward/backward chunk (gradients are accumulated); bounds VRAM.
+    #[arg(long, default_value_t = 32)]
+    pub micro_batch: usize,
     /// Bounded-time guard for a single run.
     #[arg(long, default_value_t = 1500.0)]
     pub max_seconds: f64,
@@ -85,7 +91,10 @@ pub struct EvalArgs {
     pub targets: PathBuf,
     /// Checkpoint directory to evaluate (weights + meta).
     #[arg(long)]
-    pub checkpoint: PathBuf,
+    pub checkpoint: Vec<PathBuf>,
+    /// Which target split to evaluate (`val` = tuning, `confirm` = fresh confirmation).
+    #[arg(long, default_value = "val")]
+    pub split: String,
     #[arg(long, default_value_t = 4)]
     pub thoughts: usize,
     /// Also report the train split.
@@ -302,20 +311,31 @@ fn evaluate<B: Backend>(model: &ChimeraModel<B>, data: &Data<B>, tmax: usize) ->
     result
 }
 
+fn half_diff(a: &[f32], b: &[f32], parity: usize) -> f32 {
+    let d: Vec<f32> = a
+        .iter()
+        .zip(b)
+        .enumerate()
+        .filter(|(i, _)| i % 2 == parity)
+        .map(|(_, (x, y))| x - y)
+        .collect();
+    mean(&d)
+}
+
 fn print_eval(label: &str, rows: &[PerThought]) {
     println!(
         "  [{label}] n={}  (metrics vs deepest teacher rung)",
         rows[0].kl_deep.len()
     );
     println!(
-        "  {:<3} {:>9} {:>9} {:>7} {:>8} {:>9} {:>12} {:>10}",
-        "T", "KL", "CE", "top1", "entropy", "|v err|", "dKL vs T1", "95% CI"
+        "  {:<3} {:>9} {:>9} {:>7} {:>8} {:>9} {:>12} {:>10} {:>18}",
+        "T", "KL", "CE", "top1", "entropy", "|v err|", "dKL vs T1", "95% CI", "even/odd half dKL"
     );
     let base = &rows[0].kl_deep;
     for r in rows {
         let (d, lo, hi) = paired_bootstrap(&r.kl_deep, base);
         println!(
-            "  {:<3} {:>9.4} {:>9.4} {:>7.3} {:>8.3} {:>9.4} {:>+12.4} [{:+.4},{:+.4}]",
+            "  {:<3} {:>9.4} {:>9.4} {:>7.3} {:>8.3} {:>9.4} {:>+12.4} [{:+.4},{:+.4}] {:>+9.4}/{:+.4}",
             r.t,
             mean(&r.kl_deep),
             mean(&r.ce_deep),
@@ -324,7 +344,9 @@ fn print_eval(label: &str, rows: &[PerThought]) {
             mean(&r.value_abs_err),
             d,
             lo,
-            hi
+            hi,
+            half_diff(&r.kl_deep, base, 0),
+            half_diff(&r.kl_deep, base, 1)
         );
     }
 }
@@ -355,6 +377,8 @@ fn experiment_record(
     targets: &ReasoningTargetsV1,
     args: &TrainProbeArgs,
     n_train: usize,
+    init: serde_json::Value,
+    start_update: usize,
 ) -> anyhow::Result<serde_json::Value> {
     let scientific = serde_json::json!({
         "model": cfg.model,
@@ -370,6 +394,10 @@ fn experiment_record(
         "optimizer_contract": recur64_model::train::OPTIMIZER_CONTRACT,
         "lr": args.lr,
         "warmup_updates": args.warmup,
+        "initialization": init,
+        "start_update": start_update,
+        "segment_updates": args.updates,
+        "final_update": start_update + args.updates,
         "updates": args.updates,
         "seed": args.seed,
     });
@@ -397,9 +425,24 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
         cfg.experimental.intermediate_weight = w;
     }
     cfg.experimental.validate(cfg.model.width)?;
+    // Training and evaluation thought counts must be within the model hard
+    // maximum (8); a reasoning-disabled model runs exactly one thought. The
+    // config's thought_steps is the designed T, not a cap: a T_train=1
+    // control on a T=4 config is legitimate and is recorded as train_thoughts.
+    let max_t = if cfg.experimental.reasoning.enabled {
+        MAX_THOUGHTS
+    } else {
+        1
+    };
     anyhow::ensure!(
-        args.thoughts >= 1 && args.thoughts <= cfg.experimental.thought_steps.max(args.thoughts),
-        "bad thought count"
+        (1..=max_t).contains(&args.thoughts),
+        "train thoughts {} outside 1..={max_t}",
+        args.thoughts
+    );
+    anyhow::ensure!(
+        (1..=max_t).contains(&args.eval_thoughts),
+        "eval thoughts {} outside 1..={max_t}",
+        args.eval_thoughts
     );
     let mode = cfg.experimental.deep_supervision;
     let weight = cfg.experimental.intermediate_weight;
@@ -414,14 +457,18 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
     let device: B::Device = Default::default();
     B::seed(&device, args.seed);
 
-    let train_data = build_data::<B>(&train_pos, cfg, &device)?;
+    let n_train = train_pos.len();
+    let chunks = train_pos
+        .chunks(args.micro_batch.max(1))
+        .map(|c| build_data::<B>(c, cfg, &device))
+        .collect::<anyhow::Result<Vec<_>>>()?;
     let inner_device: Device<B::InnerBackend> = Default::default();
     let val_data = build_data::<B::InnerBackend>(&val_pos, cfg, &inner_device)?;
     let val_ids: Vec<String> = val_pos.iter().map(|p| p.id.clone()).collect();
-    let rungs = train_data.policy.len();
+    let rungs = chunks[0].policy.len();
 
     let mut optim = recur64_model::train::adamw::<B, ChimeraModel<B>>();
-    let (mut model, mut start_update) = match &args.resume {
+    let (mut model, mut start_update, init) = match &args.resume {
         Some(dir) => {
             let (m, o, meta) = model_io::load_chimera_training::<B, _>(
                 dir,
@@ -436,14 +483,26 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
                 dir.display(),
                 meta.update_counter
             );
-            (m, meta.update_counter as usize)
+            let parent_hash = std::fs::read(dir.join("experiment.json"))
+                .ok()
+                .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+                .and_then(|v| v["experiment_hash"].as_str().map(str::to_owned));
+            let init = serde_json::json!({
+                "kind": "resume",
+                "checkpoint": dir.display().to_string(),
+                "parent_model_id": meta.model_id,
+                "parent_experiment_hash": parent_hash,
+                "resume_update_counter": meta.update_counter,
+            });
+            (m, meta.update_counter as usize, init)
         }
         None => (
             model_io::build_chimera::<B>(&cfg.model, &cfg.experimental, &device)?,
             0,
+            serde_json::json!({"kind": "fresh", "seed": args.seed}),
         ),
     };
-    let record = experiment_record(cfg, &targets, args, train_pos.len())?;
+    let record = experiment_record(cfg, &targets, args, train_pos.len(), init, start_update)?;
     std::fs::create_dir_all(&args.out)?;
     std::fs::write(
         args.out.join("experiment.json"),
@@ -469,27 +528,33 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
             if started.elapsed().as_secs_f64() > args.max_seconds {
                 anyhow::bail!("max_seconds {} exceeded at update {u}", args.max_seconds);
             }
-            let lr = args.lr * (((start_update + u + 1) as f64) / args.warmup.max(1) as f64).min(1.0);
-            let out = model.forward_thoughts(
-                &train_data.batch.input,
-                &train_data.batch.cands,
-                args.thoughts,
-            );
-            let loss =
-                thought_loss_with(&out.readouts, rungs, mode, weight, args.thoughts, |r, i| {
-                    readout_terms(
-                        r,
-                        &train_data.policy[i],
-                        &train_data.value[i],
-                        args.value_weight,
-                    )
-                })?;
-            let loss_v: f32 = loss.clone().into_scalar().elem();
-            anyhow::ensure!(loss_v.is_finite(), "non-finite loss {loss_v} at update {u}");
+            let lr =
+                args.lr * (((start_update + u + 1) as f64) / args.warmup.max(1) as f64).min(1.0);
+            let mut acc = GradientsAccumulator::new();
+            let mut loss_v = 0.0f32;
+            for chunk in &chunks {
+                let out =
+                    model.forward_thoughts(&chunk.batch.input, &chunk.batch.cands, args.thoughts);
+                // Chunk means weighted by chunk size: the accumulated
+                // gradient equals the full-batch mean-loss gradient.
+                let frac = chunk.len() as f32 / n_train as f32;
+                let loss = thought_loss_with(
+                    &out.readouts,
+                    rungs,
+                    mode,
+                    weight,
+                    args.thoughts,
+                    |r, i| readout_terms(r, &chunk.policy[i], &chunk.value[i], args.value_weight),
+                )? * frac;
+                let l: f32 = loss.clone().into_scalar().elem();
+                anyhow::ensure!(l.is_finite(), "non-finite loss {l} at update {u}");
+                loss_v += l;
+                acc.accumulate(&model, GradientsParams::from_grads(loss.backward(), &model));
+            }
             if u == 0 {
                 first_loss = loss_v;
             }
-            let grads = GradientsParams::from_grads(loss.backward(), &model);
+            let grads = acc.grads();
             if u == 0 || (u + 1) % args.eval_every.max(1) == 0 || u + 1 == args.updates {
                 let norms = model.subsystem_grad_norms(&grads);
                 anyhow::ensure!(
@@ -584,38 +649,86 @@ fn load(path: &Path) -> anyhow::Result<ProbeConfig> {
 
 // --- eval ----------------------------------------------------------------------------
 
+/// Pooled, position-clustered effect of `T=t` vs `T=1` across checkpoints.
+///
+/// The experimental unit is the held-out POSITION: every checkpoint evaluates
+/// the same positions, so per-position deltas are first averaged over
+/// checkpoints (seeds), and only then bootstrapped over positions. Seeds are
+/// never concatenated as if they were independent observations.
+fn pooled_effect(per_ckpt: &[Vec<PerThought>], t: usize) -> serde_json::Value {
+    let n = per_ckpt[0][0].kl_deep.len();
+    let avg = |k: usize| -> Vec<f32> {
+        (0..n)
+            .map(|i| per_ckpt.iter().map(|c| c[k].kl_deep[i]).sum::<f32>() / per_ckpt.len() as f32)
+            .collect()
+    };
+    let (a, b) = (avg(t - 1), avg(0));
+    let (d, lo, hi) = paired_bootstrap(&a, &b);
+    serde_json::json!({
+        "t": t, "positions": n, "checkpoints": per_ckpt.len(),
+        "mean_dkl_vs_t1": d, "lo95": lo, "hi95": hi,
+        "even_half": half_diff(&a, &b, 0), "odd_half": half_diff(&a, &b, 1),
+        "method": "mean over checkpoints per position, then paired bootstrap over positions (2000 resamples, deterministic)",
+    })
+}
+
 fn eval_ckpt<B: Backend>(cfg: &ProbeConfig, args: &EvalArgs) -> anyhow::Result<()> {
     let device: B::Device = Default::default();
-    let mut exp = cfg.experimental.clone();
-    // The checkpoint's own experimental contract is authoritative.
-    let meta: CheckpointMeta =
-        serde_json::from_slice(&std::fs::read(args.checkpoint.join("meta.json"))?)?;
-    exp.deep_supervision = meta.experimental.deep_supervision;
-    exp.intermediate_weight = meta.experimental.intermediate_weight;
-    let model = model_io::load_chimera::<B>(&args.checkpoint, &cfg.model, &exp, &device)?;
     let targets = ReasoningTargetsV1::load(&args.targets)?;
-    let mut out = serde_json::Map::new();
-    let mut run = |name: &str, pos: Vec<&PositionTarget>| -> anyhow::Result<()> {
-        if pos.is_empty() {
-            return Ok(());
-        }
-        let data = build_data::<B>(&pos, cfg, &device)?;
-        let rows = evaluate(&model, &data, args.thoughts);
-        print_eval(name, &rows);
-        let ids: Vec<String> = pos.iter().map(|p| p.id.clone()).collect();
-        let mut j = eval_json(&rows, &ids);
-        j["categories"] = serde_json::json!(data.categories);
-        out.insert(name.into(), j);
-        Ok(())
-    };
     println!(
-        "eval-reasoning: {} (same weights, T=1..{})",
-        args.checkpoint.display(),
+        "eval-reasoning: split={} targets_digest={}... (same weights, T=1..{})",
+        args.split,
+        &targets.digest[..12],
         args.thoughts
     );
-    run("val", split(&targets, "val"))?;
-    if args.include_train {
-        run("train", split(&targets, "train"))?;
+    let mut out = serde_json::Map::new();
+    let splits: Vec<&str> = if args.include_train {
+        vec![args.split.as_str(), "train"]
+    } else {
+        vec![args.split.as_str()]
+    };
+    for name in splits {
+        let pos = split(&targets, name);
+        anyhow::ensure!(!pos.is_empty(), "no positions in split {name:?}");
+        let data = build_data::<B>(&pos, cfg, &device)?;
+        let ids: Vec<String> = pos.iter().map(|p| p.id.clone()).collect();
+        let mut per_ckpt: Vec<Vec<PerThought>> = Vec::new();
+        let mut per_json = Vec::new();
+        for ck in &args.checkpoint {
+            let meta: CheckpointMeta =
+                serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+            // The checkpoint's own experimental contract is authoritative.
+            let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, &device)?;
+            let rows = evaluate(&model, &data, args.thoughts);
+            println!("checkpoint {}", ck.display());
+            print_eval(name, &rows);
+            let mut j = eval_json(&rows, &ids);
+            j["checkpoint"] = serde_json::json!(ck.display().to_string());
+            per_json.push(j);
+            per_ckpt.push(rows);
+        }
+        let mut entry = serde_json::json!({"checkpoints": per_json, "categories": data.categories});
+        if per_ckpt.len() > 1 && args.thoughts >= 2 {
+            println!(
+                "  POOLED over {} checkpoints, clustered by position:",
+                per_ckpt.len()
+            );
+            let mut pooled = Vec::new();
+            for t in 2..=args.thoughts {
+                let p = pooled_effect(&per_ckpt, t);
+                println!(
+                    "    T{t} - T1: {:+.4}  95% CI [{:+.4},{:+.4}]  even/odd half {:+.4}/{:+.4}",
+                    p["mean_dkl_vs_t1"].as_f64().unwrap_or(f64::NAN),
+                    p["lo95"].as_f64().unwrap_or(f64::NAN),
+                    p["hi95"].as_f64().unwrap_or(f64::NAN),
+                    p["even_half"].as_f64().unwrap_or(f64::NAN),
+                    p["odd_half"].as_f64().unwrap_or(f64::NAN)
+                );
+                pooled.push(p);
+            }
+            entry["pooled_position_clustered"] = serde_json::json!(pooled);
+        }
+        out.insert(name.into(), entry);
     }
     if let Some(p) = &args.json_out {
         std::fs::write(

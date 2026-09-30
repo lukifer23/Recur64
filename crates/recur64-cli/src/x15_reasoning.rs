@@ -42,12 +42,24 @@ pub struct GenTargetsArgs {
     /// Worker threads sharing the one teacher model (labels are identical for any count).
     #[arg(long, default_value_t = 4)]
     pub threads: usize,
+    /// Exclude every replay game that any of these targets files drew from.
+    #[arg(long)]
+    pub exclude_targets: Vec<PathBuf>,
+    /// Label every position with this split instead of the per-game train/val hash.
+    #[arg(long)]
+    pub split_label: Option<String>,
 }
 
 #[derive(Args, Debug)]
 pub struct AuditTargetsArgs {
     #[arg(long)]
     pub targets: PathBuf,
+    /// Also require zero shared source games with each of these targets files.
+    #[arg(long)]
+    pub disjoint_from: Vec<PathBuf>,
+    /// Print the ladder-informativeness report.
+    #[arg(long, default_value_t = false)]
+    pub report: bool,
 }
 
 fn generate<B: Backend>(cfg: &RunConfig, args: &GenTargetsArgs) -> anyhow::Result<()> {
@@ -68,8 +80,25 @@ fn generate<B: Backend>(cfg: &RunConfig, args: &GenTargetsArgs) -> anyhow::Resul
         .ok_or_else(|| anyhow::anyhow!("teacher checkpoint has no model_id"))?;
     let evaluator = SyncEvaluator::new(model, cfg.recurrence, device);
 
-    let games = ReplayReader::open(&args.replay)?.read_all_games()?;
+    let mut games = ReplayReader::open(&args.replay)?.read_all_games()?;
     anyhow::ensure!(!games.is_empty(), "replay has no games");
+    let mut excluded = Vec::new();
+    let mut exclude_ids = std::collections::BTreeSet::new();
+    for p in &args.exclude_targets {
+        let t = ReasoningTargetsV1::load(p)?;
+        exclude_ids.extend(rt::source_game_ids(&t));
+        excluded.push(t);
+    }
+    let before = games.len();
+    games = rt::exclude_games(games, &exclude_ids);
+    println!(
+        "excluded {} source games ({} of {} replay games removed); {} remain",
+        exclude_ids.len(),
+        before - games.len(),
+        before,
+        games.len()
+    );
+    anyhow::ensure!(!games.is_empty(), "no replay games left after exclusion");
     let candidates = select_positions(&games, args.positions, args.seed)?;
     let teacher = TeacherContract {
         checkpoint: args.teacher_checkpoint.display().to_string(),
@@ -114,7 +143,23 @@ fn generate<B: Backend>(cfg: &RunConfig, args: &GenTargetsArgs) -> anyhow::Resul
             .map(|d| d.as_secs())
             .unwrap_or(0),
     };
+    let mut positions = positions;
+    if let Some(label) = &args.split_label {
+        for p in &mut positions {
+            p.split = label.clone();
+        }
+    }
     let targets = ReasoningTargetsV1::new(teacher, args.seed, provenance, positions);
+    // Hard check, not a filter: the fresh set must share no source game.
+    for other in &excluded {
+        rt::ensure_disjoint(&targets, other)?;
+    }
+    if !excluded.is_empty() {
+        println!(
+            "verified disjoint from {} excluded targets file(s) at the source-game level",
+            excluded.len()
+        );
+    }
     let n = rt::audit(&targets)?;
     targets.save(&args.out)?;
     let by_cat = |c: &str| targets.positions.iter().filter(|p| p.category == c).count();
@@ -177,5 +222,27 @@ pub fn run_audit(args: AuditTargetsArgs) -> anyhow::Result<()> {
         "OK: {n} positions reconstruct move-for-move; digest {}",
         targets.digest
     );
+    for other in &args.disjoint_from {
+        let o = ReasoningTargetsV1::load(other)?;
+        rt::ensure_disjoint(&targets, &o)?;
+        println!("OK: zero shared source games with {}", other.display());
+    }
+    if args.report {
+        let all: Vec<_> = targets.positions.iter().collect();
+        println!(
+            "ladder report (all): {}",
+            serde_json::to_string_pretty(&rt::ladder_report(&all))?
+        );
+        let mut splits: Vec<String> = targets.positions.iter().map(|p| p.split.clone()).collect();
+        splits.sort();
+        splits.dedup();
+        for s in splits {
+            let sub: Vec<_> = targets.positions.iter().filter(|p| p.split == s).collect();
+            println!(
+                "ladder report ({s}): {}",
+                serde_json::to_string_pretty(&rt::ladder_report(&sub))?
+            );
+        }
+    }
     Ok(())
 }

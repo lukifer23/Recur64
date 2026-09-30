@@ -473,6 +473,90 @@ fn label_one(
     }
 }
 
+// --- disjointness and ladder informativeness ------------------------------------
+
+/// The set of source game ids a targets file draws from.
+pub fn source_game_ids(t: &ReasoningTargetsV1) -> std::collections::BTreeSet<u64> {
+    t.positions.iter().map(|p| p.source_game_id).collect()
+}
+
+/// Drop replay games whose id is in `exclude` (whole games, never just plies).
+pub fn exclude_games(
+    games: Vec<crate::replay::schema::GameRecord>,
+    exclude: &std::collections::BTreeSet<u64>,
+) -> Vec<crate::replay::schema::GameRecord> {
+    games
+        .into_iter()
+        .filter(|g| !exclude.contains(&g.game_id))
+        .collect()
+}
+
+/// Error unless `a` and `b` share no source game.
+pub fn ensure_disjoint(a: &ReasoningTargetsV1, b: &ReasoningTargetsV1) -> anyhow::Result<usize> {
+    let (ia, ib) = (source_game_ids(a), source_game_ids(b));
+    let shared: Vec<_> = ia.intersection(&ib).collect();
+    anyhow::ensure!(
+        shared.is_empty(),
+        "targets share {} source games (e.g. {:?})",
+        shared.len(),
+        shared.iter().take(5).collect::<Vec<_>>()
+    );
+    Ok(ia.len().min(ib.len()))
+}
+
+/// Jensen-Shannon divergence (nats) between two distributions over the same support.
+pub fn js_divergence(p: &[f32], q: &[f32]) -> f32 {
+    let kl = |a: &[f32], m: &[f32]| -> f32 {
+        a.iter()
+            .zip(m)
+            .filter(|(x, _)| **x > 0.0)
+            .map(|(x, y)| x * (x / y).ln())
+            .sum()
+    };
+    let m: Vec<f32> = p.iter().zip(q).map(|(a, b)| 0.5 * (a + b)).collect();
+    0.5 * kl(p, &m) + 0.5 * kl(q, &m)
+}
+
+/// Descriptive ladder-informativeness statistics (not a gate): do deeper rungs
+/// carry different information?
+pub fn ladder_report(positions: &[&PositionTarget]) -> serde_json::Value {
+    let n = positions.len().max(1) as f32;
+    let rungs = positions.first().map_or(0, |p| p.rungs.len());
+    let sims: Vec<u32> = positions
+        .first()
+        .map(|p| p.rungs.iter().map(|r| r.simulations).collect())
+        .unwrap_or_default();
+    let mean = |f: &dyn Fn(&PositionTarget) -> f32| positions.iter().map(|p| f(p)).sum::<f32>() / n;
+    let entropy: Vec<f32> = (0..rungs).map(|r| mean(&|p| p.rungs[r].entropy)).collect();
+    let adjacent: Vec<f32> = (1..rungs)
+        .map(|r| mean(&|p| js_divergence(&p.rungs[r - 1].policy, &p.rungs[r].policy)))
+        .collect();
+    let deep = rungs.saturating_sub(1);
+    let vs_deep: Vec<f32> = (0..deep)
+        .map(|r| mean(&|p| js_divergence(&p.rungs[r].policy, &p.rungs[deep].policy)))
+        .collect();
+    let flips: Vec<usize> = (0..deep)
+        .map(|r| {
+            positions
+                .iter()
+                .filter(|p| p.rungs[r].best != p.rungs[deep].best)
+                .count()
+        })
+        .collect();
+    let value_change: Vec<f32> = (0..deep)
+        .map(|r| mean(&|p| (p.rungs[r].root_value - p.rungs[deep].root_value).abs()))
+        .collect();
+    serde_json::json!({
+        "positions": positions.len(),
+        "simulations": sims,
+        "mean_target_entropy_by_rung": entropy,
+        "mean_js_adjacent_rungs": adjacent,
+        "mean_js_rung_vs_deepest": vs_deep,
+        "best_move_differs_from_deepest": flips,
+        "mean_abs_root_value_change_vs_deepest": value_change,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -491,5 +575,64 @@ mod tests {
         assert_eq!(mix(1), mix(1));
         assert_ne!(mix(1), mix(2));
         assert_eq!(split_for_game(7, 1), split_for_game(7, 1));
+    }
+}
+
+#[cfg(test)]
+mod disjoint_tests {
+    use super::*;
+
+    fn tgt(ids: &[u64]) -> ReasoningTargetsV1 {
+        let positions = ids
+            .iter()
+            .map(|&g| PositionTarget {
+                id: format!("g{g}"),
+                category: "opening".into(),
+                split: "val".into(),
+                source_game_id: g,
+                ply: 4,
+                start_fen: String::new(),
+                prefix: vec![],
+                fen: String::new(),
+                observation_sha256: String::new(),
+                legal: vec![],
+                rungs: vec![],
+            })
+            .collect();
+        ReasoningTargetsV1::new(
+            TeacherContract {
+                checkpoint: String::new(),
+                model_id: String::new(),
+                architecture: "probe_v1".into(),
+                recurrence: 1,
+                c_puct: 1.0,
+                leaves_in_flight: 1,
+                root_noise: false,
+                ladder: vec![16],
+            },
+            1,
+            Provenance {
+                git_rev: String::new(),
+                created_unix_s: 0,
+            },
+            positions,
+        )
+    }
+
+    #[test]
+    fn disjointness_is_enforced_at_the_game_level() {
+        assert!(ensure_disjoint(&tgt(&[1, 2, 3]), &tgt(&[4, 5])).is_ok());
+        assert!(ensure_disjoint(&tgt(&[1, 2, 3]), &tgt(&[3, 9])).is_err());
+    }
+
+    #[test]
+    fn js_divergence_is_zero_for_equal_and_positive_for_different() {
+        let p = [0.5, 0.5, 0.0];
+        assert!(js_divergence(&p, &p).abs() < 1e-7);
+        let q = [0.0, 0.5, 0.5];
+        assert!(js_divergence(&p, &q) > 0.1);
+        // symmetric and bounded by ln 2
+        assert!((js_divergence(&p, &q) - js_divergence(&q, &p)).abs() < 1e-7);
+        assert!(js_divergence(&[1.0, 0.0], &[0.0, 1.0]) <= std::f32::consts::LN_2 + 1e-6);
     }
 }

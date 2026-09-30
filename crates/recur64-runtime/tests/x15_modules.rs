@@ -635,3 +635,47 @@ fn diagnostic_readout_k_equals_the_final_readout_of_a_t_equals_k_run() {
         );
     }
 }
+
+#[test]
+fn accumulated_micro_batches_match_the_full_batch_objective() {
+    use burn::optim::{GradientsAccumulator, GradientsParams};
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let e = exp();
+    let model = ChimeraModel::<TrainB>::new(cfg, e.clone(), &device);
+    let provider = provider_for_config(&e).unwrap();
+    let states = probe_positions(6, 12);
+
+    // Full physical batch.
+    let full = build_x15_batch::<TrainB>(&states, &e, provider.as_ref(), &device).unwrap();
+    let tf = targets(&full.cands, full.batch, &device);
+    let out = model.forward_thoughts(&full.input, &full.cands, 2);
+    let loss_full = readout_loss(&out.readouts[0], &tf);
+    let loss_full_v: f32 = loss_full.clone().into_scalar().elem();
+    let g_full = GradientsParams::from_grads(loss_full.backward(), &model);
+    let norms_full = model.subsystem_grad_norms(&g_full);
+
+    // Same 6 positions as 3 micro-batches of 2 (each weighted 2/6), ONE update's worth.
+    let mut acc = GradientsAccumulator::new();
+    let mut loss_acc = 0.0f32;
+    for chunk in states.chunks(2) {
+        let b = build_x15_batch::<TrainB>(chunk, &e, provider.as_ref(), &device).unwrap();
+        let t = targets(&b.cands, b.batch, &device);
+        let out = model.forward_thoughts(&b.input, &b.cands, 2);
+        let loss = readout_loss(&out.readouts[0], &t) * (chunk.len() as f32 / states.len() as f32);
+        loss_acc += loss.clone().into_scalar().elem::<f32>();
+        acc.accumulate(&model, GradientsParams::from_grads(loss.backward(), &model));
+    }
+    let norms_acc = model.subsystem_grad_norms(&acc.grads());
+
+    assert!(
+        (loss_full_v - loss_acc).abs() < 1e-4 * loss_full_v.abs().max(1.0),
+        "loss differs: full {loss_full_v} vs accumulated {loss_acc}"
+    );
+    for ((name, a), (_, b)) in norms_full.iter().zip(&norms_acc) {
+        assert!(
+            (a - b).abs() <= 2e-3 * a.abs().max(1e-6),
+            "{name}: full-batch gradient norm {a} vs accumulated {b}"
+        );
+    }
+}

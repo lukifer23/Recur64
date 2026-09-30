@@ -187,3 +187,129 @@ Written and committed BEFORE running.
 - NOT CLAIMED even if PROMISING: playing strength, or that latent reasoning
   (rather than repeated shared-core depth) is the cause; the symbolic-only
   control and ablations (P5) separate those.
+
+### E6 results - LR screen (MEASURED, rule applied as pre-registered)
+Same weights, val (32 positions), KL to the deepest teacher rung; 40 updates,
+full batch of 96, T_train=4, `final_only_v1`, seed 1.
+
+| lr | val KL T1 | T2 | T3 | T4 | T4-T1 (95% CI) | final train loss |
+|---|---|---|---|---|---|---|
+| 3e-5 | 0.4192 | 0.2656 | 0.2425 | 0.2258 | -0.193 [-0.406,-0.041] | 1.889 |
+| 7.5e-5 | 0.3062 | 0.3092 | 0.2798 | 0.2189 | -0.087 [-0.215,+0.005] | 1.845 |
+| 1.5e-4 | 0.3861 | 0.4248 | 0.3232 | 0.2225 | -0.164 [-0.305,-0.062] | 1.831 |
+| 3e-4 | 1.0661 | 0.8663 | 0.4966 | 0.2814 | -0.785 [-1.247,-0.391] | 1.858 |
+
+- All cells finite; gradient norms finite; no CUDA errors.
+- SELECTION (rule from E6): lowest T=4 val KL is 7.5e-5 (0.2189); 3e-5 and 1.5e-4
+  are within 0.01 KL of it, so the smaller LR is taken: **lr = 3e-5**.
+- OBSERVATION (not a screen result): val KL at T4 is below T1 in all four cells,
+  and 3 of 4 have a CI excluding zero. This is a single seed on 96 training
+  positions and was not the pre-registered test; E7 decides.
+- ENGINEERING FINDING (MEASURED): the full-batch (96) T=4 step peaked at
+  **3.9 GB** VRAM, above the ~3.2 GB safety limit (the 2.38 GB figure belongs to
+  micro-batches of 32). Nothing failed, but the trainer now accumulates gradients
+  over micro-batches (`--micro-batch`, default 32; chunk-size-weighted, so the
+  objective is unchanged). E7 uses this.
+- WALL TIME: about 8 min for the first cell (cold kernel compilation for new
+  shapes), about 3.6 min for each later cell.
+
+## AMENDMENT A1 (2026-09-29) - committed BEFORE any confirmation-set label exists
+Reason: the 32 `val` positions of `targets-128` (digest
+`8c9237ff6a0ca34d5a9d7b131a7052f4c20e127ab4369f419db725e3d479afca`) were
+observed in E5 (POST-HOC T1 -> T4 signal). They can no longer be a clean
+confirmation set. E5/E6/E7 text above is NOT rewritten; this amendment
+reclassifies and tightens. It does not change the hypothesis.
+
+1. **Roles.** `targets-128` train 96 = training set (unchanged). `targets-128`
+   val 32 = **TUNING set** (LR selection E6 and exploratory replicates).
+   E7's primary confirmation moves to a NEW unseen set (A2).
+2. **What already ran on the tuning set (honest ordering).** Before this
+   amendment existed, E6 and an E7-configured replicate had already been run and
+   evaluated on the tuning set (numbers below). They are reclassified as
+   **tuning-set replicates / exploratory**, and are NOT confirmation. The E7
+   *training* runs (train 96, lr 3e-5, T_train=4, `final_only_v1`, 80 updates,
+   seeds 1 and 2, 32x3 accumulation) never touched the new set, so their
+   checkpoints are legitimate inputs to confirmation on it.
+3. **Execution amendment (not a science change).** "Full 96-position batch" is
+   executed as the same full-data mean objective via deterministic 32 x 3
+   gradient accumulation: chunk order = position order in the targets file, no
+   shuffling, no reuse, each chunk's loss weighted by chunk_size / total before
+   accumulation, one optimizer update per 96 positions. Regression test
+   `accumulated_micro_batches_match_the_full_batch_objective` (CPU) compares
+   full-batch vs accumulated loss and per-subsystem gradient norms. E6 cells were
+   run as physical batch 96 (peak 3.9 GB, above the safety limit); E7 runs used
+   32 x 3.
+4. **Guards fixed.** `train_thoughts` and `eval_thoughts` must be in 1..=8 (1
+   when reasoning is disabled); the config's `thought_steps` is the designed T,
+   not a cap, so a `T_train=1` control on a T=4 config is legal and recorded as
+   `train_thoughts`.
+5. **Provenance.** `experiment.json` now records `initialization` (fresh+seed, or
+   resume with parent model_id / parent experiment hash / resume update counter)
+   and `start_update`, `segment_updates`, `final_update`. Fresh-start runs (all
+   of E6/E7) are unaffected.
+
+## A2 - fresh confirmation set: selection contract (PRE-STATED before generation)
+- Teacher: Train1 final trainer, model_id
+  `073357a9888256ec28be40649e6f1d67bb103341223f091ff5d67c50239676ae`
+  (`runs/hp-r15-train1-r1/checkpoints/trainer`), `probe_v1`, recurrence 1.
+- Search: c_puct 1.0, 1 leaf in flight, root noise OFF, ladder 16/32/64/128.
+- Selection seed **20260930**; 64 positions; same replay
+  (`runs/hp-r15-train1-r1/replay`).
+- **Source-game exclusion:** every replay game used by `targets-128` is removed
+  BEFORE selection (`--exclude-targets`), and disjointness is re-verified after
+  generation as a hard error (`audit-targets --disjoint-from`). Different plies
+  from the same games would not count.
+- Same category selector (equal quotas across opening / middlegame / endgame /
+  tactical / material_advantage; remainder to middlegame). All positions carry
+  split label `confirm`.
+- The set is NEVER used for LR selection, training, early stopping or
+  architecture tuning. Its digest is recorded here after generation.
+- Descriptive ladder-informativeness report (entropy by rung, adjacent-rung JS,
+  shallow-vs-deep JS, best-move flip rate, mean |root value change|) is produced
+  by `audit-targets --report` for both datasets. It is descriptive, not a gate.
+
+## A3 - E7 (amended): confirmation on the fresh set
+Same question. Training unchanged (train 96, lr 3e-5 per E6 rule, T_train=4,
+`final_only_v1`, 80 updates, seeds 1 and 2). PRIMARY evaluation: the fresh 64
+`confirm` positions only, same weights at T=1..4, metric KL(teacher_128 ||
+X15_T). Unchanged criteria: (1) T4 < T1 in both seeds; (2) CI of T4 - T1
+excludes 0; (3) direction holds in both deterministic halves (even / odd
+position index); (4) T2 <= T1 in both seeds; (5) each seed's gain exceeds the
+seed-to-seed spread of T1 KL on the confirmation set.
+- **Bootstrap (exact, stated before results):** the experimental unit is the
+  POSITION. Both seeds are evaluated on the same 64 positions, so seeds are NOT
+  concatenated into 128 observations. For each position i,
+  `delta_i = mean_over_seeds(KL_T4,i) - mean_over_seeds(KL_T1,i)`; the CI is a
+  deterministic paired bootstrap of the mean of `delta_i` over the 64 positions
+  (2000 resamples). Reported separately: seed-1 effect + CI, seed-2 effect + CI
+  (each bootstrapped over positions), and the pooled position-clustered effect
+  + CI. Same computation for T2 and T3 vs T1.
+- **Secondary (not decisive):** the training-matched `T_train=1` Chimera control
+  (2 seeds), evaluated at its own T=1 on the same confirmation set, compared with
+  the T_train=4 network at T4. This control is a Chimera executing ONE thought,
+  NOT the symbolic-only architecture; the symbolic-only ablation belongs to P5.
+- **Not claimed even if PROMISING:** chess strength, conversion, visual or
+  compute benefit, that the latent scratchpad (rather than repeated square-core
+  depth) is the cause, or superiority to spending the same compute on PUCT. If
+  PROMISING: STOP and document before any broad ablation.
+- If NOT PROMISING: the single preregistered `progressive_search_v1` rescue.
+
+## Tuning-set replicates observed before A1 (exploratory, NOT confirmation)
+`targets-128` val 32, lr 3e-5, 80 updates, KL to the deepest rung
+(KL at T1 / T2 / T3 / T4):
+| run | T1 | T2 | T3 | T4 | notes |
+|---|---|---|---|---|---|
+| T_train=4, seed 1 | 0.4024 | 0.2484 | 0.2437 | 0.2040 | T4-T1 -0.198 [-0.416,-0.028]; halves -0.02/-0.38 |
+| T_train=4, seed 2 | 0.3947 | 0.2258 | 0.1954 | 0.1911 | T4-T1 -0.204 [-0.429,-0.048]; halves -0.03/-0.37 |
+| T_train=1 control, seed 1 | 0.1960 | 0.2372 | 0.3939 | 0.5109 | worsens with T |
+| T_train=1 control, seed 2 | 0.1770 | 0.2473 | 0.4329 | 0.5546 | worsens with T |
+| untrained (update 0) | 0.6323 | 0.6250 | 0.6205 | 0.6162 | baseline |
+| progressive_search_v1, seed 1 | 0.5003 | 0.3062 | 0.2130 | 0.1890 | per-thought rung supervision |
+| symbolic-only (T=1, no latents), seed 1 | 0.2029 | - | - | - | separate ablation config |
+- OBSERVATION: the T_train=4 network is best at T=4 and the T_train=1 network is
+  best at T=1; each is best at the depth it was trained at, and the T_train=4
+  network's T4 (0.191-0.204) is NOT better than the T_train=1 network's T1
+  (0.177-0.196) or the symbolic-only T1 (0.203). Extra thought in a network
+  trained for it did not beat one pass on this tuning set. Whether that holds on
+  fresh positions is what A3 asks. Peak VRAM: 2.4 GB (32x3, T4), 2.9 GB
+  (progressive), 1.4 GB (T1).
