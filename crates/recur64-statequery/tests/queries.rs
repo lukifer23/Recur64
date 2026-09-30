@@ -1,7 +1,7 @@
 //! Visible refusals, exact accounting, terminal handling, determinism.
 
 use recur64_core::{ActionId, GameState, PromotionCode, Square, StandardMove};
-use recur64_statequery::{QueryError, QueryManager, StatePacketV1};
+use recur64_statequery::{QueryError, QueryManager, StatePacketV1, semantic_state_id};
 
 fn action(gs: &GameState, uci: &str) -> u16 {
     let mv = StandardMove::from_uci(gs.board(), uci).unwrap();
@@ -163,15 +163,16 @@ fn packets_and_hashes_are_deterministic_and_state_keyed() {
     };
     let (a, b) = (run(), run());
     for (x, y) in a.iter().zip(&b) {
-        assert_eq!(x.state_hash, y.state_hash);
+        assert_eq!(x.semantic_id, y.semantic_id);
+        assert_eq!(x.content_digest(), y.content_digest());
         assert_eq!(x.observation.as_slice(), y.observation.as_slice());
         assert_eq!(
             serde_json::to_string(x).unwrap(),
             serde_json::to_string(y).unwrap()
         );
     }
-    assert_ne!(a[0].state_hash, a[1].state_hash);
-    assert_eq!(a[0].state_hash.len(), 64);
+    assert_ne!(a[0].semantic_id, a[1].semantic_id);
+    assert_eq!(a[0].semantic_id.len(), 64);
 }
 
 #[test]
@@ -185,4 +186,98 @@ fn promotion_edges_are_distinct_actions() {
         .filter(|a| ActionId::from_index(u32::from(**a)).unwrap().promo() != PromotionCode::NONE)
         .count();
     assert_eq!(promos, 4);
+}
+
+fn id_of(fen: &str) -> String {
+    semantic_state_id(&GameState::from_fen(fen).unwrap())
+}
+
+#[test]
+fn identity_distinguishes_castling_ep_clock_and_side_to_move() {
+    let base = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    assert_eq!(id_of(base), id_of(base));
+    assert_ne!(
+        id_of(base),
+        id_of("r3k2r/8/8/8/8/8/8/R3K2R w Kkq - 0 1"),
+        "castling"
+    );
+    assert_ne!(
+        id_of(base),
+        id_of("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1"),
+        "side to move"
+    );
+    assert_ne!(
+        id_of(base),
+        id_of("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 37 1"),
+        "halfmove clock"
+    );
+    let ep = "rnbqkbnr/ppp1p1pp/8/8/3pP3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 3";
+    let no_ep = "rnbqkbnr/ppp1p1pp/8/8/3pP3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3";
+    assert_ne!(id_of(ep), id_of(no_ep), "en passant");
+}
+
+#[test]
+fn identity_ignores_the_fullmove_number() {
+    let a = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let b = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 57";
+    assert_eq!(id_of(a), id_of(b));
+}
+
+#[test]
+fn identity_distinguishes_repetition_history_of_identical_placements() {
+    // Same placement, side to move and castling rights as the start position,
+    // but one earlier occurrence exists: their futures differ (threefold).
+    let mut m = QueryManager::new(GameState::startpos()).unwrap();
+    let ps = play(&mut m, &["g1f3", "g8f6", "f3g1", "f6g8"]);
+    let back_home = ps.last().unwrap();
+    assert_eq!(back_home.repetition_count, 2);
+    let fresh = QueryManager::new(GameState::startpos())
+        .unwrap()
+        .packet(0)
+        .unwrap();
+    assert_ne!(back_home.semantic_id, fresh.semantic_id);
+    // Two full cycles: a third distinct identity.
+    let mut m2 = QueryManager::new(GameState::startpos()).unwrap();
+    let ps2 = play(
+        &mut m2,
+        &["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1"],
+    );
+    assert_ne!(ps2.last().unwrap().semantic_id, back_home.semantic_id);
+}
+
+#[test]
+fn identity_distinguishes_reversible_histories_that_reach_the_same_placement() {
+    // Same placement, clock 4: but the earlier positions that could still
+    // recur differ (Nf3/Nf6 then Nc3/Nc6 versus the reverse order is one
+    // history; Nf3/Nf6 then Ng1/Ng8 is another), so identities differ.
+    let mut a = QueryManager::new(GameState::startpos()).unwrap();
+    let pa = play(&mut a, &["g1f3", "g8f6", "b1c3", "b8c6"]);
+    let mut b = QueryManager::new(GameState::startpos()).unwrap();
+    let pb = play(&mut b, &["b1c3", "b8c6", "g1f3", "g8f6"]);
+    // Identical placement and clock but different reversible history.
+    assert_eq!(pa[3].halfmove_clock, pb[3].halfmove_clock);
+    assert_ne!(pa[3].semantic_id, pb[3].semantic_id);
+    // The same move order reproduces the identity exactly.
+    let mut c = QueryManager::new(GameState::startpos()).unwrap();
+    let pc = play(&mut c, &["g1f3", "g8f6", "b1c3", "b8c6"]);
+    assert_eq!(pa[3].semantic_id, pc[3].semantic_id);
+}
+
+#[test]
+fn identity_ignores_positions_before_the_last_irreversible_move() {
+    // After a pawn move nothing earlier can recur, so the same post-pawn-move
+    // continuation has the same identity however the game began.
+    let mut a = QueryManager::new(GameState::startpos()).unwrap();
+    let pa = play(&mut a, &["g1f3", "g8f6", "f3g1", "f6g8", "e2e4"]);
+    let mut b = QueryManager::new(GameState::startpos()).unwrap();
+    let pb = play(&mut b, &["b1c3", "b8c6", "c3b1", "c6b8", "e2e4"]);
+    assert_eq!(pa[4].halfmove_clock, 0);
+    assert_eq!(pa[4].semantic_id, pb[4].semantic_id);
+}
+
+#[test]
+fn identity_includes_the_ply_cap_only_when_one_is_set() {
+    let plain = GameState::startpos();
+    let capped = GameState::startpos().with_max_plies(200);
+    assert_ne!(semantic_state_id(&plain), semantic_state_id(&capped));
 }

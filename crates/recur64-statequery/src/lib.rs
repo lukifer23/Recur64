@@ -25,6 +25,9 @@ use sha2::{Digest, Sha256};
 /// Contract version of the packet schema and hash definition.
 pub const STATE_QUERY_VERSION: u32 = 1;
 
+/// Version of the semantic state identity definition.
+pub const STATE_IDENTITY_VERSION: u32 = 1;
+
 /// Frozen packet field names, in serialization order.
 pub const PACKET_FIELDS: [&str; 15] = [
     "node_id",
@@ -41,7 +44,7 @@ pub const PACKET_FIELDS: [&str; 15] = [
     "ep_square",
     "halfmove_clock",
     "repetition_count",
-    "state_hash",
+    "semantic_id",
 ];
 
 pub type NodeId = u32;
@@ -70,9 +73,19 @@ pub struct StatePacketV1 {
     pub ep_square: Option<u8>,
     pub halfmove_clock: u32,
     pub repetition_count: u32,
-    /// SHA-256 (hex) over a canonical encoding of the exact state facts. Node
-    /// ids are excluded so equal states hash equally.
-    pub state_hash: String,
+    /// Semantic state identity (`STATE_IDENTITY_VERSION`): SHA-256 (hex) over
+    /// everything Rules Profile V1 needs to decide future legality and
+    /// termination. See [`semantic_state_id`]. Node ids are excluded.
+    pub semantic_id: String,
+}
+
+impl StatePacketV1 {
+    /// Digest of the complete packet content (observation included, node ids
+    /// excluded). Used to prove cached and live packets are field-equivalent;
+    /// it is NOT the identity of the state (see `semantic_id`).
+    pub fn content_digest(&self) -> String {
+        hash_packet(self)
+    }
 }
 
 fn ser_observation<S: Serializer>(obs: &ObservationV1, s: S) -> Result<S::Ok, S::Error> {
@@ -336,7 +349,7 @@ fn build_packet(id: NodeId, n: &Node) -> StatePacketV1 {
         s.perspective().square(sq) as u8
     });
     let termination = s.termination();
-    let mut p = StatePacketV1 {
+    StatePacketV1 {
         node_id: id,
         parent_id: n.parent,
         incoming_action: n.incoming,
@@ -355,21 +368,76 @@ fn build_packet(id: NodeId, n: &Node) -> StatePacketV1 {
         ep_square,
         halfmove_clock: u32::from(board.halfmove_clock()),
         repetition_count: s.repetition_count(),
-        state_hash: String::new(),
-    };
-    p.state_hash = hash_packet(&p, &s.to_fen());
-    p
+        semantic_id: semantic_state_id(s),
+    }
 }
 
-/// Canonical state hash: fixed field order, little-endian, length-prefixed.
-/// Node/parent ids and the incoming action are excluded so that equal states
-/// (same board, same observed history window and counters) hash equally.
-fn hash_packet(p: &StatePacketV1, fen: &str) -> String {
+/// FEN without the halfmove and fullmove counters: placement, side to move,
+/// castling rights and en-passant square.
+fn position_key(board: &recur64_core::Board) -> String {
+    let fen = board.to_string();
+    fen.split(' ').take(4).collect::<Vec<_>>().join(" ")
+}
+
+/// Semantic state identity, `STATE_IDENTITY_VERSION` 1.
+///
+/// Two states share an id only if Rules Profile V1 treats their futures
+/// identically. It therefore covers, beyond board placement:
+///
+/// * side to move, castling rights and the en-passant square (the position key);
+/// * the halfmove clock (fifty-move rule);
+/// * the repetition history: the multiset of position keys of every earlier
+///   position that can still recur (those since the last irreversible move,
+///   i.e. the last `halfmove_clock + 1` positions, clipped to the recorded
+///   history), because the threefold count of a later position depends on it;
+/// * the administrative ply cap and, when a cap is set, the ply count.
+///
+/// It deliberately excludes the fullmove number, the move order that led here,
+/// node ids and anything the model observes but the rules ignore (the 8-frame
+/// observation window). The identity is conservative: it never merges states
+/// whose rule behaviour can differ, at the cost of treating some same-placement
+/// states as distinct.
+pub fn semantic_state_id(state: &GameState) -> String {
+    let board = state.board();
+    let clock = u32::from(board.halfmove_clock());
+    let hist = state.history();
+    let window = (clock as usize + 1).min(hist.len());
+    let mut keys: Vec<String> = hist[hist.len() - window..]
+        .iter()
+        .map(position_key)
+        .collect();
+    keys.sort_unstable();
+    let mut h = Sha256::new();
+    h.update(b"recur64.state_identity");
+    h.update(STATE_IDENTITY_VERSION.to_le_bytes());
+    let cur = position_key(board);
+    h.update((cur.len() as u32).to_le_bytes());
+    h.update(cur.as_bytes());
+    h.update(clock.to_le_bytes());
+    h.update((keys.len() as u32).to_le_bytes());
+    for k in &keys {
+        h.update((k.len() as u32).to_le_bytes());
+        h.update(k.as_bytes());
+    }
+    match state.max_plies() {
+        Some(cap) => {
+            h.update([1u8]);
+            h.update(cap.to_le_bytes());
+            h.update(state.ply().to_le_bytes());
+        }
+        None => h.update([0u8]),
+    }
+    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Packet content digest: fixed field order, little-endian, length-prefixed.
+/// Node/parent ids and the incoming action are excluded.
+fn hash_packet(p: &StatePacketV1) -> String {
     let mut h = Sha256::new();
     h.update(b"recur64.state_packet_v1");
     h.update(STATE_QUERY_VERSION.to_le_bytes());
-    h.update((fen.len() as u32).to_le_bytes());
-    h.update(fen.as_bytes());
+    h.update((p.semantic_id.len() as u32).to_le_bytes());
+    h.update(p.semantic_id.as_bytes());
     for f in p.observation.as_slice() {
         h.update(f.to_bits().to_le_bytes());
     }

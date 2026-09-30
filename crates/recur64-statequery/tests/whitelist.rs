@@ -19,7 +19,7 @@ const FROZEN: [&str; 15] = [
     "ep_square",
     "halfmove_clock",
     "repetition_count",
-    "state_hash",
+    "semantic_id",
 ];
 
 const PROHIBITED_SUBSTRINGS: [&str; 22] = [

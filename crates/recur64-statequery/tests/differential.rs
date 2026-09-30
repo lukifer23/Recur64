@@ -255,7 +255,7 @@ fn determinism_across_independent_managers() {
         let mut m = QueryManager::new(GameState::startpos()).unwrap();
         let mut hashes = Vec::new();
         for a in m.unqueried(0).unwrap() {
-            hashes.push(m.query(0, a).unwrap().state_hash);
+            hashes.push(m.query(0, a).unwrap().semantic_id);
         }
         hashes
     };

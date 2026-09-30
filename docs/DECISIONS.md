@@ -962,11 +962,54 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   outputs carry no solver-derived fields; STOP is masked in the primary experiment. See
   `docs/V3_ARCHITECTURE.md`.
 
-## V3-D3 - Pre-registered gates, with a flagged feasibility dependency
+## V3-D3 - Pre-registered gates; one meaning of "frozen"; deterministic feasibility rule
 
-- **Status:** RECORDED (2026-09-30).
-- **Decision:** gates I-VI and outcome classes are frozen in `docs/V3_RESEARCH_PLAN.md`. The
-  Gate II/III magnitudes depend on the P4-measured fraction of ideal proof certificates that fit
-  in 8 queries; any restatement must happen before CONFIRM and be reported to the owner.
+- **Status:** RECORDED (2026-09-30); amended by the P0 review addendum (supersedes the P0 text,
+  which allowed gate magnitudes to be restated after P4).
+- **Decision:** "frozen" means committed before the data it governs exists and never edited
+  afterwards; a frozen item is superseded only by a new versioned experiment identity with its own
+  preregistration. Gates I-VI and the outcome classes are frozen in `docs/V3_RESEARCH_PLAN.md`.
+- **Decision:** a deterministic P4 feasibility rule is frozen now: the primary experiment is
+  scientifically qualified iff `C_8(KQRvK M3) >= 0.25`, where `C_k` is the fraction of the cell's
+  `P25_DATA_V1` TRAIN positions whose minimal complete decision certificate has at most k edges.
+  Otherwise the experiment is classified NOT SCIENTIFICALLY QUALIFIED / BUDGET MIS-SPECIFIED.
+  Gates II/III are then not lowered or re-read; HOLDOUT_C stays sealed; any changed budget is a
+  new versioned identity with a new preregistration.
 - **Decision:** at the end of P3 the report and any suggested contract changes are committed and
   pushed to the V3 branch so the record exists off the workstation.
+
+## V3-D4 - ProofTraceV1 is set-valued
+
+- **Status:** RECORDED (2026-09-30). Implementation in P4.
+- **Decision:** ProofTraceV1 stores the AND/OR proof structure (all attacker alternatives, all
+  defender replies, refutation sets) and exposes for training only the set `A(S)` of admissible
+  next frontier edges for a partial search state `S`. The selector target is uniform over `A(S)`.
+  `A(S)` depends only on the set of queried edges, never on a serialization order. Any efficiency
+  weighting needs a new version and a principled solver-derived definition. `StatePacketV1` is
+  unchanged. Audited with interchangeable-defender-branch fixtures and an order-invariance test.
+
+## V3-D5 - Primary FIXED schedule frozen before active results
+
+- **Status:** RECORDED (2026-09-30).
+- **Decision:** the Gate III comparator is `fixed_bfs_actionid_v1`: canonical breadth-first
+  expansion ordered by (parent ply depth, parent discovery index, ActionId). It reads no labels,
+  proof data, selector scores or confirmation data. Recorded consequence: with at least B legal
+  root moves it spends the whole budget on the first B root moves. Stronger heuristics may only be
+  secondary controls under distinct identities.
+
+## V3-D6 - ALL-INFO is a separately trained model; Gate I scope
+
+- **Status:** RECORDED (2026-09-30).
+- **Decision:** ALL-INFO is a separately trained, parameter-matched upper bound sharing the root
+  encoder, candidate representation and query-state-encoder contracts where practical, receiving
+  raw exact future states with explicit tree structure and no labels or summaries. AllInfo vs B0
+  establishes information sufficiency for the model family, not a pure causal information effect.
+  A same-active-model bulk-information control is out of critical V3.0 scope.
+
+## V3-D7 - State identity is semantic and history-complete
+
+- **Status:** IMPLEMENTED (2026-09-30), `recur64-statequery`.
+- **Decision:** `StatePacketV1.semantic_id` (identity version 1) covers side to move, castling,
+  en passant, halfmove clock, the repetition-relevant history window and the ply cap. It replaces
+  the former `state_hash` field. Packet content equivalence uses `content_digest()`. Board-
+  placement-only identity is never used for nodes or transpositions.

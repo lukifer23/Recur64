@@ -1,8 +1,20 @@
 # Recur64 V3 — Research Plan
 
-Status: P0. Gates below are pre-registered **before any science and before any CONFIRM
-exposure**. Where a number depends on a quantity not yet measured (marked ⏳), it is frozen at the
-named phase, before CONFIRM, and never after seeing a gated result.
+Status: P0 + P0 review addendum (2026-09-30). No science has been run.
+
+**Revision note.** The P0 commit (`2cf14b3`) left "frozen" ambiguous: it allowed Gate II/III
+magnitudes to be restated after P4. The addendum removes that. See "Meaning of frozen" and
+"P4 feasibility rule". Git history holds the earlier text.
+
+## Meaning of frozen (single definition)
+
+A rule, gate, threshold, control or schedule is **frozen** when it is committed to this repository
+before the data it governs exists, and it is never edited afterwards. A frozen item may be
+**superseded only by a new versioned experiment identity with its own preregistration**. It is
+never relaxed, tightened or re-stated in place, and never after the measurement it governs. There
+are no provisional items in this document: every number below is frozen as of the commit that
+contains it. Quantities that are measured later (for example certificate coverage at P4) are
+governed by rules that are frozen now.
 
 ## Thesis (frozen)
 
@@ -16,7 +28,7 @@ Evidence carried in (V2.5 / HP): recurrence over identical information gave no b
 future information did; bulk reveal + answer-adjacent summaries made the V2 task trivially
 decodable; one-pass plateaued (CF M3 .659; KQRvK M3 weakest; 5× unique data no help).
 
-## Primary stress cell (pre-registered)
+## Primary stress cell (frozen)
 
 `KQRvK M3`. Rationale from already-seen V2.5 evidence only (large pool, not data-starved, facts
 don't solve it, weakest heavy M3, plateau under 5× data). HOLDOUT_C has not been inspected to
@@ -38,11 +50,29 @@ and every cell.
 |---|---|---|
 | A | B0 | same checkpoint, zero queries; primary baseline |
 | B | ACTIVE B2/4/8/16 | learned selector |
-| C | FIXED | same checkpoint, same caps, frozen deterministic non-learned schedule (documented and frozen before CONFIRM; not tuned on CONFIRM) |
+| C | FIXED = `fixed_bfs_actionid_v1` | same checkpoint, same caps, **frozen now** (see below); the Gate III comparator |
 | D | RANDOM | seeded; diagnostic only |
-| E | ORACLE | replay exact-teacher query schedule through same neural integrator; upper bound, never deployable |
-| F | ALL-INFO | raw states of all root successors + all opponent replies, parent/branch/depth structure kept, no counts/labels/summaries; shared query encoder where possible; deliberately not compute-matched; report states supplied. One depth-3 TUNE-only extension allowed, designed before CONFIRM |
+| E | ORACLE | replay the exact-teacher admissible-set schedule through the same neural integrator; upper bound, never deployable |
+| F | ALL-INFO | separately trained; see "ALL-INFO interpretation" |
 | G | EXTERNAL SEARCH | interface designed now; run only after the active-search gate; PUCT on the same net, matched expansions/evals/wall; no Stockfish/Leela/Syzygy/solver |
+
+### Primary FIXED schedule: `fixed_bfs_actionid_v1` (frozen now, before any active result)
+
+Model-independent and label-independent. It reads only the query tree's structure, never root
+correctness labels, proof labels, selector scores, network outputs, or any CONFIRM data.
+
+At each step the frontier is ordered by the key
+`(parent ply depth ascending, parent discovery index ascending, ActionId ascending)` and the
+first edge is queried. This is canonical breadth-first expansion. The schedule never depends on
+the budget, so B2 ⊂ B4 ⊂ B8 ⊂ B16 by construction.
+
+Stated consequence, recorded so it cannot be discovered after the fact: when the root has at least
+B legal moves, the schedule spends its entire budget on the first B root moves in ActionId order
+(depth 1) and never looks at a reply. For KQRvK roots (typically ≥ 16 legal moves) this holds at
+every budget through B16. The comparator is therefore deliberately a *non-selective breadth
+control*, not a strong heuristic. More sophisticated schedules (e.g. round-robin over root
+branches with depth-first deepening, or check-first) may be added later only as **secondary**
+controls under distinct identities. They can never replace the Gate III comparator.
 
 ## Training (`budget_0_2_4_8_v1`)
 
@@ -54,34 +84,102 @@ over {7.5e-5, 1.5e-4, 3e-4} (exact rule committed before running). Teacher-force
 first; evaluate the selector on its own choices; ONE pre-registered scheduled-sampling/DAgger
 rescue allowed; no RL in V3.0.
 
-## ProofTraceV1 (training-only)
+## ProofTraceV1 (training-only, set-valued)
 
-Deterministic minimal/near-minimal adversarial certificate from the exact solver: for a correct
-move, all defender alternatives and one attacker continuation each; for an incorrect move, a
-refuting reply. A single PV is not a certificate. Stored outside `StatePacketV1`. Inference never
-sees mate depth, proof status, labels (except through loss), teacher utility.
-Audit against the solver. Report trace lengths and the fraction of problems whose ideal
-certificate fits in 2/4/8/16 queries.
+`active_selector_v1` must not learn an arbitrary serialization of a valid proof. ProofTraceV1
+therefore stores the adversarial structure, never a fixed visiting order, and exposes for
+training only the **set** of admissible next edges at any partial search state.
 
-### ⏳ Known risk to flag now (owner review before gates freeze at P4)
-For M3, a full certificate needs every defender reply at each attacker step; the fraction fitting
-in 8 queries may be small. Gate II (+0.10 at B8) and Gate III (+0.05) magnitudes are contingent on
-that distribution. **P4 measures it; if the ideal-certificate fit fraction makes a gate
-arithmetically unreachable, that is reported to the owner and the gate is re-stated before
-CONFIRM, never after.** The hypothesis and direction of every gate do not change.
+### Structure (AND/OR proof graph)
 
-## Gates (frozen; ⏳ = confirmed at P4/P6 before CONFIRM)
+For a position with minimal mate depth n and correct root moves `C`:
+
+- **Attacker (OR) node** at remaining depth r: every legal attacker move that forces mate within r
+  is recorded as an alternative, each with its exact minimal sub-certificate size. Moves that
+  deliver checkmate are leaves.
+- **Defender (AND) node**: every legal defender reply is recorded. A certificate must contain all
+  of them (an AND node cannot be proven by one reply).
+- **Refutation records**, for each incorrect root move m: the set of defender replies after m
+  from which the attacker cannot force mate within n−1 (exact solver result), kept as a set.
+
+A *certificate* is a proof tree: choose one alternative at each reachable OR node; include all
+replies at each AND node. `Q*(p)` is the minimum edge count of a certificate of a correct root
+move, computed exactly by dynamic programming over the solver and cross-checked by the independent
+audit.
+
+### Admissible set (the selector target)
+
+For a partial search state S (the set of already queried edges) define
+
+- `r(T, S) = |T \ S|`, the edges of certificate T not yet queried;
+- `T*(S)` = all certificates of correct root moves that minimise `r(T, S)` (all ties kept);
+- `A_proof(S)` = frontier edges of S that belong to at least one `T ∈ T*(S)`;
+- `A_refute(S)` = for every queried child of an *incorrect* root move, its refuting defender
+  replies that are frontier edges of S;
+- `A(S) = A_proof(S) ∪ A_refute(S)`; if empty, the state is complete and no selector loss applies.
+
+The selector target is the **uniform distribution over `A(S)`**. A separately versioned,
+solver-derived efficiency weighting could replace uniform later, only under a new identity and only
+with a principled definition. `A(S)` is a function of the *set* S alone: it cannot depend on the
+order in which edges were queried, nor on how a generator serialized the certificate. Choosing
+admissible edge B before equally admissible edge A is never penalised.
+
+### Audit (P4 gate, fixtures committed with the generator)
+
+- fixtures with several interchangeable defender branches (KRvK / KQvK positions where the lone
+  king has two or more equivalent flights): `A(S)` must contain every interchangeable edge;
+- order-invariance property test: for random permutations of the same query set S, `A(S)` is
+  identical;
+- every admissible edge exists in the legal frontier; every certificate verified against the
+  exact solver and the independent audit;
+- `StatePacketV1` is unchanged and carries none of this. Inference never sees mate depth, proof
+  status, labels except through the loss, `A(S)`, or any teacher utility.
+
+Report trace lengths and `C_k` (below) for k = 2, 4, 8, 16.
+
+## P4 feasibility rule (frozen now, deterministic, measured on TRAIN only)
+
+Budget coverage: `C_k(cell)` = fraction of that cell's `P25_DATA_V1` **TRAIN** positions with
+`Q*(p) ≤ k`. Measured with the ProofTraceV1 generator. HOLDOUT_C is never used.
+
+**Rule.** The primary experiment is *scientifically qualified* iff
+
+`C_8(KQRvK M3) ≥ 0.25`.
+
+If `C_8(KQRvK M3) < 0.25` the primary experiment is classified
+**NOT SCIENTIFICALLY QUALIFIED / BUDGET MIS-SPECIFIED**. Then:
+
+1. P5–P8 are not run under identity `budget_0_2_4_8_v1`.
+2. Gates II and III are **not** lowered, re-scoped or re-read. They remain as written and simply
+   cannot be tested under this budget.
+3. HOLDOUT_C stays sealed and unexposed.
+4. Any changed training or query budget (for example a longer budget set) is a **new versioned
+   experiment identity with a new preregistration**, which cannot claim that the coverage
+   measurement was blind.
+5. The measurement, the classification and the decision are recorded in `V3_EXPERIMENTS.md` and
+   reported to the owner.
+
+Rationale, recorded as a judgement and not derived: Gate II asks for +0.10 top-1 at B8. If fewer
+than a quarter of the stress cell's positions even admit a complete certificate within eight
+queries, then reaching +0.10 would require resolving a large share of everything that is
+resolvable, leaving no room for an imperfect selector, so a null result could not be read as a
+failure of the hypothesis. The 0.25 figure is committed now, before the measurement exists. The
+owner may change it only **before** P4 runs, by a documented new commit. `C_2, C_4, C_16` and all
+other cells are reported but do not enter the rule.
+
+## Gates (frozen)
 
 Use ≥3 final seeds if the measured cost projection is reasonable, else stop and report the
 projection. Paired position-level bootstrap CIs plus per-seed direction.
 
 - **Gate I information sufficiency (TUNE):** AllInfo − B0 ≥ +0.20 top-1 on KQRvK M3, paired 95% CI
-  wholly > 0; secondary sanity AllInfo absolute ≥ ~0.75. Failure → STOP and diagnose; no direct
-  jump to active confirmation.
+  wholly > 0; secondary sanity AllInfo absolute ≥ ~0.75. Interpreted as in "ALL-INFO
+  interpretation": it shows the model family can exploit raw future states, not a pure causal
+  information effect. Failure → STOP and diagnose; no direct jump to active confirmation.
 - **Gate II useful same-weight compute:** ACTIVE_B8 − ACTIVE_B0 on KQRvK M3 ≥ +0.10, CI > 0, every
   seed positive. Also report correct mass and CE.
-- **Gate III learned selection:** ACTIVE_B8 − FIXED_B8 on KQRvK M3 ≥ +0.05, CI > 0, every seed
-  positive.
+- **Gate III learned selection:** ACTIVE_B8 − FIXED_B8 (`fixed_bfs_actionid_v1`) on KQRvK M3 ≥
+  +0.05, CI > 0, every seed positive.
 - **Gate IV compute curve:** B0/2/4/8/16 same checkpoint: top-1, correct mass, CE, entropy, query
   depth, branch coverage, terminal discoveries, compute/wall, VRAM. No per-step significance
   requirement; investigate substantial regressions.
@@ -92,6 +190,29 @@ projection. Paired position-level bootstrap CIs plus per-seed direction.
   exact counts; no duplicate edges; root encoder once; query-encoder runs = successful queries;
   parameter count budget-independent; stable lifecycle/VRAM.
 
+Gates II and III are only testable if the P4 feasibility rule qualifies the experiment.
+
+## ALL-INFO interpretation (control F)
+
+ALL-INFO is a **separately trained**, parameter-matched upper-bound model. It is not the active
+checkpoint given more states.
+
+- Shares where practical: the V3 root encoder and root candidate representation, and the
+  `query_state_encoder_v1` contract (same architecture; trained weights are its own).
+- Input: the raw exact states of all root successors plus all opponent replies (depth 2), with
+  explicit parent / root-branch / depth structure. No proof labels, mate counts, reply summaries or
+  any answer-adjacent field. Report the number of states supplied. One depth-3 TUNE-only extension
+  may be designed before CONFIRM.
+- Deliberately not compute-matched.
+- **What Gate I can and cannot say.** AllInfo vs B0 establishes *information sufficiency for the
+  model family*: a model of this family can exploit raw exact future states on this task. It is
+  not a pure causal "information-only" treatment effect, because the integrator, the optimisation
+  and the training distribution differ between the two models. Gate I is a precondition for
+  interpretation, not evidence about the active selector.
+- A same-active-model bulk-information control (the active checkpoint fed all states) is not part
+  of critical V3.0 scope. It may be added only if the implementation makes it natural, and as a
+  secondary control under its own identity.
+
 ## Outcomes (frozen)
 
 - **FULL GO:** I, II, III, VI pass.
@@ -99,17 +220,19 @@ projection. Paired position-level bootstrap CIs plus per-seed direction.
 - **PARTIAL GO — INFORMATION:** all-info beats B0, active does not.
 - **NO-GO:** no raw-state information gap, or untrustworthy/unstable execution. No same-identity
   rescue by repeated tweaks.
+- **NOT SCIENTIFICALLY QUALIFIED / BUDGET MIS-SPECIFIED:** the P4 feasibility rule failed. This is
+  not a NO-GO for the hypothesis; the hypothesis was not tested.
 
 ## Phases
 
 | Phase | Content | Status |
 |---|---|---|
-| P0 | branch, lineage, architecture, plan | this commit |
-| P1 | StateQueryV1 + audit + whitelist | planned |
-| P2 | model skeleton, identity, CPU correctness | planned |
+| P0 | branch, lineage, architecture, plan (+ review addendum) | committed |
+| P1 | StateQueryV1 + audit + whitelist + semantic identity | implemented |
+| P2 | model skeleton, identity, CPU correctness | in progress |
 | P3 | CUDA/system qualification, compute/VRAM envelope | planned |
-| P4 | data/process layer (P25_DATA_V1 verify, ProofTraceV1, V3 TUNE, seal HOLDOUT_C) | needs approval |
-| P5 | bounded TUNE screen, freeze recipe | needs approval |
+| P4 | data/process layer, ProofTraceV1, **feasibility rule**, V3 TUNE, seal HOLDOUT_C | needs approval |
+| P5 | bounded TUNE screen, freeze recipe | needs approval; blocked unless P4 qualifies |
 | P6 | information-sufficiency control (all-info vs B0) | needs approval |
 | P7 | primary active training, final seeds | needs approval |
 | P8 | ONE CONFIRM on sealed HOLDOUT_C | needs approval |
@@ -129,8 +252,7 @@ projection. Paired position-level bootstrap CIs plus per-seed direction.
 ## Stop conditions
 
 Any non-finite/runaway state, query-tool correctness failure, unexpected HOLDOUT_C exposure, a
-gate that becomes unreachable (report to owner), projected run cost beyond the ~2h/job rule, or a
-NO-GO outcome.
+failed P4 feasibility rule, projected run cost beyond the ~2h/job rule, or a NO-GO outcome.
 
 ## Integrity rules carried over
 

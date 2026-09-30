@@ -80,7 +80,30 @@ repetition and fifty-move are exact.
 `node_id`, `parent_id`, `incoming_action`, `ply_from_root`, `observation` (ObservationV1 of the
 child), `legal_actions` (complete, never truncated), `side_to_move`, `in_check`, `terminal`,
 `terminal_reason`, continuation fields (`castling`, `ep_square`, `halfmove_clock`,
-`repetition_count`), `state_hash` (SHA-256 of canonical serialization).
+`repetition_count`), `semantic_id` (semantic state identity, below).
+
+`StatePacketV1::content_digest()` (a method, not a field) is a SHA-256 over the complete packet
+content including the observation and `semantic_id`. It proves that cached and live packets are
+field-equivalent; it is not the identity of the state.
+
+### Semantic state identity (`STATE_IDENTITY_VERSION` 1)
+`semantic_id` is SHA-256 over everything Rules Profile V1 needs to decide future legality and
+termination, so it never merges states whose futures can differ:
+
+- side to move, castling rights, en-passant square (the position key: FEN without clocks);
+- the halfmove clock (fifty-move rule);
+- the repetition history: the multiset of position keys of every earlier position that can still
+  recur, i.e. the last `halfmove_clock + 1` positions clipped to the recorded history (positions
+  before the last irreversible move cannot recur), because a later position's threefold count
+  depends on it;
+- the administrative ply cap and, only when a cap is set, the ply count.
+
+Excluded: the fullmove number, the move order that led to the state, node ids, and anything the
+model observes but the rules ignore (the 8-frame observation window). Board-placement-only hashing
+is never used for node or transposition identity. The identity is conservative: some states with
+the same placement are treated as distinct. V3.0 records transpositions by equal `semantic_id` but
+does not merge them. Tested by fixtures for castling, en passant, halfmove clock, side to move,
+repetition history, reversible-history differences, irreversible-move reset and the ply cap.
 
 ### Prohibited in any tool output
 forced-win flag, mate-in-N, DTM/DTZ, tablebase value, proof status, solver result, best move,
@@ -132,7 +155,9 @@ remaining budget.
 
 ## 9. Selector (`active_selector_v1`)
 
-Scores every frontier edge and additionally a STOP logit. **Primary experiment masks STOP and
+Scores every frontier edge and additionally a STOP logit. The primary comparator schedule
+`fixed_bfs_actionid_v1` (frozen in `V3_RESEARCH_PLAN.md`) is model-independent and is not part of
+the learned model. **Primary experiment masks STOP and
 forces the full budget.** An edge is never queried twice. Selection is teacher-forced from proof
 traces in V3.0 (one pre-registered DAgger-style rescue allowed; no RL).
 
