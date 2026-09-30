@@ -1,0 +1,763 @@
+{
+  "schema": "x15_tactics_v1",
+  "seed": 20261031,
+  "fixtures": [
+    {
+      "id": "mate3_kqk-0000",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/Q2K4/8/8/2k5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        16
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0001",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/3K4/8/4k3/7Q w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0002",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/1k6/5Q2/2K5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        22
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0003",
+      "kind": "mate3_kqk",
+      "fen": "4k3/8/1K5Q/8/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        23
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0004",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/8/5Q2/1K1k4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        18
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0005",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/6K1/1Q6/6k1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        3,
+        4
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0006",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/3K4/8/8/7Q/2k5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        21,
+        22
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0007",
+      "kind": "mate3_kqk",
+      "fen": "8/2Q5/8/8/6K1/8/8/4k3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0008",
+      "kind": "mate3_kqk",
+      "fen": "8/4K3/7k/8/8/Q7/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9,
+        21
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0009",
+      "kind": "mate3_kqk",
+      "fen": "8/7k/8/6K1/8/1Q6/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        19,
+        28
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0010",
+      "kind": "mate3_kqk",
+      "fen": "8/8/8/8/4K2k/8/8/Q7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        5,
+        18,
+        25
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqk-0011",
+      "kind": "mate3_kqk",
+      "fen": "8/3k4/Q7/4K3/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        24
+      ],
+      "material_lead": 9,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0000",
+      "kind": "mate3_krk",
+      "fen": "4k3/8/8/3K4/8/8/8/7R w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        21
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0001",
+      "kind": "mate3_krk",
+      "fen": "1k6/8/6R1/1K6/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        7
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0002",
+      "kind": "mate3_krk",
+      "fen": "1k6/8/8/3K4/4R3/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        18
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0003",
+      "kind": "mate3_krk",
+      "fen": "1R6/8/4K3/7k/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0004",
+      "kind": "mate3_krk",
+      "fen": "6k1/4K3/8/8/8/4R3/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0005",
+      "kind": "mate3_krk",
+      "fen": "k2K4/3R4/8/8/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0006",
+      "kind": "mate3_krk",
+      "fen": "8/8/8/8/4K2k/8/8/R7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        18
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0007",
+      "kind": "mate3_krk",
+      "fen": "8/8/6R1/8/3K4/8/8/2k5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        0
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0008",
+      "kind": "mate3_krk",
+      "fen": "8/4K3/7k/8/8/R7/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        16
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0009",
+      "kind": "mate3_krk",
+      "fen": "8/8/8/1R6/8/4K3/7k/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        4
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0010",
+      "kind": "mate3_krk",
+      "fen": "8/k7/3K4/8/7R/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        17,
+        19
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krk-0011",
+      "kind": "mate3_krk",
+      "fen": "8/8/8/8/8/3K4/6R1/1k6 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        16
+      ],
+      "material_lead": 5,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0000",
+      "kind": "mate3_kqqk",
+      "fen": "7Q/8/7Q/8/8/8/2k4K/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7,
+        8,
+        15,
+        26
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0001",
+      "kind": "mate3_kqqk",
+      "fen": "8/8/1K3k2/8/8/8/Q1Q5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14,
+        20,
+        21,
+        22,
+        30
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0002",
+      "kind": "mate3_kqqk",
+      "fen": "8/8/8/8/2k5/6K1/7Q/Q7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13,
+        14,
+        26,
+        32
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0003",
+      "kind": "mate3_kqqk",
+      "fen": "8/8/3k4/7K/7Q/8/8/7Q w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14,
+        29,
+        31
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0004",
+      "kind": "mate3_kqqk",
+      "fen": "7K/5Q1Q/8/8/3k4/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        24
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0005",
+      "kind": "mate3_kqqk",
+      "fen": "8/3Q4/Q1K5/8/8/5k2/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        1,
+        5,
+        7,
+        25,
+        26,
+        29
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0006",
+      "kind": "mate3_kqqk",
+      "fen": "2Q5/8/1Q6/8/5k2/1K6/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9,
+        12,
+        20,
+        30,
+        31,
+        38,
+        46
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0007",
+      "kind": "mate3_kqqk",
+      "fen": "8/4K3/Q1Q5/8/3k4/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        1,
+        4,
+        15,
+        20,
+        28,
+        31
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0008",
+      "kind": "mate3_kqqk",
+      "fen": "8/1Q6/2K5/8/8/5k2/8/1Q6 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        27,
+        28,
+        36,
+        37
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0009",
+      "kind": "mate3_kqqk",
+      "fen": "8/3k4/8/8/8/Q1Q5/5K2/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        17,
+        22,
+        30,
+        33,
+        36,
+        40,
+        42
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0010",
+      "kind": "mate3_kqqk",
+      "fen": "8/Q1Q5/8/8/6k1/8/8/K7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        5,
+        7,
+        33
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqqk-0011",
+      "kind": "mate3_kqqk",
+      "fen": "8/8/8/1k2KQQ1/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        0,
+        2,
+        4,
+        6,
+        7,
+        40
+      ],
+      "material_lead": 18,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0000",
+      "kind": "mate3_kqrk",
+      "fen": "8/8/1Q6/3K2k1/4R3/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        17,
+        24,
+        35
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0001",
+      "kind": "mate3_kqrk",
+      "fen": "8/5k2/8/5K2/5R2/8/8/Q7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        17,
+        19,
+        20,
+        27,
+        28
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0002",
+      "kind": "mate3_kqrk",
+      "fen": "7Q/8/8/3K1R2/8/8/8/3k4 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9,
+        20,
+        21,
+        23
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0003",
+      "kind": "mate3_kqrk",
+      "fen": "8/1k6/R7/8/8/1K6/8/6Q1 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        18,
+        36,
+        38,
+        40
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0004",
+      "kind": "mate3_kqrk",
+      "fen": "8/8/7R/Q3K3/8/8/4k3/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        26
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0005",
+      "kind": "mate3_kqrk",
+      "fen": "8/8/8/3Q1R2/1k6/8/6K1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        12,
+        21,
+        32
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0006",
+      "kind": "mate3_kqrk",
+      "fen": "2Q5/6k1/8/8/8/8/1R4K1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9,
+        28,
+        29,
+        30
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0007",
+      "kind": "mate3_kqrk",
+      "fen": "5R2/1k6/8/8/8/3Q4/8/5K2 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        24,
+        25,
+        33
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0008",
+      "kind": "mate3_kqrk",
+      "fen": "8/8/2Q5/8/7K/1k6/8/5R2 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        1,
+        9,
+        10,
+        12,
+        13
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0009",
+      "kind": "mate3_kqrk",
+      "fen": "6K1/1k6/8/8/5R2/8/Q7/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        3,
+        16,
+        25,
+        31
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0010",
+      "kind": "mate3_kqrk",
+      "fen": "6k1/1K6/8/1Q6/8/1R6/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        10,
+        20,
+        26
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_kqrk-0011",
+      "kind": "mate3_kqrk",
+      "fen": "5K2/8/8/1Q6/8/7k/5R2/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9,
+        13,
+        14,
+        19,
+        20,
+        21
+      ],
+      "material_lead": 14,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0000",
+      "kind": "mate3_krrk",
+      "fen": "8/3K4/1k6/8/8/8/5RR1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0001",
+      "kind": "mate3_krrk",
+      "fen": "8/8/7R/R3K3/8/8/4k3/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        1
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0002",
+      "kind": "mate3_krrk",
+      "fen": "8/1k6/R7/8/8/1K6/8/6R1 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        31,
+        33
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0003",
+      "kind": "mate3_krrk",
+      "fen": "2R5/8/5R2/8/6k1/8/K7/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        31
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0004",
+      "kind": "mate3_krrk",
+      "fen": "8/5R2/8/3K4/8/8/6k1/5R2 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        11
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0005",
+      "kind": "mate3_krrk",
+      "fen": "8/5k2/8/5K2/5R2/8/8/R7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        12,
+        13
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0006",
+      "kind": "mate3_krrk",
+      "fen": "2R5/8/8/8/1R6/3K4/6k1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        34
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0007",
+      "kind": "mate3_krrk",
+      "fen": "6R1/8/8/8/4k3/8/1R1K4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        5
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0008",
+      "kind": "mate3_krrk",
+      "fen": "8/3R4/8/k7/8/8/5R2/1K6 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7,
+        26
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0009",
+      "kind": "mate3_krrk",
+      "fen": "5K2/1R6/8/8/7k/8/2R5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        25
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0010",
+      "kind": "mate3_krrk",
+      "fen": "7R/8/8/3K2k1/8/4R3/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    },
+    {
+      "id": "mate3_krrk-0011",
+      "kind": "mate3_krrk",
+      "fen": "8/3R4/5k2/8/8/6K1/3R4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        11,
+        17,
+        18
+      ],
+      "material_lead": 10,
+      "note": "every first move that forces mate in three (no forced mate in two exists)"
+    }
+  ]
+}

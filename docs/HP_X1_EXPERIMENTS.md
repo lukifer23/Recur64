@@ -796,3 +796,30 @@ network can learn (E13: 0.60 -> 0.79 with 10x data), not by how many times the s
 is applied. This is direct evidence that the loop is not being used for iterative
 refinement on this problem. It does not say what happens on problems the one-pass network
 cannot represent (mate-in-3 and deeper).
+
+## E16a - exact mate-in-3 tooling and an EXPLORATORY look (not pre-registered)
+- `x15 gen-mate3`: exhaustive board-rule search (own move, every reply, forced mate within
+  two more own moves), multi-threaded with per-thread seeded streams and a thread-order
+  independent selection; 20 positions in 1.2 s on 4 threads; every 11th position is
+  cross-checked through the full GameState rules path, and each position is verified to have
+  no forced mate within two. Same fresh-clock, no-history exactness convention as mate-in-2.
+- `--max-correct-fraction` keeps only positions where at most that share of the legal moves
+  is correct. WITHOUT it the chance level of top-1 is about 0.4 (in many positions most safe
+  moves keep a forced win) and an accuracy of 0.5 means almost nothing. My first look used
+  the uncapped set and I discarded it for that reason; the capped set (`mate3-eval`,
+  seed 20261031, 60 fixtures = 5 sets x 12, cap 0.15, chance level **0.075**, hard-disjoint
+  from every earlier fixture and training set, evidence copy in `docs/evidence/x1/`) is what
+  is reported here.
+- EXPLORATORY: mate-in-3 top-1 of networks trained WITHOUT any mate-in-3 (mean of 2 seeds),
+  by thoughts used at test time:
+| network | T=1 | T=2 | T=4 | T=8 |
+|---|---|---|---|---|
+| E13 SF (one pass) | 0.558 | - | - | - |
+| E13 C1F | 0.483 | - | - | - |
+| E13 C4F (final-only) | 0.450 | 0.500 | 0.558 | 0.533 |
+| E14 C4F-DS | 0.542 | 0.550 | 0.558 | 0.567 |
+| E12 C8F (T=8, collapsed) | 0.008 | 0.008 | 0.075 | 0.150 |
+Skill learned on forced mates in two transfers well to mate-in-3 (0.5 vs chance 0.075). The
+final-only T=4 network improves from 0.45 to 0.56 as it is allowed its four thoughts, but
+that is the network reaching the level of the one-pass symbolic network (0.558), not
+exceeding it. No pre-registered claim rests on this table.

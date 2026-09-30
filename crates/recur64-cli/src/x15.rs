@@ -56,6 +56,8 @@ pub enum X15Command {
     GenTactics(crate::x15_tactics::GenTacticsArgs),
     /// Generate exact mate-in-2 fixtures (fresh-clock, no-history convention).
     GenMate2(crate::x15_tactics::GenMate2Args),
+    /// Generate exact mate-in-3 fixtures (parallel; same fresh-clock convention).
+    GenMate3(crate::x15_tactics::GenMate3Args),
     /// Generate exact-label (rules-search teacher) mate-in-2 training targets.
     GenExact(crate::x15_tactics::GenExactArgs),
     /// Play fixtures out: the network moves, the opponent replies at random.
@@ -166,6 +168,7 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::EvalReasoning(a) => crate::x15_train::run_eval(a),
         X15Command::GenTactics(a) => crate::x15_tactics::run_gen(a),
         X15Command::GenMate2(a) => crate::x15_tactics::run_gen_mate2(a),
+        X15Command::GenMate3(a) => crate::x15_tactics::run_gen_mate3(a),
         X15Command::GenExact(a) => crate::x15_tactics::run_gen_exact(a),
         X15Command::Rollout(a) => crate::x15_tactics::run_rollout(a),
         X15Command::EvalTactics(a) => crate::x15_tactics::run_eval(a),

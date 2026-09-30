@@ -1443,3 +1443,256 @@ pub fn run_rollout(args: RolloutArgs) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+// --- exact mate-in-3 (same fixture convention as mate-in-2) ------------------------------
+
+/// The side to move can force checkmate within two of its own moves.
+fn can_force_mate_within_two(b: &CBoard) -> bool {
+    has_mate_in_one(b)
+        || cboard_moves(b).into_iter().any(|m| {
+            let mut n = b.clone();
+            n.play(m);
+            forced_mate_after(&n)
+        })
+}
+
+/// `after` (opponent to move): the original mover forces mate within two more
+/// of its own moves whatever the opponent replies.
+fn forced_mate_within_two_after(after: &CBoard) -> bool {
+    if after.status() != GameStatus::Ongoing {
+        return false;
+    }
+    let replies = cboard_moves(after);
+    if replies.is_empty() {
+        return false;
+    }
+    replies.into_iter().all(|r| {
+        let mut n = after.clone();
+        n.play(r);
+        n.status() == GameStatus::Ongoing && can_force_mate_within_two(&n)
+    })
+}
+
+/// Legal-action indices of every first move that forces mate in three, for a
+/// position where the mover has neither a mate in one nor a forced mate in two
+/// (so three moves are genuinely needed).
+pub(crate) fn mate_in_three_moves(state: &GameState) -> Vec<usize> {
+    if can_force_mate_within_two(state.board()) {
+        return Vec::new();
+    }
+    state
+        .legal_actions()
+        .iter()
+        .enumerate()
+        .filter(|(_, id)| forced_mate_within_two_after(apply_id(state, **id).board()))
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// Generate `n` exact mate-in-3 positions of one material set using `threads`
+/// workers with independent seeded streams. Duplicates and `seen` FENs are
+/// dropped; the result is sorted by FEN so it does not depend on thread timing.
+fn gen_mate3_parallel(
+    max_frac: f32,
+    seed: u64,
+    kind: &str,
+    white: &[char],
+    n: usize,
+    threads: usize,
+    seen: &std::collections::HashSet<String>,
+) -> anyhow::Result<Vec<Fixture>> {
+    let threads = threads.clamp(1, 32);
+    let per = n.div_ceil(threads) + 2;
+    let results: Vec<anyhow::Result<Vec<Fixture>>> = std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..threads)
+            .map(|t| {
+                scope.spawn(move || {
+                    let mut rng = Rng(mix(seed ^ mix(t as u64 + 1)));
+                    let mut local_seen = std::collections::HashSet::new();
+                    let mut out = Vec::new();
+                    let mut tries = 0u64;
+                    while out.len() < per {
+                        tries += 1;
+                        anyhow::ensure!(tries < 4_000_000, "could not find {per} {kind} positions");
+                        let mut pieces: Vec<char> = white.to_vec();
+                        pieces.push('k');
+                        let placed = place(&mut rng, &pieces);
+                        if kings_adjacent(&placed) {
+                            continue;
+                        }
+                        let fen = fen_from(&placed);
+                        let Some(state) = try_state(&fen) else { continue };
+                        let firsts = mate_in_three_moves(&state);
+                        // Keep only positions where few moves work, so chance is low.
+                        let legal_n = state.legal_actions().len().max(1);
+                        if firsts.is_empty()
+                            || firsts.len() as f32 > max_frac * legal_n as f32
+                            || !local_seen.insert(fen.clone())
+                        {
+                            continue;
+                        }
+                        out.push(Fixture {
+                            id: String::new(),
+                            kind: kind.into(),
+                            fen,
+                            history: "fen_only_fresh_clocks".into(),
+                            correct: firsts,
+                            material_lead: material_diff(&state.to_fen()),
+                            note: "every first move that forces mate in three (no forced mate in two exists)".into(),
+                        });
+                    }
+                    Ok(out)
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|h| {
+                h.join()
+                    .unwrap_or_else(|_| Err(anyhow::anyhow!("worker panicked")))
+            })
+            .collect()
+    });
+    let mut all: Vec<Fixture> = Vec::new();
+    for r in results {
+        all.extend(r?);
+    }
+    all.retain(|f| !seen.contains(&f.fen));
+    all.sort_by(|a, b| a.fen.cmp(&b.fen));
+    all.dedup_by(|a, b| a.fen == b.fen);
+    anyhow::ensure!(
+        all.len() >= n,
+        "only {} unique {kind} positions for {n} requested",
+        all.len()
+    );
+    // A seeded, thread-independent choice of which n to keep.
+    all.sort_by_key(|f| {
+        mix(seed
+            ^ f.fen
+                .bytes()
+                .fold(0u64, |h, b| h.wrapping_mul(131).wrapping_add(u64::from(b))))
+    });
+    all.truncate(n);
+    for (i, f) in all.iter_mut().enumerate() {
+        f.id = format!("{kind}-{i:04}");
+    }
+    Ok(all)
+}
+
+const MATE3_KINDS: [(&str, &[char]); 5] = [
+    ("mate3_kqk", &['K', 'Q']),
+    ("mate3_krk", &['K', 'R']),
+    ("mate3_kqqk", &['K', 'Q', 'Q']),
+    ("mate3_kqrk", &['K', 'Q', 'R']),
+    ("mate3_krrk", &['K', 'R', 'R']),
+];
+
+#[derive(Args, Debug)]
+pub struct GenMate3Args {
+    #[arg(long)]
+    pub out: PathBuf,
+    #[arg(long, default_value_t = 20261030)]
+    pub seed: u64,
+    #[arg(long, default_value_t = 10)]
+    pub per_kind: usize,
+    #[arg(long, default_value_t = 6)]
+    pub threads: usize,
+    /// Keep only positions where at most this fraction of the legal moves is correct.
+    #[arg(long, default_value_t = 0.15)]
+    pub max_correct_fraction: f32,
+    #[arg(long)]
+    pub disjoint_fixtures: Vec<PathBuf>,
+    #[arg(long)]
+    pub disjoint_targets: Vec<PathBuf>,
+}
+
+pub fn run_gen_mate3(args: GenMate3Args) -> anyhow::Result<()> {
+    let mut forbidden: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for p in &args.disjoint_fixtures {
+        forbidden.extend(fixture_fens(p)?);
+    }
+    for p in &args.disjoint_targets {
+        let t = recur64_runtime::reasoning_targets::ReasoningTargetsV1::load(p)?;
+        forbidden.extend(t.positions.iter().map(|q| q.start_fen.clone()));
+        forbidden.extend(t.positions.iter().map(|q| q.fen.clone()));
+    }
+    let mut fixtures = Vec::new();
+    for (kind, white) in MATE3_KINDS {
+        let mut f = gen_mate3_parallel(
+            args.max_correct_fraction,
+            args.seed ^ mix(kind.len() as u64 + white.len() as u64 * 977),
+            kind,
+            white,
+            args.per_kind,
+            args.threads,
+            &forbidden,
+        )?;
+        fixtures.append(&mut f);
+    }
+    // Independent cross-check of a sample through the full GameState rules path.
+    let mut checked = 0usize;
+    for f in fixtures.iter().step_by(11) {
+        let state = GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let within2 = |s: &GameState| -> bool {
+            // mate in one, or a first move after which every reply allows a mate in one
+            !mating_moves(s).is_empty()
+                || s.legal_actions().iter().any(|id| {
+                    let s1 = apply_id(s, *id);
+                    !s1.is_terminal()
+                        && !s1.legal_actions().is_empty()
+                        && s1.legal_actions().iter().all(|r| {
+                            let s2 = apply_id(&s1, *r);
+                            !s2.is_terminal() && !mating_moves(&s2).is_empty()
+                        })
+                })
+        };
+        anyhow::ensure!(!within2(&state), "{}: has a forced mate within two", f.id);
+        for (i, id) in state.legal_actions().iter().enumerate() {
+            let s1 = apply_id(&state, *id);
+            let forced = !s1.is_terminal()
+                && !s1.legal_actions().is_empty()
+                && s1.legal_actions().iter().all(|r| {
+                    let s2 = apply_id(&s1, *r);
+                    !s2.is_terminal() && within2(&s2)
+                });
+            anyhow::ensure!(
+                forced == f.correct.contains(&i),
+                "{}: GameState cross-check disagrees on move {i}",
+                f.id
+            );
+        }
+        checked += 1;
+    }
+    let file = FixtureFile {
+        schema: "x15_tactics_v1".into(),
+        seed: args.seed,
+        fixtures,
+    };
+    if let Some(dir) = args.out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    std::fs::write(&args.out, serde_json::to_vec_pretty(&file)?)?;
+    let mut counts = std::collections::BTreeMap::new();
+    for f in &file.fixtures {
+        *counts.entry(f.kind.clone()).or_insert(0usize) += 1;
+    }
+    // Chance level of the top-1 metric: the mean share of legal moves that are correct.
+    let chance: f32 = file
+        .fixtures
+        .iter()
+        .map(|f| {
+            let n = GameState::from_fen(&f.fen)
+                .map(|s| s.legal_actions().len())
+                .unwrap_or(1);
+            f.correct.len() as f32 / n.max(1) as f32
+        })
+        .sum::<f32>()
+        / file.fixtures.len().max(1) as f32;
+    println!(
+        "wrote {} ({} mate-in-3 fixtures): {counts:?}; {checked} cross-checked against GameState rules; {} forbidden FENs respected; chance level (uniform random move) {chance:.3}",
+        args.out.display(),
+        file.fixtures.len(),
+        forbidden.len()
+    );
+    Ok(())
+}
