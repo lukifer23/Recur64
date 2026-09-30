@@ -13,7 +13,10 @@ use burn::prelude::*;
 use burn::record::{FullPrecisionSettings, NamedMpkFileRecorder, Recorder};
 use burn::tensor::backend::AutodiffBackend;
 
-use crate::config::ModelConfig;
+use crate::config::{
+    Architecture, CANDIDATE_BLOCK_CONTRACT, CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION,
+    CANDIDATE_TOKEN_CONTRACT, ModelConfig,
+};
 use crate::model::ProbeModel;
 
 /// Current checkpoint schema version. Bump on any breaking change.
@@ -64,6 +67,22 @@ pub struct CheckpointMeta {
     /// Metadata written before the field existed is head v1.
     #[serde(default = "legacy_head_version")]
     pub head_version: u32,
+    /// Architecture id (`probe_v1` for metadata written before the field existed).
+    #[serde(default = "legacy_architecture")]
+    pub architecture: String,
+    /// `CandidateFactsV1` layout version the network consumes (0 = none).
+    #[serde(default)]
+    pub candidate_facts_version: u32,
+    /// Candidate-token construction contract (0 = none).
+    #[serde(default)]
+    pub candidate_token_contract: u32,
+    /// Candidate-block contract (0 = none).
+    #[serde(default)]
+    pub candidate_block_contract: u32,
+}
+
+fn legacy_architecture() -> String {
+    Architecture::ProbeV1.id().to_string()
 }
 
 fn legacy_head_version() -> u32 {
@@ -85,7 +104,12 @@ impl CheckpointMeta {
         precision: impl Into<String>,
     ) -> Self {
         let v = recur64_core::ContractVersions::V1;
+        let cand = model.architecture == Architecture::CandidateV25;
         Self {
+            architecture: model.architecture.id().to_string(),
+            candidate_facts_version: if cand { CANDIDATE_FACTS_VERSION } else { 0 },
+            candidate_token_contract: if cand { CANDIDATE_TOKEN_CONTRACT } else { 0 },
+            candidate_block_contract: if cand { CANDIDATE_BLOCK_CONTRACT } else { 0 },
             schema_version: SCHEMA_VERSION,
             recur64_version: crate::VERSION.to_string(),
             git_revision: None,
@@ -106,7 +130,11 @@ impl CheckpointMeta {
             run_id: String::new(),
             update_counter: step,
             lr_schedule_step: step,
-            head_version: crate::model::HEAD_VERSION,
+            head_version: if cand {
+                CANDIDATE_HEAD_VERSION
+            } else {
+                crate::model::HEAD_VERSION
+            },
         }
     }
 
@@ -116,6 +144,14 @@ impl CheckpointMeta {
     /// function. Recurrence is deliberately NOT checked: it is a runtime
     /// choice, and the same R10 weights are evaluated at R1/R2/R4.
     pub fn check_model(&self, requested: &ModelConfig) -> anyhow::Result<()> {
+        // Explicit architecture refusal (never left to a tensor-shape mismatch).
+        anyhow::ensure!(
+            self.architecture == requested.architecture.id()
+                && self.model.architecture == requested.architecture,
+            "checkpoint architecture '{}' is not the requested architecture '{}': cross-architecture loads are refused",
+            self.architecture,
+            requested.architecture.id()
+        );
         let recorded = serde_json::to_value(&self.model)?;
         let wanted = serde_json::to_value(requested)?;
         anyhow::ensure!(
@@ -130,12 +166,31 @@ impl CheckpointMeta {
     /// training-data provenance, not part of the network's function, so it
     /// is recorded but does not block loading.
     pub fn check_contracts(&self) -> anyhow::Result<()> {
-        anyhow::ensure!(
-            self.head_version == crate::model::HEAD_VERSION,
-            "checkpoint head version {} is not the current head version {}: its weights were trained for a different readout function and are refused",
-            self.head_version,
-            crate::model::HEAD_VERSION
-        );
+        if self.architecture == Architecture::CandidateV25.id() {
+            anyhow::ensure!(
+                self.head_version == CANDIDATE_HEAD_VERSION
+                    && self.candidate_facts_version == CANDIDATE_FACTS_VERSION
+                    && self.candidate_token_contract == CANDIDATE_TOKEN_CONTRACT
+                    && self.candidate_block_contract == CANDIDATE_BLOCK_CONTRACT,
+                "candidate_v25 checkpoint contracts (head {}, facts {}, token {}, block {}) differ from the current (head {CANDIDATE_HEAD_VERSION}, facts {CANDIDATE_FACTS_VERSION}, token {CANDIDATE_TOKEN_CONTRACT}, block {CANDIDATE_BLOCK_CONTRACT})",
+                self.head_version,
+                self.candidate_facts_version,
+                self.candidate_token_contract,
+                self.candidate_block_contract
+            );
+        } else {
+            anyhow::ensure!(
+                self.architecture == Architecture::ProbeV1.id(),
+                "unknown checkpoint architecture '{}'",
+                self.architecture
+            );
+            anyhow::ensure!(
+                self.head_version == crate::model::HEAD_VERSION,
+                "checkpoint head version {} is not the current head version {}: its weights were trained for a different readout function and are refused",
+                self.head_version,
+                crate::model::HEAD_VERSION
+            );
+        }
         let v = recur64_core::ContractVersions::V1;
         anyhow::ensure!(
             self.observation_version == v.observation
@@ -247,4 +302,57 @@ pub fn save_inference_export<B: Backend>(
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     model.clone().save_file(path.clone(), &recorder)?;
     Ok(path)
+}
+
+#[cfg(test)]
+mod architecture_identity_tests {
+    use super::*;
+
+    fn probe_cfg() -> ModelConfig {
+        serde_json::from_str(
+            r#"{"width":384,"heads":12,"ffn":768,"input_blocks":0,"core_blocks":8,"output_blocks":0}"#,
+        )
+        .unwrap()
+    }
+
+    fn meta(model: ModelConfig) -> CheckpointMeta {
+        CheckpointMeta::new(model, 1, false, 0, 0.0, 1, 0, "flex", "fp32")
+    }
+
+    #[test]
+    fn metadata_written_before_the_architecture_fields_loads_as_probe() {
+        let mut v = serde_json::to_value(meta(probe_cfg())).unwrap();
+        let o = v.as_object_mut().unwrap();
+        for k in [
+            "architecture",
+            "candidate_facts_version",
+            "candidate_token_contract",
+            "candidate_block_contract",
+        ] {
+            o.remove(k);
+        }
+        let m: CheckpointMeta = serde_json::from_value(v).unwrap();
+        assert_eq!(m.architecture, "probe_v1");
+        m.check_contracts().unwrap();
+        m.check_model(&probe_cfg()).unwrap();
+    }
+
+    #[test]
+    fn probe_and_candidate_checkpoints_refuse_each_other_explicitly() {
+        let probe = meta(probe_cfg());
+        let cand = meta(ModelConfig::candidate_v25(true));
+        cand.check_contracts().unwrap();
+        cand.check_model(&ModelConfig::candidate_v25(true)).unwrap();
+        let e = probe
+            .check_model(&ModelConfig::candidate_v25(true))
+            .unwrap_err();
+        assert!(e.to_string().contains("cross-architecture"), "{e}");
+        let e = cand.check_model(&probe_cfg()).unwrap_err();
+        assert!(e.to_string().contains("cross-architecture"), "{e}");
+        // C0 weights are not CF weights.
+        assert!(
+            cand.check_model(&ModelConfig::candidate_v25(false))
+                .is_err()
+        );
+    }
 }

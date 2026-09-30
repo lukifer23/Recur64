@@ -35,6 +35,8 @@ fn mainline_model(input: usize, core: usize, output: usize) -> ModelConfig {
         wdl_classes: 3,
         promo_codes: 5,
         rms_eps: 1e-5,
+        architecture: Default::default(),
+        candidate: None,
     }
 }
 
@@ -118,6 +120,8 @@ fn r10_topology_r1_parity() {
         wdl_classes: 3,
         promo_codes: 5,
         rms_eps: 1e-5,
+        architecture: Default::default(),
+        candidate: None,
     };
     let device = Default::default();
     let model = ProbeModel::<Flex>::new(cfg.clone(), &device);

@@ -84,6 +84,171 @@ pub struct ModelConfig {
     pub promo_codes: usize,
     #[serde(default = "d_epsilon")]
     pub rms_eps: f64,
+    /// Model architecture. Historical configs deserialize as `probe_v1` and, so
+    /// that their scientific hashes do not change, the default is never
+    /// serialized.
+    #[serde(default, skip_serializing_if = "Architecture::is_default")]
+    pub architecture: Architecture,
+    /// Candidate-token geometry; present iff `architecture == candidate_v25`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub candidate: Option<CandidateConfig>,
+}
+
+/// Which network a `ModelConfig` instantiates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Architecture {
+    /// The historical `ProbeModel` (source/destination bilinear head v2).
+    #[default]
+    ProbeV1,
+    /// Workstation V2.5 candidate transformer: one pass, legal-move tokens.
+    CandidateV25,
+}
+
+impl Architecture {
+    pub fn is_default(&self) -> bool {
+        *self == Architecture::ProbeV1
+    }
+
+    pub fn id(&self) -> &'static str {
+        match self {
+            Architecture::ProbeV1 => "probe_v1",
+            Architecture::CandidateV25 => "candidate_v25",
+        }
+    }
+}
+
+fn d_cand_dim() -> usize {
+    256
+}
+fn d_cand_heads() -> usize {
+    4
+}
+fn d_cand_ffn() -> usize {
+    512
+}
+fn d_cand_blocks() -> usize {
+    1
+}
+fn d_facts_hidden() -> usize {
+    64
+}
+fn d_cand_policy_hidden() -> usize {
+    128
+}
+fn d_true() -> bool {
+    true
+}
+
+/// Version of the candidate-token contract (move-token construction).
+pub const CANDIDATE_TOKEN_CONTRACT: u32 = 1;
+/// Version of the candidate-block contract (masked self-attention block).
+pub const CANDIDATE_BLOCK_CONTRACT: u32 = 1;
+/// Version of the `CandidateFactsV1` field layout consumed by the model.
+pub const CANDIDATE_FACTS_VERSION: u32 = 1;
+/// Fields per candidate in `CandidateFactsV1`.
+pub const CANDIDATE_FACT_FIELDS: usize = 8;
+/// Version of the V2.5 readout function (policy scorer + WDL head).
+pub const CANDIDATE_HEAD_VERSION: u32 = 1;
+
+/// Candidate-transformer geometry (V2.5).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CandidateConfig {
+    #[serde(default = "d_cand_dim")]
+    pub dim: usize,
+    #[serde(default = "d_cand_heads")]
+    pub heads: usize,
+    #[serde(default = "d_cand_ffn")]
+    pub ffn: usize,
+    #[serde(default = "d_cand_blocks")]
+    pub blocks: usize,
+    #[serde(default = "d_facts_hidden")]
+    pub facts_hidden: usize,
+    #[serde(default = "d_cand_policy_hidden")]
+    pub policy_hidden: usize,
+    /// C0 (ablation) sets this false: the facts modules exist and are counted,
+    /// but the facts input is zeroed. It changes the function, so it is part of
+    /// the model identity.
+    #[serde(default = "d_true")]
+    pub facts_enabled: bool,
+}
+
+impl Default for CandidateConfig {
+    fn default() -> Self {
+        Self {
+            dim: d_cand_dim(),
+            heads: d_cand_heads(),
+            ffn: d_cand_ffn(),
+            blocks: d_cand_blocks(),
+            facts_hidden: d_facts_hidden(),
+            policy_hidden: d_cand_policy_hidden(),
+            facts_enabled: true,
+        }
+    }
+}
+
+impl ModelConfig {
+    /// The V2.5 primary geometry: width 640, 10 heads, FFN 1280, 8 unique
+    /// blocks, no input/output blocks.
+    pub fn candidate_v25(facts_enabled: bool) -> Self {
+        Self {
+            width: 640,
+            heads: 10,
+            ffn: 1280,
+            input_blocks: 0,
+            core_blocks: 8,
+            output_blocks: 0,
+            squares: d_squares(),
+            in_features: d_in_features(),
+            policy_dim: d_policy_dim(),
+            wdl_classes: d_wdl_classes(),
+            promo_codes: d_promo_codes(),
+            rms_eps: d_epsilon(),
+            architecture: Architecture::CandidateV25,
+            candidate: Some(CandidateConfig {
+                facts_enabled,
+                ..CandidateConfig::default()
+            }),
+        }
+    }
+
+    /// Refuse an architecture/geometry combination that is not a real model.
+    pub fn validate(&self) -> anyhow::Result<()> {
+        match (self.architecture, &self.candidate) {
+            (Architecture::ProbeV1, None) => Ok(()),
+            (Architecture::ProbeV1, Some(_)) => {
+                anyhow::bail!("probe_v1 must not carry a candidate geometry")
+            }
+            (Architecture::CandidateV25, None) => {
+                anyhow::bail!("candidate_v25 requires a candidate geometry")
+            }
+            (Architecture::CandidateV25, Some(c)) => {
+                anyhow::ensure!(
+                    self.input_blocks == 0 && self.output_blocks == 0,
+                    "candidate_v25 has no input or output blocks (one pass, unique core blocks only)"
+                );
+                anyhow::ensure!(
+                    c.dim.is_multiple_of(c.heads),
+                    "candidate dim {} not divisible by heads {}",
+                    c.dim,
+                    c.heads
+                );
+                Ok(())
+            }
+        }
+    }
+
+    /// Refuse a recurrence the architecture cannot execute. candidate_v25 is
+    /// strictly one pass; the field is never silently ignored.
+    pub fn check_recurrence(&self, recurrence: usize) -> anyhow::Result<()> {
+        if self.architecture == Architecture::CandidateV25 {
+            anyhow::ensure!(
+                recurrence == 1,
+                "candidate_v25 is a one-pass architecture; recurrence {recurrence} is refused"
+            );
+        }
+        Ok(())
+    }
 }
 
 impl ModelConfig {
@@ -166,6 +331,8 @@ mod tests {
             wdl_classes: 3,
             promo_codes: 5,
             rms_eps: 1e-5,
+            architecture: Default::default(),
+            candidate: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         assert_eq!(m.executed_blocks_final(1), 8);
@@ -186,6 +353,8 @@ mod tests {
             wdl_classes: 3,
             promo_codes: 5,
             rms_eps: 1e-5,
+            architecture: Default::default(),
+            candidate: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         // 2 + 4R + 2
@@ -196,5 +365,54 @@ mod tests {
         assert_eq!(m.executed_blocks_deep_supervision(1), 8);
         assert_eq!(m.executed_blocks_deep_supervision(2), 14);
         assert_eq!(m.executed_blocks_deep_supervision(4), 26);
+    }
+
+    #[test]
+    fn probe_identity_is_unchanged_by_the_architecture_field() {
+        // A historical config (no architecture key) deserializes as probe_v1 and
+        // re-serializes WITHOUT the new keys, so scientific hashes are stable.
+        let legacy = r#"{"width":384,"heads":12,"ffn":768,"input_blocks":0,"core_blocks":8,"output_blocks":0}"#;
+        let m: ModelConfig = serde_json::from_str(legacy).unwrap();
+        assert_eq!(m.architecture, Architecture::ProbeV1);
+        assert!(m.candidate.is_none());
+        let v = serde_json::to_value(&m).unwrap();
+        let obj = v.as_object().unwrap();
+        assert!(!obj.contains_key("architecture") && !obj.contains_key("candidate"));
+        assert_eq!(obj.len(), 12, "exactly the twelve historical keys");
+        m.validate().unwrap();
+    }
+
+    #[test]
+    fn candidate_v25_round_trips_and_validates() {
+        let m = ModelConfig::candidate_v25(true);
+        let back: ModelConfig = serde_json::from_str(&serde_json::to_string(&m).unwrap()).unwrap();
+        assert_eq!(back.architecture, Architecture::CandidateV25);
+        assert_eq!(back.candidate, m.candidate);
+        m.validate().unwrap();
+        assert_ne!(
+            serde_json::to_value(ModelConfig::candidate_v25(true)).unwrap(),
+            serde_json::to_value(ModelConfig::candidate_v25(false)).unwrap(),
+            "C0 and CF are distinct identities"
+        );
+        assert_eq!((m.width, m.heads, m.ffn, m.core_blocks), (640, 10, 1280, 8));
+        assert_eq!(m.head_dim(), 64);
+    }
+
+    #[test]
+    fn inconsistent_architecture_and_recurrence_are_refused() {
+        let mut m = ModelConfig::candidate_v25(true);
+        assert!(m.check_recurrence(1).is_ok());
+        assert!(
+            m.check_recurrence(2).is_err(),
+            "no recurrence on candidate_v25"
+        );
+        m.input_blocks = 1;
+        assert!(m.validate().is_err());
+        let mut m = ModelConfig::candidate_v25(true);
+        m.candidate = None;
+        assert!(m.validate().is_err());
+        let mut p = ModelConfig::candidate_v25(true);
+        p.architecture = Architecture::ProbeV1;
+        assert!(p.validate().is_err());
     }
 }

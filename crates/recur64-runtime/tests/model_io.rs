@@ -25,6 +25,8 @@ fn micro() -> ModelConfig {
         wdl_classes: 3,
         promo_codes: 5,
         rms_eps: 1e-5,
+        architecture: Default::default(),
+        candidate: None,
     }
 }
 
@@ -44,6 +46,8 @@ fn same_shape_model_config_mismatch_is_refused_on_every_load_path() {
     // Same tensor shapes, different function: rms_eps.
     let other = ModelConfig {
         rms_eps: 1e-6,
+        architecture: Default::default(),
+        candidate: None,
         ..cfg.clone()
     };
     let err = model_io::load::<Flex>(&dir, &other, &device)

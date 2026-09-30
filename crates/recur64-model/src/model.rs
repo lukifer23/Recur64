@@ -658,6 +658,8 @@ mod tests {
             wdl_classes: 3,
             promo_codes: 5,
             rms_eps: 1e-5,
+            architecture: Default::default(),
+            candidate: None,
         }
     }
 
