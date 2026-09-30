@@ -578,3 +578,10 @@ unchanged.
 - **Process notes:** a `git add -A` once pushed ~2,400 build files (fixed by a follow-up commit;
   history still holds them - rewriting it needs the owner's approval); background jobs are
   limited to 2 h each.
+
+### HP X1 stability fix and consolidated result (2026-09-30)
+- E14/E15: the T=8 collapse (0.30) was an optimisation problem with two independent repairs
+  (deep supervision 0.62; `normalize_latent` 0.60, D-note in the ledger). Once repaired,
+  recurrent networks still only equal the one-pass network (mate-in-2 0.575-0.617 vs 0.575).
+- Consolidated: recurrence has no measured benefit on any fixed-data lookahead test so far
+  (E7-E15); exact facts, exact labels and data scale move accuracy; nothing else does.

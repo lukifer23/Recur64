@@ -840,3 +840,39 @@ fixes it, but once fixed the recurrent networks only equal the one-pass network,
 accuracy does not depend on how many thoughts are used. On mate-in-2 the loop is redundant.
 Cost: T=8 with deep supervision needs 3.9 GB at micro-batch 16 and takes 34 min for 600
 updates (vs 7 min for T=1).
+
+## E15 RESULT - bounding the latent (MEASURED; pre-registered rule as written)
+`normalize_latent = true`, E12 setting, seeds 1 and 2, mate-in-2 top-1 on `mate2-eval`.
+| variant | wall | peak VRAM | mate-in-2 top-1 (mean of 2 seeds) |
+|---|---|---|---|
+| C1F-N (T=1) | 419-424 s | 1.70 GB | 0.583 |
+| C4F-N (T=4) | 720-721 s | 2.66 GB | 0.575 |
+| C8F-N (T=8, micro-batch 16) | 1293-1302 s | 3.14 GB | 0.600 |
+**Primary: C4F-N vs E12 C1F = 0.575 vs 0.575, diff 0.000, 95% CI [-0.092, +0.092], per-seed
+[-0.05, +0.05]; vs the matched C1F-N -0.008 [-0.100, +0.083]: BOUNDING THE LATENT DOES NOT
+RESCUE RECURRENCE.**
+Secondary: **C8F-N vs E12 C8F (plain) = 0.600 vs 0.292, +0.308, CI [+0.225, +0.392], both
+seeds positive: bounding the latent REPAIRS the T=8 collapse**, confirming the mechanism
+measured in the E14 stability note (unbounded ~1.3x-per-thought growth of `Z`). C8F-N vs C1F-N
++0.017 [-0.067, +0.100] (tie).
+Curves (mean of 2 seeds, thoughts used at test time): C4F-N T1 0.417, T2 0.575, T4 0.575;
+C8F-N T1 0.292, T2 0.308, T4 0.567, T8 0.600. Unlike the deep-supervised networks, the
+bounded final-only networks do keep improving with more thoughts (C8F-N from 0.567 at T=4 to
+0.600 at T=8), but they saturate at the one-pass level.
+
+## CONSOLIDATED CONCLUSION - thought on fixed-data lookahead (E7-E15)
+1. In every pre-registered comparison, recurrent networks (T=4 or 8) have never beaten a
+   one-pass network trained the same way, on teacher-KL (E7, E11), one-ply mates (E11b),
+   and forced mates in two under final-only supervision (E12, E13), deep supervision
+   (E14) or a bounded latent (E15). Best recurrent minus one-pass differences on mate-in-2:
+   -0.033, -0.033, +0.033, 0.000 (all CIs contain 0).
+2. A real optimisation pathology exists and is now understood: the shared-core loop with an
+   unbounded latent collapses at T=8 (0.29). Two independent fixes each repair it (deep
+   supervision 0.62, bounded latent 0.60). The fixes make depth trainable; they do not make it
+   useful on this task.
+3. What DID move accuracy: exact one-ply facts with a usable scale (mate-in-1 0.30 -> 0.95),
+   exact labels for the skill (teacher PUCT 3-19% -> one-pass 60%), and data (0.60 -> 0.79 with
+   10x positions).
+4. Not tested: problems the one-pass network cannot represent at all; models with more
+   capacity; adaptive halting; a genuinely different use of the loop (e.g., search-like
+   branching over candidates). The scratchpad's supposed benefit remains unproven, not refuted.

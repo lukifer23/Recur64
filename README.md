@@ -396,6 +396,7 @@ experiment, its pre-registered rule and its outcome are in
 - **Candidate facts** (exact one-ply facts per legal move, D62) take mate-in-1 from
   chance to about 95% with about 50 s of training, once the channel is given a usable
   scale (gain 128; at gain 1 it learned almost nothing, which was measured and diagnosed).
+- **Lookahead (E12-E15):** the one-pass network finds forced mates in two 60% of the time (79% with 10x data); recurrent networks equal it but never beat it, deep supervision or a bounded latent (`normalize_latent`) repair the T=8 collapse, and accuracy is flat or saturating in the number of thoughts.
 - **Not established:** any playing-strength or conversion gain, any benefit of the
   visual or compute pathways, anything about problems that need multi-ply lookahead
   (the natural next test: mate-in-2 and multi-step captures). X15 is not wired into the
