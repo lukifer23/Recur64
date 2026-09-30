@@ -299,3 +299,73 @@ loss < initial TRAIN loss. 2. Among stable runs the lowest final pooled TUNE CE 
 4. If still tied, the lower LR wins. Primary selection stays on pooled TUNE CE for
 continuity with P1a; pooled, macro-cell, by-family and by-depth TUNE are all reported.
 If P1b selects a different LR from P1a, P1b's LR is used for P2.
+
+
+---
+
+### E-P1b RESULT
+CONFIG: as pre-registered (CF, seed 1, NEW TRAIN/TUNE, cell_balanced_v1, 90 updates,
+effective batch 256, policy-only, FP32). CONFIRM not evaluated (no `confirm-exposure.log`;
+`confirm.evaluated = false` in every run). Model seed 1 is recorded in each evaluation file.
+DATA DIGEST: TRAIN 1e5e121b..., TUNE f59d744a... (new assignment).
+WALL / VRAM: ~0.95-1.01 s/update; no VRAM problem.
+Sampler check: every cell consumed exactly 1,536 examples (min = max over 15 cells);
+KRvK M1 saw 10.0 local epochs in 90 updates.
+
+MEASURED (TUNE after 90 updates; "gap" = TUNE CE minus full-TRAIN CE, pooled / macro-cell):
+
+| LR | stable | pooled TUNE CE | pooled mass | pooled top-1 | macro-cell CE | macro-cell top-1 | M1 / M2 / M3 top-1 | gap |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| 3e-5 | yes | 3.1739 | 0.0894 | 0.2964 | 3.0338 | 0.3398 | 1.000 / 0.002 / 0.020 | -0.003 / +0.003 |
+| 7.5e-5 | yes | 2.7869 | 0.2024 | 0.2988 | 2.5969 | 0.3417 | 1.000 / 0.005 / 0.024 | +0.011 / +0.005 |
+| 1.5e-4 | yes | 2.5750 | 0.3278 | 0.3576 | 2.3764 | 0.3911 | 1.000 / 0.078 / 0.116 | +0.020 / +0.008 |
+| 3e-4 | yes | 2.5467 | 0.3380 | 0.4031 | 2.3382 | 0.4788 | 1.000 / 0.151 / 0.171 | +0.016 / +0.008 |
+
+By family top-1 at 3e-4: KQQvK 0.357, KQRvK 0.353, KRRvK 0.367, KQvK 0.474, KRvK 0.632
+(KRvK TUNE has only 114 positions, so that figure is noisy). At 1.5e-4 the family spread is
+the opposite (0.41 / 0.40 / 0.41 / 0.23 / 0.19), i.e. the ranking of families is not stable
+across LRs at this short horizon.
+
+RULE APPLIED: all four runs stable; lowest pooled TUNE CE is 3e-4 (2.5467) vs 1.5e-4
+(2.5750); the gap 0.0283 exceeds the 0.02 tie band, so no tie-break applies.
+DECISION: LR = 3e-4 is authorized for P2.
+BOUNDARY: 3e-4 is again the LARGEST grid point. The grid was deliberately not expanded;
+this is a selection under the planned grid, not a claim of optimality.
+
+### E-P1a vs E-P1b (different optimization distributions; not a contradiction)
+| | P1a (old split, uniform sampler) | P1b (new split, cell_balanced_v1) |
+|---|---|---|
+| winner | 3e-4 | 3e-4 |
+| final pooled TUNE CE at 3e-4 / 1.5e-4 | 2.536 / 2.568 | 2.547 / 2.575 |
+| gap between the best two | 0.032 | 0.028 |
+| M1 top-1 | 1.00 at every LR | 1.00 at every LR |
+| M2 / M3 top-1 at 3e-4 | 0.083 / 0.158 | 0.151 / 0.171 |
+MEASURED: both screens agree on the ordering of the four LRs and on M1 being solved; the
+pooled CE curves are nearly identical. INFERRED (not tested): the changed split and
+sampler did not materially move the LR ordering at 90 updates. Overfit signals are small:
+full-TRAIN vs TUNE pooled CE gap is within +0.02 nats at every LR and the macro-cell gap
+within +0.01, so no memorization of the heavily-oversampled scarce cells is visible yet
+at this horizon; that is re-checked at 400 updates by the corrected extension rule.
+Honest note: at 90 updates M2/M3 (0.15 / 0.17) are far below the P2 gates (0.75 / 0.55);
+the science question is decided by the 400-update P2 runs, not by this screen.
+
+## E-P2 - FINAL CONTRACT (supersedes the launch parameters of the earlier E-P2 block; the
+## gates and the corrected extension rule stand exactly as written)
+MODELS / SEEDS: L (`large-legacy-cuda`), C0 (`candidate-v25-c0-cuda`), CF
+(`candidate-v25-cf-cuda`); model seeds 1 and 2.
+TRAINING: 400 updates, policy-only, effective batch 256 (64x4), FP32, warmup 40, cosine
+over 400, LR 3e-4 (E-P1b), `cell_balanced_v1`, TUNE evaluated every 50 updates.
+DATA: NEW TRAIN / TUNE / CONFIRM (digests above).
+CONFIRM: evaluated only at each run's final 400-update endpoint via `--eval-confirm`
+(plus, if triggered, the single fresh 800-update extension). These are the first authorized
+V2.5 evaluations of the replacement CONFIRM; each prints the exposure guard and is logged.
+GATES (unchanged, pooled depth metrics): Q1 facts path: CF M1 top-1 >= 0.95 AND CF > C0 with
+the paired 95% CI wholly above 0 AND both seeds positive (paired by model-seed identity).
+Q3: CF M2 top-1 >= 0.75 and M3 top-1 >= 0.55, both seeds at/near the floors with pooled
+evidence clearly above chance. Q2: C0 vs L on M2+M3 reported cleanly, not a gate.
+DIAGNOSTICS REPORTED BESIDE THE GATES (cannot redefine success): macro-cell / family /
+depth metrics, by-cell tables, full-TRAIN-vs-TUNE gaps, per-cell exposure.
+EXTENSION: the corrected rule above ((a), (b'), (c)); a FRESH 800-update run, never a
+continuation.
+STATUS: E-P1b result and this contract are committed BEFORE any P2 run. No P2 run for the
+replacement split has been launched.
