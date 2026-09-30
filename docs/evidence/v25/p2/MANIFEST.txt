@@ -1,0 +1,7 @@
+﻿git_sha=6e8c5643d589787a66707ca9ae64bac250f55c69
+train_digest=1e5e121bc407e0d27b2956eac570c2d67485f8637b7d9e329d21e863427671d4
+tune_digest=f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4
+confirm_digest=8c4d2b723afb7f730d28a42f150935d0aab6ff6e98e25124c18febe71e0301df
+lr=3e-4 updates=400 warmup=40 micro=64 accum=4 sampler=cell_balanced_v1 eval_every=50
+order=L-s1 L-s2 C0-s1 C0-s2 CF-s1 CF-s2
+attempt=2 (attempt 1 failed in the runner script before producing any result)

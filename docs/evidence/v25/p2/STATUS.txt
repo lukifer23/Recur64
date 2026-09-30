@@ -1,0 +1,7 @@
+﻿L-s1 exit=0 wall=363s
+L-s2 exit=0 wall=369s
+C0-s1 exit=0 wall=382s
+C0-s2 exit=0 wall=376s
+CF-s1 exit=0 wall=384s
+CF-s2 exit=0 wall=389s
+ALL SIX DONE

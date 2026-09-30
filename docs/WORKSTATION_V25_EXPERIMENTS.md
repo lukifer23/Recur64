@@ -395,3 +395,107 @@ Remedy: the runner now redirects both streams with `cmd /c ... > log 2>&1` and d
 `Stop`. The SAME cell is rerun from scratch with the SAME configuration; no hyperparameter,
 data, sampler, seed, or order change. (A stale `runs/p2-C0-s1.log` from the earlier aborted
 launch on the retired split was moved into `runs/v25/aborted/`.)
+
+
+---
+
+## E-P2 RESULT (frozen contract; run from commit `238f2f0` + doc-only commit `6e8c564`)
+CONFIG: exactly the committed final P2 contract. L (`large-legacy-cuda`), C0, CF; model
+seeds 1 and 2; LR 3e-4; 400 updates; warmup 40; cosine over 400; effective batch 256
+(64x4); policy-only; FP32; `cell_balanced_v1`; NEW TRAIN `1e5e121b...` / TUNE `f59d744a...` /
+CONFIRM `8c4d2b72...`; TUNE every 50 updates; CONFIRM only at update 400.
+RUN HISTORY: attempt 1 failed in the runner script (documented above, no result); attempt 2
+ran all six cells to completion, exit 0 each (`STATUS.txt`). CONFIRM hygiene: the exposure
+log has exactly six entries, one per final endpoint, each with model name and seed; no
+intermediate checkpoint evaluated CONFIRM. Exposure: every cell 6,826-6,827 examples;
+KRvK M1 44.6 local epochs, 1,000-position cells 6.8.
+
+Checkpoints (untracked, `runs/v25/p2/<cell>/checkpoint`; all with TRAIN/TUNE/CONFIRM digests above):
+| cell | model_id | params | wall | peak VRAM |
+|---|---|---:|---:|---:|
+| L-s1 | 0372148dbc4f1bae51153432ca11f3494718348f7ac7c806c533c5befc23d284 | 26809944 | 348 s | 2551 MB |
+| L-s2 | 48f3fb956d0a06283af651ee3ff4756b1d6df076ddcac3e6f5a943594be6a157 | 26809944 | 353 s | 2552 MB |
+| C0-s1 | 04cf5c3fe7c41639a8b0b916033f6106c91b13334377d21878c21103d673ba96 | 27469204 | 366 s | 2679 MB |
+| C0-s2 | ee04bec7739489f167cef5e33d938b3d73814b2f4124acf9e76c4df8462c25be | 27469204 | 359 s | 2679 MB |
+| CF-s1 | 56d482b17ce2c56be094e6a3e24b7b312e07d7f2a9dab8709b1729cc118eeb5c | 27469204 | 367 s | 2680 MB |
+| CF-s2 | 3b498cb3793b1e426bb267ab738c5502e6fc39d1a8cad12e8cf726db139ccd4b | 27469204 | 372 s | 2680 MB |
+
+MEASURED - absolute CONFIRM, pooled (chance top-1 M1/M2/M3 = 0.043 / 0.057 / 0.070):
+| model | seed | M1 top-1 | M2 top-1 | M3 top-1 | mass | CE | macro-cell top-1 | macro-cell CE |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| L | 1 | 0.629 | 0.639 | 0.624 | 0.493 | 1.881 | 0.681 | 1.653 |
+| L | 2 | 0.693 | 0.661 | 0.638 | 0.527 | 1.813 | 0.712 | 1.572 |
+| C0 | 1 | 0.632 | 0.610 | 0.589 | 0.452 | 2.008 | 0.658 | 1.759 |
+| C0 | 2 | 0.626 | 0.634 | 0.620 | 0.473 | 1.947 | 0.671 | 1.698 |
+| CF | 1 | 1.000 | 0.690 | 0.671 | 0.658 | 1.410 | 0.799 | 1.222 |
+| CF | 2 | 1.000 | 0.688 | 0.647 | 0.654 | 1.436 | 0.791 | 1.244 |
+
+CF CONFIRM by family top-1 (seed 1 / seed 2): KQQvK 0.81/0.81, KQRvK 0.69/0.67, KQvK 0.81/0.79,
+KRRvK 0.76/0.77, KRvK 0.85/0.83. Weakest cell: KQRvK M3 (0.39 / 0.36); strongest: KRvK M3
+(0.93 / 0.91, but n=43 and a heavily oversampled cell, so noisy).
+Pooled CE, TRAIN / TUNE / CONFIRM: CF seed 1 1.296 / 1.405 / 1.410, seed 2 1.329 / 1.445 / 1.436;
+L 1.669 / 1.822 / 1.881 and 1.642 / 1.796 / 1.813; C0 1.812 / 1.923 / 2.008 and 1.737 / 1.915 / 1.947.
+No train/confirm overfit gap is visible in any model.
+
+PAIRED COMPARISONS (B minus A, CONFIRM, paired bootstrap 95% CI; full tables with mass, CE and
+per-seed groups in `docs/evidence/v25/p2/compare-*.json`):
+| comparison | group | top-1 diff [CI] | seed 1 | seed 2 |
+|---|---|---|---:|---:|
+| CF - C0 | M1 | +0.371 [+0.326, +0.417] | +0.368 | +0.374 |
+| CF - C0 | M2 | +0.067 [+0.030, +0.105] | +0.080 | +0.054 |
+| CF - C0 | M3 | +0.054 [+0.021, +0.088] | +0.082 | +0.027 |
+| CF - C0 | M2+M3 | +0.060 [+0.035, +0.085] | +0.081 | +0.040 |
+| C0 - L | M1 | -0.032 [-0.062, -0.001] | +0.003 | -0.066 |
+| C0 - L | M2+M3 | -0.027 [-0.047, -0.007] | -0.033 | -0.022 |
+| C0 - L | M2 | -0.028 [-0.059, +0.001] | -0.029 | -0.027 |
+| C0 - L | M3 | -0.027 [-0.054, +0.000] | -0.036 | -0.018 |
+| CF - L | M1 | +0.339 [+0.295, +0.384] | +0.371 | +0.307 |
+| CF - L | M2+M3 | +0.033 [+0.008, +0.058] | +0.049 | +0.017 |
+| CF - L | M2 | +0.039 [+0.000, +0.079] | +0.051 | +0.027 |
+| CF - L | M3 | +0.028 [-0.006, +0.061] | +0.047 | +0.009 |
+Correct-set mass and -CE agree in sign with top-1 for every pooled group of CF-C0 and C0-L
+(C0 is worse than L on mass by 0.040 [0.032, 0.048] and on CE by 0.142 on M2+M3).
+
+GATES (thresholds unchanged, pooled depth metrics):
+- Q1 FACTS PATH: PASS. CF pooled M1 top-1 = 1.000 (>= 0.95); CF - C0 M1 CI [+0.326, +0.417]
+  is wholly above 0; both seeds positive on M1 (+0.368, +0.374, read from
+  `top1.per_seed.seed_N.M1`, not from the overall metric).
+- Q2 (descriptive, not a gate): candidate tokens WITHOUT facts did NOT beat the matched-capacity
+  legacy head. C0 is slightly worse than L on M2+M3 (top-1 -0.027 [-0.047, -0.007], mass -0.040,
+  CE +0.142), negative in both seeds; on M1 the seeds disagree (+0.003, -0.066). Reported, not rescued.
+- Q3 DEEPER EXACT TECHNIQUE: NOT MET. CF M2 top-1 = 0.690 / 0.688 (pooled 0.689) is BELOW the
+  0.75 floor in both seeds; CF M3 top-1 = 0.671 / 0.647 (pooled 0.659) clears the 0.55 floor in
+  both seeds. The gate needs both, so it fails on M2. Both are far above chance (0.057 / 0.070).
+
+EXTENSION CONDITIONS (as committed, conjunctive: (a) AND (b') AND (c)):
+| | (a) TUNE CE 350 -> 400 (needs drop >= 0.01) | (b') pooled tune-train / macro tune-train (limits 0.15 / 0.25) | (c) finite |
+|---|---|---|---|
+| CF seed 1 | 1.4087 -> 1.4051, drop 0.0036: FAIL | +0.1086 / +0.1307: PASS | PASS |
+| CF seed 2 | 1.4536 -> 1.4446, drop 0.0089: FAIL | +0.1159 / +0.1383: PASS | PASS |
+DECISION: the extension does NOT trigger (condition (a) fails in both seeds). No 800-update run
+was made. Per the plan, Q3 failed and the extension conditions fail: STOP before P3. Conversion
+testing is not used to rescue a failed exact-technique gate.
+
+CAVEAT ON CONDITION (a), stated for the owner and NOT used to change the decision: (a) is
+measured over updates 350-400 of a cosine schedule whose LR is already <= 1.4e-5 and decaying
+to 0, so a >= 0.01 drop is structurally hard to reach even when the model is far from converged
+(TUNE CE fell from 2.64 at update 50 to 1.41 at 350 and was still falling slowly). Seed 2's 0.0089 is
+within 0.0011 of the threshold. The rule was pre-registered; it is applied as written.
+
+INTERPRETATION (three hypotheses kept separate):
+1. Exact CandidateFacts add capability where they expose the answer: CF solves M1 (1.000 vs
+   0.63-0.69 without facts) and also gives a smaller but significant, both-seeds-positive gain on
+   M2+M3 over C0 (+0.060) and over L (+0.033).
+2. Candidate-token representation by itself did not help under this contract: C0 <= L.
+3. One-pass exact training reached M2 ~0.69 and M3 ~0.66 for CF (M3 above its gate, M2 below)
+   with no overfit gap, so under this contract the one-pass model has not compiled M2 to the
+   pre-registered floor. Whether more optimization (longer or differently scheduled) would close the
+   M2 gap is NOT tested by this evidence.
+P3 is not justified by the pre-registered rules. The next move is an owner decision.
+
+DEFERRED PERFORMANCE NOTE (P4 scheduling qualification, not acted on): training GPU utilization
+averaged ~85% with dips to 60-70% (see `gpu_util_busy_mean`). Candidate causes from code reading
+(unprofiled): four host readbacks per micro-batch in `accumulated_update` (three are
+reporting-only), CPU micro-batch assembly inline with the GPU work, and small-batch evaluation
+passes. Fix later: one combined readback, background batch prefetch, per-update idle-fraction
+logging.
