@@ -724,3 +724,26 @@ implemented, hence E14. E13 (15k positions, streaming) is running as pre-registe
   E12 C8F (does supervision fix the T=8 collapse), retention (mate-in-1, teacher KL).
 - NOT CLAIMED even if it succeeds: strength, conversion, or that the latent scratchpad
   (rather than repeated core depth) is responsible.
+
+## E13 RESULT - mate-in-2 with 15,960 training positions, streamed (MEASURED; rule as written)
+`targets-train960` + `targets-mate2-exact-15k`, 1,200 updates x 96 (about 7 passes), seeds 1, 2,
+gain 128, evaluated on `mate2-eval` (60 fixtures).
+| variant | wall | peak VRAM | mate-in-2 top-1 (mean of 2 seeds) |
+|---|---|---|---|
+| SF (T=1) | 444-449 s | 2.0 GB | 0.792 |
+| C1F (T=1) | 765-766 s | 1.5 GB | 0.775 |
+| C4F (T=4) | 1376-1384 s | 2.4 GB | 0.742 |
+**Q3: C4F vs C1F = -0.033, 95% CI [-0.108, +0.042], per-seed [0.00, -0.067]: THOUGHT DOES
+NOT HELP LOOKAHEAD** (identical difference to E12, at 10x the data). SF vs C1F +0.017
+[-0.058, +0.092]. Data scale (descriptive): SF 0.792 (15k) vs 0.600 (1.5k), +0.192
+[+0.092, +0.300], both seeds positive: data WAS limiting for the one-pass network, and
+removing that limit did not make thought useful. Per set (C4F / C1F): KQvK 0.92/0.88,
+KQQvK 0.50/0.54, KQRvK 0.58/0.71, KRvK 1.00/1.00, KRRvK 0.71/0.75.
+Retention (C4F vs C1F): mate-in-1 1.00 vs 0.95 (+0.05, CI [0.00, +0.11], both seeds
++0.05); promotion 0.63 vs 0.44 (seeds disagree); teacher KL on `confirm2` 0.540 vs 0.529
+(tie) - both far worse than E11b's 0.29 because the mate-in-2 positions now dominate
+the training mixture (replay positions are 6% of it): forgetting, not a thought effect.
+INTERPRETATION: with exact labels, plenty of data and one-ply facts, the one-pass
+network reaches 0.79 on forced mates in two and the recurrent network does not beat it,
+at 1.8x the training time. E14 (deep supervision) is the remaining pre-registered
+attempt to make recurrence useful on this task.
