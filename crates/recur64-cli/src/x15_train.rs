@@ -34,7 +34,7 @@ use recur64_model::model::Readout;
 use recur64_runtime::gpu_telemetry::monitor;
 use recur64_runtime::model_io;
 use recur64_runtime::reasoning_targets::{PositionTarget, ReasoningTargetsV1, rebuild_state};
-use recur64_runtime::x15_inputs::{X15Batch, build_x15_batch, provider_for_config};
+use recur64_runtime::x15_inputs::{X15Batch, build_x15_batch_padded, provider_for_config};
 
 #[derive(Args, Debug)]
 pub struct TrainProbeArgs {
@@ -78,6 +78,11 @@ pub struct TrainProbeArgs {
     /// Positions per forward/backward chunk (gradients are accumulated); bounds VRAM.
     #[arg(long, default_value_t = 32)]
     pub micro_batch: usize,
+    /// Positions per optimizer update (a multiple of --micro-batch), taken in a
+    /// seeded hash order cycling over the train split. 0 = the whole split every
+    /// update (the original full-batch behaviour).
+    #[arg(long, default_value_t = 0)]
+    pub batch_positions: usize,
     /// Bounded-time guard for a single run.
     #[arg(long, default_value_t = 1500.0)]
     pub max_seconds: f64,
@@ -131,6 +136,7 @@ fn build_data<B: Backend>(
     positions: &[&PositionTarget],
     cfg: &ProbeConfig,
     device: &B::Device,
+    min_width: usize,
 ) -> anyhow::Result<Data<B>> {
     anyhow::ensure!(!positions.is_empty(), "empty split");
     let provider = provider_for_config(&cfg.experimental)?;
@@ -138,7 +144,13 @@ fn build_data<B: Backend>(
         .iter()
         .map(|p| rebuild_state(&p.start_fen, &p.prefix))
         .collect::<anyhow::Result<Vec<_>>>()?;
-    let batch = build_x15_batch::<B>(&states, &cfg.experimental, provider.as_ref(), device)?;
+    let batch = build_x15_batch_padded::<B>(
+        &states,
+        &cfg.experimental,
+        provider.as_ref(),
+        device,
+        min_width,
+    )?;
     let width = batch.cands.width;
     let rungs = positions[0].rungs.len();
     let (mut policy, mut value) = (Vec::new(), Vec::new());
@@ -183,7 +195,7 @@ fn build_data<B: Backend>(
     })
 }
 
-fn split<'a>(t: &'a ReasoningTargetsV1, which: &str) -> Vec<&'a PositionTarget> {
+pub(crate) fn split<'a>(t: &'a ReasoningTargetsV1, which: &str) -> Vec<&'a PositionTarget> {
     t.positions.iter().filter(|p| p.split == which).collect()
 }
 
@@ -204,22 +216,22 @@ fn readout_terms<B: Backend>(
 // --- evaluation ------------------------------------------------------------------
 
 #[derive(Serialize, Clone)]
-struct PerThought {
-    t: usize,
-    kl_deep: Vec<f32>,
-    ce_deep: Vec<f32>,
-    top1: Vec<f32>,
-    entropy: Vec<f32>,
-    value_abs_err: Vec<f32>,
-    value_pred: Vec<f32>,
-    p_win: Vec<f32>,
-    p_draw: Vec<f32>,
-    latent_delta: f32,
-    policy_kl_prev: f32,
-    wdl_l1_prev: f32,
+pub(crate) struct PerThought {
+    pub(crate) t: usize,
+    pub(crate) kl_deep: Vec<f32>,
+    pub(crate) ce_deep: Vec<f32>,
+    pub(crate) top1: Vec<f32>,
+    pub(crate) entropy: Vec<f32>,
+    pub(crate) value_abs_err: Vec<f32>,
+    pub(crate) value_pred: Vec<f32>,
+    pub(crate) p_win: Vec<f32>,
+    pub(crate) p_draw: Vec<f32>,
+    pub(crate) latent_delta: f32,
+    pub(crate) policy_kl_prev: f32,
+    pub(crate) wdl_l1_prev: f32,
 }
 
-fn mean(v: &[f32]) -> f32 {
+pub(crate) fn mean(v: &[f32]) -> f32 {
     if v.is_empty() {
         f32::NAN
     } else {
@@ -235,7 +247,7 @@ fn mix(mut x: u64) -> u64 {
 }
 
 /// Deterministic paired bootstrap of `mean(a - b)`: (mean, lo95, hi95).
-fn paired_bootstrap(a: &[f32], b: &[f32]) -> (f32, f32, f32) {
+pub(crate) fn paired_bootstrap(a: &[f32], b: &[f32]) -> (f32, f32, f32) {
     let d: Vec<f32> = a.iter().zip(b).map(|(x, y)| x - y).collect();
     let n = d.len();
     if n == 0 {
@@ -396,6 +408,8 @@ fn experiment_record(
         "teacher": targets.teacher,
         "train_positions": n_train,
         "optimizer_contract": recur64_model::train::OPTIMIZER_CONTRACT,
+        "batch_positions": args.batch_positions,
+        "data_order": if args.batch_positions > 0 { "fnv1a(id) mixed with seed, cycling" } else { "file_order_full_batch" },
         "lr": args.lr,
         "warmup_updates": args.warmup,
         "initialization": init,
@@ -461,13 +475,39 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
     let device: B::Device = Default::default();
     B::seed(&device, args.seed);
 
-    let n_train = train_pos.len();
-    let chunks = train_pos
+    // Deterministic training order: file order for full-batch runs, otherwise a
+    // seeded hash order over position ids (recorded in experiment.json).
+    let mut ordered: Vec<&PositionTarget> = train_pos.clone();
+    if args.batch_positions > 0 {
+        ordered.sort_by_key(|p| (mix(args.seed ^ id_hash(&p.id)), p.id.clone()));
+    }
+    // One fixed candidate width for the whole run, so the GPU sees one shape.
+    let widest = ordered.iter().map(|p| p.legal.len()).max().unwrap_or(0);
+    let fixed_width = recur64_model::action::CandidateBatch::WIDTH_BUCKETS
+        .iter()
+        .copied()
+        .find(|&w| w >= widest)
+        .unwrap_or(widest);
+    let chunks = ordered
         .chunks(args.micro_batch.max(1))
-        .map(|c| build_data::<B>(c, cfg, &device))
+        .map(|c| build_data::<B>(c, cfg, &device, fixed_width))
         .collect::<anyhow::Result<Vec<_>>>()?;
+    let chunks_per_update = if args.batch_positions > 0 {
+        (args.batch_positions / args.micro_batch.max(1)).max(1)
+    } else {
+        chunks.len()
+    };
     let inner_device: Device<B::InnerBackend> = Default::default();
-    let val_data = build_data::<B::InnerBackend>(&val_pos, cfg, &inner_device)?;
+    let val_data = if val_pos.is_empty() {
+        None
+    } else {
+        Some(build_data::<B::InnerBackend>(
+            &val_pos,
+            cfg,
+            &inner_device,
+            0,
+        )?)
+    };
     let val_ids: Vec<String> = val_pos.iter().map(|p| p.id.clone()).collect();
     let rungs = chunks[0].policy.len();
 
@@ -536,12 +576,17 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
                 args.lr * (((start_update + u + 1) as f64) / args.warmup.max(1) as f64).min(1.0);
             let mut acc = GradientsAccumulator::new();
             let mut loss_v = 0.0f32;
-            for chunk in &chunks {
+            let first = ((start_update + u) * chunks_per_update) % chunks.len();
+            let selected: Vec<&Data<B>> = (0..chunks_per_update)
+                .map(|k| &chunks[(first + k) % chunks.len()])
+                .collect();
+            let n_update: usize = selected.iter().map(|c| c.len()).sum();
+            for chunk in selected {
                 let out =
                     model.forward_thoughts(&chunk.batch.input, &chunk.batch.cands, args.thoughts);
                 // Chunk means weighted by chunk size: the accumulated
                 // gradient equals the full-batch mean-loss gradient.
-                let frac = chunk.len() as f32 / n_train as f32;
+                let frac = chunk.len() as f32 / n_update as f32;
                 let loss = thought_loss_with(
                     &out.readouts,
                     rungs,
@@ -576,8 +621,11 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
                 );
             }
             model = optim.step(lr, model, grads);
-            if args.eval_every > 0 && (u + 1) % args.eval_every == 0 && u + 1 < args.updates {
-                let rows = evaluate(&model.valid(), &val_data, args.eval_thoughts);
+            if let (Some(val_data), true) = (
+                &val_data,
+                args.eval_every > 0 && (u + 1) % args.eval_every == 0 && u + 1 < args.updates,
+            ) {
+                let rows = evaluate(&model.valid(), val_data, args.eval_thoughts);
                 let s: Vec<String> = rows
                     .iter()
                     .map(|r| format!("T{}={:.4}", r.t, mean(&r.kl_deep)))
@@ -611,13 +659,19 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
         gpu.util_busy_mean
     );
 
-    let rows = evaluate(&model.valid(), &val_data, args.eval_thoughts);
-    println!("final held-out evaluation (SAME weights, diagnostic forward):");
-    print_eval("val", &rows);
-    std::fs::write(
-        args.out.join("eval-val.json"),
-        serde_json::to_vec_pretty(&eval_json(&rows, &val_ids))?,
-    )?;
+    if let Some(val_data) = &val_data {
+        let rows = evaluate(&model.valid(), val_data, args.eval_thoughts);
+        println!("final held-out evaluation (SAME weights, diagnostic forward):");
+        print_eval("val", &rows);
+        std::fs::write(
+            args.out.join("eval-val.json"),
+            serde_json::to_vec_pretty(&eval_json(&rows, &val_ids))?,
+        )?;
+    } else {
+        println!(
+            "no val split in this targets file: evaluate the checkpoint with eval-reasoning / eval-tactics"
+        );
+    }
     Ok(())
 }
 
@@ -652,6 +706,29 @@ fn load(path: &Path) -> anyhow::Result<ProbeConfig> {
 }
 
 // --- eval ----------------------------------------------------------------------------
+
+/// Evaluate one checkpoint on `pos` at T=1..tmax. Inputs are built from the
+/// CHECKPOINT'S OWN experimental contract (compute / visual / candidate facts),
+/// so variants with different pathways can be evaluated by one command.
+pub(crate) fn ckpt_rows<B: Backend>(
+    cfg: &ProbeConfig,
+    ck: &Path,
+    pos: &[&PositionTarget],
+    tmax: usize,
+    device: &B::Device,
+) -> anyhow::Result<(Vec<PerThought>, Vec<String>)> {
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+    let mut cfg_ck = cfg.clone();
+    cfg_ck.experimental = meta.experimental.clone();
+    let data = build_data::<B>(pos, &cfg_ck, device, 0)?;
+    let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, device)?;
+    let tmax = if meta.experimental.reasoning.enabled {
+        tmax
+    } else {
+        1
+    };
+    Ok((evaluate(&model, &data, tmax), data.categories))
+}
 
 /// Pooled, position-clustered effect of `T=t` vs `T=1` across checkpoints.
 ///
@@ -694,16 +771,13 @@ fn eval_ckpt<B: Backend>(cfg: &ProbeConfig, args: &EvalArgs) -> anyhow::Result<(
     for name in splits {
         let pos = split(&targets, name);
         anyhow::ensure!(!pos.is_empty(), "no positions in split {name:?}");
-        let data = build_data::<B>(&pos, cfg, &device)?;
         let ids: Vec<String> = pos.iter().map(|p| p.id.clone()).collect();
         let mut per_ckpt: Vec<Vec<PerThought>> = Vec::new();
         let mut per_json = Vec::new();
+        let mut categories = Vec::new();
         for ck in &args.checkpoint {
-            let meta: CheckpointMeta =
-                serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
-            // The checkpoint's own experimental contract is authoritative.
-            let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, &device)?;
-            let rows = evaluate(&model, &data, args.thoughts);
+            let (rows, cats) = ckpt_rows::<B>(cfg, ck, &pos, args.thoughts, &device)?;
+            categories = cats;
             println!("checkpoint {}", ck.display());
             print_eval(name, &rows);
             let mut j = eval_json(&rows, &ids);
@@ -711,7 +785,7 @@ fn eval_ckpt<B: Backend>(cfg: &ProbeConfig, args: &EvalArgs) -> anyhow::Result<(
             per_json.push(j);
             per_ckpt.push(rows);
         }
-        let mut entry = serde_json::json!({"checkpoints": per_json, "categories": data.categories});
+        let mut entry = serde_json::json!({"checkpoints": per_json, "categories": categories});
         if per_ckpt.len() > 1 && args.thoughts >= 2 {
             println!(
                 "  POOLED over {} checkpoints, clustered by position:",
@@ -735,10 +809,8 @@ fn eval_ckpt<B: Backend>(cfg: &ProbeConfig, args: &EvalArgs) -> anyhow::Result<(
         if !args.baseline.is_empty() {
             let mut base_rows: Vec<Vec<f32>> = Vec::new();
             for bk in &args.baseline {
-                let bmeta: CheckpointMeta =
-                    serde_json::from_slice(&std::fs::read(bk.join("meta.json"))?)?;
-                let bm = model_io::load_chimera::<B>(bk, &cfg.model, &bmeta.experimental, &device)?;
-                base_rows.push(evaluate(&bm, &data, 1).remove(0).kl_deep);
+                let (rows, _) = ckpt_rows::<B>(cfg, bk, &pos, 1, &device)?;
+                base_rows.push(rows[0].kl_deep.clone());
             }
             let nb = base_rows.len() as f32;
             let base: Vec<f32> = (0..pos.len())
@@ -794,4 +866,14 @@ pub fn run_eval(args: EvalArgs) -> anyhow::Result<()> {
             }
         }
     }
+}
+
+/// FNV-1a 64-bit hash of a position id (stable across platforms).
+fn id_hash(id: &str) -> u64 {
+    let mut h = 0xcbf2_9ce4_8422_2325u64;
+    for b in id.bytes() {
+        h ^= u64::from(b);
+        h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+    h
 }

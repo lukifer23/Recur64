@@ -452,9 +452,11 @@ fn eval_one<B: Backend>(
         .iter()
         .map(|f| GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{}: {e}", f.id)))
         .collect::<anyhow::Result<_>>()?;
-    let provider = provider_for_config(&cfg.experimental)?;
-    let batch = build_x15_batch::<B>(&states, &cfg.experimental, provider.as_ref(), device)?;
+    // Inputs are built from the CHECKPOINT'S experimental contract, so variants
+    // with and without compute / visual / candidate facts can share one command.
     let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+    let provider = provider_for_config(&meta.experimental)?;
+    let batch = build_x15_batch::<B>(&states, &meta.experimental, provider.as_ref(), device)?;
     let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, device)?;
     let tmax = if meta.experimental.reasoning.enabled {
         tmax
@@ -766,4 +768,52 @@ pub fn run_teacher(args: TeacherTacticsArgs) -> anyhow::Result<()> {
         }
         other => anyhow::bail!("unsupported device {other:?}"),
     }
+}
+
+/// Per-fixture top-1 correctness of one checkpoint at `t` thoughts (labelled
+/// fixtures only), as `(kind, 0.0 | 1.0)`. Inputs come from the checkpoint's own
+/// experimental contract.
+pub(crate) fn tactic_vector<B: Backend>(
+    cfg: &ProbeConfig,
+    fixtures: &[Fixture],
+    ck: &std::path::Path,
+    t: usize,
+    device: &B::Device,
+) -> anyhow::Result<Vec<(String, f32)>> {
+    let states: Vec<GameState> = fixtures
+        .iter()
+        .map(|f| GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{}: {e}", f.id)))
+        .collect::<anyhow::Result<_>>()?;
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+    let provider = provider_for_config(&meta.experimental)?;
+    let batch = build_x15_batch::<B>(&states, &meta.experimental, provider.as_ref(), device)?;
+    let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, device)?;
+    let t = if meta.experimental.reasoning.enabled {
+        t
+    } else {
+        1
+    };
+    let out = model.forward_thoughts_diagnostic(&batch.input, &batch.cands, t);
+    let width = batch.cands.width;
+    let lp = out.readouts[t - 1]
+        .policy
+        .log_probs
+        .clone()
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap_or_default();
+    let mut v = Vec::new();
+    for (i, f) in fixtures.iter().enumerate() {
+        if f.correct.is_empty() {
+            continue;
+        }
+        let n = states[i].legal_actions().len();
+        let row = &lp[i * width..i * width + n];
+        let arg = row
+            .iter()
+            .enumerate()
+            .fold(0usize, |b, (j, x)| if *x > row[b] { j } else { b });
+        v.push((f.kind.clone(), f32::from(f.correct.contains(&arg))));
+    }
+    Ok(v)
 }

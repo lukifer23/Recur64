@@ -96,7 +96,9 @@ impl CandidateBatch {
         Self::from_lists_min_width(lists, width)
     }
 
-    fn from_lists_min_width(lists: &[Vec<(u32, u32, u8)>], min_width: usize) -> Self {
+    /// Like [`Self::from_lists`], but never narrower than `min_width` (padded
+    /// slots are masked like short rows). Lets a run use one fixed shape.
+    pub fn from_lists_min_width(lists: &[Vec<(u32, u32, u8)>], min_width: usize) -> Self {
         let batch = lists.len();
         let width = lists
             .iter()

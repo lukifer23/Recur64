@@ -494,3 +494,19 @@ T1): 0.3057 vs 0.3152, diff -0.0095 [-0.0338, +0.0187]: a tie.
   would still not establish that the latent scratchpad (rather than repeated
   square-core depth) is responsible; that needs the latent-only / compute / visual
   ablations. No strength claim. Conversion rollouts remain NOT RUN.
+
+### E11 addendum - confirm2 generated (before any E11 result)
+`targets-confirm2` (evidence copy `docs/evidence/x1/reasoning-targets-v1-confirm2.json`),
+digest `89a39e189f0790a8adceb45d7c182e958bc2cffd58d5014366d270ad1ce57c9d`: 64
+positions (opening 12 / middlegame 13 / endgame 13 / tactical 13 /
+material_advantage 13), seed 20261004, from the 27 replay games used by NO other set
+(targets-128, confirm64 and the replay part of train960 all excluded; hard
+disjointness verified), split label `confirm`, teacher and ladder as A2, batched
+labelling (identical to batch-1, D63). 56 s.
+Execution details fixed before results: one fixed candidate width (next standard
+bucket at or above the widest legal list) for the whole run so the GPU sees one
+shape; per-update data = 96 positions = 3 micro-batches of 32 taken in seeded
+hash order over train960, cycling; evaluation inputs are built from each
+checkpoint's own experimental contract. Tooling: `x15 compare` computes the
+pre-registered statistics (fixture / position-clustered paired bootstrap of the
+seed-averaged difference, 2000 resamples, with per-seed signs).

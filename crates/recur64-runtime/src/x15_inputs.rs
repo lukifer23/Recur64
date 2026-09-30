@@ -51,6 +51,18 @@ pub fn build_x15_batch<B: Backend>(
     provider: &dyn ComputeProvider,
     device: &B::Device,
 ) -> anyhow::Result<X15Batch<B>> {
+    build_x15_batch_padded(states, exp, provider, device, 0)
+}
+
+/// [`build_x15_batch`] with the candidate width padded to at least `min_width`,
+/// so a run can use one fixed candidate shape (fewer kernel compilations).
+pub fn build_x15_batch_padded<B: Backend>(
+    states: &[GameState],
+    exp: &ExperimentalConfig,
+    provider: &dyn ComputeProvider,
+    device: &B::Device,
+    min_width: usize,
+) -> anyhow::Result<X15Batch<B>> {
     anyhow::ensure!(
         !states.is_empty(),
         "an X15 batch needs at least one position"
@@ -162,7 +174,7 @@ pub fn build_x15_batch<B: Backend>(
                 .collect()
         })
         .collect();
-    let cb = CandidateBatch::from_lists(&lists);
+    let cb = CandidateBatch::from_lists_min_width(&lists, min_width);
     let cands = CandidateTensors::from_batch(&cb, device);
     let use_facts =
         exp.is_chimera() && exp.candidate_facts.enabled && exp.candidate_facts.provider.is_active();
@@ -241,4 +253,19 @@ pub fn provider_for_config(exp: &ExperimentalConfig) -> anyhow::Result<Box<dyn C
         recur64_coproc::ComputeProviderKind::None
     };
     recur64_compute::provider_for(kind)
+}
+
+/// The candidate width a set of positions should be padded to: the next
+/// standard bucket at or above the widest legal-move list.
+pub fn bucket_width(states: &[GameState]) -> usize {
+    let max = states
+        .iter()
+        .map(|s| s.legal_actions().len())
+        .max()
+        .unwrap_or(0);
+    recur64_model::action::CandidateBatch::WIDTH_BUCKETS
+        .iter()
+        .copied()
+        .find(|&w| w >= max)
+        .unwrap_or(max)
 }

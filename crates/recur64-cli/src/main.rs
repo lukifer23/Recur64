@@ -26,6 +26,7 @@ mod replay_merge;
 mod search_gain;
 mod x15;
 mod x15_bench;
+mod x15_compare;
 mod x15_reasoning;
 mod x15_tactics;
 mod x15_train;
