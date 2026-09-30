@@ -1,0 +1,18 @@
+{
+  "family": "KQQvK",
+  "raw_placements": 15249024,
+  "legal_live": 5657120,
+  "canonical_classes": 353793,
+  "classes_by_depth": {
+    "1": 95649,
+    "2": 213317,
+    "3": 44709,
+    "none": 118
+  },
+  "eligible_by_depth": {
+    "1": 95649,
+    "2": 174163,
+    "3": 4409
+  },
+  "wall_s": 7.4092895
+}

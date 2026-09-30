@@ -7,6 +7,7 @@
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub mod accum;
 pub mod cancel;
 pub mod config;
 pub mod coordinator;
@@ -18,6 +19,7 @@ pub mod inference;
 pub mod learner;
 pub mod model_io;
 pub mod pilot;
+pub mod proof;
 pub mod replay;
 pub mod replay_identity;
 pub mod run_dir;

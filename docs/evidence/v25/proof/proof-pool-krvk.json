@@ -1,0 +1,18 @@
+{
+  "family": "KRvK",
+  "raw_placements": 249984,
+  "legal_live": 175168,
+  "canonical_classes": 21959,
+  "classes_by_depth": {
+    "1": 189,
+    "2": 587,
+    "3": 484,
+    "none": 20699
+  },
+  "eligible_by_depth": {
+    "1": 189,
+    "2": 532,
+    "3": 438
+  },
+  "wall_s": 0.2213807
+}

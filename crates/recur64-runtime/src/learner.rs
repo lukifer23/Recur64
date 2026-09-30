@@ -13,7 +13,7 @@
 //! - [`train_from_store`] samples on demand from a [`ReplayStore`], bounding
 //!   memory regardless of replay capacity.
 
-use burn::module::{Module, ModuleVisitor, Param};
+use burn::module::{ModuleVisitor, Param};
 use burn::optim::{GradientsAccumulator, GradientsParams, Optimizer};
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
@@ -102,9 +102,9 @@ impl<B: AutodiffBackend> ModuleVisitor<B> for MeanGradVisitor<'_, B> {
     }
 }
 
-fn mean_gradients<B: AutodiffBackend>(
+pub(crate) fn mean_gradients<B: AutodiffBackend, M: burn::module::AutodiffModule<B>>(
     grads: &mut GradientsParams,
-    model: &ProbeModel<B>,
+    model: &M,
     examples: usize,
 ) {
     model.visit(&mut MeanGradVisitor::<B> {

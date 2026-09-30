@@ -1,0 +1,215 @@
+{
+  "architecture": "candidate_v25",
+  "assembly_vs_forward": {
+    "batch": 32,
+    "facts_ms_mean": 0.35099,
+    "facts_share_of_batch_eval": 0.014248511678226154,
+    "forward_ms_mean": 24.11628,
+    "note": "proxy: excludes search overhead; the real self-play share is re-measured in P4 scheduling",
+    "observation_and_legal_ms_mean": 0.16618000000000002,
+    "reps": 10
+  },
+  "config": "candidate-v25-cf-cuda",
+  "device": "Cuda",
+  "facts_cost": {
+    "candidate_moves_per_sec": 4165530.3712470094,
+    "mean_legal_width": 31.623046875,
+    "per_position_us_p50": 7.4,
+    "per_position_us_p95": 11.5,
+    "positions": 1024,
+    "positions_per_sec": 131724.5105353881,
+    "wall_s": 0.0077738
+  },
+  "forward": [
+    {
+      "batch": 8,
+      "forward_ms_mean": 164.42036000000002,
+      "forward_ms_p50": 28.5514,
+      "gpu": {
+        "last_vram_mb": 626,
+        "min_vram_mb": 626,
+        "peak_vram_mb": 626,
+        "samples": 5,
+        "temp_max_c": 38,
+        "util_busy_mean": 1.5,
+        "util_max": 2
+      },
+      "ok": true,
+      "positions_per_sec": 48.65577474711769,
+      "reps": 10
+    },
+    {
+      "batch": 16,
+      "forward_ms_mean": 61.922990000000006,
+      "forward_ms_p50": 51.4233,
+      "gpu": {
+        "last_vram_mb": 626,
+        "min_vram_mb": 626,
+        "peak_vram_mb": 626,
+        "samples": 3,
+        "temp_max_c": 40,
+        "util_busy_mean": 40.0,
+        "util_max": 77
+      },
+      "ok": true,
+      "positions_per_sec": 258.3854558702672,
+      "reps": 10
+    },
+    {
+      "batch": 32,
+      "forward_ms_mean": 25.76902,
+      "forward_ms_p50": 26.186700000000002,
+      "gpu": {
+        "last_vram_mb": 882,
+        "min_vram_mb": 882,
+        "peak_vram_mb": 882,
+        "samples": 2,
+        "temp_max_c": 40,
+        "util_busy_mean": 1.0,
+        "util_max": 1
+      },
+      "ok": true,
+      "positions_per_sec": 1241.8012015978877,
+      "reps": 10
+    },
+    {
+      "batch": 48,
+      "forward_ms_mean": 45.12421,
+      "forward_ms_p50": 36.5274,
+      "gpu": {
+        "last_vram_mb": 882,
+        "min_vram_mb": 882,
+        "peak_vram_mb": 882,
+        "samples": 2,
+        "temp_max_c": 48,
+        "util_busy_mean": 80.0,
+        "util_max": 80
+      },
+      "ok": true,
+      "positions_per_sec": 1063.730534008241,
+      "reps": 10
+    },
+    {
+      "batch": 64,
+      "forward_ms_mean": 51.196780000000004,
+      "forward_ms_p50": 51.1716,
+      "gpu": {
+        "last_vram_mb": 882,
+        "min_vram_mb": 882,
+        "peak_vram_mb": 882,
+        "samples": 3,
+        "temp_max_c": 49,
+        "util_busy_mean": 73.0,
+        "util_max": 86
+      },
+      "ok": true,
+      "positions_per_sec": 1250.0786182255993,
+      "reps": 10
+    },
+    {
+      "batch": 96,
+      "forward_ms_mean": 91.37084,
+      "forward_ms_p50": 83.8664,
+      "gpu": {
+        "last_vram_mb": 946,
+        "min_vram_mb": 946,
+        "peak_vram_mb": 946,
+        "samples": 3,
+        "temp_max_c": 49,
+        "util_busy_mean": 62.0,
+        "util_max": 91
+      },
+      "ok": true,
+      "positions_per_sec": 1050.6634282885,
+      "reps": 10
+    }
+  ],
+  "layouts": [
+    {
+      "accum": 8,
+      "effective_batch": 256,
+      "examples_per_sec": 277.73560712967554,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 1876,
+        "min_vram_mb": 1876,
+        "peak_vram_mb": 1876,
+        "samples": 11,
+        "temp_max_c": 53,
+        "util_busy_mean": 67.18181818181819,
+        "util_max": 81
+      },
+      "last_loss": 3.869689464569092,
+      "layout": "32x8",
+      "max_grad_norm": 18.949535369873047,
+      "ok": true,
+      "physical": 32,
+      "sec_per_update": 0.9217399333333334,
+      "updates": 6
+    },
+    {
+      "accum": 4,
+      "effective_batch": 256,
+      "examples_per_sec": 278.7999889423858,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 3220,
+        "min_vram_mb": 3220,
+        "peak_vram_mb": 3220,
+        "samples": 11,
+        "temp_max_c": 56,
+        "util_busy_mean": 81.18181818181819,
+        "util_max": 91
+      },
+      "last_loss": 3.750548839569092,
+      "layout": "64x4",
+      "max_grad_norm": 18.898330688476562,
+      "ok": true,
+      "physical": 64,
+      "sec_per_update": 0.9182209833333334,
+      "updates": 6
+    },
+    {
+      "accum": 2,
+      "effective_batch": 256,
+      "examples_per_sec": 253.77360608775126,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 4820,
+        "min_vram_mb": 4820,
+        "peak_vram_mb": 4820,
+        "samples": 12,
+        "temp_max_c": 58,
+        "util_busy_mean": 88.9090909090909,
+        "util_max": 96
+      },
+      "last_loss": 3.740140199661255,
+      "layout": "128x2",
+      "max_grad_norm": 18.93414878845215,
+      "ok": true,
+      "physical": 128,
+      "sec_per_update": 1.00877315,
+      "updates": 6
+    }
+  ],
+  "lifecycle": {
+    "growth_mb_after_rep2": 32,
+    "pass": true,
+    "reps": 4,
+    "rule": "pass iff growth after rep 2 <= 256 MiB (pre-registered)",
+    "vram_mb_after_each_rep": [
+      4820,
+      1012,
+      1044,
+      1044
+    ]
+  },
+  "params": {
+    "total": 27469204
+  },
+  "positions_pool": 1024,
+  "precision": "fp32",
+  "seed": 20250930,
+  "selected_layout": "64x4",
+  "selection_rule": "fastest layout with finite loss+grads and peak VRAM <= 12288 MiB"
+}

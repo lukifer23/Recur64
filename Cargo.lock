@@ -4510,6 +4510,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "burn",
+ "cozy-chess",
  "crc32fast",
  "ctrlc",
  "recur64-core",

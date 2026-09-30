@@ -22,3 +22,44 @@ run. Entries are appended; they are never rewritten after results are seen.
 - P3.5: one M4/M5 extension only if M1–M3 strong, M3 playout strong, transfer weak.
 - P4: only if P3 passes; 2-cycle smoke at most; curriculum conversion < 70% for two
   consecutive cycles is a hard stop.
+
+---
+
+## E-DATA-1 — ProofTargetsV1 scale (PRE-REGISTERED before any dataset was generated)
+
+QUESTION: how large can the hard-disjoint M1/M2/M3 datasets be under the pre-registered
+filters (correct <= 15% of legal moves and CandidateFacts ambiguity for M2/M3; canonical
+dedup; hard-disjoint splits)?
+
+HYPOTHESIS: the requested ~1000/100/100 per (family, band) is not available for the
+two-piece families.
+
+MEASURED (exact exhaustive enumeration of every placement, symmetry-canonical classes that
+pass the filters; `docs/evidence/v25/proof/proof-pool-*.json`):
+
+| Family | M1 | M2 | M3 |
+|---|---:|---:|---:|
+| KQvK | 306 | 576 | 1,076 |
+| KRvK | 189 | 532 | 438 |
+| KQQvK | 95,649 | 174,163 | 4,409 |
+| KQRvK | 111,273 | 306,595 | 211,215 |
+| KRRvK | 41,612 | 122,082 | 108,086 |
+
+Six of fifteen cells are below the 1,200 needed for 1000/100/100 (KQvK M1/M2/M3, KRvK
+M1/M2/M3). The generator benchmark gate measured ~185–15,000 positions/s by band with a
+projected full-scale wall under one minute, so the limit is pool size, not time.
+
+PRE-REGISTERED RULE (all filters kept; nothing relaxed):
+- A cell whose eligible pool P >= 1200 uses TRAIN/TUNE/CONFIRM = 1000/100/100.
+- A cell with P < 1200 uses its whole pool split 80/10/10: TUNE = CONFIRM = floor(0.10 P),
+  TRAIN = P - 2 floor(0.10 P). No position is reused across splits.
+- Splits are selected from the exact pool by independent seeded shuffles (CONFIRM, then
+  TUNE from the remainder, then TRAIN from the remainder), so they are hard-disjoint by
+  exact FEN and canonical class by construction, and re-verified.
+- Family x depth balance is therefore approximate, not exact. Results are reported pooled
+  by depth AND by family; per-family confirm counts for KRvK M1 are small and are flagged.
+
+EXPECTED SIZES: TRAIN 11,501, TUNE 1,208, CONFIRM 1,208.
+DECISION: proceed. This is a scale decision inside the "approximately" latitude, not a
+change to the exactness contract; if it should be treated as a material contract change the
+owner can regenerate under a different rule in minutes (generation is cheap).

@@ -24,4 +24,5 @@ recur64-eval = { path = "../recur64-eval", default-features = false }
 bincode = { version = "2", features = ["serde"] }
 crc32fast = "1"
 sha2 = "0.10"
+cozy-chess = { workspace = true }
 ctrlc = "3"

@@ -20,7 +20,9 @@ mod model_info;
 mod perft;
 mod phase2;
 mod phase3;
+mod proof_cli;
 mod search_gain;
+mod v25_qual;
 mod value_diag;
 
 #[derive(Parser)]
@@ -46,6 +48,11 @@ enum Commands {
         #[arg(long)]
         json: Option<PathBuf>,
     },
+    /// V2.5 P0.5/P0.6 qualification: facts cost, forward latency, learner layouts, VRAM.
+    V25Qual(v25_qual::V25QualArgs),
+    /// Exact proof-position tooling (ProofTargetsV1): bench, gen, audit.
+    #[command(subcommand)]
+    Proof(proof_cli::ProofCmd),
     /// Bounded benchmark matrix; writes raw data to --output.
     Bench(bench::BenchArgs),
     /// Count legal move tree nodes from a FEN (validates move generation).
@@ -105,6 +112,8 @@ fn main() -> anyhow::Result<()> {
         Commands::ModelInfo { config, json } => {
             model_info::run_model_info(&config, json.as_deref())
         }
+        Commands::V25Qual(a) => v25_qual::run(a),
+        Commands::Proof(c) => proof_cli::run(c),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),
         Commands::ValidatePosition(args) => inspect::run_validate(args),

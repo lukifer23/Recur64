@@ -1,0 +1,402 @@
+{
+  "audit": [
+    {
+      "checked": 1208,
+      "failures": 0,
+      "split": "confirm",
+      "wall_s": 0.8773845
+    },
+    {
+      "checked": 1208,
+      "failures": 0,
+      "split": "tune",
+      "wall_s": 0.948374
+    },
+    {
+      "checked": 11501,
+      "failures": 0,
+      "split": "train",
+      "wall_s": 5.5036393
+    }
+  ],
+  "cell_plan": [
+    {
+      "depth": 1,
+      "eligible_pool": 306,
+      "family": "KQvK",
+      "plan": {
+        "confirm": 30,
+        "train": 246,
+        "tune": 30
+      }
+    },
+    {
+      "depth": 2,
+      "eligible_pool": 576,
+      "family": "KQvK",
+      "plan": {
+        "confirm": 57,
+        "train": 462,
+        "tune": 57
+      }
+    },
+    {
+      "depth": 3,
+      "eligible_pool": 1076,
+      "family": "KQvK",
+      "plan": {
+        "confirm": 107,
+        "train": 862,
+        "tune": 107
+      }
+    },
+    {
+      "depth": 1,
+      "eligible_pool": 189,
+      "family": "KRvK",
+      "plan": {
+        "confirm": 18,
+        "train": 153,
+        "tune": 18
+      }
+    },
+    {
+      "depth": 2,
+      "eligible_pool": 532,
+      "family": "KRvK",
+      "plan": {
+        "confirm": 53,
+        "train": 426,
+        "tune": 53
+      }
+    },
+    {
+      "depth": 3,
+      "eligible_pool": 438,
+      "family": "KRvK",
+      "plan": {
+        "confirm": 43,
+        "train": 352,
+        "tune": 43
+      }
+    },
+    {
+      "depth": 1,
+      "eligible_pool": 95649,
+      "family": "KQQvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 2,
+      "eligible_pool": 174163,
+      "family": "KQQvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 3,
+      "eligible_pool": 4409,
+      "family": "KQQvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 1,
+      "eligible_pool": 111273,
+      "family": "KQRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 2,
+      "eligible_pool": 306595,
+      "family": "KQRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 3,
+      "eligible_pool": 211215,
+      "family": "KQRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 1,
+      "eligible_pool": 41612,
+      "family": "KRRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 2,
+      "eligible_pool": 122082,
+      "family": "KRRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    },
+    {
+      "depth": 3,
+      "eligible_pool": 108086,
+      "family": "KRRvK",
+      "plan": {
+        "confirm": 100,
+        "train": 1000,
+        "tune": 100
+      }
+    }
+  ],
+  "datasets": [
+    {
+      "by_depth": {
+        "M1": {
+          "chance_top1": 0.04356486187871325,
+          "positions": 3399
+        },
+        "M2": {
+          "chance_top1": 0.057922610719860705,
+          "positions": 3888
+        },
+        "M3": {
+          "chance_top1": 0.07276940006297744,
+          "positions": 4214
+        }
+      },
+      "by_family": {
+        "KQQvK": {
+          "chance_top1": 0.07410302149504423,
+          "positions": 3000
+        },
+        "KQRvK": {
+          "chance_top1": 0.05233662056550384,
+          "positions": 3000
+        },
+        "KQvK": {
+          "chance_top1": 0.05994089337267504,
+          "positions": 1570
+        },
+        "KRRvK": {
+          "chance_top1": 0.05125710449802379,
+          "positions": 3000
+        },
+        "KRvK": {
+          "chance_top1": 0.05664112309252025,
+          "positions": 931
+        }
+      },
+      "chance_top1_overall": 0.059119235533427676,
+      "digest": "8d6440d214e606a7f01ad0584d292cf6ac500495040bda96816fb9f599e74cab",
+      "file": "runs/v25/proof\\proof-train.json",
+      "positions": 11501,
+      "seed": 2047934465,
+      "split": "train"
+    },
+    {
+      "by_depth": {
+        "M1": {
+          "chance_top1": 0.0445543861327072,
+          "positions": 348
+        },
+        "M2": {
+          "chance_top1": 0.05810860451310873,
+          "positions": 410
+        },
+        "M3": {
+          "chance_top1": 0.0724590554046962,
+          "positions": 450
+        }
+      },
+      "by_family": {
+        "KQQvK": {
+          "chance_top1": 0.07518197274456422,
+          "positions": 300
+        },
+        "KQRvK": {
+          "chance_top1": 0.05179201593001684,
+          "positions": 300
+        },
+        "KQvK": {
+          "chance_top1": 0.06083934379683942,
+          "positions": 194
+        },
+        "KRRvK": {
+          "chance_top1": 0.051657618017246325,
+          "positions": 300
+        },
+        "KRvK": {
+          "chance_top1": 0.05740100396960451,
+          "positions": 114
+        }
+      },
+      "chance_top1_overall": 0.05954969301048839,
+      "digest": "d48ccf8616091437210e2c21f5ad33638a1847bd8220abf6c36b2f510c0185a3",
+      "file": "runs/v25/proof\\proof-tune.json",
+      "positions": 1208,
+      "seed": 2047934466,
+      "split": "tune"
+    },
+    {
+      "by_depth": {
+        "M1": {
+          "chance_top1": 0.041773859855729616,
+          "positions": 348
+        },
+        "M2": {
+          "chance_top1": 0.05777823870501867,
+          "positions": 410
+        },
+        "M3": {
+          "chance_top1": 0.07060680537174145,
+          "positions": 450
+        }
+      },
+      "by_family": {
+        "KQQvK": {
+          "chance_top1": 0.07083802282810212,
+          "positions": 300
+        },
+        "KQRvK": {
+          "chance_top1": 0.05252587737515569,
+          "positions": 300
+        },
+        "KQvK": {
+          "chance_top1": 0.057197256945073605,
+          "positions": 194
+        },
+        "KRRvK": {
+          "chance_top1": 0.052370209929843745,
+          "positions": 300
+        },
+        "KRvK": {
+          "chance_top1": 0.05423633884965328,
+          "positions": 114
+        }
+      },
+      "chance_top1_overall": 0.05794655920209869,
+      "digest": "ed36378381eed0a05958c2302752b219a1d2b2f94996bb4e373e9a9510ccc101",
+      "file": "runs/v25/proof\\proof-confirm.json",
+      "positions": 1208,
+      "seed": 2047934467,
+      "split": "confirm"
+    }
+  ],
+  "disjoint": "exact FEN and symmetry-canonical key: no overlap across train/tune/confirm (verified)",
+  "generation_wall_s": 59.1346836,
+  "pools": [
+    {
+      "canonical_classes": 18081,
+      "classes_by_depth": {
+        "1": 306,
+        "2": 629,
+        "3": 1135,
+        "none": 16011
+      },
+      "eligible_by_depth": {
+        "1": 306,
+        "2": 576,
+        "3": 1076
+      },
+      "family": "KQvK",
+      "legal_live": 144508,
+      "raw_placements": 249984,
+      "wall_s": 0.2404232
+    },
+    {
+      "canonical_classes": 21959,
+      "classes_by_depth": {
+        "1": 189,
+        "2": 587,
+        "3": 484,
+        "none": 20699
+      },
+      "eligible_by_depth": {
+        "1": 189,
+        "2": 532,
+        "3": 438
+      },
+      "family": "KRvK",
+      "legal_live": 175168,
+      "raw_placements": 249984,
+      "wall_s": 0.2073258
+    },
+    {
+      "canonical_classes": 353793,
+      "classes_by_depth": {
+        "1": 95649,
+        "2": 213317,
+        "3": 44709,
+        "none": 118
+      },
+      "eligible_by_depth": {
+        "1": 95649,
+        "2": 174163,
+        "3": 4409
+      },
+      "family": "KQQvK",
+      "legal_live": 5657120,
+      "raw_placements": 15249024,
+      "wall_s": 8.8454705
+    },
+    {
+      "canonical_classes": 864052,
+      "classes_by_depth": {
+        "1": 111273,
+        "2": 342437,
+        "3": 268681,
+        "none": 141661
+      },
+      "eligible_by_depth": {
+        "1": 111273,
+        "2": 306595,
+        "3": 211215
+      },
+      "family": "KQRvK",
+      "legal_live": 6911296,
+      "raw_placements": 15249024,
+      "wall_s": 29.7982085
+    },
+    {
+      "canonical_classes": 520702,
+      "classes_by_depth": {
+        "1": 41612,
+        "2": 144696,
+        "3": 123112,
+        "none": 211282
+      },
+      "eligible_by_depth": {
+        "1": 41612,
+        "2": 122082,
+        "3": 108086
+      },
+      "family": "KRRvK",
+      "legal_live": 8325184,
+      "raw_placements": 15249024,
+      "wall_s": 12.9410964
+    }
+  ]
+}

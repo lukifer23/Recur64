@@ -1,0 +1,139 @@
+{
+  "bands": [
+    {
+      "acceptance_after_band_found": 0.2,
+      "acceptance_rate_of_sampled": 0.00508854060655404,
+      "accepted": 100,
+      "band": "M1",
+      "found_at_depth": 500,
+      "max_legal_root_moves": 56,
+      "pool_by_family": {
+        "KQQvK": {
+          "1": 100,
+          "none": 278
+        },
+        "KQRvK": {
+          "1": 100,
+          "none": 580
+        },
+        "KQvK": {
+          "1": 100,
+          "none": 6096
+        },
+        "KRRvK": {
+          "1": 100,
+          "none": 1186
+        },
+        "KRvK": {
+          "1": 100,
+          "none": 11012
+        }
+      },
+      "positions_per_sec": 15172.895140121687,
+      "projected_train_wall_s": 0.32953499999999997,
+      "projected_tune_plus_confirm_wall_s": 0.065907,
+      "rejected_ambiguity": 0,
+      "rejected_fraction": 0,
+      "sampled": 19652,
+      "solver_nodes": 19625,
+      "wall_s": 0.0065907
+    },
+    {
+      "acceptance_after_band_found": 0.17793594306049823,
+      "acceptance_rate_of_sampled": 0.011855364552459988,
+      "accepted": 100,
+      "band": "M2",
+      "found_at_depth": 562,
+      "max_legal_root_moves": 55,
+      "pool_by_family": {
+        "KQQvK": {
+          "1": 48,
+          "2": 116,
+          "none": 18
+        },
+        "KQRvK": {
+          "1": 45,
+          "2": 110,
+          "none": 141
+        },
+        "KQvK": {
+          "1": 51,
+          "2": 107,
+          "none": 2630
+        },
+        "KRRvK": {
+          "1": 34,
+          "2": 120,
+          "none": 282
+        },
+        "KRvK": {
+          "1": 42,
+          "2": 109,
+          "none": 4582
+        }
+      },
+      "positions_per_sec": 4136.675767353355,
+      "projected_train_wall_s": 1.2087,
+      "projected_tune_plus_confirm_wall_s": 0.24174,
+      "rejected_ambiguity": 0,
+      "rejected_fraction": 62,
+      "sampled": 8435,
+      "solver_nodes": 396335,
+      "wall_s": 0.024174
+    },
+    {
+      "acceptance_after_band_found": 0.05920663114268798,
+      "acceptance_rate_of_sampled": 0.005752416014726185,
+      "accepted": 100,
+      "band": "M3",
+      "found_at_depth": 1689,
+      "max_legal_root_moves": 56,
+      "pool_by_family": {
+        "KQQvK": {
+          "1": 2717,
+          "2": 6043,
+          "3": 1250,
+          "none": 3
+        },
+        "KQRvK": {
+          "1": 51,
+          "2": 129,
+          "3": 119,
+          "none": 66
+        },
+        "KQvK": {
+          "1": 24,
+          "2": 62,
+          "3": 104,
+          "none": 1401
+        },
+        "KRRvK": {
+          "1": 30,
+          "2": 116,
+          "3": 110,
+          "none": 179
+        },
+        "KRvK": {
+          "1": 42,
+          "2": 123,
+          "3": 106,
+          "none": 4709
+        }
+      },
+      "positions_per_sec": 185.32723507888733,
+      "projected_train_wall_s": 26.979304999999997,
+      "projected_tune_plus_confirm_wall_s": 5.395860999999999,
+      "rejected_ambiguity": 0,
+      "rejected_fraction": 1188,
+      "sampled": 17384,
+      "solver_nodes": 7693886,
+      "wall_s": 0.5395861
+    }
+  ],
+  "projected_total_wall_min": 0.5703507999999999,
+  "projected_total_wall_s": 34.221047999999996,
+  "sample_per_cell": 20,
+  "target_eval_per_cell": 100,
+  "target_train_per_cell": 1000,
+  "threads": 20
+}

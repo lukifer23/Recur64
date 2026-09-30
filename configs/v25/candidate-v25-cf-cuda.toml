@@ -1,0 +1,27 @@
+# Workstation V2.5 candidate transformer, CF cell: real CandidateFactsV1.
+# One pass, no recurrence. Geometry per docs/WORKSTATION_V25_ARCHITECTURE.md.
+name = "candidate-v25-cf-cuda"
+device = "cuda"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+architecture = "candidate_v25"
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+
+[model.candidate]
+dim = 256
+heads = 4
+ffn = 512
+blocks = 1
+facts_hidden = 64
+policy_hidden = 128
+facts_enabled = true
