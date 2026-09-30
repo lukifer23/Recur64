@@ -380,3 +380,5 @@ pooled comparison. A seed's overall difference can no longer be mistaken for tha
 M1 difference (the Q1 gate's "both seeds positive on M1" reads `top1.per_seed.seed_N.M1`).
 No science contract, threshold, data, model, sampler, LR, bootstrap method or resample
 count changed; the earlier P2 pre-registration is not rewritten.
+
+Statistics patch commit: `1f03cfca8c051e5e74795fa388af6b9167d956a8` (P2 was launched only after this commit existed).
