@@ -70,6 +70,7 @@ fn fresh_stats(cfg: ModelConfig, recurrence: usize) -> (f64, f64, f64, usize) {
                     observation: &obs,
                     legal: &legal,
                     side_to_move: state.side_to_move(),
+                    facts: None,
                 })
                 .expect("evaluate");
             let h: f64 = -r

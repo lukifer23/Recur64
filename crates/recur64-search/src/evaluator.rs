@@ -48,6 +48,10 @@ pub struct EvalRequest<'a> {
     /// observation is already canonical), but the arena uses it to route each
     /// ply to the correct model.
     pub side_to_move: Color,
+    /// `CandidateFactsV1` for every legal action, aligned to `legal`. `Some`
+    /// only when the evaluator advertises [`Evaluator::needs_candidate_facts`];
+    /// legacy evaluators receive `None` and pay nothing for it.
+    pub facts: Option<&'a [recur64_core::CandidateFactsV1]>,
 }
 
 /// Evaluation output, all from the **side-to-move perspective**.
@@ -87,6 +91,12 @@ pub fn value_to_wdl(value: f32) -> [f32; 3] {
 
 /// The evaluation interface consumed by search.
 pub trait Evaluator: Send + Sync {
+    /// Whether this evaluator consumes `CandidateFactsV1`. When false (the
+    /// default) callers do not compute facts.
+    fn needs_candidate_facts(&self) -> bool {
+        false
+    }
+
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError>;
 
     /// Evaluate several independent requests. Implementations may submit them
@@ -186,6 +196,7 @@ mod tests {
                 observation: &obs,
                 legal: &legal,
                 side_to_move: recur64_core::Color::White,
+                facts: None,
             })
             .unwrap();
         assert_eq!(r.policy.len(), 5);
@@ -215,6 +226,7 @@ mod tests {
                 observation: &obs,
                 legal: &legal,
                 side_to_move: recur64_core::Color::White,
+                facts: None,
             })
             .unwrap();
         }

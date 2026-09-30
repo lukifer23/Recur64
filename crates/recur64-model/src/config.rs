@@ -145,9 +145,9 @@ pub const CANDIDATE_TOKEN_CONTRACT: u32 = 1;
 /// Version of the candidate-block contract (masked self-attention block).
 pub const CANDIDATE_BLOCK_CONTRACT: u32 = 1;
 /// Version of the `CandidateFactsV1` field layout consumed by the model.
-pub const CANDIDATE_FACTS_VERSION: u32 = 1;
+pub const CANDIDATE_FACTS_VERSION: u32 = recur64_core::CANDIDATE_FACTS_VERSION;
 /// Fields per candidate in `CandidateFactsV1`.
-pub const CANDIDATE_FACT_FIELDS: usize = 8;
+pub const CANDIDATE_FACT_FIELDS: usize = recur64_core::CANDIDATE_FACT_FIELDS;
 /// Version of the V2.5 readout function (policy scorer + WDL head).
 pub const CANDIDATE_HEAD_VERSION: u32 = 1;
 

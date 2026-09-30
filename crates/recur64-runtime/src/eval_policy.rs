@@ -75,6 +75,7 @@ pub fn policy_diagnostics(
             observation: &obs,
             legal: &legal,
             side_to_move: state.side_to_move(),
+            facts: None,
         })?;
         entropy -= r
             .policy
@@ -165,6 +166,7 @@ fn play_raw(
                 observation: &obs,
                 legal: &legal,
                 side_to_move: state.side_to_move(),
+                facts: None,
             })?;
             sample_policy(&r.policy, &legal, temperature, rng)
         } else if let Some(opponent) = opponent {
@@ -173,6 +175,7 @@ fn play_raw(
                 observation: &obs,
                 legal: &legal,
                 side_to_move: state.side_to_move(),
+                facts: None,
             })?;
             sample_policy(&r.policy, &legal, 0.0, rng)
         } else {

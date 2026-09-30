@@ -6,7 +6,10 @@
 //! terminals, so they are treated as non-terminal here (search never imposes a
 //! ply cap).
 
-use recur64_core::{ActionId, GameState, StandardMove, Termination, encode_observation_v1};
+use recur64_core::{
+    ActionId, CandidateFactsV1, GameState, StandardMove, Termination, candidate_facts,
+    encode_observation_v1,
+};
 
 use crate::evaluator::{EvalError, EvalRequest, EvalResult, Evaluator};
 use crate::puct::PuctGame;
@@ -58,10 +61,15 @@ impl PuctGame for ChessGame<'_> {
 
     fn evaluate(&self, legal: &[ActionId]) -> Result<EvalResult, EvalError> {
         let observation = encode_observation_v1(&self.state);
+        let facts = self
+            .evaluator
+            .needs_candidate_facts()
+            .then(|| candidate_facts(&self.state));
         self.evaluator.evaluate(EvalRequest {
             observation: &observation,
             legal,
             side_to_move: self.state.side_to_move(),
+            facts: facts.as_deref(),
         })
     }
 
@@ -78,14 +86,26 @@ impl PuctGame for ChessGame<'_> {
             .iter()
             .map(|g| encode_observation_v1(&g.state))
             .collect();
+        // Computed only for evaluators that ask; legacy evaluators pay nothing.
+        let facts: Vec<Option<Vec<CandidateFactsV1>>> = games
+            .iter()
+            .map(|g| {
+                first
+                    .evaluator
+                    .needs_candidate_facts()
+                    .then(|| candidate_facts(&g.state))
+            })
+            .collect();
         let requests: Vec<EvalRequest<'_>> = games
             .iter()
             .zip(&observations)
             .zip(legal)
-            .map(|((g, observation), legal)| EvalRequest {
+            .zip(&facts)
+            .map(|(((g, observation), legal), facts)| EvalRequest {
                 observation,
                 legal,
                 side_to_move: g.state.side_to_move(),
+                facts: facts.as_deref(),
             })
             .collect();
         first.evaluator.evaluate_many(&requests)

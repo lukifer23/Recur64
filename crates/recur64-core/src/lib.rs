@@ -9,6 +9,7 @@
 //! Phase 1 contains no search, self-play, replay, or learning.
 
 pub mod action;
+pub mod candidate_facts;
 pub mod error;
 pub mod fixtures;
 pub mod game;
@@ -23,6 +24,9 @@ pub mod uci;
 pub use action::{
     ACTION_SPACE, ActionId, ActionList, MAX_LEGAL_MOVES, PROMO_B, PROMO_CODES, PROMO_N, PROMO_NONE,
     PROMO_Q, PROMO_R, PromotionCode,
+};
+pub use candidate_facts::{
+    CANDIDATE_FACT_FIELDS, CANDIDATE_FACTS_VERSION, CandidateFactsV1, candidate_facts,
 };
 pub use cozy_chess::Board;
 pub use error::CoreError;

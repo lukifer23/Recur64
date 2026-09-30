@@ -79,6 +79,7 @@ fn concurrent_requests_all_answered() {
                             observation: obs,
                             legal,
                             side_to_move: recur64_core::Color::White,
+                            facts: None,
                         })
                         .unwrap();
                     assert_eq!(r.policy.len(), 3);
@@ -114,6 +115,7 @@ fn batching_coalesces_requests() {
                         observation: obs,
                         legal,
                         side_to_move: recur64_core::Color::White,
+                        facts: None,
                     })
                     .unwrap();
                 }
@@ -149,6 +151,7 @@ fn errors_propagate_to_every_request() {
         observation: &obs,
         legal: &legal,
         side_to_move: recur64_core::Color::White,
+        facts: None,
     });
     assert!(r.is_err());
     let m = owner.metrics().snapshot();
@@ -170,6 +173,7 @@ fn shutdown_makes_further_requests_fail_visibly() {
         observation: &obs,
         legal: &legal,
         side_to_move: recur64_core::Color::White,
+        facts: None,
     });
     assert!(matches!(r, Err(EvalError::Shutdown)));
 }
@@ -186,6 +190,7 @@ fn metrics_are_recorded() {
             observation: &obs,
             legal: &legal,
             side_to_move: recur64_core::Color::White,
+            facts: None,
         })
         .unwrap();
     }
@@ -213,6 +218,7 @@ fn evaluate_many_shares_a_batch_and_answers_in_order() {
             observation: &obs,
             legal,
             side_to_move: recur64_core::Color::White,
+            facts: None,
         })
         .collect();
     let out = ev.evaluate_many(&requests);
@@ -266,6 +272,7 @@ fn owner_pool_serves_one_queue_with_every_owner() {
                             observation: obs,
                             legal,
                             side_to_move: recur64_core::Color::White,
+                            facts: None,
                         })
                         .unwrap();
                     assert_eq!(r.policy.len(), 3);

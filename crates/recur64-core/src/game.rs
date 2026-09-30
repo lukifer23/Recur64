@@ -100,6 +100,11 @@ impl GameState {
         &self.moves
     }
 
+    /// Administrative ply cap, if any.
+    pub fn max_plies(&self) -> Option<u32> {
+        self.max_plies
+    }
+
     pub fn repetition_count(&self) -> u32 {
         self.repetition_count
     }
