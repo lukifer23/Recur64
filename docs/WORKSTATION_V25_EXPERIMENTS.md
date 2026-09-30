@@ -99,3 +99,54 @@ PRE-REGISTERED RULE:
 Known bias, stated in advance: short screens favor larger rates. The selected LR is used
 for L, C0 and CF in P2; if the selected LR is the largest grid point, that is reported as
 a boundary result, not silently accepted as optimal.
+
+### E-P1 RESULT
+CONFIG: as pre-registered (CF, seed 1, 90 updates, effective batch 256, policy-only).
+DATA DIGEST: TRAIN 8d6440d2..., TUNE d48ccf86... (CONFIRM not evaluated).
+WALL / VRAM: ~0.98 s/update; ~2.6 GB peak (500 ms sampling).
+MEASURED (TUNE after 90 updates):
+
+| LR | stable | TUNE CE | TUNE correct mass | TUNE top-1 | M1 / M2 / M3 top-1 | CE at update 45 -> 90 |
+|---|---|---:|---:|---:|---|---|
+| 3e-5 | yes | 3.179 | 0.088 | 0.306 | 1.00 / 0.01 / 0.04 | 3.286 -> 3.179 |
+| 7.5e-5 | yes | 2.792 | 0.198 | 0.308 | 1.00 / 0.01 / 0.04 | 3.049 -> 2.792 |
+| 1.5e-4 | yes | 2.568 | 0.329 | 0.378 | 1.00 / 0.09 / 0.16 | 2.673 -> 2.568 |
+| 3e-4 | yes | 2.536 | 0.338 | 0.375 | 1.00 / 0.08 / 0.16 | 2.562 -> 2.536 |
+
+Chance top-1 is 0.06. Untrained-ish start loss was 3.515 in every run.
+RULE APPLIED: all four stable; lowest TUNE CE is 3e-4 (2.5363) vs 1.5e-4 (2.5682); the gap
+0.032 exceeds the 0.02 tie band, so no tie-break applies.
+DECISION: LR = 3e-4 for P2 (L, C0, CF).
+BOUNDARY RESULT: 3e-4 is the LARGEST grid point, so the optimum may lie higher; this is a
+selection under the pre-registered grid, not a claim of optimality. The 1.5e-4 vs 3e-4
+gap is small (0.032 nats) and the 90-update horizon favors large rates.
+INFERRED (not tested): M1 is already solved (1.00) at every LR because the `mate` fact
+exposes it directly; M2/M3 are only just leaving chance after 90 updates, so the P2
+horizon (400) is where the science question is decided.
+NEXT ACTION: pre-registered P2 below.
+
+## E-P2 — fixed-data architecture ablation (PRE-REGISTERED before it was run)
+
+QUESTIONS: Q1 do exact facts work in this model (CF vs C0); Q2 do move tokens help beyond
+capacity (C0 vs L on M2+M3); Q3 can the one-pass model learn deeper exact technique.
+
+CONFIG: cells L (`large-legacy-cuda`), C0 (`candidate-v25-c0-cuda`), CF
+(`candidate-v25-cf-cuda`); seeds 1 and 2; LR 3e-4; warmup 40 (10%); cosine to 0 over 400
+updates; effective batch 256 (64x4); policy-only exact targets; FP32; TUNE evaluated every
+50 updates; CONFIRM evaluated once at the end (`--eval-confirm`).
+
+GATES (unchanged from the plan; thresholds may NOT be amended after CONFIRM is seen):
+- Q1 FACTS PATH GO iff CF M1 top-1 >= 0.95 AND CF > C0 with the paired 95% CI entirely
+  above 0 AND both seeds positive.
+- Q3: CF M2 top-1 >= 0.75 and M3 top-1 >= 0.55; both seeds at/near the floors with a pooled
+  CI clearly above chance.
+- Q2 is reported cleanly (C0 vs L on M2+M3); it is not required to be positive.
+
+THE ONE EXTENSION, defined now: if CF misses the M2/M3 gate but (a) TUNE CE fell by at
+least 0.01 nats between update 350 and update 400, (b) TRAIN-slice CE is not more than 0.15
+nats below TUNE CE (no overfit gap), and (c) every update had finite loss and gradient norm,
+then run ONE extension: a NEW from-scratch run of 800 updates (cosine over 800, warmup 80,
+same seed and LR) for CF, and re-evaluate the untouched CONFIRM. It is a fresh run, not a
+continuation of a decayed schedule, so the schedule is not a confound. If the gate is still
+missed: STOP, no self-play. C0 and L are extended identically if CF is, so the comparison
+stays matched.
