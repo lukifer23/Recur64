@@ -1,0 +1,224 @@
+{
+  "added_positions": 32831,
+  "audit": {
+    "checked": 44332,
+    "failures": 0
+  },
+  "base_positions": 11501,
+  "dataset": "P25_DATA_V1",
+  "digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+  "disjoint": "no position of the combined TRAIN shares a canonical class or exact FEN with replacement TUNE/CONFIRM or holdouts A/B/C (verified); every ADDED position also avoids the retired splits and the replacement TRAIN (verified)",
+  "excluded_datasets": [
+    {
+      "digest": "ed36378381eed0a05958c2302752b219a1d2b2f94996bb4e373e9a9510ccc101",
+      "dir": "runs/v25/proof",
+      "positions": 1208,
+      "split": "confirm"
+    },
+    {
+      "digest": "8d6440d214e606a7f01ad0584d292cf6ac500495040bda96816fb9f599e74cab",
+      "dir": "runs/v25/proof",
+      "positions": 11501,
+      "split": "train"
+    },
+    {
+      "digest": "d48ccf8616091437210e2c21f5ad33638a1847bd8220abf6c36b2f510c0185a3",
+      "dir": "runs/v25/proof",
+      "positions": 1208,
+      "split": "tune"
+    },
+    {
+      "digest": "8c4d2b723afb7f730d28a42f150935d0aab6ff6e98e25124c18febe71e0301df",
+      "dir": "runs/v25/proof-v2",
+      "positions": 1208,
+      "split": "confirm"
+    },
+    {
+      "digest": "1e5e121bc407e0d27b2956eac570c2d67485f8637b7d9e329d21e863427671d4",
+      "dir": "runs/v25/proof-v2",
+      "positions": 11501,
+      "split": "train"
+    },
+    {
+      "digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+      "dir": "runs/v25/proof-v2",
+      "positions": 1208,
+      "split": "tune"
+    },
+    {
+      "digest": "384a528eb037b268d3ca214d5d9c90575d657c7a513a6f498afdfe76dd4e9b07",
+      "dir": "runs/v25/p25/holdouts",
+      "positions": 4500,
+      "split": "holdout_a"
+    },
+    {
+      "digest": "13c8e018beea71058dbbbf510c723ebbe85b3a057c7b0e4a845a1039e107df10",
+      "dir": "runs/v25/p25/holdouts",
+      "positions": 4500,
+      "split": "holdout_b"
+    },
+    {
+      "digest": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+      "dir": "runs/v25/p25/holdouts",
+      "positions": 4500,
+      "split": "holdout_c"
+    }
+  ],
+  "exclusion_manifest_digest": "60fbdd5e422bbd4696aea7492d21674a3c790fd9b10d661dc252bff29018ff58",
+  "extension_cells": [
+    {
+      "added": 4000,
+      "available": 91759,
+      "depth": 1,
+      "eligible_pool": 95649,
+      "excluded": 3890,
+      "family": "KQQvK"
+    },
+    {
+      "added": 4000,
+      "available": 170269,
+      "depth": 2,
+      "eligible_pool": 174163,
+      "excluded": 3894,
+      "family": "KQQvK"
+    },
+    {
+      "added": 831,
+      "available": 831,
+      "depth": 3,
+      "eligible_pool": 4409,
+      "excluded": 3578,
+      "family": "KQQvK"
+    },
+    {
+      "added": 4000,
+      "available": 107389,
+      "depth": 1,
+      "eligible_pool": 111273,
+      "excluded": 3884,
+      "family": "KQRvK"
+    },
+    {
+      "added": 4000,
+      "available": 302697,
+      "depth": 2,
+      "eligible_pool": 306595,
+      "excluded": 3898,
+      "family": "KQRvK"
+    },
+    {
+      "added": 4000,
+      "available": 207324,
+      "depth": 3,
+      "eligible_pool": 211215,
+      "excluded": 3891,
+      "family": "KQRvK"
+    },
+    {
+      "added": 4000,
+      "available": 37748,
+      "depth": 1,
+      "eligible_pool": 41612,
+      "excluded": 3864,
+      "family": "KRRvK"
+    },
+    {
+      "added": 4000,
+      "available": 118189,
+      "depth": 2,
+      "eligible_pool": 122082,
+      "excluded": 3893,
+      "family": "KRRvK"
+    },
+    {
+      "added": 4000,
+      "available": 104202,
+      "depth": 3,
+      "eligible_pool": 108086,
+      "excluded": 3884,
+      "family": "KRRvK"
+    }
+  ],
+  "extension_seed": 2048131073,
+  "file": "runs/v25/p25/data\\proof-train.json",
+  "total_positions": 44332,
+  "tune_digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+  "unique_positions_per_cell": [
+    {
+      "cell": "KQQvK-M1",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KQQvK-M2",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KQQvK-M3",
+      "local_epochs_at_400_updates": 3.728381576551975,
+      "unique_train_positions": 1831
+    },
+    {
+      "cell": "KQRvK-M1",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KQRvK-M2",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KQRvK-M3",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KQvK-M1",
+      "local_epochs_at_400_updates": 27.75067750677507,
+      "unique_train_positions": 246
+    },
+    {
+      "cell": "KQvK-M2",
+      "local_epochs_at_400_updates": 14.776334776334776,
+      "unique_train_positions": 462
+    },
+    {
+      "cell": "KQvK-M3",
+      "local_epochs_at_400_updates": 7.919566898685228,
+      "unique_train_positions": 862
+    },
+    {
+      "cell": "KRRvK-M1",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KRRvK-M2",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KRRvK-M3",
+      "local_epochs_at_400_updates": 1.3653333333333333,
+      "unique_train_positions": 5000
+    },
+    {
+      "cell": "KRvK-M1",
+      "local_epochs_at_400_updates": 44.61873638344227,
+      "unique_train_positions": 153
+    },
+    {
+      "cell": "KRvK-M2",
+      "local_epochs_at_400_updates": 16.025039123630673,
+      "unique_train_positions": 426
+    },
+    {
+      "cell": "KRvK-M3",
+      "local_epochs_at_400_updates": 19.393939393939394,
+      "unique_train_positions": 352
+    }
+  ],
+  "wall_s": 72.5328586
+}

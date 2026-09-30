@@ -551,6 +551,77 @@ pub fn generate_holdouts(spec: &HoldoutSpec) -> anyhow::Result<HoldoutOutput> {
     })
 }
 
+/// P25_DATA_V1 training-extension request.
+#[derive(Debug, Clone)]
+pub struct ExtensionSpec {
+    /// Target NEW positions per heavy (family, depth) cell.
+    pub target_per_cell: usize,
+    pub seed: u64,
+    pub threads: usize,
+    /// Canonical classes the new positions must avoid: every retired and replacement
+    /// split and every holdout.
+    pub exclude_canon: HashSet<String>,
+}
+
+/// Accounting of one heavy cell's extension.
+#[derive(Debug, Clone, Serialize)]
+pub struct ExtensionCell {
+    pub family: String,
+    pub depth: u8,
+    pub eligible_pool: usize,
+    pub excluded: usize,
+    pub available: usize,
+    pub added: usize,
+}
+
+pub struct ExtensionOutput {
+    pub added: Vec<ProofPosition>,
+    pub cells: Vec<ExtensionCell>,
+}
+
+/// Select the new heavy-cell TRAIN positions: for each heavy cell, up to
+/// `target_per_cell` classes that survive the exclusions (a cell with fewer takes all
+/// it has; nothing is relaxed), by a seeded shuffle, labelled by the exact solver.
+pub fn generate_extension(spec: &ExtensionSpec) -> anyhow::Result<ExtensionOutput> {
+    let mut added = Vec::new();
+    let mut cells = Vec::new();
+    let mut counter = 100_000usize; // ids never collide with the original 0-based ids
+    for &fi in &HEAVY_FAMILIES {
+        let (family, _) = FAMILIES[fi];
+        let (_, cands) = enumerate_pool(fi, 3, spec.threads)?;
+        for d in 1..=3u8 {
+            let cell: Vec<Candidate> = cands.iter().filter(|c| c.depth == d).cloned().collect();
+            let available: Vec<Candidate> = cell
+                .iter()
+                .filter(|c| !spec.exclude_canon.contains(&c.canon))
+                .cloned()
+                .collect();
+            let take = spec.target_per_cell.min(available.len());
+            let tag = mix(0x7A14_0000 + fi as u64 * 16 + d as u64);
+            let chosen: Vec<Candidate> = shuffled(&available, mix(spec.seed ^ tag))
+                .into_iter()
+                .take(take)
+                .collect();
+            added.extend(label_positions(
+                &chosen,
+                family,
+                Split::Train,
+                spec.seed,
+                &mut counter,
+            )?);
+            cells.push(ExtensionCell {
+                family: family.to_string(),
+                depth: d,
+                eligible_pool: cell.len(),
+                excluded: cell.len() - available.len(),
+                available: available.len(),
+                added: take,
+            });
+        }
+    }
+    Ok(ExtensionOutput { added, cells })
+}
+
 /// SHA-256 over the sorted excluded canonical classes and the excluded datasets'
 /// digests: the identity of an exclusion set.
 pub fn exclusion_digest(canons: &HashSet<String>, dataset_digests: &[String]) -> String {

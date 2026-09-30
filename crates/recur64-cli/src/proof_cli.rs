@@ -30,6 +30,8 @@ pub enum ProofCmd {
     Pool(PoolArgs),
     /// P2.5: generate the three heavy-family evaluation holdouts (A, B, C).
     P25Holdouts(HoldoutArgs),
+    /// P2.5-D: build P25_DATA_V1 (heavy cells scaled toward 5,000 unique positions).
+    P25Data(DataArgs),
     /// Policy-only fixed-data training on ProofTargetsV1.
     Train(TrainArgs),
     /// Evaluate a saved checkpoint on a split (per-position results).
@@ -38,6 +40,27 @@ pub enum ProofCmd {
     Compare(CompareArgs),
     /// 2x2 factorial interaction (CF-C0)-(LF-L), paired by model-seed identity.
     Interaction(InteractionArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct DataArgs {
+    /// Directory with the replacement P2 proof-{train,tune,confirm}.json.
+    #[arg(long)]
+    pub base: PathBuf,
+    /// Comma-separated directories whose every proof-*.json dataset is excluded
+    /// (retired splits, replacement splits, the holdouts).
+    #[arg(long)]
+    pub exclude_dirs: String,
+    #[arg(long)]
+    pub output: PathBuf,
+    /// New positions wanted per heavy cell (existing 1,000 are kept on top).
+    #[arg(long, default_value_t = 4000)]
+    pub target_per_cell: usize,
+    #[arg(long, default_value_t = 20)]
+    pub threads: usize,
+    /// Extension selection seed: 0x7A140001.
+    #[arg(long, default_value_t = 2048131073)]
+    pub seed: u64,
 }
 
 #[derive(Args, Debug)]
@@ -239,6 +262,7 @@ pub fn run(cmd: ProofCmd) -> anyhow::Result<()> {
         ProofCmd::Audit(a) => audit(a),
         ProofCmd::Pool(a) => pool(a),
         ProofCmd::P25Holdouts(a) => holdouts_cmd(a),
+        ProofCmd::P25Data(a) => p25_data_cmd(a),
         ProofCmd::Train(a) => train_cmd(a),
         ProofCmd::Eval(a) => eval_cmd(a),
         ProofCmd::Compare(a) => compare_cmd(a),
@@ -995,5 +1019,158 @@ fn interaction_cmd(a: InteractionArgs) -> anyhow::Result<()> {
     .map_err(anyhow::Error::msg)?;
     std::fs::write(&a.output, serde_json::to_vec_pretty(&v)?)?;
     println!("{}", serde_json::to_string_pretty(&v)?);
+    Ok(())
+}
+
+/// Every `proof-*.json` dataset in `dir` (skips reports).
+fn datasets_in(dir: &std::path::Path) -> anyhow::Result<Vec<ProofTargets>> {
+    let mut out = Vec::new();
+    let mut names: Vec<_> = std::fs::read_dir(dir)?
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .filter(|n| {
+            n.starts_with("proof-")
+                && n.ends_with(".json")
+                && n != "proof-gen-report.json"
+                && !n.starts_with("proof-pool-")
+        })
+        .collect();
+    names.sort();
+    for n in names {
+        out.push(ProofTargets::load(&dir.join(n))?);
+    }
+    Ok(out)
+}
+
+fn p25_data_cmd(a: DataArgs) -> anyhow::Result<()> {
+    use recur64_runtime::proof::generator::{ExtensionSpec, exclusion_digest, generate_extension};
+
+    let base_train = load_split(&a.base, "train")?;
+    let base_tune = load_split(&a.base, "tune")?;
+    let base_confirm = load_split(&a.base, "confirm")?;
+
+    let mut exclude = HashSet::new();
+    let mut excluded = Vec::new();
+    let mut digests = Vec::new();
+    let mut holdouts = Vec::new();
+    for dir in a.exclude_dirs.split(',') {
+        for t in datasets_in(std::path::Path::new(dir.trim()))? {
+            for p in &t.positions {
+                exclude.insert(p.canon.clone());
+            }
+            excluded.push(serde_json::json!({
+                "dir": dir.trim(), "split": t.split.label(),
+                "positions": t.positions.len(), "digest": t.digest,
+            }));
+            digests.push(t.digest.clone());
+            if t.split.label().starts_with("holdout") {
+                holdouts.push(t);
+            }
+        }
+    }
+    anyhow::ensure!(
+        holdouts.len() == 3,
+        "expected holdouts A, B and C among the excluded datasets"
+    );
+    let manifest_digest = exclusion_digest(&exclude, &digests);
+    let t0 = Instant::now();
+    let ext = generate_extension(&ExtensionSpec {
+        target_per_cell: a.target_per_cell,
+        seed: a.seed,
+        threads: a.threads,
+        exclude_canon: exclude.clone(),
+    })?;
+
+    // Every added position must avoid every excluded class.
+    for p in &ext.added {
+        anyhow::ensure!(
+            !exclude.contains(&p.canon),
+            "{}: an added position overlaps an excluded class",
+            p.id
+        );
+    }
+    let added_n = ext.added.len();
+    let mut positions = base_train.positions.clone();
+    positions.extend(ext.added.iter().cloned());
+    let filters = serde_json::json!({
+        "dataset": "P25_DATA_V1",
+        "base": "replacement P2 TRAIN (small families and the 1,000 heavy positions per cell kept unchanged)",
+        "added_per_heavy_cell_target": a.target_per_cell,
+        "exclusion_manifest_digest": manifest_digest,
+        "pool_limit_rule": "holdouts first; the extension takes all that remains up to the target; nothing relaxed",
+        "max_correct_fraction": recur64_runtime::proof::generator::MAX_CORRECT_FRACTION,
+        "extension_seed": a.seed,
+    });
+    let combined = ProofTargets::new(Split::Train, a.seed, filters, positions);
+
+    // Independent audit of the ENTIRE combined set, then disjointness from every
+    // evaluation set (by canonical class and exact FEN).
+    let audit = audit_targets(&combined, a.threads);
+    anyhow::ensure!(
+        audit.failures.is_empty(),
+        "audit failed on {} of {}; first: {}",
+        audit.failures.len(),
+        audit.checked,
+        audit.failures[0]
+    );
+    let mut eval_sets: Vec<&ProofTargets> = vec![&base_tune, &base_confirm];
+    eval_sets.extend(holdouts.iter());
+    for e in &eval_sets {
+        let canon: HashSet<&str> = e.positions.iter().map(|p| p.canon.as_str()).collect();
+        let fens: HashSet<&str> = e.positions.iter().map(|p| p.fen.as_str()).collect();
+        for p in &combined.positions {
+            anyhow::ensure!(
+                !canon.contains(p.canon.as_str()) && !fens.contains(p.fen.as_str()),
+                "{} overlaps evaluation set {}",
+                p.id,
+                e.split.label()
+            );
+        }
+    }
+
+    std::fs::create_dir_all(&a.output)?;
+    let train_path = a.output.join("proof-train.json");
+    combined.save(&train_path)?;
+    base_tune.save(&a.output.join("proof-tune.json"))?;
+
+    // Per-cell unique counts and oversampling at P2 length (102,400 examples / 15 cells).
+    let mut counts: std::collections::BTreeMap<String, usize> = Default::default();
+    for p in &combined.positions {
+        *counts
+            .entry(format!("{}-M{}", p.family, p.mate_depth))
+            .or_default() += 1;
+    }
+    let per_cell_examples = 102_400f64 / 15.0;
+    let cell_table: Vec<_> = counts
+        .iter()
+        .map(|(k, n)| {
+            serde_json::json!({
+                "cell": k, "unique_train_positions": n,
+                "local_epochs_at_400_updates": per_cell_examples / *n as f64,
+            })
+        })
+        .collect();
+    let report = serde_json::json!({
+        "dataset": "P25_DATA_V1",
+        "file": train_path.display().to_string(),
+        "digest": combined.digest,
+        "total_positions": combined.positions.len(),
+        "base_positions": base_train.positions.len(),
+        "added_positions": added_n,
+        "extension_seed": a.seed,
+        "tune_digest": base_tune.digest,
+        "exclusion_manifest_digest": manifest_digest,
+        "excluded_datasets": excluded,
+        "extension_cells": ext.cells,
+        "unique_positions_per_cell": cell_table,
+        "audit": { "checked": audit.checked, "failures": 0 },
+        "disjoint": "no position of the combined TRAIN shares a canonical class or exact FEN with replacement TUNE/CONFIRM or holdouts A/B/C (verified); every ADDED position also avoids the retired splits and the replacement TRAIN (verified)",
+        "wall_s": t0.elapsed().as_secs_f64(),
+    });
+    std::fs::write(
+        a.output.join("p25-data-report.json"),
+        serde_json::to_vec_pretty(&report)?,
+    )?;
+    println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }

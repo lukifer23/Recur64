@@ -177,3 +177,55 @@ than the legacy head (C0 - L M2+M3 -0.035, both seeds negative), so the candidat
 specific to having facts to integrate.
 DECISION: P2.5-D scales CF (seeds 1, 2) with the original P2 CF (1k heavy data) as the matched baseline.
 NEXT ACTION: build P25_DATA_V1 (this result is committed first).
+
+
+---
+
+## P2.5-D dataset - P25_DATA_V1 (built and audited; no scaled model trained yet)
+CF was selected by the P2.5-F rule, so only CF is scaled. QUESTION: is the remaining M2 gap primarily a
+unique-data problem? Keep the exact small-family TRAIN unchanged, keep the existing 1,000 heavy positions
+per cell, and add up to 4,000 new positions per heavy cell (plan: "P2.5-D").
+DATA DIGEST: `3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6` - 44,332 unique exact TRAIN positions = 11,501 base + 32,831 added
+(extension seed 0x7A140001). TUNE is the unchanged replacement P2 TUNE (`f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4`).
+EXCLUSIONS: every ADDED position avoids, by canonical class, the retired splits, the replacement TRAIN, TUNE
+and CONFIRM and HOLDOUT_A/B/C (9 datasets; exclusion-manifest digest `60fbdd5e422bbd4696aea7492d21674a3c790fd9b10d661dc252bff29018ff58`).
+MEASURED: independent audit of ALL 44,332 positions, 0 failures; the combined TRAIN shares no canonical class or
+exact FEN with replacement TUNE/CONFIRM or any holdout.
+
+| cell | eligible pool | excluded | available | ADDED |
+|---|---:|---:|---:|---:|
+| KQQvK M1 | 95649 | 3890 | 91759 | 4000 |
+| KQQvK M2 | 174163 | 3894 | 170269 | 4000 |
+| KQQvK M3 | 4409 | 3578 | 831 | 831 |
+| KQRvK M1 | 111273 | 3884 | 107389 | 4000 |
+| KQRvK M2 | 306595 | 3898 | 302697 | 4000 |
+| KQRvK M3 | 211215 | 3891 | 207324 | 4000 |
+| KRRvK M1 | 41612 | 3864 | 37748 | 4000 |
+| KRRvK M2 | 122082 | 3893 | 118189 | 4000 |
+| KRRvK M3 | 108086 | 3884 | 104202 | 4000 |
+
+The pre-registered pool-limit rule applied exactly as written: eight heavy cells reach 5,000 unique positions; KQQvK
+M3 adds only its 831 remaining classes (1,831 total). Total 44,332 vs the plan's ~47,501 estimate (which assumed a
+full 5,000 in all nine heavy cells). Small families are unchanged (KQvK 1,570, KRvK 931).
+
+| cell | unique TRAIN positions | local epochs at 400 updates (cell_balanced_v1) |
+|---|---:|---:|
+| KQQvK-M1 | 5000 | 1.37 |
+| KQQvK-M2 | 5000 | 1.37 |
+| KQQvK-M3 | 1831 | 3.73 |
+| KQRvK-M1 | 5000 | 1.37 |
+| KQRvK-M2 | 5000 | 1.37 |
+| KQRvK-M3 | 5000 | 1.37 |
+| KQvK-M1 | 246 | 27.75 |
+| KQvK-M2 | 462 | 14.78 |
+| KQvK-M3 | 862 | 7.92 |
+| KRRvK-M1 | 5000 | 1.37 |
+| KRRvK-M2 | 5000 | 1.37 |
+| KRRvK-M3 | 5000 | 1.37 |
+| KRvK-M1 | 153 | 44.62 |
+| KRvK-M2 | 426 | 16.03 |
+| KRvK-M3 | 352 | 19.39 |
+
+INFERRED: per-cell EXPOSURE is unchanged by construction (~6,827 examples per cell at 400 updates), so the scaled run
+changes UNIQUE data, not example counts: a 5,000-position heavy cell is seen ~1.37 times instead of ~6.8, and KQQvK M3
+~3.7 times. Evidence: `docs/evidence/v25/p25/data-scale/dataset-meta.json`.
