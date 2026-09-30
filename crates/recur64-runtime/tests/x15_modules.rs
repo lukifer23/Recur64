@@ -613,3 +613,25 @@ fn thought_loss_matches_each_supervision_mode_and_refuses_diagnostic_readouts() 
         }
     }
 }
+
+#[test]
+fn diagnostic_readout_k_equals_the_final_readout_of_a_t_equals_k_run() {
+    // The reasoning screen evaluates T=1..N from ONE diagnostic pass; that is
+    // only valid if thought k does not depend on the total T.
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let e = exp();
+    let model = ChimeraModel::<EvalB>::new(cfg, e.clone(), &device);
+    let provider = provider_for_config(&e).unwrap();
+    let states = probe_positions(3, 12);
+    let batch = build_x15_batch::<EvalB>(&states, &e, provider.as_ref(), &device).unwrap();
+    let diag = model.forward_thoughts_diagnostic(&batch.input, &batch.cands, 4);
+    for k in 1..=4usize {
+        let run = model.forward_thoughts(&batch.input, &batch.cands, k);
+        assert_eq!(
+            readout_vecs(&run.readouts[0]),
+            readout_vecs(&diag.readouts[k - 1]),
+            "diagnostic thought {k} differs from a T={k} run"
+        );
+    }
+}

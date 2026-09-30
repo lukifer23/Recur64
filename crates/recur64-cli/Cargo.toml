@@ -30,6 +30,7 @@ recur64-search = { path = "../recur64-search" }
 burn = { workspace = true, features = ["std", "autodiff"] }
 clap = { workspace = true }
 anyhow = { workspace = true }
+sha2 = "0.10"
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }

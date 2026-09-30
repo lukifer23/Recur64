@@ -122,3 +122,68 @@ hours cumulative GPU time, then stop and report.
    inference owner yet; plain-CUDA build not built).
 8. P5 ablations, P6 tactical suite, mate-in-2 rule-exactness audit: NOT RUN.
 9. P7 tiny self-play: not earned yet.
+
+## E5 - trainer mechanics and micro-overfit (P3.1)
+- QUESTION: can X15 learn from ReasoningTargetsV1, and do save / resume / eval
+  work?
+- RULE (mechanics, stated before): loss falls, parameters move, everything stays
+  finite, `eval-reasoning` on a saved checkpoint reproduces the trainer's own
+  evaluation, resume continues the update counter.
+- CONFIG: 12 train positions, T_train=4, `final_only_v1`, lr 1e-4 (5-update
+  warmup), 60 updates, full batch, seed 1, eval T=1..4 (one diagnostic pass; a
+  test proves diagnostic thought k equals a T=k run's final readout).
+- MEASURED: loss 3.40 -> 2.09; grads finite; peak VRAM 1.26 GB; whole run 92 s.
+  `eval-reasoning` reproduced the val table exactly. Resume 60 -> 70 continued
+  (loss 2.096 -> 2.089). Loss normalization by total active weight is now in
+  (`thought_loss_with`, unit-tested; every supervision mode has unit total
+  weight).
+- POST-HOC (seen before pre-registration; NOT evidence): on the 32 held-out
+  positions, same weights, KL to the deepest teacher: T1 0.430, T2 0.364,
+  T3 0.354, T4 0.350 (T4 - T1 = -0.079, bootstrap 95% CI [-0.152, -0.018]).
+  Monotone with T2 intermediate, from 12 training positions and one seed.
+- DECISION: mechanics pass. The reasoning claim must be decided by the
+  pre-registered screen below on fresh seeds, not by this run.
+- KNOWN LIMIT: warmup restarted on resume (fixed in the next commit).
+
+## E6 - PRE-REGISTERED: LR screen (P3.2)
+Written and committed BEFORE running.
+- QUESTION: which LR trains X15 stably on the fixed data?
+- CELLS: lr in {3e-5, 7.5e-5, 1.5e-4, 3e-4 (high-LR control)}; all else fixed:
+  96 train positions (full batch), T_train=4, `final_only_v1`, 40 updates,
+  5-update warmup, seed 1, `targets-128` (digest `8c9237ff6a0c...`).
+- SELECTION RULE: among cells with finite loss and finite gradient norms, pick
+  the lowest held-out (val, 32 positions) mean KL to the deepest teacher at T=4;
+  a cell within 0.01 KL of the best takes the smaller LR. Training loss alone
+  never selects. A cell with any non-finite value is disqualified.
+- BUDGET: about 2 min per cell.
+
+## E7 - PRE-REGISTERED: core reasoning screen (P4)
+Written and committed BEFORE running.
+- QUESTION: does the SAME trained network at T4 move closer to the deeper
+  Recur64 search target than at T1, and is T2 intermediate?
+- CONFIG: targets-128; train on the 96 train positions, T_train=4,
+  `final_only_v1`, LR = the E6 selection, 80 updates, two independent seeds
+  (S1 = 1, S2 = 2). Evaluate the same weights at T=1..4 with the diagnostic
+  forward on the 32 val positions. PRIMARY METRIC: mean KL(deepest-rung teacher
+  policy || model policy) over legal moves. Secondary: CE, top-1 agreement with
+  the teacher's best move, |p_win - p_loss - teacher root value|, entropy,
+  latent delta, consecutive-thought KL.
+- PROMISING iff ALL hold:
+  1. mean KL at T4 < at T1 in both seeds;
+  2. the paired-bootstrap 95% CI of (T4 - T1) on the pooled val positions
+     excludes 0;
+  3. the sign reproduces on both deterministic val halves (even / odd position
+     index) in both seeds;
+  4. T2 does not regress: mean KL at T2 <= mean KL at T1 in both seeds;
+  5. each seed's gain (T1 - T4) exceeds the seed-to-seed spread of the T1 KL
+     (|KL_T1(S1) - KL_T1(S2)|), the only variance estimate available.
+- SECONDARY (reported, not decisive): a training-matched control trained at
+  T_train=1 with identical settings; compare its T1 val KL against the T_train=4
+  network's T4 val KL; and the untrained (update 0) baseline.
+- IF NOT PROMISING (T4 ~= T1): run ONE bounded comparison,
+  `final_only_v1` vs `progressive_search_v1` (ladder of 4 rungs = 4 thoughts),
+  same LR / updates / seed S1, loss normalized to unit total weight. If
+  recurrence still does not help, mark LATENT REASONING = NO SIGNAL for X1.
+- NOT CLAIMED even if PROMISING: playing strength, or that latent reasoning
+  (rather than repeated shared-core depth) is the cause; the symbolic-only
+  control and ablations (P5) separate those.

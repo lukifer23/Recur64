@@ -48,6 +48,10 @@ pub enum X15Command {
     GenTargets(crate::x15_reasoning::GenTargetsArgs),
     /// Re-verify a targets file move for move.
     AuditTargets(crate::x15_reasoning::AuditTargetsArgs),
+    /// Fixed-data X15 training on ReasoningTargetsV1 (no self-play).
+    TrainProbe(crate::x15_train::TrainProbeArgs),
+    /// Evaluate one checkpoint at T=1..N (same weights) vs the deep teacher.
+    EvalReasoning(crate::x15_train::EvalArgs),
     /// Module gradient probe: every gated subsystem must receive a non-zero
     /// gradient on the first training step.
     Grads(BatchArgs),
@@ -139,6 +143,8 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::Bench(a) => run_bench(a),
         X15Command::GenTargets(a) => crate::x15_reasoning::run_gen(a),
         X15Command::AuditTargets(a) => crate::x15_reasoning::run_audit(a),
+        X15Command::TrainProbe(a) => crate::x15_train::run_train(a),
+        X15Command::EvalReasoning(a) => crate::x15_train::run_eval(a),
     }
 }
 

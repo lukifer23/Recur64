@@ -137,18 +137,29 @@ pub fn thought_supervision(
     })
 }
 
-/// Weighted training loss over a Chimera forward pass. `readouts` must be the
-/// **training-semantics** output of the configured mode (`forward_thoughts`),
-/// not a diagnostic forward: a readout-count mismatch is refused so that
-/// diagnostic readouts can never leak into supervision.
-pub fn thought_loss<B: Backend>(
+/// Weighted training loss over a Chimera forward pass, **normalized by the
+/// total active weight** (`sum_i w_i * L_i / sum_i w_i`).
+///
+/// Normalization is what keeps supervision modes comparable: without it,
+/// `same_target_v1` at T=4 would apply weight 0.25*3 + 1.0 = 1.75 against 1.0
+/// for `final_only_v1`, so "deep supervision helped" could secretly mean "more
+/// gradient scale". With it, every mode has unit total weight and the same
+/// loss scale for the same per-readout loss.
+///
+/// `per_readout(readout, target_index)` computes one readout's loss.
+/// `n_targets` is the number of available targets (ladder rungs).
+/// `readouts` must be the **training-semantics** output of the configured
+/// mode (`forward_thoughts`), not a diagnostic forward: a readout-count
+/// mismatch is refused so diagnostic readouts can never leak into supervision.
+pub fn thought_loss_with<B: Backend>(
     readouts: &[Readout<B>],
-    targets: &[Targets<B>],
+    n_targets: usize,
     mode: crate::experimental::DeepSupervisionMode,
     intermediate_weight: f32,
     thoughts: usize,
+    per_readout: impl Fn(&Readout<B>, usize) -> Tensor<B, 1>,
 ) -> anyhow::Result<Tensor<B, 1>> {
-    let plan = thought_supervision(mode, intermediate_weight, thoughts, targets.len())?;
+    let plan = thought_supervision(mode, intermediate_weight, thoughts, n_targets)?;
     anyhow::ensure!(
         plan.len() == readouts.len(),
         "{} supervises {} readouts but the forward pass produced {} (was a diagnostic \
@@ -157,15 +168,50 @@ pub fn thought_loss<B: Backend>(
         plan.len(),
         readouts.len()
     );
+    let total_weight: f32 = plan.iter().map(|(_, w)| *w).sum();
+    anyhow::ensure!(
+        total_weight > 0.0,
+        "total supervision weight must be positive"
+    );
     let mut total: Option<Tensor<B, 1>> = None;
     for (r, (idx, w)) in readouts.iter().zip(plan) {
-        let l = readout_loss(r, &targets[idx]) * w;
+        let l = per_readout(r, idx) * (w / total_weight);
         total = Some(match total {
             None => l,
             Some(acc) => acc + l,
         });
     }
     Ok(total.expect("plan is non-empty"))
+}
+
+/// [`thought_loss_with`] using the standard policy + WDL-class readout loss.
+pub fn thought_loss<B: Backend>(
+    readouts: &[Readout<B>],
+    targets: &[Targets<B>],
+    mode: crate::experimental::DeepSupervisionMode,
+    intermediate_weight: f32,
+    thoughts: usize,
+) -> anyhow::Result<Tensor<B, 1>> {
+    thought_loss_with(
+        readouts,
+        targets.len(),
+        mode,
+        intermediate_weight,
+        thoughts,
+        |r, i| readout_loss(r, &targets[i]),
+    )
+}
+
+/// The normalized per-thought weights (they sum to 1), for tests and reports.
+pub fn normalized_thought_weights(
+    mode: crate::experimental::DeepSupervisionMode,
+    intermediate_weight: f32,
+    thoughts: usize,
+    ladder_len: usize,
+) -> anyhow::Result<Vec<f32>> {
+    let plan = thought_supervision(mode, intermediate_weight, thoughts, ladder_len)?;
+    let total: f32 = plan.iter().map(|(_, w)| *w).sum();
+    Ok(plan.iter().map(|(_, w)| w / total).collect())
 }
 
 #[cfg(test)]
@@ -199,5 +245,39 @@ mod thought_tests {
         assert_eq!(plan, vec![(0, 0.25), (1, 0.25), (2, 0.25), (3, 1.0)]);
         assert!(thought_supervision(M::ProgressiveSearchV1, 0.25, 4, 2).is_err());
         assert!(thought_supervision(M::ProgressiveSearchV1, 0.25, 2, 4).is_err());
+    }
+}
+
+#[cfg(test)]
+mod normalization_tests {
+    use super::*;
+    use crate::experimental::DeepSupervisionMode as M;
+
+    #[test]
+    fn every_supervision_mode_has_unit_total_weight() {
+        for (mode, ladder) in [
+            (M::FinalOnlyV1, 1),
+            (M::SameTargetV1, 1),
+            (M::ProgressiveSearchV1, 4),
+        ] {
+            for w in [0.0f32, 0.25, 1.0] {
+                let ws = normalized_thought_weights(mode, w, 4, ladder).unwrap();
+                let total: f32 = ws.iter().sum();
+                assert!((total - 1.0).abs() < 1e-6, "{mode:?} w={w}: total {total}");
+            }
+        }
+    }
+
+    #[test]
+    fn deep_supervision_keeps_the_final_thought_dominant_but_not_larger_in_scale() {
+        // 0.25/1.75 for each of three intermediates, 1.0/1.75 for the final.
+        let ws = normalized_thought_weights(M::SameTargetV1, 0.25, 4, 1).unwrap();
+        assert!((ws[3] - 1.0 / 1.75).abs() < 1e-6);
+        assert!((ws[0] - 0.25 / 1.75).abs() < 1e-6);
+        // final_only is exactly the final readout's loss.
+        assert_eq!(
+            normalized_thought_weights(M::FinalOnlyV1, 0.25, 4, 1).unwrap(),
+            vec![1.0]
+        );
     }
 }
