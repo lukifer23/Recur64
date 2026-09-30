@@ -11,6 +11,7 @@ use burn::prelude::*;
 
 use crate::candidate::CandidateV25Model;
 use crate::config::{Architecture, ModelConfig};
+use crate::legacy_facts::LegacyFactsModel;
 use crate::model::{CandidateTensors, ModelOutput, ProbeModel};
 
 /// A trainable, checkpointable chess network.
@@ -127,6 +128,57 @@ impl<B: Backend> NeuralModel<B> for CandidateV25Model<B> {
             "candidate_v25 has no recurrent readouts; deep supervision is refused"
         );
         let facts = facts.expect("candidate_v25 requires CandidateFactsV1 (facts tensor is None)");
+        self.forward(board, cands, facts)
+    }
+
+    fn param_count(&self) -> usize {
+        self.num_params()
+    }
+
+    fn param_groups(&self) -> Vec<(&'static str, usize)> {
+        self.param_breakdown()
+    }
+}
+
+impl<B: Backend> NeuralModel<B> for LegacyFactsModel<B> {
+    const ARCHITECTURE: Architecture = Architecture::LegacyFactsV25;
+
+    fn build(cfg: &ModelConfig, device: &B::Device) -> anyhow::Result<Self> {
+        cfg.validate()?;
+        anyhow::ensure!(
+            cfg.architecture == Architecture::LegacyFactsV25,
+            "cannot build a legacy_facts_v25 model from a {} configuration",
+            cfg.architecture.id()
+        );
+        Ok(LegacyFactsModel::new(cfg.clone(), device))
+    }
+
+    fn model_config(&self) -> &ModelConfig {
+        self.config()
+    }
+
+    fn needs_candidate_facts(&self) -> bool {
+        true
+    }
+
+    fn forward_inputs(
+        &self,
+        board: Tensor<B, 3>,
+        cands: &CandidateTensors<B>,
+        facts: Option<Tensor<B, 3>>,
+        recurrence: usize,
+        deep_supervision: bool,
+    ) -> ModelOutput<B> {
+        assert_eq!(
+            recurrence, 1,
+            "legacy_facts_v25 is one pass; recurrence {recurrence} is refused"
+        );
+        assert!(
+            !deep_supervision,
+            "legacy_facts_v25 has no recurrent readouts; deep supervision is refused"
+        );
+        let facts =
+            facts.expect("legacy_facts_v25 requires CandidateFactsV1 (facts tensor is None)");
         self.forward(board, cands, facts)
     }
 

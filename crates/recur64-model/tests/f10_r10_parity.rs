@@ -37,6 +37,7 @@ fn mainline_model(input: usize, core: usize, output: usize) -> ModelConfig {
         rms_eps: 1e-5,
         architecture: Default::default(),
         candidate: None,
+        legacy_facts: None,
     }
 }
 
@@ -122,6 +123,7 @@ fn r10_topology_r1_parity() {
         rms_eps: 1e-5,
         architecture: Default::default(),
         candidate: None,
+        legacy_facts: None,
     };
     let device = Default::default();
     let model = ProbeModel::<Flex>::new(cfg.clone(), &device);

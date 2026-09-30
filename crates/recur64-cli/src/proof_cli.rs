@@ -678,6 +678,7 @@ where
 
 fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
     use recur64_model::candidate::CandidateV25Model;
+    use recur64_model::legacy_facts::LegacyFactsModel;
     use recur64_model::model::ProbeModel;
     let cfg = probe_config(&a.config)?;
     type Cpu = recur64_model::train::CpuTrainBackend;
@@ -690,6 +691,11 @@ fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
         (DeviceKind::Cpu, Architecture::ProbeV1) => {
             run_train::<Cpu, ProbeModel<Cpu>, ProbeModel<burn::backend::Flex>>(&cfg, &a)?
         }
+        (DeviceKind::Cpu, Architecture::LegacyFactsV25) => {
+            run_train::<Cpu, LegacyFactsModel<Cpu>, LegacyFactsModel<burn::backend::Flex>>(
+                &cfg, &a,
+            )?
+        }
         #[cfg(feature = "cuda")]
         (DeviceKind::Cuda, Architecture::CandidateV25) => {
             type G = burn::backend::Autodiff<burn::backend::Cuda>;
@@ -699,6 +705,11 @@ fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
         (DeviceKind::Cuda, Architecture::ProbeV1) => {
             type G = burn::backend::Autodiff<burn::backend::Cuda>;
             run_train::<G, ProbeModel<G>, ProbeModel<burn::backend::Cuda>>(&cfg, &a)?
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::LegacyFactsV25) => {
+            type G = burn::backend::Autodiff<burn::backend::Cuda>;
+            run_train::<G, LegacyFactsModel<G>, LegacyFactsModel<burn::backend::Cuda>>(&cfg, &a)?
         }
         #[cfg(not(feature = "cuda"))]
         (DeviceKind::Cuda, _) => {
@@ -762,6 +773,7 @@ where
 
 fn eval_cmd(a: EvalArgs) -> anyhow::Result<()> {
     use recur64_model::candidate::CandidateV25Model;
+    use recur64_model::legacy_facts::LegacyFactsModel;
     use recur64_model::model::ProbeModel;
     let cfg = probe_config(&a.config)?;
     match (cfg.device, cfg.model.architecture) {
@@ -771,6 +783,9 @@ fn eval_cmd(a: EvalArgs) -> anyhow::Result<()> {
         (DeviceKind::Cpu, Architecture::ProbeV1) => {
             run_eval::<burn::backend::Flex, ProbeModel<burn::backend::Flex>>(&cfg, &a)
         }
+        (DeviceKind::Cpu, Architecture::LegacyFactsV25) => {
+            run_eval::<burn::backend::Flex, LegacyFactsModel<burn::backend::Flex>>(&cfg, &a)
+        }
         #[cfg(feature = "cuda")]
         (DeviceKind::Cuda, Architecture::CandidateV25) => {
             run_eval::<burn::backend::Cuda, CandidateV25Model<burn::backend::Cuda>>(&cfg, &a)
@@ -778,6 +793,10 @@ fn eval_cmd(a: EvalArgs) -> anyhow::Result<()> {
         #[cfg(feature = "cuda")]
         (DeviceKind::Cuda, Architecture::ProbeV1) => {
             run_eval::<burn::backend::Cuda, ProbeModel<burn::backend::Cuda>>(&cfg, &a)
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::LegacyFactsV25) => {
+            run_eval::<burn::backend::Cuda, LegacyFactsModel<burn::backend::Cuda>>(&cfg, &a)
         }
         #[cfg(not(feature = "cuda"))]
         (DeviceKind::Cuda, _) => {

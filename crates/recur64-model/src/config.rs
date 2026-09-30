@@ -92,6 +92,9 @@ pub struct ModelConfig {
     /// Candidate-token geometry; present iff `architecture == candidate_v25`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub candidate: Option<CandidateConfig>,
+    /// Facts-delta geometry; present iff `architecture == legacy_facts_v25`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub legacy_facts: Option<LegacyFactsConfig>,
 }
 
 /// Which network a `ModelConfig` instantiates.
@@ -103,6 +106,9 @@ pub enum Architecture {
     ProbeV1,
     /// Workstation V2.5 candidate transformer: one pass, legal-move tokens.
     CandidateV25,
+    /// P2.5: the legacy head-v2 policy plus a candidate-local CandidateFacts
+    /// policy delta (the missing cell of the 2x2 factorial).
+    LegacyFactsV25,
 }
 
 impl Architecture {
@@ -114,6 +120,7 @@ impl Architecture {
         match self {
             Architecture::ProbeV1 => "probe_v1",
             Architecture::CandidateV25 => "candidate_v25",
+            Architecture::LegacyFactsV25 => "legacy_facts_v25",
         }
     }
 }
@@ -150,6 +157,29 @@ pub const CANDIDATE_FACTS_VERSION: u32 = recur64_core::CANDIDATE_FACTS_VERSION;
 pub const CANDIDATE_FACT_FIELDS: usize = recur64_core::CANDIDATE_FACT_FIELDS;
 /// Version of the V2.5 readout function (policy scorer + WDL head).
 pub const CANDIDATE_HEAD_VERSION: u32 = 1;
+
+/// Version of the LF fact-delta contract (8 -> hidden -> 1 logit delta added to the
+/// legacy policy logit before the masked softmax).
+pub const FACT_DELTA_CONTRACT: u32 = 1;
+
+fn d_facts_delta_hidden() -> usize {
+    64
+}
+
+/// Legacy-plus-facts geometry (P2.5 LF).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LegacyFactsConfig {
+    #[serde(default = "d_facts_delta_hidden")]
+    pub facts_hidden: usize,
+}
+
+impl Default for LegacyFactsConfig {
+    fn default() -> Self {
+        Self {
+            facts_hidden: d_facts_delta_hidden(),
+        }
+    }
+}
 
 /// Candidate-transformer geometry (V2.5).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -209,16 +239,59 @@ impl ModelConfig {
                 facts_enabled,
                 ..CandidateConfig::default()
             }),
+            legacy_facts: None,
+        }
+    }
+
+    /// P2.5 LF: the L board geometry (width 640, 10 heads, FFN 1280, 8 blocks) with
+    /// the legacy head-v2 policy plus the CandidateFacts policy delta.
+    pub fn legacy_facts_v25() -> Self {
+        Self {
+            width: 640,
+            heads: 10,
+            ffn: 1280,
+            input_blocks: 0,
+            core_blocks: 8,
+            output_blocks: 0,
+            squares: d_squares(),
+            in_features: d_in_features(),
+            policy_dim: d_policy_dim(),
+            wdl_classes: d_wdl_classes(),
+            promo_codes: d_promo_codes(),
+            rms_eps: d_epsilon(),
+            architecture: Architecture::LegacyFactsV25,
+            candidate: None,
+            legacy_facts: Some(LegacyFactsConfig::default()),
         }
     }
 
     /// Refuse an architecture/geometry combination that is not a real model.
     pub fn validate(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.legacy_facts.is_none() || self.architecture == Architecture::LegacyFactsV25,
+            "only legacy_facts_v25 may carry a facts-delta geometry"
+        );
+        if self.architecture == Architecture::LegacyFactsV25 {
+            anyhow::ensure!(
+                self.candidate.is_none(),
+                "legacy_facts_v25 must not carry a candidate-token geometry"
+            );
+            anyhow::ensure!(
+                self.legacy_facts.is_some(),
+                "legacy_facts_v25 requires a facts-delta geometry"
+            );
+            anyhow::ensure!(
+                self.input_blocks == 0 && self.output_blocks == 0,
+                "legacy_facts_v25 is one pass: no input or output blocks"
+            );
+            return Ok(());
+        }
         match (self.architecture, &self.candidate) {
             (Architecture::ProbeV1, None) => Ok(()),
             (Architecture::ProbeV1, Some(_)) => {
                 anyhow::bail!("probe_v1 must not carry a candidate geometry")
             }
+            (Architecture::LegacyFactsV25, _) => unreachable!("handled above"),
             (Architecture::CandidateV25, None) => {
                 anyhow::bail!("candidate_v25 requires a candidate geometry")
             }
@@ -241,10 +314,14 @@ impl ModelConfig {
     /// Refuse a recurrence the architecture cannot execute. candidate_v25 is
     /// strictly one pass; the field is never silently ignored.
     pub fn check_recurrence(&self, recurrence: usize) -> anyhow::Result<()> {
-        if self.architecture == Architecture::CandidateV25 {
+        if matches!(
+            self.architecture,
+            Architecture::CandidateV25 | Architecture::LegacyFactsV25
+        ) {
             anyhow::ensure!(
                 recurrence == 1,
-                "candidate_v25 is a one-pass architecture; recurrence {recurrence} is refused"
+                "{} is a one-pass architecture; recurrence {recurrence} is refused",
+                self.architecture.id()
             );
         }
         Ok(())
@@ -333,6 +410,7 @@ mod tests {
             rms_eps: 1e-5,
             architecture: Default::default(),
             candidate: None,
+            legacy_facts: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         assert_eq!(m.executed_blocks_final(1), 8);
@@ -355,6 +433,7 @@ mod tests {
             rms_eps: 1e-5,
             architecture: Default::default(),
             candidate: None,
+            legacy_facts: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         // 2 + 4R + 2

@@ -14,7 +14,7 @@ use burn::tensor::backend::AutodiffBackend;
 
 use crate::config::{
     Architecture, CANDIDATE_BLOCK_CONTRACT, CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION,
-    CANDIDATE_TOKEN_CONTRACT, ModelConfig,
+    CANDIDATE_TOKEN_CONTRACT, FACT_DELTA_CONTRACT, ModelConfig,
 };
 use crate::net::NeuralModel;
 
@@ -78,6 +78,9 @@ pub struct CheckpointMeta {
     /// Candidate-block contract (0 = none).
     #[serde(default)]
     pub candidate_block_contract: u32,
+    /// LF fact-delta contract (0 = none).
+    #[serde(default)]
+    pub fact_delta_contract: u32,
 }
 
 fn legacy_architecture() -> String {
@@ -104,9 +107,15 @@ impl CheckpointMeta {
     ) -> Self {
         let v = recur64_core::ContractVersions::V1;
         let cand = model.architecture == Architecture::CandidateV25;
+        let lf = model.architecture == Architecture::LegacyFactsV25;
         Self {
             architecture: model.architecture.id().to_string(),
-            candidate_facts_version: if cand { CANDIDATE_FACTS_VERSION } else { 0 },
+            fact_delta_contract: if lf { FACT_DELTA_CONTRACT } else { 0 },
+            candidate_facts_version: if cand || lf {
+                CANDIDATE_FACTS_VERSION
+            } else {
+                0
+            },
             candidate_token_contract: if cand { CANDIDATE_TOKEN_CONTRACT } else { 0 },
             candidate_block_contract: if cand { CANDIDATE_BLOCK_CONTRACT } else { 0 },
             schema_version: SCHEMA_VERSION,
@@ -176,6 +185,17 @@ impl CheckpointMeta {
                 self.candidate_facts_version,
                 self.candidate_token_contract,
                 self.candidate_block_contract
+            );
+        } else if self.architecture == Architecture::LegacyFactsV25.id() {
+            anyhow::ensure!(
+                self.head_version == crate::model::HEAD_VERSION
+                    && self.candidate_facts_version == CANDIDATE_FACTS_VERSION
+                    && self.fact_delta_contract == FACT_DELTA_CONTRACT,
+                "legacy_facts_v25 checkpoint contracts (head {}, facts {}, fact-delta {}) differ from the current (head {}, facts {CANDIDATE_FACTS_VERSION}, fact-delta {FACT_DELTA_CONTRACT})",
+                self.head_version,
+                self.candidate_facts_version,
+                self.fact_delta_contract,
+                crate::model::HEAD_VERSION
             );
         } else {
             anyhow::ensure!(

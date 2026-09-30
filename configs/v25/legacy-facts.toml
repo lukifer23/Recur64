@@ -1,0 +1,21 @@
+# P2.5 LF: the L board geometry (width 640, 10 heads, FFN 1280, 8 blocks, one pass) with
+# the legacy head-v2 policy PLUS a candidate-local CandidateFacts policy delta.
+name = "legacy-facts-v25"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+architecture = "legacy_facts_v25"
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+
+[model.legacy_facts]
+facts_hidden = 64

@@ -16,6 +16,7 @@ pub mod candidate;
 pub mod checkpoint;
 pub mod config;
 pub mod fixture;
+pub mod legacy_facts;
 pub mod loss;
 pub mod model;
 pub mod net;

@@ -518,6 +518,11 @@ pub fn run(args: V25QualArgs) -> anyhow::Result<()> {
             ProbeModel<recur64_model::train::CpuTrainBackend>,
             ProbeModel<burn::backend::Flex>,
         >(&cfg, &args)?,
+        (DeviceKind::Cpu, Architecture::LegacyFactsV25) => run_arch::<
+            recur64_model::train::CpuTrainBackend,
+            recur64_model::legacy_facts::LegacyFactsModel<recur64_model::train::CpuTrainBackend>,
+            recur64_model::legacy_facts::LegacyFactsModel<burn::backend::Flex>,
+        >(&cfg, &args)?,
         #[cfg(feature = "cuda")]
         (DeviceKind::Cuda, Architecture::CandidateV25) => run_arch::<
             burn::backend::Autodiff<burn::backend::Cuda>,
@@ -531,6 +536,14 @@ pub fn run(args: V25QualArgs) -> anyhow::Result<()> {
             burn::backend::Autodiff<burn::backend::Cuda>,
             ProbeModel<burn::backend::Autodiff<burn::backend::Cuda>>,
             ProbeModel<burn::backend::Cuda>,
+        >(&cfg, &args)?,
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::LegacyFactsV25) => run_arch::<
+            burn::backend::Autodiff<burn::backend::Cuda>,
+            recur64_model::legacy_facts::LegacyFactsModel<
+                burn::backend::Autodiff<burn::backend::Cuda>,
+            >,
+            recur64_model::legacy_facts::LegacyFactsModel<burn::backend::Cuda>,
         >(&cfg, &args)?,
         #[cfg(not(feature = "cuda"))]
         (DeviceKind::Cuda, _) => {

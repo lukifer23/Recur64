@@ -29,6 +29,7 @@ fn f10_params() -> usize {
         rms_eps: 1e-5,
         architecture: Default::default(),
         candidate: None,
+        legacy_facts: None,
     };
     ProbeModel::<Flex>::new(cfg, &Default::default()).num_params()
 }
@@ -42,6 +43,9 @@ pub fn run_model_info(path: &Path, json: Option<&Path>) -> anyhow::Result<()> {
     }
     if cfg.model.architecture == Architecture::CandidateV25 {
         return run_candidate_info(&cfg, json);
+    }
+    if cfg.model.architecture == Architecture::LegacyFactsV25 {
+        return run_legacy_facts_info(&cfg, json);
     }
     let device = Default::default();
     let model = ProbeModel::<Flex>::new(cfg.model.clone(), &device);
@@ -169,6 +173,48 @@ fn run_candidate_info(cfg: &ProbeConfig, json: Option<&Path>) -> anyhow::Result<
         }
         std::fs::write(out, serde_json::to_vec_pretty(&doc)?)?;
         println!("wrote {}", out.display());
+    }
+    Ok(())
+}
+
+/// `model-info` for `legacy_facts_v25`: the legacy head plus the facts-delta MLP.
+fn run_legacy_facts_info(cfg: &ProbeConfig, json: Option<&Path>) -> anyhow::Result<()> {
+    use recur64_model::legacy_facts::LegacyFactsModel;
+    let device = Default::default();
+    let model = LegacyFactsModel::<Flex>::new(cfg.model.clone(), &device);
+    println!("config          : {}", cfg.name);
+    println!("architecture    : {}", cfg.model.architecture.id());
+    println!(
+        "board geometry  : width={} heads={} ffn={} head_dim={} unique blocks={} (one pass)",
+        cfg.model.width,
+        cfg.model.heads,
+        cfg.model.ffn,
+        cfg.model.head_dim(),
+        cfg.model.core_blocks
+    );
+    println!("\nparameter breakdown:");
+    let mut total = 0usize;
+    let mut groups = Vec::new();
+    for (name, n) in model.param_breakdown() {
+        println!("  {:<22} {:>12}", name, n);
+        total += n;
+        groups.push(serde_json::json!({ "group": name, "params": n }));
+    }
+    println!("  {:<22} {:>12}", "TOTAL", total);
+    assert_eq!(
+        total,
+        model.num_params(),
+        "breakdown must sum to num_params"
+    );
+    if let Some(out) = json {
+        let doc = serde_json::json!({
+            "config": cfg.name, "architecture": cfg.model.architecture.id(),
+            "model": cfg.model, "groups": groups, "total_params": total,
+        });
+        if let Some(dir) = out.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(out, serde_json::to_vec_pretty(&doc)?)?;
     }
     Ok(())
 }

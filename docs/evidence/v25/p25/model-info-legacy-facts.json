@@ -1,0 +1,77 @@
+{
+  "architecture": "legacy_facts_v25",
+  "config": "legacy-facts-v25",
+  "groups": [
+    {
+      "group": "input_proj",
+      "params": 76800
+    },
+    {
+      "group": "square_emb",
+      "params": 40960
+    },
+    {
+      "group": "input_blocks",
+      "params": 0
+    },
+    {
+      "group": "core_blocks (shared)",
+      "params": 26278480
+    },
+    {
+      "group": "output_blocks",
+      "params": 0
+    },
+    {
+      "group": "inject_norm",
+      "params": 640
+    },
+    {
+      "group": "final_norm",
+      "params": 640
+    },
+    {
+      "group": "alpha_logit",
+      "params": 1
+    },
+    {
+      "group": "source_proj",
+      "params": 82048
+    },
+    {
+      "group": "dest_proj",
+      "params": 82048
+    },
+    {
+      "group": "promotion_head",
+      "params": 246404
+    },
+    {
+      "group": "wdl_head",
+      "params": 1923
+    },
+    {
+      "group": "facts_delta_mlp",
+      "params": 641
+    }
+  ],
+  "model": {
+    "architecture": "legacy_facts_v25",
+    "core_blocks": 8,
+    "ffn": 1280,
+    "heads": 10,
+    "in_features": 119,
+    "input_blocks": 0,
+    "legacy_facts": {
+      "facts_hidden": 64
+    },
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 640
+  },
+  "total_params": 26810585
+}

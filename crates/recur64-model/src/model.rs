@@ -374,6 +374,18 @@ impl<B: Backend> ProbeModel<B> {
     }
 
     fn readout(&self, y: Tensor<B, 3>, cands: &CandidateTensors<B>) -> Readout<B> {
+        self.readout_with(y, cands, None)
+    }
+
+    /// The readout, optionally adding a candidate-local logit delta (`[b, width]`)
+    /// to the legacy policy logit before masking. With `None` this is exactly the
+    /// historical head-v2 readout.
+    fn readout_with(
+        &self,
+        y: Tensor<B, 3>,
+        cands: &CandidateTensors<B>,
+        logit_delta: Option<Tensor<B, 2>>,
+    ) -> Readout<B> {
         assert!(
             cands.width > 0,
             "candidate batch contains no legal candidates; terminal-only batches \
@@ -424,6 +436,10 @@ impl<B: Backend> ProbeModel<B> {
             p.greater_elem(0).float()
         };
         let logits = base + sel * is_promo;
+        let logits = match logit_delta {
+            Some(delta) => logits + delta,
+            None => logits,
+        };
 
         // Mask padding with -inf; replace fully-terminal rows with 0 so the
         // softmax is never all-masked.
@@ -493,6 +509,29 @@ impl<B: Backend> ProbeModel<B> {
         ModelOutput {
             readouts,
             executed_blocks: executed,
+        }
+    }
+
+    /// One pass (recurrence 1, final readout) with a candidate-local logit delta
+    /// added to the legacy policy logit (P2.5 LF). Identical to
+    /// `forward_r(board, cands, 1, false)` when the delta is constant per row.
+    pub fn forward_with_logit_delta(
+        &self,
+        board: Tensor<B, 3>,
+        cands: &CandidateTensors<B>,
+        delta: Tensor<B, 2>,
+    ) -> ModelOutput<B> {
+        let device = board.device();
+        let rel_idx = self.rel_idx(&device);
+        let x = self.embed(board);
+        let h = self.run_blocks(&self.input_blocks, x.clone(), &rel_idx);
+        let inject = x * self.alpha();
+        let normed = self.inject_norm.forward(h + inject);
+        let h = self.run_blocks(&self.core_blocks, normed, &rel_idx);
+        let y = self.run_blocks(&self.output_blocks, h, &rel_idx);
+        ModelOutput {
+            readouts: vec![self.readout_with(y, cands, Some(delta))],
+            executed_blocks: self.cfg.executed_blocks_final(1),
         }
     }
 
@@ -672,6 +711,7 @@ mod tests {
             rms_eps: 1e-5,
             architecture: Default::default(),
             candidate: None,
+            legacy_facts: None,
         }
     }
 

@@ -1,0 +1,85 @@
+{
+  "architecture": "legacy_facts_v25",
+  "assembly_vs_forward": {
+    "batch": 32,
+    "facts_ms_mean": 0.31483,
+    "facts_share_of_batch_eval": 0.013074531014583272,
+    "forward_ms_mean": 23.572250000000004,
+    "note": "proxy: excludes search overhead; the real self-play share is re-measured in P4 scheduling",
+    "observation_and_legal_ms_mean": 0.19255999999999998,
+    "reps": 10
+  },
+  "config": "legacy-facts-v25-cuda",
+  "device": "Cuda",
+  "facts_cost": {
+    "candidate_moves_per_sec": 4260421.570165804,
+    "mean_legal_width": 31.818359375,
+    "per_position_us_p50": 7.300000000000001,
+    "per_position_us_p95": 11.5,
+    "positions": 512,
+    "positions_per_sec": 133898.2164339139,
+    "wall_s": 0.0038238
+  },
+  "forward": [
+    {
+      "batch": 32,
+      "forward_ms_mean": 33.44649999999999,
+      "forward_ms_p50": 25.8804,
+      "gpu": {
+        "last_vram_mb": 880,
+        "min_vram_mb": 880,
+        "peak_vram_mb": 880,
+        "samples": 2,
+        "temp_max_c": 38,
+        "util_busy_mean": 17.0,
+        "util_max": 20
+      },
+      "ok": true,
+      "positions_per_sec": 956.7518275454834,
+      "reps": 6
+    }
+  ],
+  "layouts": [
+    {
+      "accum": 4,
+      "effective_batch": 256,
+      "examples_per_sec": 278.9380118017656,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 2608,
+        "min_vram_mb": 2608,
+        "peak_vram_mb": 2608,
+        "samples": 6,
+        "temp_max_c": 49,
+        "util_busy_mean": 69.16666666666667,
+        "util_max": 92
+      },
+      "last_loss": 3.2077555656433105,
+      "layout": "64x4",
+      "max_grad_norm": 18.328805923461914,
+      "ok": true,
+      "physical": 64,
+      "sec_per_update": 0.9177666333333333,
+      "updates": 3
+    }
+  ],
+  "lifecycle": {
+    "growth_mb_after_rep2": 0,
+    "pass": true,
+    "reps": 3,
+    "rule": "pass iff growth after rep 2 <= 256 MiB (pre-registered)",
+    "vram_mb_after_each_rep": [
+      2608,
+      976,
+      976
+    ]
+  },
+  "params": {
+    "total": 26810585
+  },
+  "positions_pool": 512,
+  "precision": "fp32",
+  "seed": 20250930,
+  "selected_layout": "64x4",
+  "selection_rule": "fastest layout with finite loss+grads and peak VRAM <= 12288 MiB"
+}
