@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/recur64-core",
+    "crates/recur64-statequery",
     "crates/recur64-search",
     "crates/recur64-model",
     "crates/recur64-runtime",

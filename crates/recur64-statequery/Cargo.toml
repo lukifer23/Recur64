@@ -1,0 +1,17 @@
+[package]
+name = "recur64-statequery"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "StateQueryV1: a deliberately narrow exact one-edge transition tool (V3). Depends only on recur64-core."
+
+# Dependency boundary (V3-D2): this crate must never depend on the solver
+# (recur64-runtime), the model, or search. `tests/dependency_boundary.rs`
+# enforces it.
+[dependencies]
+recur64-core = { path = "../recur64-core" }
+serde = { workspace = true }
+sha2 = "0.10"
+
+[dev-dependencies]
+serde_json = { workspace = true }
