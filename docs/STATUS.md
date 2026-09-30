@@ -541,3 +541,22 @@ unchanged.
   than only a global mate-exists flag; a scaled, search-distilled training set.
 - **NOT RUN:** conversion rollouts; scaled data; mate-in-2 as a target (kept as
   board-forced-mate diagnostic only).
+
+### HP X1 scaled runs, candidate facts, and the thought question (2026-09-29, later)
+- **Engineering (MEASURED):** teacher labelling through the shared inference owner is
+  about 5x faster with identical labels (2.6 positions/s); a full train-and-evaluate
+  cell takes 1-3 minutes; X15 T=4 training peaks at 2.4 GB. Clippy 0 warnings; fast
+  suites green at the branch head.
+- **Candidate facts (D62, head v2):** exact one-ply facts per legal move as a policy
+  bias. At gain 1 the channel learned almost nothing (bias gap +0.014 logits,
+  MEASURED and diagnosed as an AdamW scale issue); the gain was chosen on a separate,
+  hard-disjoint tuning set (128 of {8, 32, 128}) and with it mate-in-1 goes from
+  0.30 to **0.95** on the frozen suite (+0.65, CI [+0.51, +0.78], both seeds).
+- **Thought (E7, E8, E11, E11b, all pre-registered):** extra recurrent thoughts have
+  not beaten a one-pass network on any fixed-data metric; latent reasoning = no signal
+  at this scale. With facts, mate-in-1 is at its ceiling without any recurrence, so it
+  cannot test thinking.
+- **NOT RUN / OUTSTANDING:** problems that need multi-ply lookahead (mate-in-2,
+  multi-step captures; labels can be rule-exact for fresh-clock fixtures), conversion
+  rollouts, larger gains than 128, any strength claim, self-play. Ledger and evidence:
+  `docs/HP_X1_EXPERIMENTS.md`, `docs/evidence/x1/`.
