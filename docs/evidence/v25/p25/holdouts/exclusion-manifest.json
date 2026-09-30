@@ -1,0 +1,43 @@
+{
+  "also_excluded_by_construction": "every P2.5 training-extension position (selected after the holdouts, excluding them)",
+  "excluded_canonical_classes": 24293,
+  "excluded_datasets": [
+    {
+      "digest": "8d6440d214e606a7f01ad0584d292cf6ac500495040bda96816fb9f599e74cab",
+      "file": "runs/v25/proof\\proof-train.json",
+      "positions": 11501,
+      "split": "train"
+    },
+    {
+      "digest": "d48ccf8616091437210e2c21f5ad33638a1847bd8220abf6c36b2f510c0185a3",
+      "file": "runs/v25/proof\\proof-tune.json",
+      "positions": 1208,
+      "split": "tune"
+    },
+    {
+      "digest": "ed36378381eed0a05958c2302752b219a1d2b2f94996bb4e373e9a9510ccc101",
+      "file": "runs/v25/proof\\proof-confirm.json",
+      "positions": 1208,
+      "split": "confirm"
+    },
+    {
+      "digest": "1e5e121bc407e0d27b2956eac570c2d67485f8637b7d9e329d21e863427671d4",
+      "file": "runs/v25/proof-v2\\proof-train.json",
+      "positions": 11501,
+      "split": "train"
+    },
+    {
+      "digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+      "file": "runs/v25/proof-v2\\proof-tune.json",
+      "positions": 1208,
+      "split": "tune"
+    },
+    {
+      "digest": "8c4d2b723afb7f730d28a42f150935d0aab6ff6e98e25124c18febe71e0301df",
+      "file": "runs/v25/proof-v2\\proof-confirm.json",
+      "positions": 1208,
+      "split": "confirm"
+    }
+  ],
+  "exclusion_manifest_digest": "29302432847909bf57bc37dd327ce12974abc2515313d5a9abd81c847f925661"
+}

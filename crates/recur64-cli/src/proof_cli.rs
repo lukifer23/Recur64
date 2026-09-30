@@ -28,12 +28,35 @@ pub enum ProofCmd {
     Audit(AuditArgs),
     /// Exact (exhaustive) pool sizes per family, to size the datasets.
     Pool(PoolArgs),
+    /// P2.5: generate the three heavy-family evaluation holdouts (A, B, C).
+    P25Holdouts(HoldoutArgs),
     /// Policy-only fixed-data training on ProofTargetsV1.
     Train(TrainArgs),
     /// Evaluate a saved checkpoint on a split (per-position results).
     Eval(EvalArgs),
     /// Paired per-position bootstrap between two sets of evaluations.
     Compare(CompareArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct HoldoutArgs {
+    #[arg(long)]
+    pub output: PathBuf,
+    /// Comma-separated directories holding proof-{train,tune,confirm}.json whose
+    /// canonical classes are excluded.
+    #[arg(long)]
+    pub exclude_dirs: String,
+    #[arg(long, default_value_t = 500)]
+    pub per_cell: usize,
+    #[arg(long, default_value_t = 20)]
+    pub threads: usize,
+    /// Independent holdout seeds (A, B, C): 0x7A130001..3.
+    #[arg(long, default_value_t = 2048065537)]
+    pub seed_a: u64,
+    #[arg(long, default_value_t = 2048065538)]
+    pub seed_b: u64,
+    #[arg(long, default_value_t = 2048065539)]
+    pub seed_c: u64,
 }
 
 #[derive(Args, Debug)]
@@ -195,6 +218,7 @@ pub fn run(cmd: ProofCmd) -> anyhow::Result<()> {
         ProofCmd::Gen(a) => gen_all(a),
         ProofCmd::Audit(a) => audit(a),
         ProofCmd::Pool(a) => pool(a),
+        ProofCmd::P25Holdouts(a) => holdouts_cmd(a),
         ProofCmd::Train(a) => train_cmd(a),
         ProofCmd::Eval(a) => eval_cmd(a),
         ProofCmd::Compare(a) => compare_cmd(a),
@@ -443,9 +467,19 @@ fn load_split(dir: &std::path::Path, split: &str) -> anyhow::Result<ProofTargets
 /// Experimental-hygiene guard (not a security mechanism): make every CONFIRM
 /// evaluation loud and leave a trace next to the datasets.
 fn announce_confirm(data: &std::path::Path, digest: &str, who: &str, seed: u64) {
-    eprintln!("CONFIRM DATASET IS BEING EVALUATED:\n{digest}");
+    announce("CONFIRM", "confirm-exposure.log", data, digest, who, seed);
+}
+
+/// Same guard for the P2.5 holdouts (`holdout_a|b|c`).
+fn announce_holdout(data: &std::path::Path, split: &str, digest: &str, who: &str, seed: u64) {
+    let label = split.to_uppercase();
+    announce(&label, "holdout-exposure.log", data, digest, who, seed);
+}
+
+fn announce(label: &str, log: &str, data: &std::path::Path, digest: &str, who: &str, seed: u64) {
+    eprintln!("{label} DATASET IS BEING EVALUATED:\n{digest}");
     let line = format!(
-        "{} digest={digest} model={who} seed={seed}\n",
+        "{} {label} digest={digest} model={who} seed={seed}\n",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
@@ -455,7 +489,7 @@ fn announce_confirm(data: &std::path::Path, digest: &str, who: &str, seed: u64) 
     if let Ok(mut f) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(data.join("confirm-exposure.log"))
+        .open(data.join(log))
     {
         let _ = f.write_all(line.as_bytes());
     }
@@ -754,6 +788,8 @@ where
     };
     if a.split == "confirm" {
         announce_confirm(&a.data, &set.digest, &cfg.name, seed);
+    } else if a.split.starts_with("holdout") {
+        announce_holdout(&a.data, &a.split, &set.digest, &cfg.name, seed);
     }
     let pos = prepare(&set)?;
     let results = evaluate::<B, MI>(&model, &device, &pos)?;
@@ -822,5 +858,104 @@ fn compare_cmd(a: CompareArgs) -> anyhow::Result<()> {
     let v = compare(&fa, &fb, a.resamples, a.seed, a.per_seed).map_err(anyhow::Error::msg)?;
     std::fs::write(&a.output, serde_json::to_vec_pretty(&v)?)?;
     println!("{}", serde_json::to_string_pretty(&v)?);
+    Ok(())
+}
+
+fn holdouts_cmd(a: HoldoutArgs) -> anyhow::Result<()> {
+    use recur64_runtime::proof::generator::{HoldoutSpec, exclusion_digest, generate_holdouts};
+
+    // Exclusion set: every canonical class of every earlier split.
+    let mut exclude = HashSet::new();
+    let mut excluded_datasets = Vec::new();
+    let mut digests = Vec::new();
+    for dir in a.exclude_dirs.split(',') {
+        for split in ["train", "tune", "confirm"] {
+            let path = std::path::Path::new(dir.trim()).join(format!("proof-{split}.json"));
+            let t = ProofTargets::load(&path)?; // validates schema, contracts and digest
+            for p in &t.positions {
+                exclude.insert(p.canon.clone());
+            }
+            digests.push(t.digest.clone());
+            excluded_datasets.push(serde_json::json!({
+                "file": path.display().to_string(), "split": split,
+                "positions": t.positions.len(), "digest": t.digest,
+            }));
+        }
+    }
+    let manifest_digest = exclusion_digest(&exclude, &digests);
+    let t0 = Instant::now();
+    let out = generate_holdouts(&HoldoutSpec {
+        per_cell: a.per_cell,
+        seeds: [a.seed_a, a.seed_b, a.seed_c],
+        threads: a.threads,
+        exclude_canon: exclude.clone(),
+    })?;
+    let wall = t0.elapsed().as_secs_f64();
+
+    // Independent audit of every position, then disjointness (among holdouts and
+    // against every excluded class, by canonical key and by exact FEN).
+    let mut audits = Vec::new();
+    for t in &out.sets {
+        let r = audit_targets(t, a.threads);
+        anyhow::ensure!(
+            r.failures.is_empty(),
+            "{} audit failed on {} of {}; first: {}",
+            t.split.label(),
+            r.failures.len(),
+            r.checked,
+            r.failures[0]
+        );
+        audits.push(
+            serde_json::json!({ "split": t.split.label(), "checked": r.checked, "failures": 0 }),
+        );
+        for p in &t.positions {
+            anyhow::ensure!(
+                !exclude.contains(&p.canon),
+                "{}: canonical class overlaps an excluded earlier split",
+                p.id
+            );
+        }
+    }
+    let refs: Vec<&ProofTargets> = out.sets.iter().collect();
+    check_disjoint(&refs).map_err(anyhow::Error::msg)?;
+
+    std::fs::create_dir_all(&a.output)?;
+    let mut metas = Vec::new();
+    for t in &out.sets {
+        let path = a.output.join(format!("proof-{}.json", t.split.label()));
+        t.save(&path)?;
+        let meta = dataset_summary(t, &path);
+        std::fs::write(
+            a.output
+                .join(format!("{}-meta.json", t.split.label().replace('_', "-"))),
+            serde_json::to_vec_pretty(&meta)?,
+        )?;
+        metas.push(meta);
+    }
+    let exclusion = serde_json::json!({
+        "excluded_datasets": excluded_datasets,
+        "excluded_canonical_classes": exclude.len(),
+        "exclusion_manifest_digest": manifest_digest,
+        "also_excluded_by_construction": "every P2.5 training-extension position (selected after the holdouts, excluding them)",
+    });
+    std::fs::write(
+        a.output.join("exclusion-manifest.json"),
+        serde_json::to_vec_pretty(&exclusion)?,
+    )?;
+    let accounting = serde_json::json!({
+        "cells": out.cells,
+        "pools": out.pools,
+        "audit": audits,
+        "disjoint": "holdouts A/B/C are mutually disjoint and disjoint from every excluded earlier split, by canonical class and exact FEN (verified)",
+        "seeds": { "a": a.seed_a, "b": a.seed_b, "c": a.seed_c },
+        "per_cell": a.per_cell,
+        "generation_wall_s": wall,
+    });
+    std::fs::write(
+        a.output.join("holdout-pool-accounting.json"),
+        serde_json::to_vec_pretty(&accounting)?,
+    )?;
+    println!("{}", serde_json::to_string_pretty(&metas)?);
+    println!("{}", serde_json::to_string_pretty(&accounting["cells"])?);
     Ok(())
 }

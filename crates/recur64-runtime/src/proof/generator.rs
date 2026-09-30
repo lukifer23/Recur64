@@ -437,6 +437,141 @@ pub fn generate(spec: &GenSpec) -> anyhow::Result<(ProofTargets, GenReport)> {
     Ok((targets, report))
 }
 
+/// P2.5 heavy-family holdout request.
+#[derive(Debug, Clone)]
+pub struct HoldoutSpec {
+    /// Positions per (family, depth) cell in EACH holdout.
+    pub per_cell: usize,
+    /// Independent selection seeds for holdouts A, B, C.
+    pub seeds: [u64; 3],
+    pub threads: usize,
+    /// Canonical classes that must not appear in any holdout.
+    pub exclude_canon: HashSet<String>,
+}
+
+/// Exact pool accounting of one heavy cell under the holdout exclusions.
+#[derive(Debug, Clone, Serialize)]
+pub struct HoldoutCell {
+    pub family: String,
+    pub depth: u8,
+    /// Eligible canonical classes of the cell (exact pool).
+    pub eligible_pool: usize,
+    /// Of those, classes excluded because an earlier split used them.
+    pub excluded: usize,
+    /// Available to the holdouts before selection.
+    pub available: usize,
+    /// Taken by holdouts A, B, C together.
+    pub holdout_total: usize,
+    /// Left for the training extension after the holdouts.
+    pub remaining_for_extension: usize,
+}
+
+pub struct HoldoutOutput {
+    pub sets: [ProofTargets; 3],
+    pub cells: Vec<HoldoutCell>,
+    pub pools: Vec<PoolReport>,
+}
+
+/// The heavy (three-major-piece) families: KQQvK, KQRvK, KRRvK.
+pub const HEAVY_FAMILIES: [usize; 3] = [2, 3, 4];
+
+/// Generate HOLDOUT_A/B/C: heavy families x depths 1..=3, `per_cell` positions per
+/// cell per holdout, from the exact pools, with canonical-class exclusion and
+/// independent seeded shuffles. Holdouts take priority over any later use of a
+/// cell's pool. Errors (stop condition) if a cell cannot supply all three.
+pub fn generate_holdouts(spec: &HoldoutSpec) -> anyhow::Result<HoldoutOutput> {
+    let splits = [Split::HoldoutA, Split::HoldoutB, Split::HoldoutC];
+    let mut sets: [Vec<ProofPosition>; 3] = [Vec::new(), Vec::new(), Vec::new()];
+    let mut counters = [0usize; 3];
+    let mut cells = Vec::new();
+    let mut pools = Vec::new();
+    for &fi in &HEAVY_FAMILIES {
+        let (family, _) = FAMILIES[fi];
+        let (report, cands) = enumerate_pool(fi, 3, spec.threads)?;
+        pools.push(report);
+        for d in 1..=3u8 {
+            let cell: Vec<Candidate> = cands.iter().filter(|c| c.depth == d).cloned().collect();
+            let available: Vec<Candidate> = cell
+                .iter()
+                .filter(|c| !spec.exclude_canon.contains(&c.canon))
+                .cloned()
+                .collect();
+            let need = spec.per_cell * 3;
+            anyhow::ensure!(
+                available.len() >= need,
+                "{family} M{d}: only {} classes remain after exclusions, need {need} for the holdouts",
+                available.len()
+            );
+            let tag = mix(0x401D_0000 + fi as u64 * 16 + d as u64);
+            let mut rest = available.clone();
+            for (h, split) in splits.iter().enumerate() {
+                let shuffled = shuffled(&rest, mix(spec.seeds[h] ^ tag));
+                let chosen: Vec<Candidate> = shuffled.into_iter().take(spec.per_cell).collect();
+                let used: HashSet<&str> = chosen.iter().map(|c| c.canon.as_str()).collect();
+                rest.retain(|c| !used.contains(c.canon.as_str()));
+                sets[h].extend(label_positions(
+                    &chosen,
+                    family,
+                    *split,
+                    spec.seeds[h],
+                    &mut counters[h],
+                )?);
+            }
+            cells.push(HoldoutCell {
+                family: family.to_string(),
+                depth: d,
+                eligible_pool: cell.len(),
+                excluded: cell.len() - available.len(),
+                available: available.len(),
+                holdout_total: need,
+                remaining_for_extension: rest.len(),
+            });
+        }
+    }
+    let filters = |split: Split| {
+        serde_json::json!({
+            "source": "exhaustive exact heavy pools, canonical-class exclusion, independent seeded shuffle per holdout",
+            "families": HEAVY_FAMILIES.iter().map(|i| FAMILIES[*i].0).collect::<Vec<_>>(),
+            "depths": [1, 2, 3],
+            "per_cell": spec.per_cell,
+            "max_correct_fraction": MAX_CORRECT_FRACTION,
+            "fact_ambiguity_required_for_depth_at_least": 2,
+            "split": split.label(),
+        })
+    };
+    let [a, b, c] = sets;
+    Ok(HoldoutOutput {
+        sets: [
+            ProofTargets::new(Split::HoldoutA, spec.seeds[0], filters(Split::HoldoutA), a),
+            ProofTargets::new(Split::HoldoutB, spec.seeds[1], filters(Split::HoldoutB), b),
+            ProofTargets::new(Split::HoldoutC, spec.seeds[2], filters(Split::HoldoutC), c),
+        ],
+        cells,
+        pools,
+    })
+}
+
+/// SHA-256 over the sorted excluded canonical classes and the excluded datasets'
+/// digests: the identity of an exclusion set.
+pub fn exclusion_digest(canons: &HashSet<String>, dataset_digests: &[String]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut c: Vec<&String> = canons.iter().collect();
+    c.sort();
+    let mut d: Vec<&String> = dataset_digests.iter().collect();
+    d.sort();
+    let mut h = Sha256::new();
+    for x in c {
+        h.update(x.as_bytes());
+        h.update(b"\n");
+    }
+    h.update(b"--datasets--\n");
+    for x in d {
+        h.update(x.as_bytes());
+        h.update(b"\n");
+    }
+    format!("{:x}", h.finalize())
+}
+
 /// Board of a stored position (used by audits and tools).
 pub fn board_of(p: &ProofPosition) -> anyhow::Result<Board> {
     p.fen

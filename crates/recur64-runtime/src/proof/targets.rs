@@ -37,6 +37,13 @@ pub enum Split {
     Train,
     Tune,
     Confirm,
+    /// P2.5 heavy-family evaluation holdouts (A: factorial, B: data scale, C: horizon).
+    #[serde(rename = "holdout_a")]
+    HoldoutA,
+    #[serde(rename = "holdout_b")]
+    HoldoutB,
+    #[serde(rename = "holdout_c")]
+    HoldoutC,
 }
 
 impl Split {
@@ -45,6 +52,9 @@ impl Split {
             Split::Train => "train",
             Split::Tune => "tune",
             Split::Confirm => "confirm",
+            Split::HoldoutA => "holdout_a",
+            Split::HoldoutB => "holdout_b",
+            Split::HoldoutC => "holdout_c",
         }
     }
 }

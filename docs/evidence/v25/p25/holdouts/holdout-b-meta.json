@@ -1,0 +1,36 @@
+{
+  "by_depth": {
+    "M1": {
+      "chance_top1": 0.0420428639712433,
+      "positions": 1500
+    },
+    "M2": {
+      "chance_top1": 0.05906095353638132,
+      "positions": 1500
+    },
+    "M3": {
+      "chance_top1": 0.07754967545469602,
+      "positions": 1500
+    }
+  },
+  "by_family": {
+    "KQQvK": {
+      "chance_top1": 0.07568978702152769,
+      "positions": 1500
+    },
+    "KQRvK": {
+      "chance_top1": 0.05115547224382559,
+      "positions": 1500
+    },
+    "KRRvK": {
+      "chance_top1": 0.05180823369696736,
+      "positions": 1500
+    }
+  },
+  "chance_top1_overall": 0.05955116432077355,
+  "digest": "13c8e018beea71058dbbbf510c723ebbe85b3a057c7b0e4a845a1039e107df10",
+  "file": "runs/v25/p25/holdouts\\proof-holdout_b.json",
+  "positions": 4500,
+  "seed": 2048065538,
+  "split": "holdout_b"
+}

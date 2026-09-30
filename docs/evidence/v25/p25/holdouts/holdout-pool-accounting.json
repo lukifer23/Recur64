@@ -1,0 +1,166 @@
+{
+  "audit": [
+    {
+      "checked": 4500,
+      "failures": 0,
+      "split": "holdout_a"
+    },
+    {
+      "checked": 4500,
+      "failures": 0,
+      "split": "holdout_b"
+    },
+    {
+      "checked": 4500,
+      "failures": 0,
+      "split": "holdout_c"
+    }
+  ],
+  "cells": [
+    {
+      "available": 93259,
+      "depth": 1,
+      "eligible_pool": 95649,
+      "excluded": 2390,
+      "family": "KQQvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 91759
+    },
+    {
+      "available": 171769,
+      "depth": 2,
+      "eligible_pool": 174163,
+      "excluded": 2394,
+      "family": "KQQvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 170269
+    },
+    {
+      "available": 2331,
+      "depth": 3,
+      "eligible_pool": 4409,
+      "excluded": 2078,
+      "family": "KQQvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 831
+    },
+    {
+      "available": 108889,
+      "depth": 1,
+      "eligible_pool": 111273,
+      "excluded": 2384,
+      "family": "KQRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 107389
+    },
+    {
+      "available": 304197,
+      "depth": 2,
+      "eligible_pool": 306595,
+      "excluded": 2398,
+      "family": "KQRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 302697
+    },
+    {
+      "available": 208824,
+      "depth": 3,
+      "eligible_pool": 211215,
+      "excluded": 2391,
+      "family": "KQRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 207324
+    },
+    {
+      "available": 39248,
+      "depth": 1,
+      "eligible_pool": 41612,
+      "excluded": 2364,
+      "family": "KRRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 37748
+    },
+    {
+      "available": 119689,
+      "depth": 2,
+      "eligible_pool": 122082,
+      "excluded": 2393,
+      "family": "KRRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 118189
+    },
+    {
+      "available": 105702,
+      "depth": 3,
+      "eligible_pool": 108086,
+      "excluded": 2384,
+      "family": "KRRvK",
+      "holdout_total": 1500,
+      "remaining_for_extension": 104202
+    }
+  ],
+  "disjoint": "holdouts A/B/C are mutually disjoint and disjoint from every excluded earlier split, by canonical class and exact FEN (verified)",
+  "generation_wall_s": 52.8229448,
+  "per_cell": 500,
+  "pools": [
+    {
+      "canonical_classes": 353793,
+      "classes_by_depth": {
+        "1": 95649,
+        "2": 213317,
+        "3": 44709,
+        "none": 118
+      },
+      "eligible_by_depth": {
+        "1": 95649,
+        "2": 174163,
+        "3": 4409
+      },
+      "family": "KQQvK",
+      "legal_live": 5657120,
+      "raw_placements": 15249024,
+      "wall_s": 6.8040304
+    },
+    {
+      "canonical_classes": 864052,
+      "classes_by_depth": {
+        "1": 111273,
+        "2": 342437,
+        "3": 268681,
+        "none": 141661
+      },
+      "eligible_by_depth": {
+        "1": 111273,
+        "2": 306595,
+        "3": 211215
+      },
+      "family": "KQRvK",
+      "legal_live": 6911296,
+      "raw_placements": 15249024,
+      "wall_s": 26.3064519
+    },
+    {
+      "canonical_classes": 520702,
+      "classes_by_depth": {
+        "1": 41612,
+        "2": 144696,
+        "3": 123112,
+        "none": 211282
+      },
+      "eligible_by_depth": {
+        "1": 41612,
+        "2": 122082,
+        "3": 108086
+      },
+      "family": "KRRvK",
+      "legal_live": 8325184,
+      "raw_placements": 15249024,
+      "wall_s": 11.6996311
+    }
+  ],
+  "seeds": {
+    "a": 2048065537,
+    "b": 2048065538,
+    "c": 2048065539
+  }
+}
