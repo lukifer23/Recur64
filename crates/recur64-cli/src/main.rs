@@ -30,6 +30,8 @@ mod x15_compare;
 mod x15_reasoning;
 mod x15_tactics;
 mod x15_train;
+mod x2_data;
+mod x2_run;
 
 #[derive(Parser)]
 #[command(
@@ -106,6 +108,8 @@ enum Commands {
     CudaSmoke(cuda_smoke::CudaSmokeArgs),
     /// X15 / Chimera fast probe harness (info/sanity/parity/grads/thoughts).
     X15(x15::X15Args),
+    /// Chimera V2 experiment harness (info/gen/train/eval/analyze/bench).
+    X2(x2_run::X2Args),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -141,5 +145,6 @@ fn main() -> anyhow::Result<()> {
         #[cfg(feature = "cuda")]
         Commands::CudaSmoke(args) => cuda_smoke::run_cuda_smoke(args),
         Commands::X15(args) => x15::run(args),
+        Commands::X2(args) => x2_run::run(args),
     }
 }

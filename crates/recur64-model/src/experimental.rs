@@ -399,7 +399,7 @@ pub const CANDIDATE_TOKEN_VERSION: &str = "candidate_token_v1";
 pub const VISUAL_FUSION_VERSION: &str = "visual_fusion_v1";
 
 /// World-model contract (layout and rules of the exact consequence engine).
-pub const WORLD_MODEL_VERSION: &str = "world_model_v2";
+pub const WORLD_MODEL_VERSION: &str = "world_model_v2_staged_v1";
 
 /// How the exact world-model information becomes visible to the planner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -655,7 +655,34 @@ impl ExperimentalConfig {
                 && self.retrieval.memory_tokens == 0,
             "retrieval is not implemented; it must stay \"none\""
         );
+        // V1-only fields are not part of the V2 identity and never execute: a value
+        // other than the canonical default would be silently ignored, so it is refused.
+        let d = ExperimentalConfig::default();
+        anyhow::ensure!(
+            self.thought_steps == d.thought_steps
+                && self.reasoning_tokens == d.reasoning_tokens
+                && self.deep_supervision == d.deep_supervision
+                && self.intermediate_weight == d.intermediate_weight
+                && self.reasoning == d.reasoning
+                && self.compute == d.compute,
+            "chimera_v2 ignores the V1-only fields thought_steps, reasoning_tokens,              deep_supervision, intermediate_weight, [reasoning] and [compute]; they must stay              at their defaults (the thought budget is chosen at run time, the world model is              configured under [experimental.v2])"
+        );
         anyhow::ensure!(model_width >= 8, "model width too small");
+        Ok(())
+    }
+
+    /// The V2-relevant model geometry: V2 has its own readout, so a nonzero
+    /// `output_blocks` would be a scientifically visible field that never executes.
+    pub fn validate_v2_model(&self, model: &crate::config::ModelConfig) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            model.output_blocks == 0,
+            "chimera_v2 uses its own readout: model.output_blocks must be 0 (got {})",
+            model.output_blocks
+        );
+        anyhow::ensure!(
+            model.input_blocks >= 1 && model.core_blocks >= 1,
+            "chimera_v2 needs prelude (input_blocks) and body (core_blocks) blocks"
+        );
         Ok(())
     }
 
@@ -789,6 +816,9 @@ impl ExperimentalConfig {
                 "architecture_head_version": self.architecture.head_version(),
                 "planner_contract_version": PLANNER_CONTRACT_VERSION,
                 "world_model_version": WORLD_MODEL_VERSION,
+                // The world model models no move history: fresh positions only. A V2
+                // checkpoint is therefore an analysis model, not a self-play evaluator.
+                "history_contract": recur64_coproc::world::HISTORY_CONTRACT,
                 "candidate_token_version": CANDIDATE_TOKEN_VERSION,
                 "candidate_facts_version": CANDIDATE_FACTS_VERSION,
                 "visual_fusion_version": VISUAL_FUSION_VERSION,

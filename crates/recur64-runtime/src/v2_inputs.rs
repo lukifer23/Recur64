@@ -37,8 +37,36 @@ pub struct V2PhaseTimes {
     pub replies: usize,
     /// The horizon the world model was computed at (0 when no world model was used).
     pub horizon: u8,
-    /// Deterministic work actually executed, summed over the batch.
+    /// Deterministic work executed LIVE by this batch, summed over the batch. Zero when
+    /// the bytes came from a cache: reading a precomputed record is not chess work.
     pub stats: WorldStats,
+    /// Work that was done when a cached record was built (not by this inference).
+    pub cached_stats: WorldStats,
+    pub tool_mode: ToolComputeMode,
+    /// Packed world-model output bytes produced (live) or read (cached).
+    pub packed_output_bytes: usize,
+}
+
+/// Whether the deterministic tool work of a batch ran now or was read from a cache.
+/// Capability training may use a cache; latency / compute-frontier comparisons must
+/// use `Live` horizon-correct execution and never mix the two.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ToolComputeMode {
+    /// No world model is involved (root-only schedule).
+    #[default]
+    None,
+    Live,
+    Cached,
+}
+
+impl ToolComputeMode {
+    pub fn label(self) -> &'static str {
+        match self {
+            ToolComputeMode::None => "none",
+            ToolComputeMode::Live => "live",
+            ToolComputeMode::Cached => "cached",
+        }
+    }
 }
 
 pub struct V2Batch<B: Backend> {
@@ -248,6 +276,7 @@ pub fn build_v2_batch<B: Backend>(
             "cached world bytes for {} positions, batch has {b}",
             w.len()
         );
+        phases.tool_mode = ToolComputeMode::Cached;
         Some(w)
     } else if v.info_schedule.needs_world_model() {
         let p = provider.ok_or_else(|| {
@@ -256,6 +285,7 @@ pub fn build_v2_batch<B: Backend>(
         let t1 = Instant::now();
         owned = compute_world_bytes(states, p, w_cap, r_cap, horizon)?;
         phases.world_us = t1.elapsed().as_micros() as u64;
+        phases.tool_mode = ToolComputeMode::Live;
         Some(&owned)
     } else {
         None
@@ -278,7 +308,13 @@ pub fn build_v2_batch<B: Backend>(
             // The horizon is read from the bytes themselves, so a cache can never be
             // mistaken for a deeper one than it is.
             let mut batch_horizon: Option<WorldHorizon> = None;
-            for x in bs {
+            for (xi, x) in bs.iter().enumerate() {
+                anyhow::ensure!(
+                    u16::from_le_bytes([x[0], x[1]]) as usize == legal[xi].len(),
+                    "world bytes for position {xi} describe {} candidates, the position has {}",
+                    u16::from_le_bytes([x[0], x[1]]),
+                    legal[xi].len()
+                );
                 anyhow::ensure!(
                     x.len() == world_output_len(w_cap, r_cap),
                     "world bytes are {} long, expected {}",
@@ -292,7 +328,19 @@ pub fn build_v2_batch<B: Backend>(
                     *batch_horizon.get_or_insert(h) == h,
                     "world bytes in one batch were computed at different horizons"
                 );
-                phases.stats.add(&WorldStats::from_bytes(x));
+                // Cache identity: the record must have been built for exactly this
+                // capacity and this position (candidate count = legal move count).
+                anyhow::ensure!(
+                    x[2] as usize == w_cap && x[3] as usize == r_cap,
+                    "world bytes were built for w_cap {}/r_cap {}, this run uses {w_cap}/{r_cap}",
+                    x[2],
+                    x[3]
+                );
+                phases.packed_output_bytes += x.len();
+                match phases.tool_mode {
+                    ToolComputeMode::Cached => phases.cached_stats.add(&WorldStats::from_bytes(x)),
+                    _ => phases.stats.add(&WorldStats::from_bytes(x)),
+                }
                 let (s, r) = unpack_one(x, w_cap, r_cap, h, &mut sb, &mut sf, &mut rf, &mut rm);
                 phases.successors += s;
                 phases.replies += r;
@@ -400,6 +448,13 @@ fn render_visual<B: Backend>(
 /// computation that reveals everything the network is allowed to see by thought `t`.
 /// `None` means no world-model computation is required at all (root-only control:
 /// its root facts come from the native `CandidateFactsV1` function).
+pub fn required_world_horizon(
+    schedule: recur64_model::experimental::InfoSchedule,
+    thoughts: usize,
+) -> Option<WorldHorizon> {
+    horizon_for_budget(schedule, thoughts)
+}
+
 pub fn horizon_for_budget(
     schedule: recur64_model::experimental::InfoSchedule,
     t: usize,
@@ -423,18 +478,22 @@ mod tests {
     use recur64_model::experimental::InfoSchedule;
 
     #[test]
-    fn horizon_follows_the_frozen_schedule() {
-        let p = InfoSchedule::Progressive;
-        assert_eq!(horizon_for_budget(p, 1), Some(WorldHorizon::Root));
-        assert_eq!(horizon_for_budget(p, 2), Some(WorldHorizon::Successor));
-        assert_eq!(horizon_for_budget(p, 3), Some(WorldHorizon::Replies));
-        // Thought 4 reveals nothing new, so it needs no deeper computation.
-        assert_eq!(horizon_for_budget(p, 4), Some(WorldHorizon::Replies));
+    fn required_world_horizon_truth_table() {
+        use WorldHorizon::{Replies as R, Root as O, Successor as S};
+        let table = |sched: InfoSchedule| -> Vec<Option<WorldHorizon>> {
+            (1..=8).map(|t| required_world_horizon(sched, t)).collect()
+        };
         assert_eq!(
-            horizon_for_budget(InfoSchedule::AllAtOnce, 1),
-            Some(WorldHorizon::Replies)
+            table(InfoSchedule::Progressive),
+            [O, S, R, R, R, R, R, R].map(Some)
         );
-        assert_eq!(horizon_for_budget(InfoSchedule::RootOnly, 4), None);
+        assert_eq!(table(InfoSchedule::AllAtOnce), [R; 8].map(Some));
+        assert_eq!(table(InfoSchedule::RootOnly), [None; 8]);
+        // T=0 is treated like T=1 (never deeper than the first thought).
+        assert_eq!(
+            required_world_horizon(InfoSchedule::Progressive, 0),
+            Some(O)
+        );
     }
 
     #[test]

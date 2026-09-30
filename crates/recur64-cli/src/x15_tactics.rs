@@ -85,20 +85,20 @@ pub struct FixtureFile {
     pub fixtures: Vec<Fixture>,
 }
 
-fn mix(mut x: u64) -> u64 {
+pub(crate) fn mix(mut x: u64) -> u64 {
     x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
     x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
     x = (x ^ (x >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
     x ^ (x >> 31)
 }
 
-struct Rng(u64);
+pub(crate) struct Rng(pub(crate) u64);
 impl Rng {
-    fn next(&mut self) -> u64 {
+    pub(crate) fn next(&mut self) -> u64 {
         self.0 = mix(self.0);
         self.0
     }
-    fn below(&mut self, n: usize) -> usize {
+    pub(crate) fn below(&mut self, n: usize) -> usize {
         (self.next() % n as u64) as usize
     }
 }
@@ -114,7 +114,7 @@ fn value(c: char) -> i32 {
 }
 
 /// White minus black material from a FEN.
-fn material_diff(fen: &str) -> i32 {
+pub(crate) fn material_diff(fen: &str) -> i32 {
     fen.split(' ')
         .next()
         .unwrap_or("")
@@ -130,7 +130,7 @@ fn material_diff(fen: &str) -> i32 {
         .sum()
 }
 
-fn apply_id(state: &GameState, id: ActionId) -> GameState {
+pub(crate) fn apply_id(state: &GameState, id: ActionId) -> GameState {
     let (from, to, promo) = id.to_physical(state.perspective());
     let promotion = if promo.is_none() { None } else { Some(promo) };
     let mut s = state.clone();
@@ -144,7 +144,7 @@ fn is_checkmate(s: &GameState) -> bool {
 }
 
 /// Indices of every legal move that mates.
-fn mating_moves(state: &GameState) -> Vec<usize> {
+pub(crate) fn mating_moves(state: &GameState) -> Vec<usize> {
     state
         .legal_actions()
         .iter()
@@ -188,7 +188,7 @@ fn two_ply_values(state: &GameState) -> Vec<i32> {
 }
 
 /// Build a FEN from (square, piece char) placements; white to move, no rights.
-fn fen_from(pieces: &[(usize, char)]) -> String {
+pub(crate) fn fen_from(pieces: &[(usize, char)]) -> String {
     let mut board = [' '; 64];
     for (sq, c) in pieces {
         board[*sq] = *c;
@@ -220,7 +220,7 @@ fn fen_from(pieces: &[(usize, char)]) -> String {
 }
 
 /// Random placement of `pieces` on distinct squares (pawns on ranks 2-7).
-fn place(rng: &mut Rng, pieces: &[char]) -> Vec<(usize, char)> {
+pub(crate) fn place(rng: &mut Rng, pieces: &[char]) -> Vec<(usize, char)> {
     let mut used = [false; 64];
     let mut out = Vec::new();
     for &c in pieces {
@@ -238,7 +238,7 @@ fn place(rng: &mut Rng, pieces: &[char]) -> Vec<(usize, char)> {
     out
 }
 
-fn try_state(fen: &str) -> Option<GameState> {
+pub(crate) fn try_state(fen: &str) -> Option<GameState> {
     let s = GameState::from_fen(fen).ok()?;
     // The side NOT to move must not already be in check (an illegal position
     // `from_fen` does not reject, and one in which the king could be captured).
@@ -657,7 +657,7 @@ pub(crate) fn fixture_fens(path: &std::path::Path) -> anyhow::Result<Vec<String>
 }
 
 /// Adjacent kings make an illegal position that `from_fen` does not reject.
-fn kings_adjacent(placed: &[(usize, char)]) -> bool {
+pub(crate) fn kings_adjacent(placed: &[(usize, char)]) -> bool {
     let sq = |c: char| placed.iter().find(|(_, p)| *p == c).map(|(s, _)| *s);
     match (sq('K'), sq('k')) {
         (Some(a), Some(b)) => {

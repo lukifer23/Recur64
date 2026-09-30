@@ -292,6 +292,7 @@ pub fn build_chimera_v2_unverified<B: Backend>(
         exp.architecture
     );
     exp.validate(cfg.width)?;
+    exp.validate_v2_model(cfg)?;
     Ok(ChimeraV2Model::<B>::new(cfg.clone(), exp.clone(), device))
 }
 

@@ -10,7 +10,7 @@ Contract versions (all part of the scientific identity):
 |---|---|
 | head | `CHIMERA_V2_HEAD_VERSION = 1` |
 | planner | `chimera-v2-planner-v1` |
-| world model | `world_model_v2` |
+| world model | `world_model_v2_staged_v1` |
 | candidate token | `candidate_token_v1` |
 | visual fusion | `visual_fusion_v1` |
 | candidate facts semantics | `candidate_facts_v1` (unchanged) |
@@ -96,7 +96,7 @@ destination attacked after the move, promotion, promotion gain / 8, stalemate. F
 of the token representation. There is no `gain` multiplier. An optional independently gated
 direct fact logit shortcut exists for ablation, **off** by default.
 
-## WorldModelProviderV2 (`world_model_v2`)
+## WorldModelProviderV2 (`world_model_v2_staged_v1`)
 
 An exact chess world model: **consequences and legal structure, not an evaluation.** No PUCT,
 no visit counts, no rollouts, no scalar score, no forced-mate bit. One source

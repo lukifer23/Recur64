@@ -1,0 +1,52 @@
+# Recur64 Chimera V2 experiment configuration (variant A: root only).
+#
+# BoardEncoderV2 (2 prelude + 4 body blocks) runs ONCE per forward; the bounded gated
+# planner then runs T cheap steps over candidate / successor / reply-set tokens from the
+# exact WorldModelV2. Visual fusion is OFF in the primary experiment.
+# History contract: fresh_no_history_v1 (no repetition/history modelled; not for self-play).
+
+name = "x2_rootonly_cuda"
+device = "cuda"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 512
+heads = 8
+ffn = 768
+input_blocks = 2
+core_blocks = 4
+output_blocks = 0
+squares = 64
+in_features = 119
+policy_dim = 128
+wdl_classes = 3
+promo_codes = 5
+rms_eps = 1e-5
+
+[experimental]
+architecture = "chimera_v2"
+
+[experimental.v2]
+info_schedule = "root_only"
+world_provider = "native_v1"
+w_cap = 64
+r_cap = 16
+
+[experimental.candidate_facts]
+provider = "native_v1"
+enabled = true
+
+[experimental.visual]
+provider = "render_v1"
+enabled = false
+resolution = 64
+channels = 48
+blocks = 3
+
+[experimental.retrieval]
+provider = "none"
+memory_tokens = 0

@@ -2,7 +2,7 @@
 //
 // The pinned WebAssembly coprocessor artifact. WASM_SHA256 is recomputed from the
 // embedded bytes by tests::embedded_artifact_matches_pinned_digest, and
-// WASM_SOURCE_DIGEST is recomputed from the coprocessor sources by
+// COPROC_SOURCE_CONTRACT_SHA256 is recomputed from the coprocessor sources by
 // tests::artifact_source_digest_matches_the_sources, so a swapped artifact OR a
 // source change that was not followed by a rebuild fails a test instead of silently
 // changing what the model sees.
@@ -10,9 +10,12 @@
 pub const WASM_ARTIFACT: &[u8] = include_bytes!("../assets/compute_bank_v1.wasm");
 pub const WASM_SHA256: &str = "40bb8eb3088ba50b6ec2c1c1fea994a2c137c9fce51ab92093ab1c161289539d";
 pub const WASM_ARTIFACT_BYTES: usize = 1589122;
-/// SHA-256 of the sources the artifact was built from (see the build script for the algorithm).
-pub const WASM_SOURCE_DIGEST: &str = "ad5f68a76d55d642c89a82679b588702bfced387cd87ef524cc862307fa67ed1";
-/// Git HEAD at build time. A "+uncommitted-sources" suffix means the sources were not
-/// yet committed, so this revision does NOT contain the exact sources; rely on
-/// WASM_SOURCE_DIGEST for reproducibility. Provenance only.
-pub const WASM_BUILT_FROM: &str = "ad6abc6c89cfb301d50b42dc6fe7429ccab45a3a";
+/// SHA-256 of the deterministic coprocessor sources (the source contract; see the
+/// build script for the algorithm). This, not a git revision, is what says which
+/// sources the artifact corresponds to.
+pub const COPROC_SOURCE_CONTRACT_SHA256: &str =
+    "9e069771fea07a478aeae602903f7800883ea6cc1c4dc6524a6cb8a77a9634d9";
+/// Git HEAD of the machine that ran the build: BUILD-ENVIRONMENT provenance only. It
+/// does NOT assert that the sources equal that commit ("+uncommitted-sources" says the
+/// working tree differed); rely on COPROC_SOURCE_CONTRACT_SHA256.
+pub const BUILT_AT_GIT_REV: &str = "f28e5bb4d461cf2706de8f4afbbe1a68cdfedc4a+uncommitted-sources";

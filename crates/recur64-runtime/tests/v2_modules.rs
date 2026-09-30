@@ -793,3 +793,275 @@ fn progressive_requests_only_what_the_budget_needs_and_all_info_requests_everyth
         "same deterministic content and cost as progressive T>=3"
     );
 }
+
+/// A provider that counts every invocation (execution is asserted separately from
+/// what the network can see).
+struct Counting {
+    inner: NativeWorldModel,
+    calls: std::sync::atomic::AtomicUsize,
+}
+
+impl recur64_compute::WorldModelProvider for Counting {
+    fn kind(&self) -> ComputeProviderKind {
+        ComputeProviderKind::NativeV1
+    }
+    fn world_batch(
+        &self,
+        inputs: &[Vec<u8>],
+        w_cap: usize,
+        r_cap: usize,
+        horizon: WorldHorizon,
+    ) -> Result<Vec<Vec<u8>>, recur64_compute::ComputeError> {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        recur64_compute::WorldModelProvider::world_batch(&self.inner, inputs, w_cap, r_cap, horizon)
+    }
+}
+
+#[test]
+fn tool_execution_is_staged_per_budget_and_separate_from_visibility() {
+    use recur64_runtime::v2_inputs::{ToolComputeMode, required_world_horizon};
+    big_stack(|| {
+        let device = Default::default();
+        let states = positions();
+        let e = exp(InfoSchedule::Progressive);
+        let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
+        let prov = Counting {
+            inner: NativeWorldModel,
+            calls: Default::default(),
+        };
+        let mut rows = Vec::new();
+        for t in 1..=4usize {
+            let h = required_world_horizon(e.v2.info_schedule, t).unwrap();
+            let b = build_v2_batch::<EvalB>(&states, &e, Some(&prov), None, h, &device).unwrap();
+            assert_eq!(b.phases.tool_mode, ToolComputeMode::Live);
+            let out = model.forward(&b.input, &b.cands, t, V2Options::default());
+            rows.push((b.phases.stats, out.counts));
+        }
+        // T1, T2: no continuation-summary enumeration at all; T3 does it; T4 reuses T3's
+        // deterministic horizon and only adds a planner step.
+        for r in &rows[..2] {
+            assert_eq!(r.0.next_moves_enumerated, 0);
+            assert_eq!(r.0.continuation_moves_enumerated, 0);
+            assert_eq!(r.0.reply_records, 0);
+        }
+        assert!(rows[2].0.next_moves_enumerated > 0 && rows[2].0.reply_records > 0);
+        assert_eq!(
+            rows[3].0, rows[2].0,
+            "T4 has the same deterministic work as T3"
+        );
+        assert_eq!(rows[3].1.planner_steps, rows[2].1.planner_steps + 1);
+        assert!(rows.iter().all(|r| r.1.board_encoder_runs == 1));
+        assert_eq!(prov.calls.load(std::sync::atomic::Ordering::SeqCst), 4);
+
+        // All-at-once pays the full Replies price at T=1.
+        let ea = exp(InfoSchedule::AllAtOnce);
+        let h = required_world_horizon(ea.v2.info_schedule, 1).unwrap();
+        let ba = build_v2_batch::<EvalB>(&states, &ea, Some(&prov), None, h, &device).unwrap();
+        assert!(ba.phases.stats.next_moves_enumerated > 0 && ba.phases.horizon == 3);
+
+        // Root-only never calls the world model (facts come from the native facts path).
+        let er = exp(InfoSchedule::RootOnly);
+        let before = prov.calls.load(std::sync::atomic::Ordering::SeqCst);
+        let br =
+            build_v2_batch::<EvalB>(&states, &er, Some(&prov), None, WorldHorizon::Root, &device)
+                .unwrap();
+        assert_eq!(prov.calls.load(std::sync::atomic::Ordering::SeqCst), before);
+        assert_eq!(br.phases.tool_mode, ToolComputeMode::None);
+        assert_eq!(br.phases.stats.total_move_operations(), 0);
+    });
+}
+
+#[test]
+fn cached_world_bytes_are_reported_as_cached_and_never_as_live_work() {
+    use recur64_runtime::v2_inputs::ToolComputeMode;
+    let device = Default::default();
+    let states = positions();
+    let e = exp(InfoSchedule::Progressive);
+    let bytes = compute_world_bytes(
+        &states,
+        &NativeWorldModel,
+        e.v2.w_cap,
+        e.v2.r_cap,
+        WorldHorizon::Replies,
+    )
+    .unwrap();
+    // A T1-shaped batch built from a Replies-horizon cache.
+    let b = build_v2_batch::<EvalB>(&states, &e, None, Some(&bytes), WorldHorizon::Root, &device)
+        .unwrap();
+    assert_eq!(b.phases.tool_mode, ToolComputeMode::Cached);
+    assert_eq!(
+        b.phases.stats.total_move_operations(),
+        0,
+        "a cache read is not live chess work"
+    );
+    assert!(b.phases.cached_stats.total_move_operations() > 0);
+    assert!(b.phases.packed_output_bytes > 0);
+    // Wrong capacity or a different position's record is refused.
+    let mut wrong_cap = bytes.clone();
+    wrong_cap[0][2] ^= 1;
+    assert!(
+        build_v2_batch::<EvalB>(
+            &states,
+            &e,
+            None,
+            Some(&wrong_cap),
+            WorldHorizon::Root,
+            &device
+        )
+        .is_err()
+    );
+    let mut swapped = bytes.clone();
+    swapped.swap(0, 2);
+    assert!(
+        build_v2_batch::<EvalB>(
+            &states,
+            &e,
+            None,
+            Some(&swapped),
+            WorldHorizon::Root,
+            &device
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn v2_refuses_silently_ignored_scientific_fields() {
+    let good = exp(InfoSchedule::Progressive);
+    assert!(good.validate(32).is_ok());
+    let mut e = good.clone();
+    e.thought_steps = 7;
+    assert!(e.validate(32).is_err(), "thought_steps is ignored by V2");
+    let mut e = good.clone();
+    e.intermediate_weight = 0.9;
+    assert!(e.validate(32).is_err());
+    let mut e = good.clone();
+    e.reasoning.aux_width = 999;
+    assert!(e.validate(32).is_err());
+    let mut e = good.clone();
+    e.compute.mate_depth = 2;
+    assert!(e.validate(32).is_err());
+    let mut m = tiny_cfg();
+    assert!(good.validate_v2_model(&m).is_ok());
+    m.output_blocks = 2;
+    assert!(
+        good.validate_v2_model(&m).is_err(),
+        "output_blocks never executes in V2"
+    );
+    assert!(
+        recur64_runtime::model_io::build_chimera_v2_unverified::<EvalB>(
+            &m,
+            &good,
+            &Default::default()
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn planner_stays_bounded_through_t8_after_tiny_training() {
+    big_stack(planner_after_training_body);
+}
+
+fn planner_after_training_body() {
+    use burn::optim::{GradientsParams, Optimizer};
+    use recur64_model::loss::{Targets, readout_loss};
+    let device = Default::default();
+    let e = exp(InfoSchedule::Progressive);
+    let mut model = ChimeraV2Model::<TrainB>::new(tiny_cfg(), e.clone(), &device);
+    let mut optim = recur64_model::train::adamw::<TrainB, _>();
+    let states = positions();
+    let batch = build_v2_batch::<TrainB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
+    let mask = batch.cands.mask.clone().float();
+    let denom = mask.clone().sum_dim(1).clamp_min(1.0);
+    let t = Targets {
+        policy_target: mask / denom,
+        wdl_target: Tensor::<TrainB, 1, Int>::zeros([states.len()], &device),
+        wdl_mask: None,
+    };
+    // Variable-budget training for a few dozen steps at an aggressive LR.
+    for step in 0..40usize {
+        let budget = 1 + step % 4;
+        let out = model.forward(&batch.input, &batch.cands, budget, V2Options::default());
+        let loss = readout_loss(out.readouts.last().unwrap(), &t);
+        let grads = GradientsParams::from_grads(loss.backward(), &model);
+        model = optim.step(3e-3, model, grads);
+    }
+    use burn::module::AutodiffModule;
+    let m = model.valid();
+    let vb = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
+    let out = m.forward(&vb.input, &vb.cands, 8, V2Options { all_readouts: true });
+    let scalar = |x: Tensor<EvalB, 1>| x.mean().into_scalar().elem::<f32>();
+    let rms: Vec<f32> = out.diag.iter().map(|d| scalar(d.rms.clone())).collect();
+    let gate: Vec<f32> = out
+        .diag
+        .iter()
+        .map(|d| scalar(d.gate_mean.clone()))
+        .collect();
+    assert_eq!(rms.len(), 8);
+    assert!(
+        rms.iter().chain(&gate).all(|v| v.is_finite()),
+        "non-finite planner state: {rms:?} {gate:?}"
+    );
+    for r in &out.readouts {
+        let lp: Vec<f32> = r.policy.log_probs.clone().into_data().to_vec().unwrap();
+        assert!(lp.iter().all(|v| v.is_finite()));
+    }
+    // Bounded (RMSNorm-carried state) and no V1-style geometric growth: the state at
+    // T8 is not larger than a small multiple of its T1-T4 envelope. It may change.
+    let early = rms[..4].iter().cloned().fold(0.0f32, f32::max);
+    assert!(
+        rms[7] <= 3.0 * early.max(1e-6) && rms.iter().all(|v| *v < 50.0),
+        "rms grows: {rms:?}"
+    );
+    let monotone_growth = rms.windows(2).all(|w| w[1] > w[0] * 1.2);
+    assert!(!monotone_growth, "monotonic explosive growth: {rms:?}");
+}
+
+#[test]
+fn world_decoded_and_native_candidate_facts_feed_the_network_identically() {
+    // The tensor the facts encoder consumes must be bit-identical whether it came from
+    // the world model's root section (scaled /9, /8) or from CandidateFactsV1 natively:
+    // identical inputs give identical encoder outputs, so no raw 9 / 8 feature scale can
+    // reach the model.
+    let device = Default::default();
+    let states = positions();
+    let from_world = build_v2_batch::<EvalB>(
+        &states,
+        &exp(InfoSchedule::Progressive),
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Root,
+        &device,
+    )
+    .unwrap();
+    let native = build_v2_batch::<EvalB>(
+        &states,
+        &exp(InfoSchedule::RootOnly),
+        None,
+        None,
+        WorldHorizon::Root,
+        &device,
+    )
+    .unwrap();
+    let a: Vec<f32> = from_world.input.cand_facts.into_data().to_vec().unwrap();
+    let b: Vec<f32> = native.input.cand_facts.into_data().to_vec().unwrap();
+    assert_eq!(a, b);
+    assert!(a.iter().all(|v| (0.0..=1.0).contains(v)));
+}

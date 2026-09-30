@@ -672,7 +672,7 @@ mod tests {
         let digest = format!("{:x}", hasher.finalize());
         assert_eq!(
             digest,
-            artifact::WASM_SOURCE_DIGEST,
+            artifact::COPROC_SOURCE_CONTRACT_SHA256,
             "the coprocessor sources changed since the WASM artifact was built: run \
              scripts/build-compute-wasm.ps1 and commit the result"
         );

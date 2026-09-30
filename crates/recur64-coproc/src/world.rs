@@ -69,7 +69,7 @@ use crate::squares::{SquareIndex, index_of};
 use crate::{CoprocError, INPUT_LEN};
 
 /// Semantic version of the world-model layout and rules.
-pub const WORLD_MODEL_VERSION: &str = "world_model_v2";
+pub const WORLD_MODEL_VERSION: &str = "world_model_v2_staged_v1";
 
 /// The history contract the model is exact under.
 pub const HISTORY_CONTRACT: &str = "fresh_no_history_v1";
