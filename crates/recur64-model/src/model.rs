@@ -181,6 +181,7 @@ pub(crate) fn sparse_readout<B: Backend>(
     y: Tensor<B, 3>,
     wdl_extra: Option<Tensor<B, 2>>,
     cands: &CandidateTensors<B>,
+    cand_bias: Option<Tensor<B, 2>>,
 ) -> Readout<B> {
     assert!(
         cands.width > 0,
@@ -235,6 +236,12 @@ pub(crate) fn sparse_readout<B: Backend>(
         p.greater_elem(0).float()
     };
     let logits = base + sel * is_promo;
+    // Optional per-candidate bias (X15 candidate facts). `None` leaves the
+    // historical probe path bit-identical.
+    let logits = match cand_bias {
+        Some(bias) => logits + bias,
+        None => logits,
+    };
 
     // Mask padding with -inf; replace fully-terminal rows with 0 so the
     // softmax is never all-masked.
@@ -477,6 +484,7 @@ impl<B: Backend> ProbeModel<B> {
             y,
             None,
             cands,
+            None,
         )
     }
 

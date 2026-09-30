@@ -237,10 +237,10 @@ fn try_state(fen: &str) -> Option<GameState> {
     // The side NOT to move must not already be in check (an illegal position
     // `from_fen` does not reject, and one in which the king could be captured).
     // A null move flips the side; if it is refused the mover is in check.
-    if let Some(flipped) = s.board().null_move() {
-        if !flipped.checkers().is_empty() {
-            return None;
-        }
+    if let Some(flipped) = s.board().null_move()
+        && !flipped.checkers().is_empty()
+    {
+        return None;
     }
     (!s.is_terminal() && !s.legal_actions().is_empty()).then_some(s)
 }
@@ -362,14 +362,15 @@ fn gen_hp_draws(path: &std::path::Path, n: usize, seed: u64) -> anyhow::Result<V
     while let Some(x) = stack.pop() {
         match x {
             serde_json::Value::Object(m) => {
-                if m.get("termination").and_then(|t| t.as_str()) == Some("threefold_repetition") {
-                    if let Some(fen) = m.get("final_fen").and_then(|f| f.as_str()) {
-                        if let Some(state) = try_state(fen) {
-                            let white = state.side_to_move() == recur64_core::Color::White;
-                            let diff = material_diff(&state.to_fen());
-                            let lead = if white { diff } else { -diff };
-                            let idx = m.get("index").and_then(|i| i.as_u64()).unwrap_or(0);
-                            cands.push((
+                if m.get("termination").and_then(|t| t.as_str()) == Some("threefold_repetition")
+                    && let Some(fen) = m.get("final_fen").and_then(|f| f.as_str())
+                    && let Some(state) = try_state(fen)
+                {
+                    let white = state.side_to_move() == recur64_core::Color::White;
+                    let diff = material_diff(&state.to_fen());
+                    let lead = if white { diff } else { -diff };
+                    let idx = m.get("index").and_then(|i| i.as_u64()).unwrap_or(0);
+                    cands.push((
                                 mix(seed ^ mix(idx)),
                                 Fixture {
                                     id: format!("hp-draw-{idx:03}"),
@@ -381,8 +382,6 @@ fn gen_hp_draws(path: &std::path::Path, n: usize, seed: u64) -> anyhow::Result<V
                                     note: "final FEN of a Train1 arena game that ended by threefold repetition; repetition history NOT reconstructable".into(),
                                 },
                             ));
-                        }
-                    }
                 }
                 stack.extend(m.values());
             }
@@ -575,6 +574,50 @@ pub fn run_eval(args: EvalTacticsArgs) -> anyhow::Result<()> {
             }
         }
     }
+}
+
+/// Synthetic tactic positions for TRAINING data: `per_kind` of each mate set,
+/// `material_gain` and `promotion`, from `seed`, skipping any FEN in `exclude`
+/// (the evaluation suite) and duplicates. Returns `(kind, fen)`.
+pub(crate) fn synth_fens(
+    seed: u64,
+    per_kind: usize,
+    exclude: &std::collections::HashSet<String>,
+) -> anyhow::Result<Vec<(String, String)>> {
+    let mut rng = Rng(seed);
+    let mut out: Vec<(String, String)> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = exclude.clone();
+    let mut take = |fs: Vec<Fixture>, out: &mut Vec<(String, String)>| {
+        let mut n = 0;
+        for f in fs {
+            if n < per_kind && seen.insert(f.fen.clone()) {
+                out.push((f.kind.clone(), f.fen));
+                n += 1;
+            }
+        }
+        n
+    };
+    for (kind, white) in [
+        ("mate_kqk", vec!['K', 'Q']),
+        ("mate_krk", vec!['K', 'R']),
+        ("mate_kqqk", vec!['K', 'Q', 'Q']),
+        ("mate_kqrk", vec!['K', 'Q', 'R']),
+        ("mate_krrk", vec!['K', 'R', 'R']),
+    ] {
+        let fs = gen_mates(&mut rng, kind, &white, per_kind + 16)?;
+        anyhow::ensure!(take(fs, &mut out) == per_kind, "not enough unique {kind}");
+    }
+    for (kind, promo) in [("material_gain", false), ("promotion", true)] {
+        let fs = gen_material(&mut rng, kind, promo, per_kind + 16)?;
+        anyhow::ensure!(take(fs, &mut out) == per_kind, "not enough unique {kind}");
+    }
+    Ok(out)
+}
+
+/// FEN strings of an evaluation fixtures file.
+pub(crate) fn fixture_fens(path: &std::path::Path) -> anyhow::Result<Vec<String>> {
+    let file: FixtureFile = serde_json::from_slice(&std::fs::read(path)?)?;
+    Ok(file.fixtures.into_iter().map(|f| f.fen).collect())
 }
 
 /// Adjacent kings make an illegal position that `from_fen` does not reject.

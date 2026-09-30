@@ -1106,3 +1106,46 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **Visual resolution:** X1 accepts only 64 (renderable AND encodable).
 - **Runtime:** `model_io::build_chimera` / `load_chimera` /
   `load_chimera_training` run the D57 device check before any X15 build or load.
+
+## D62 - CandidateFactsV1: per-move exact facts as a policy bias (X15 head v2)
+
+- **Status:** ACCEPTED (2026-09-29) for the HP branch.
+- **Finding (MEASURED, E9):** the trained X15 variants sit at chance on mate-in-1
+  while the teacher with 64-128 simulations solves it. `ComputeBankV1` reports
+  whether a mate exists (global token) but not which candidate delivers it.
+- **Decision:** add an optional pathway that computes, natively and
+  deterministically, eight exact one-ply facts per LEGAL MOVE (mate, check,
+  capture, captured value, destination attacked after the move, promotion,
+  promotion gain, stalemate) and adds `MLP(facts)` to the policy logits before
+  masking. The MLP's last layer is zero-initialised (a fresh network ignores it).
+  It does not enter the latent state and is independent of `reasoning.enabled`.
+  No search beyond the opponent's immediate replies, no engine value, no external
+  data.
+- **Contract:** `candidate_facts_v1`; `[experimental.candidate_facts]`
+  (`provider = none|native_v1`, `enabled`, `hidden`); part of the scientific
+  identity. Native only: there is no WASM twin, so no parity claim is made.
+- **Head version:** `CHIMERA_HEAD_VERSION` 1 -> 2. The parameter set changed, so
+  X15 checkpoints written under head v1 (all E5-E8 runs) are refused by the
+  loaders. Their results remain recorded in the ledger and `docs/evidence/x1/`;
+  baselines are retrained on the scaled set under v2.
+- **Probe unchanged:** `sparse_readout` gained an optional bias that the probe
+  passes as `None`, so the probe path is bit-identical.
+- **Disabled means inert:** with the pathway off its parameters are not executed
+  (tested by scrambling them), so the symbolic-only control stays independent of
+  every auxiliary parameter.
+- **Scope caveat:** facts are a tool, not reasoning. A network that reads a mate
+  flag is not thinking; the scientific question that remains is whether extra
+  thought helps beyond facts.
+
+## D63 - batched teacher labelling and evaluator provenance
+
+- **Status:** ACCEPTED (2026-09-29).
+- **Decision:** `gen-targets --batched` serves the teacher through the pilot's
+  shared inference owner. MEASURED on the 32-position smoke: identical labels to
+  the batch-1 path (same best move 32/32 at every rung, mean JS 0.00000), 2x
+  faster; on the 960-position set 2.6 positions/s (about 5x the earlier
+  0.5/s), 152,135 evaluations in 6 min 8 s.
+- **Provenance:** `TeacherContract.evaluator` records the serving mode
+  (`batched_owner_v1:max_batch=..,owners=..`; empty = the original batch-1
+  `SyncEvaluator`). The field is skipped when empty so earlier targets files keep
+  their digests.

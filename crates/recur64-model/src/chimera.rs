@@ -48,7 +48,8 @@ use burn::tensor::backend::AutodiffBackend;
 use burn::tensor::{Distribution, Int, TensorData, activation};
 
 use crate::experimental::{
-    Architecture, CHIMERA_HEAD_VERSION, ExperimentalConfig, VisualProviderKind,
+    Architecture, CANDIDATE_FACT_FIELDS, CHIMERA_HEAD_VERSION, ExperimentalConfig,
+    VisualProviderKind,
 };
 use crate::model::{
     Block, CandidateTensors, NamedParam, Readout, ReadoutHeads, linear_rows, rel_index_data,
@@ -241,6 +242,9 @@ pub struct ChimeraInput<B: Backend> {
     pub compute: Option<Tensor<B, 3>>,
     /// Canonical board image `[b, 3, S, S]` in `0..1`.
     pub visual: Option<Tensor<B, 4>>,
+    /// `CandidateFactsV1` as `[b, width, CANDIDATE_FACT_FIELDS]` (zero on
+    /// padded candidates), in candidate order.
+    pub cand_facts: Option<Tensor<B, 3>>,
 }
 
 /// Per-thought diagnostics. All are `[b]` (or `[b, 3]` for WDL) so a probe can
@@ -333,6 +337,10 @@ pub struct ChimeraModel<B: Backend> {
     // --- deterministic compute tokens ---
     compute_proj: Linear<B>,
     compute_type_emb: Param<Tensor<B, 2>>,
+
+    // --- per-candidate exact facts (bias on the policy logits) ---
+    facts_l1: Linear<B>,
+    facts_l2: Linear<B>,
 
     // --- visual pathway ---
     visual: VisualEncoder<B>,
@@ -434,6 +442,14 @@ impl<B: Backend> ChimeraModel<B> {
                 .with_bias(true)
                 .init(device),
             compute_type_emb: init_param([2, daux]),
+            facts_l1: LinearConfig::new(CANDIDATE_FACT_FIELDS, exp.candidate_facts.hidden)
+                .with_bias(true)
+                .init(device),
+            // Zero-init: a fresh network ignores the facts until it learns to use them.
+            facts_l2: LinearConfig::new(exp.candidate_facts.hidden, 1)
+                .with_bias(true)
+                .with_initializer(Initializer::Zeros)
+                .init(device),
             visual: VisualEncoder::new(&exp.visual, daux, device),
             cfg,
             exp,
@@ -514,6 +530,20 @@ impl<B: Backend> ChimeraModel<B> {
     fn mean_abs(x: Tensor<B, 3>) -> Tensor<B, 1> {
         let flat = x.abs().mean_dim(2).squeeze_dim::<2>(2); // [b, n]
         flat.mean_dim(1).squeeze_dim::<1>(1)
+    }
+
+    /// The per-candidate policy bias from `CandidateFactsV1`, `[b, width]`, or
+    /// `None` when the pathway is off or no facts were supplied. When it is off
+    /// the facts parameters are not executed, so the output does not depend on
+    /// them.
+    fn facts_bias(&self, input: &ChimeraInput<B>) -> Option<Tensor<B, 2>> {
+        if !self.exp.candidate_facts.enabled {
+            return None;
+        }
+        input.cand_facts.as_ref().map(|facts| {
+            let h = activation::gelu(linear_rows(&self.facts_l1, facts.clone()));
+            linear_rows(&self.facts_l2, h).squeeze_dim::<2>(2)
+        })
     }
 
     /// The compute tokens projected into the reasoning width, with a
@@ -605,7 +635,7 @@ impl<B: Backend> ChimeraModel<B> {
         let inject = x * self.alpha();
 
         if !exp.reasoning.enabled {
-            return self.forward_symbolic(s_state, inject, &rel, cands);
+            return self.forward_symbolic(s_state, inject, &rel, cands, self.facts_bias(input));
         }
 
         // Position-conditioned latent initialization.
@@ -639,6 +669,7 @@ impl<B: Backend> ChimeraModel<B> {
         let g_visual = Self::gate(&self.gate_visual_logit);
         let g_reason = Self::gate(&self.gate_reason_logit);
 
+        let facts_bias = self.facts_bias(input);
         let mut readouts = Vec::new();
         let mut thoughts = Vec::new();
         let mut prev_z: Option<Tensor<B, 3>> = None;
@@ -694,7 +725,13 @@ impl<B: Backend> ChimeraModel<B> {
                 let latent_wdl = self
                     .wdl_from_latent
                     .forward(Self::mean_over_tokens(z.clone()));
-                let readout = sparse_readout(&self.readout_heads(), y, Some(latent_wdl), cands);
+                let readout = sparse_readout(
+                    &self.readout_heads(),
+                    y,
+                    Some(latent_wdl),
+                    cands,
+                    facts_bias.clone(),
+                );
                 let entropy = self.policy_entropy(&readout);
                 let zeros = || {
                     Tensor::<B, 1>::zeros(
@@ -761,6 +798,7 @@ impl<B: Backend> ChimeraModel<B> {
         inject: Tensor<B, 3>,
         rel: &Tensor<B, 2, Int>,
         cands: &CandidateTensors<B>,
+        facts_bias: Option<Tensor<B, 2>>,
     ) -> ChimeraOutput<B> {
         let s_state = self.run_blocks(
             &self.core_blocks,
@@ -768,7 +806,7 @@ impl<B: Backend> ChimeraModel<B> {
             rel,
         );
         let y = self.run_blocks(&self.output_blocks, s_state, rel);
-        let readout = sparse_readout(&self.readout_heads(), y, None, cands);
+        let readout = sparse_readout(&self.readout_heads(), y, None, cands, facts_bias);
         let device = readout.wdl_logits.device();
         let b = readout.wdl_logits.dims()[0];
         let zeros = || Tensor::<B, 1>::zeros([b], &device);
@@ -888,6 +926,10 @@ impl<B: Backend> ChimeraModel<B> {
                     + self.wdl.num_params()
                     + self.wdl_from_latent.num_params(),
             ),
+            (
+                "candidate facts MLP",
+                self.facts_l1.num_params() + self.facts_l2.num_params(),
+            ),
         ]
     }
 
@@ -930,7 +972,7 @@ impl<B: AutodiffBackend> ChimeraModel<B> {
     /// norm is exactly zero is reported as `0.0` rather than hidden — that is
     /// what the module-gradient probe asserts against.
     pub fn subsystem_grad_norms(&self, grads: &GradientsParams) -> Vec<(&'static str, f32)> {
-        vec![
+        let mut norms = vec![
             (
                 "symbolic",
                 module_grad_norm(&self.input_proj, grads)
@@ -977,7 +1019,16 @@ impl<B: AutodiffBackend> ChimeraModel<B> {
                     + module_grad_norm(&self.gate_visual_logit, grads)
                     + module_grad_norm(&self.gate_reason_logit, grads),
             ),
-        ]
+        ];
+        // Reported only when the pathway is on, so a disabled pathway is not
+        // mistaken for a starved one.
+        if self.exp.candidate_facts.enabled {
+            norms.push((
+                "candidate_facts",
+                module_grad_norm(&self.facts_l1, grads) + module_grad_norm(&self.facts_l2, grads),
+            ));
+        }
+        norms
     }
 }
 

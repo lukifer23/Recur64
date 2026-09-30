@@ -55,7 +55,9 @@ impl Architecture {
 }
 
 /// Readout-head function version for the Chimera family.
-pub const CHIMERA_HEAD_VERSION: u32 = 1;
+/// v2 adds the per-candidate fact bias to the policy readout. X15 checkpoints
+/// written under v1 are refused (their parameter set differs).
+pub const CHIMERA_HEAD_VERSION: u32 = 2;
 
 /// Version of the reasoning-loop contract (the *order* of operations inside a
 /// thought). Bump when the documented order changes.
@@ -287,6 +289,66 @@ impl Default for VisualConfig {
     }
 }
 
+/// Version of the candidate-fact contract (`CandidateFactsV1`).
+pub const CANDIDATE_FACTS_VERSION: &str = "candidate_facts_v1";
+
+/// Fields per candidate in `CandidateFactsV1`.
+pub const CANDIDATE_FACT_FIELDS: usize = 8;
+
+fn d_facts_hidden() -> usize {
+    16
+}
+
+/// Where per-candidate exact facts come from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CandidateFactsProviderKind {
+    /// The pathway is off.
+    #[default]
+    None,
+    /// Native, deterministic one-ply facts about every legal move
+    /// (`recur64_runtime::candidate_facts`).
+    NativeV1,
+}
+
+impl CandidateFactsProviderKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            CandidateFactsProviderKind::None => "none",
+            CandidateFactsProviderKind::NativeV1 => "native_v1",
+        }
+    }
+
+    pub fn is_active(self) -> bool {
+        self != CandidateFactsProviderKind::None
+    }
+}
+
+/// The per-candidate exact-fact pathway. Its output is a per-move bias on the
+/// policy logits (a small MLP whose last layer starts at zero), so a fresh
+/// network is neutral. It is independent of the latent reasoning state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateFactsConfig {
+    #[serde(default)]
+    pub provider: CandidateFactsProviderKind,
+    #[serde(default)]
+    pub enabled: bool,
+    /// Hidden width of the fact MLP.
+    #[serde(default = "d_facts_hidden")]
+    pub hidden: usize,
+}
+
+impl Default for CandidateFactsConfig {
+    fn default() -> Self {
+        Self {
+            provider: CandidateFactsProviderKind::None,
+            enabled: false,
+            hidden: d_facts_hidden(),
+        }
+    }
+}
+
 /// The retrieval extension point (inactive in X1).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
@@ -325,6 +387,9 @@ pub struct ExperimentalConfig {
     pub visual: VisualConfig,
     #[serde(default)]
     pub retrieval: RetrievalConfig,
+    /// Per-candidate exact facts (off by default).
+    #[serde(default)]
+    pub candidate_facts: CandidateFactsConfig,
 }
 
 impl Default for ExperimentalConfig {
@@ -339,6 +404,7 @@ impl Default for ExperimentalConfig {
             compute: ComputeConfig::default(),
             visual: VisualConfig::default(),
             retrieval: RetrievalConfig::default(),
+            candidate_facts: CandidateFactsConfig::default(),
         }
     }
 }
@@ -439,6 +505,14 @@ impl ExperimentalConfig {
             "experimental.intermediate_weight {} must be in [0, 1]",
             self.intermediate_weight
         );
+        anyhow::ensure!(
+            !self.candidate_facts.enabled || self.candidate_facts.provider.is_active(),
+            "experimental.candidate_facts.enabled is true but provider is \"none\""
+        );
+        anyhow::ensure!(
+            self.candidate_facts.hidden >= 1,
+            "experimental.candidate_facts.hidden must be >= 1"
+        );
         // Compute and visual tokens are consumed only by the latent thought
         // loop; with the latents off they would be dead weight, and a
         // "symbolic-only control" must be independent of them.
@@ -478,6 +552,8 @@ impl ExperimentalConfig {
             "compute": self.compute,
             "visual": self.visual,
             "retrieval": self.retrieval,
+            "candidate_facts": self.candidate_facts,
+            "candidate_facts_version": CANDIDATE_FACTS_VERSION,
             "compute_bank_version": recur64_coproc::COMPUTE_BANK_VERSION,
             "visual_render_version": recur64_coproc::VISUAL_RENDER_VERSION,
         }))

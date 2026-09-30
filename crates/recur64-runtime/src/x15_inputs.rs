@@ -164,6 +164,18 @@ pub fn build_x15_batch<B: Backend>(
         .collect();
     let cb = CandidateBatch::from_lists(&lists);
     let cands = CandidateTensors::from_batch(&cb, device);
+    let use_facts =
+        exp.is_chimera() && exp.candidate_facts.enabled && exp.candidate_facts.provider.is_active();
+    let cand_facts = if use_facts {
+        let width = cands.width;
+        let data = crate::candidate_facts::candidate_facts(states, width)?;
+        Some(Tensor::<B, 3>::from_data(
+            TensorData::new(data, [b, width, crate::candidate_facts::FIELDS]),
+            device,
+        ))
+    } else {
+        None
+    };
     phases.upload_us = t3.elapsed().as_micros() as u64;
 
     Ok(X15Batch {
@@ -171,6 +183,7 @@ pub fn build_x15_batch<B: Backend>(
             board,
             compute: compute_tensor,
             visual: visual_tensor,
+            cand_facts,
         },
         cands,
         phases,

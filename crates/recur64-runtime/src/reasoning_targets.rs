@@ -44,6 +44,11 @@ pub struct TeacherContract {
     pub root_noise: bool,
     /// Simulation ladder, shallowest first; the last rung is the deep teacher.
     pub ladder: Vec<u32>,
+    /// How the teacher network was evaluated. Empty for files written before
+    /// this field existed (batch-1 `SyncEvaluator`); skipped when empty so those
+    /// files keep their digest.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub evaluator: String,
 }
 
 /// Recorded but NOT part of the scientific digest.
@@ -182,11 +187,7 @@ pub fn audit(targets: &ReasoningTargetsV1) -> anyhow::Result<usize> {
     for p in &targets.positions {
         let state = rebuild_state(&p.start_fen, &p.prefix)?;
         anyhow::ensure!(state.to_fen() == p.fen, "{}: FEN does not reproduce", p.id);
-        let legal: Vec<u32> = state
-            .legal_actions()
-            .iter()
-            .map(|a| a.index() as u32)
-            .collect();
+        let legal: Vec<u32> = state.legal_actions().iter().map(|a| a.index()).collect();
         anyhow::ensure!(legal == p.legal, "{}: legal list does not reproduce", p.id);
         anyhow::ensure!(
             observation_digest(&state) == p.observation_sha256,
@@ -339,7 +340,7 @@ pub fn select_positions(
 
 /// Whether a source game belongs to the validation split.
 pub fn split_for_game(game_id: u64, seed: u64) -> &'static str {
-    if mix(seed ^ mix(game_id ^ 0xA5A5)) % 4 == 0 {
+    if mix(seed ^ mix(game_id ^ 0xA5A5)).is_multiple_of(4) {
         "val"
     } else {
         "train"
@@ -467,7 +468,7 @@ fn label_one(
             prefix: c.prefix,
             fen: state.to_fen(),
             observation_sha256: observation_digest(&state),
-            legal: legal_ids.iter().map(|a| a.index() as u32).collect(),
+            legal: legal_ids.iter().map(|a| a.index()).collect(),
             rungs,
         })
     }
@@ -609,6 +610,7 @@ mod disjoint_tests {
                 leaves_in_flight: 1,
                 root_noise: false,
                 ladder: vec![16],
+                evaluator: String::new(),
             },
             1,
             Provenance {

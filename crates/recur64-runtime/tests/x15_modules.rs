@@ -340,6 +340,8 @@ const AUX_FIELDS: &[&str] = &[
     "compute_type_emb",
     "visual",
     "wdl_from_latent",
+    "facts_l1",
+    "facts_l2",
 ];
 
 /// Replaces every auxiliary parameter with N(0, 1) noise.
@@ -678,4 +680,160 @@ fn accumulated_micro_batches_match_the_full_batch_objective() {
             "{name}: full-batch gradient norm {a} vs accumulated {b}"
         );
     }
+}
+
+fn facts_exp(reasoning: bool) -> ExperimentalConfig {
+    use recur64_model::experimental::{CandidateFactsConfig, CandidateFactsProviderKind};
+    let mut e = if reasoning {
+        exp()
+    } else {
+        symbolic_only_exp()
+    };
+    e.thought_steps = if reasoning { 2 } else { 1 };
+    e.candidate_facts = CandidateFactsConfig {
+        provider: CandidateFactsProviderKind::NativeV1,
+        enabled: true,
+        hidden: 8,
+    };
+    e
+}
+
+#[test]
+fn candidate_facts_are_neutral_at_init_and_inert_when_disabled() {
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let e = facts_exp(false);
+    e.validate(cfg.width).unwrap();
+    let model = ChimeraModel::<EvalB>::new(cfg.clone(), e.clone(), &device);
+    let provider = provider_for_config(&e).unwrap();
+    let states = probe_positions(3, 12);
+    let batch = build_x15_batch::<EvalB>(&states, &e, provider.as_ref(), &device).unwrap();
+    assert!(batch.input.cand_facts.is_some(), "facts tensor supplied");
+
+    // Zero-initialised last layer: with facts == without facts.
+    let with = model.forward_thoughts(&batch.input, &batch.cands, 1);
+    let mut no_facts = batch.input;
+    no_facts.cand_facts = None;
+    let without = model.forward_thoughts(&no_facts, &batch.cands, 1);
+    assert_eq!(
+        readout_vecs(&with.readouts[0]),
+        readout_vecs(&without.readouts[0]),
+        "a fresh network must ignore the facts"
+    );
+
+    // With the pathway DISABLED, scrambling its parameters changes nothing even
+    // if a facts tensor were supplied.
+    let mut off = e.clone();
+    off.candidate_facts.enabled = false;
+    off.candidate_facts.provider = recur64_model::experimental::CandidateFactsProviderKind::None;
+    let m_off = ChimeraModel::<EvalB>::new(cfg, off.clone(), &device);
+    let b_off = build_x15_batch::<EvalB>(&states, &off, provider.as_ref(), &device).unwrap();
+    assert!(b_off.input.cand_facts.is_none());
+    let a = m_off.forward_thoughts(&b_off.input, &b_off.cands, 1);
+    let mut mapper = RandomizeAux {
+        stack: Vec::new(),
+        touched: 0,
+    };
+    let scrambled = m_off.clone().map(&mut mapper);
+    let b = scrambled.forward_thoughts(&b_off.input, &b_off.cands, 1);
+    assert_eq!(readout_vecs(&a.readouts[0]), readout_vecs(&b.readouts[0]));
+}
+
+#[test]
+fn candidate_facts_change_the_policy_once_trained_and_receive_gradient() {
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let e = facts_exp(true);
+    e.validate(cfg.width).unwrap();
+    let model = ChimeraModel::<TrainB>::new(cfg, e.clone(), &device);
+    let provider = provider_for_config(&e).unwrap();
+    let states = probe_positions(3, 12);
+    let batch = build_x15_batch::<TrainB>(&states, &e, provider.as_ref(), &device).unwrap();
+    let t = targets(&batch.cands, batch.batch, &device);
+    let out = model.forward_thoughts(&batch.input, &batch.cands, 2);
+    let loss = readout_loss(&out.readouts[0], &t);
+    let grads = burn::optim::GradientsParams::from_grads(loss.backward(), &model);
+    let norms = model.subsystem_grad_norms(&grads);
+    assert_eq!(norms.len(), 9, "candidate_facts is reported when enabled");
+    let (_, n) = norms.iter().find(|(k, _)| *k == "candidate_facts").unwrap();
+    assert!(n.is_finite() && *n > 0.0, "candidate_facts gradient {n}");
+}
+
+#[test]
+fn a_symbolic_network_with_facts_learns_to_play_the_mating_move() {
+    use burn::optim::{GradientsParams, Optimizer};
+    use recur64_core::GameState;
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let e = facts_exp(false);
+    let provider = provider_for_config(&e).unwrap();
+    // Four different back-rank / corner mates: the mating move differs in every
+    // one, so only the per-move fact can identify it.
+    let fens = [
+        "6k1/5ppp/8/8/8/8/8/R6K w - - 0 1",
+        "7k/6pp/8/8/8/8/8/1R5K w - - 0 1",
+        "k7/pp6/8/8/8/8/8/K5R1 w - - 0 1",
+        "k7/8/1K6/8/8/8/8/6R1 w - - 0 1",
+    ];
+    let states: Vec<GameState> = fens
+        .iter()
+        .map(|f| GameState::from_fen(f).unwrap())
+        .collect();
+    let batch = build_x15_batch::<TrainB>(&states, &e, provider.as_ref(), &device).unwrap();
+    let width = batch.cands.width;
+    let mut target = vec![0.0f32; states.len() * width];
+    for (i, s) in states.iter().enumerate() {
+        let facts = recur64_runtime::candidate_facts::facts_for(s);
+        let mates: Vec<usize> = facts
+            .chunks(recur64_runtime::candidate_facts::FIELDS)
+            .enumerate()
+            .filter(|(_, r)| r[0] == 1.0)
+            .map(|(k, _)| k)
+            .collect();
+        assert!(!mates.is_empty(), "fixture {i} must have a mating move");
+        for m in &mates {
+            target[i * width + m] = 1.0 / mates.len() as f32;
+        }
+    }
+    let t = Targets {
+        policy_target: Tensor::<TrainB, 2>::from_data(
+            TensorData::new(target.clone(), [states.len(), width]),
+            &device,
+        ),
+        wdl_target: Tensor::<TrainB, 1, Int>::zeros([states.len()], &device),
+        wdl_mask: None,
+    };
+    let mut model = ChimeraModel::<TrainB>::new(cfg, e, &device);
+    let mut optim = recur64_model::train::adamw::<TrainB, _>();
+    let mass = |m: &ChimeraModel<TrainB>| -> f32 {
+        let out = m.forward_thoughts(&batch.input, &batch.cands, 1);
+        let lp = out.readouts[0]
+            .policy
+            .log_probs
+            .clone()
+            .into_data()
+            .to_vec::<f32>()
+            .unwrap();
+        (0..states.len())
+            .map(|i| {
+                (0..width)
+                    .map(|k| target[i * width + k] * lp[i * width + k].exp())
+                    .sum::<f32>()
+                    * 1.0
+            })
+            .sum::<f32>()
+            / states.len() as f32
+    };
+    let before = mass(&model);
+    for _ in 0..60 {
+        let out = model.forward_thoughts(&batch.input, &batch.cands, 1);
+        let loss = readout_loss(&out.readouts[0], &t);
+        let grads = GradientsParams::from_grads(loss.backward(), &model);
+        model = optim.step(2e-2, model, grads);
+    }
+    let after = mass(&model);
+    assert!(
+        after > 0.5 && after > before * 3.0,
+        "policy mass on the mating move only went {before} -> {after}"
+    );
 }

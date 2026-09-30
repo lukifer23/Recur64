@@ -442,3 +442,55 @@ T1): 0.3057 vs 0.3152, diff -0.0095 [-0.0338, +0.0187]: a tie.
 - NOT RUN: playing fixtures out (conversion rollouts), which needs fixed candidate
   widths to avoid per-shape kernel compilation; the ~2-hour GPU budget is essentially
   spent (about 1.7 h).
+
+## E10 - scaled training set + candidate-facts channel (engineering, MEASURED)
+- **Batched labelling (D63):** 960 positions in 6 min 8 s (2.6 positions/s vs 0.5),
+  up to 91% GPU utilization, 0 inference errors. Owner batches were capped at 16 in
+  practice (`batch_size_max` 16), a tuning knob for later.
+- **Training set `targets-train960`** (digest
+  `39a136c266cebf51f8b1aa45a73aa669f8ee928bee862826b2d1b739ba644911`, evidence copy in
+  `docs/evidence/x1/`): 400 replay positions (exact history; 80 each of opening /
+  middlegame / endgame / tactical / material_advantage) drawn from the 207 replay
+  games NOT used by the tuning-val or the confirmation set (hard-verified disjoint,
+  81 games excluded), plus 560 synthetic tactic positions (7 kinds x 80, seed
+  20261002, FENs of the evaluation suite excluded). Teacher and ladder as in A2.
+  All positions carry split `train`.
+- **Candidate facts (D62):** `candidate_facts_v1` implemented, 8 exact fields per
+  legal move; 5 unit tests (mate flagged on exactly the mating move, capture value,
+  promotion, attacked destination, stalemate, padding, determinism) and 3 model
+  tests: neutral at init, inert when disabled, gradient when enabled, and a tiny
+  symbolic network with facts learns to play the mating move (mass on the mating
+  move > 0.5 and > 3x its initial value). Workspace clippy 0 warnings.
+
+## E11 - PRE-REGISTERED: scaled ablation - facts and thought (committed BEFORE running)
+- QUESTIONS: (Q1) do candidate facts let a network find mates? (Q2) does extra
+  thought (T_train=4) beat one pass (T_train=1), with and without facts?
+- DATA: `targets-train960` for training. Evaluation sets never used for training or
+  tuning: the tactical suite `tactics-v1` (80 fixtures; its FENs were excluded from
+  the synthetic training positions) and a NEW replay confirmation set `confirm2`
+  (64 positions from games disjoint from train960, targets-128 and confirm64;
+  contract as A2, seed 20261004, generated before any E11 result and its digest
+  recorded here after generation).
+- VARIANTS (all fresh start, lr 3e-5 is NOT reused blindly: the LR is fixed by
+  rule to 1e-4 because the set is 10x larger, chosen before results and not tuned):
+  S = symbolic-only (T=1); SF = symbolic + facts (T=1); C1 / C4 = Chimera without
+  facts, T_train = 1 / 4; C1F / C4F = Chimera with facts, T_train = 1 / 4.
+  `final_only_v1`, seeds 1 and 2, 100 updates, each update = 96 positions (3 x 32
+  micro-batches, accumulated) taken in a seeded fixed order over train960 (about 10
+  epochs), 5-update warmup, value weight 1. Training positions per update and order
+  are deterministic and recorded.
+- METRICS: (a) mate top-1 accuracy on the 40 `tactics-v1` mate fixtures (all five
+  material sets pooled); (b) `material_gain` and `promotion` top-1 (reported); (c)
+  mean KL(teacher_128 || model) on `confirm2` at the trained T. Cost: peak VRAM and
+  seconds per update for every variant.
+- Q1 decision: FACTS WORK iff SF (mean of 2 seeds) mate top-1 exceeds S by >= 0.30
+  absolute AND each SF seed exceeds each S seed.
+- Q2 decision: THOUGHT SIGNAL iff, in at least one facts setting (no facts: C4 vs C1;
+  facts: C4F vs C1F), C4x beats C1x with a paired position-clustered bootstrap 95% CI
+  (mean over seeds per position, 2000 resamples; fixtures for (a), confirm2 positions
+  for (c)) that lies wholly on the favourable side on BOTH (a) and (c), and the sign
+  agrees in each seed separately. Anything else: NO THOUGHT SIGNAL at this scale.
+- Interpretation limits: a facts win is a tool, not reasoning. A thought signal here
+  would still not establish that the latent scratchpad (rather than repeated
+  square-core depth) is responsible; that needs the latent-only / compute / visual
+  ablations. No strength claim. Conversion rollouts remain NOT RUN.
