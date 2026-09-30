@@ -83,6 +83,10 @@ pub struct TrainProbeArgs {
     /// update (the original full-batch behaviour).
     #[arg(long, default_value_t = 0)]
     pub batch_positions: usize,
+    /// Build micro-batches on demand instead of pre-building them all (for
+    /// training sets that do not fit on the device).
+    #[arg(long, default_value_t = false)]
+    pub stream: bool,
     /// Bounded-time guard for a single run.
     #[arg(long, default_value_t = 1500.0)]
     pub max_seconds: f64,
@@ -515,14 +519,23 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
         .copied()
         .find(|&w| w >= widest)
         .unwrap_or(widest);
-    let chunks = ordered
-        .chunks(args.micro_batch.max(1))
-        .map(|c| build_data::<B>(c, cfg, &device, fixed_width))
-        .collect::<anyhow::Result<Vec<_>>>()?;
+    let raw_chunks: Vec<&[&PositionTarget]> = ordered.chunks(args.micro_batch.max(1)).collect();
+    let n_chunks = raw_chunks.len();
+    // With --stream, micro-batches are built on demand each update (host work +
+    // upload) instead of pre-building every chunk on the device, so the training
+    // set can be far larger than GPU memory. The objective is identical.
+    let prebuilt: Vec<Data<B>> = if args.stream {
+        Vec::new()
+    } else {
+        raw_chunks
+            .iter()
+            .map(|c| build_data::<B>(c, cfg, &device, fixed_width))
+            .collect::<anyhow::Result<Vec<_>>>()?
+    };
     let chunks_per_update = if args.batch_positions > 0 {
         (args.batch_positions / args.micro_batch.max(1)).max(1)
     } else {
-        chunks.len()
+        n_chunks
     };
     let inner_device: Device<B::InnerBackend> = Default::default();
     let val_data = if val_pos.is_empty() {
@@ -536,7 +549,7 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
         )?)
     };
     let val_ids: Vec<String> = val_pos.iter().map(|p| p.id.clone()).collect();
-    let rungs = chunks[0].policy.len();
+    let rungs = ordered[0].rungs.len();
 
     let mut optim = recur64_model::train::adamw::<B, ChimeraModel<B>>();
     let (mut model, mut start_update, init) = match &args.resume {
@@ -611,10 +624,25 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
                 args.lr * (((start_update + u + 1) as f64) / args.warmup.max(1) as f64).min(1.0);
             let mut acc = GradientsAccumulator::new();
             let mut loss_v = 0.0f32;
-            let first = ((start_update + u) * chunks_per_update) % chunks.len();
-            let selected: Vec<&Data<B>> = (0..chunks_per_update)
-                .map(|k| &chunks[(first + k) % chunks.len()])
-                .collect();
+            let first = ((start_update + u) * chunks_per_update) % n_chunks;
+            let owned: Vec<Data<B>>;
+            let selected: Vec<&Data<B>> = if args.stream {
+                owned = (0..chunks_per_update)
+                    .map(|k| {
+                        build_data::<B>(
+                            raw_chunks[(first + k) % n_chunks],
+                            cfg,
+                            &device,
+                            fixed_width,
+                        )
+                    })
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                owned.iter().collect()
+            } else {
+                (0..chunks_per_update)
+                    .map(|k| &prebuilt[(first + k) % n_chunks])
+                    .collect()
+            };
             let n_update: usize = selected.iter().map(|c| c.len()).sum();
             for chunk in selected {
                 let out =

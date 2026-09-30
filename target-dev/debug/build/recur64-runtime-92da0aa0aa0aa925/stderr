@@ -1,0 +1,3 @@
+warning: in the working copy of 'crates/recur64-cli/src/x15.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/recur64-cli/src/x15_tactics.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/recur64-cli/src/x15_train.rs', LF will be replaced by CRLF the next time Git touches it

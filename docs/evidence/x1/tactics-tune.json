@@ -1,0 +1,639 @@
+{
+  "schema": "x15_tactics_v1",
+  "seed": 20261005,
+  "fixtures": [
+    {
+      "id": "mate_kqk-00",
+      "kind": "mate_kqk",
+      "fen": "8/8/8/8/8/8/k1KQ4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        17
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-01",
+      "kind": "mate_kqk",
+      "fen": "8/8/8/8/8/8/8/3Q1K1k w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-02",
+      "kind": "mate_kqk",
+      "fen": "8/6Q1/8/8/2K5/k7/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-03",
+      "kind": "mate_kqk",
+      "fen": "8/8/6Q1/8/8/4K3/8/4k3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        5,
+        6
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-04",
+      "kind": "mate_kqk",
+      "fen": "8/8/8/5Q2/8/2K5/8/2k5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        7
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-05",
+      "kind": "mate_kqk",
+      "fen": "5K1k/3Q4/8/8/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        3,
+        18
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-06",
+      "kind": "mate_kqk",
+      "fen": "8/8/8/8/8/3KQ3/8/3k4 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        7
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqk-07",
+      "kind": "mate_kqk",
+      "fen": "8/8/5K1k/8/6Q1/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6,
+        13,
+        18
+      ],
+      "material_lead": 9,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-00",
+      "kind": "mate_krk",
+      "fen": "8/8/8/5K1k/8/8/5R2/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-01",
+      "kind": "mate_krk",
+      "fen": "8/4R3/8/8/8/K7/8/k7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        3
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-02",
+      "kind": "mate_krk",
+      "fen": "7k/5K2/8/8/8/8/8/R7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-03",
+      "kind": "mate_krk",
+      "fen": "1R6/8/8/8/8/8/k1K5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        12
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-04",
+      "kind": "mate_krk",
+      "fen": "5K1k/8/8/8/8/8/6R1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-05",
+      "kind": "mate_krk",
+      "fen": "8/8/8/8/2R5/8/8/k1K5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        5
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-06",
+      "kind": "mate_krk",
+      "fen": "k1K5/8/8/8/8/1R6/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krk-07",
+      "kind": "mate_krk",
+      "fen": "8/8/5K1k/8/8/8/8/5R2 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": 5,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-00",
+      "kind": "mate_kqqk",
+      "fen": "7k/4Q3/8/2K5/8/8/2Q5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        18,
+        43,
+        46
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-01",
+      "kind": "mate_kqqk",
+      "fen": "4Q3/8/Q7/8/1k6/8/2K5/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        32,
+        39,
+        45
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-02",
+      "kind": "mate_kqqk",
+      "fen": "8/k7/6Q1/K7/1Q6/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        35
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-03",
+      "kind": "mate_kqqk",
+      "fen": "8/6Q1/1K1Q4/8/8/8/8/7k w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        24
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-04",
+      "kind": "mate_kqqk",
+      "fen": "k7/8/8/8/3Q4/7Q/6K1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        24
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-05",
+      "kind": "mate_kqqk",
+      "fen": "6K1/6Q1/2k5/Q7/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        36
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-06",
+      "kind": "mate_kqqk",
+      "fen": "8/8/8/5Q2/3K4/4Q3/6k1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        34
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqqk-07",
+      "kind": "mate_kqqk",
+      "fen": "8/8/6Q1/8/5k2/7Q/8/K7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13,
+        32
+      ],
+      "material_lead": 18,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-00",
+      "kind": "mate_kqrk",
+      "fen": "8/8/2Q4K/8/8/8/3R4/k7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14,
+        15
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-01",
+      "kind": "mate_kqrk",
+      "fen": "1K6/8/8/8/8/7Q/7R/6k1 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        9
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-02",
+      "kind": "mate_kqrk",
+      "fen": "8/8/5R2/2k5/8/1K6/7Q/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-03",
+      "kind": "mate_kqrk",
+      "fen": "8/8/6R1/8/1Q1K4/8/k7/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        31
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-04",
+      "kind": "mate_kqrk",
+      "fen": "8/2Q4K/8/8/8/8/4R3/7k w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14,
+        16
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-05",
+      "kind": "mate_kqrk",
+      "fen": "8/8/Q7/5R2/7k/8/6K1/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        26,
+        27
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-06",
+      "kind": "mate_kqrk",
+      "fen": "8/8/k7/4K3/8/6Q1/1R6/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        19
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_kqrk-07",
+      "kind": "mate_kqrk",
+      "fen": "1K6/6R1/k7/8/8/8/1Q6/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        26
+      ],
+      "material_lead": 14,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-00",
+      "kind": "mate_krrk",
+      "fen": "8/8/6K1/5R2/8/8/6R1/k7 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        11
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-01",
+      "kind": "mate_krrk",
+      "fen": "7k/2R5/2K5/8/8/8/1R6/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-02",
+      "kind": "mate_krrk",
+      "fen": "8/4RK2/8/k7/8/8/8/1R6 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        20
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-03",
+      "kind": "mate_krrk",
+      "fen": "8/R7/8/8/8/8/6R1/4k2K w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        16
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-04",
+      "kind": "mate_krrk",
+      "fen": "8/8/7K/7R/8/8/4R3/1k6 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-05",
+      "kind": "mate_krrk",
+      "fen": "6R1/8/8/8/4R3/8/7K/5k2 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        29
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-06",
+      "kind": "mate_krrk",
+      "fen": "2K5/8/8/8/5R2/8/7R/2k5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "mate_krrk-07",
+      "kind": "mate_krrk",
+      "fen": "8/8/8/8/6K1/6R1/7R/3k4 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        14
+      ],
+      "material_lead": 10,
+      "note": "every mating move is correct"
+    },
+    {
+      "id": "material_gain-00",
+      "kind": "material_gain",
+      "fen": "8/4B3/8/6r1/8/3K3k/8/3R4 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        19
+      ],
+      "material_lead": 3,
+      "note": "2-ply material 8 vs next best 3 (status quo 3)"
+    },
+    {
+      "id": "material_gain-01",
+      "kind": "material_gain",
+      "fen": "5k2/4p3/8/8/3R2K1/5q2/8/2q5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        0
+      ],
+      "material_lead": -14,
+      "note": "2-ply material -5 vs next best -1000 (status quo -14)"
+    },
+    {
+      "id": "material_gain-02",
+      "kind": "material_gain",
+      "fen": "8/3K4/3q1R2/8/4k3/R3r3/3r4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        0
+      ],
+      "material_lead": -9,
+      "note": "2-ply material -5 vs next best -14 (status quo -9)"
+    },
+    {
+      "id": "material_gain-03",
+      "kind": "material_gain",
+      "fen": "4nK2/6q1/4B3/8/8/2k5/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        0
+      ],
+      "material_lead": -9,
+      "note": "2-ply material -6 vs next best -1000 (status quo -9)"
+    },
+    {
+      "id": "material_gain-04",
+      "kind": "material_gain",
+      "fen": "K7/8/4q3/8/8/1B4b1/7k/1B2q3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        13
+      ],
+      "material_lead": -15,
+      "note": "2-ply material -9 vs next best -18 (status quo -15)"
+    },
+    {
+      "id": "material_gain-05",
+      "kind": "material_gain",
+      "fen": "8/4n3/5K2/3k4/8/2n1R3/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        2,
+        10,
+        12
+      ],
+      "material_lead": -1,
+      "note": "2-ply material 2 vs next best -1 (status quo -1)"
+    },
+    {
+      "id": "material_gain-06",
+      "kind": "material_gain",
+      "fen": "3b4/R7/2q3k1/8/8/8/1K6/3Qn3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        3,
+        17
+      ],
+      "material_lead": -1,
+      "note": "2-ply material 2 vs next best -1 (status quo -1)"
+    },
+    {
+      "id": "material_gain-07",
+      "kind": "material_gain",
+      "fen": "8/8/8/2K5/1r5N/8/1k6/3q4 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        4
+      ],
+      "material_lead": -11,
+      "note": "2-ply material -6 vs next best -11 (status quo -11)"
+    },
+    {
+      "id": "promotion-00",
+      "kind": "promotion",
+      "fen": "6b1/2P5/8/8/K7/8/5k2/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        7
+      ],
+      "material_lead": -2,
+      "note": "2-ply material 6 vs next best 2 (status quo -2)"
+    },
+    {
+      "id": "promotion-01",
+      "kind": "promotion",
+      "fen": "8/1P6/8/5b2/2k3q1/8/K7/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": -11,
+      "note": "2-ply material -3 vs next best -7 (status quo -11)"
+    },
+    {
+      "id": "promotion-02",
+      "kind": "promotion",
+      "fen": "8/3P4/6k1/8/8/K7/8/4r3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        8
+      ],
+      "material_lead": -4,
+      "note": "2-ply material 4 vs next best 0 (status quo -4)"
+    },
+    {
+      "id": "promotion-03",
+      "kind": "promotion",
+      "fen": "8/1K5P/3p4/8/2k5/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        11
+      ],
+      "material_lead": 0,
+      "note": "2-ply material 8 vs next best 4 (status quo 0)"
+    },
+    {
+      "id": "promotion-04",
+      "kind": "promotion",
+      "fen": "8/P2kr3/7r/3K4/8/8/8/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": -9,
+      "note": "2-ply material -1 vs next best -5 (status quo -9)"
+    },
+    {
+      "id": "promotion-05",
+      "kind": "promotion",
+      "fen": "8/P7/8/3K4/8/8/1k6/2b5 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        11
+      ],
+      "material_lead": -2,
+      "note": "2-ply material 6 vs next best 2 (status quo -2)"
+    },
+    {
+      "id": "promotion-06",
+      "kind": "promotion",
+      "fen": "8/1P6/8/8/8/6n1/1k6/4K3 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        6
+      ],
+      "material_lead": -2,
+      "note": "2-ply material 6 vs next best 2 (status quo -2)"
+    },
+    {
+      "id": "promotion-07",
+      "kind": "promotion",
+      "fen": "1n6/2P1bK2/8/8/8/3k4/3n4/8 w - - 0 1",
+      "history": "fen_only_fresh_clocks",
+      "correct": [
+        3
+      ],
+      "material_lead": -8,
+      "note": "2-ply material 3 vs next best 0 (status quo -8)"
+    }
+  ]
+}

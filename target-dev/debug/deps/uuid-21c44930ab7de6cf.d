@@ -1,0 +1,13 @@
+C:\Users\Caitl\Desktop\Code Projects\Recur64\target-dev\debug\deps\uuid-21c44930ab7de6cf.d: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\macros.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\builder.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\error.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\non_nil.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\parser.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\fmt.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\timestamp.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\external.rs
+
+C:\Users\Caitl\Desktop\Code Projects\Recur64\target-dev\debug\deps\libuuid-21c44930ab7de6cf.rmeta: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\macros.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\builder.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\error.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\non_nil.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\parser.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\fmt.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\timestamp.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\external.rs
+
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\lib.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\macros.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\builder.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\error.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\non_nil.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\parser.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\fmt.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\timestamp.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\uuid-1.26.1\src\external.rs:

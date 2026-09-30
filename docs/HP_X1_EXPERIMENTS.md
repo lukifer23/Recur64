@@ -666,3 +666,23 @@ that forces mate in two, root value +1. It is recorded as such in the teacher co
   report.
 - NOT CLAIMED: strength or conversion; that any gain is due to the latent scratchpad
   rather than repeated shared-core depth; that thought is useful outside this family.
+
+## E13 - PRE-REGISTERED (written during E12, before any E12 or E13 result is analysed)
+- QUESTION: E12 uses 1,500 exact mate-in-2 positions, a fixed dataset that a network can
+  partly memorise. Exact labels are essentially free (1,500 positions in 2 s), so data
+  need not be a limit. Does thought help on mate-in-2 when the network sees tens of
+  thousands of distinct positions and cannot be data-limited?
+- DATA: `targets-train960` + `targets-mate2-exact-15k` (3,000 exact positions per
+  material set, seed 20261012, digest
+  `948b1d1a7d2b8a8dae5eed618a1920b18789c81a94dfe2f95098a7896b7dc042`), 15,960
+  positions, hard-disjoint from `mate2-eval`, `tactics-v1`, `tactics-tune`,
+  `targets-train960` and the E12 exact set. (6,000 per set was infeasible: KQvK has too
+  few distinct mate-in-2 positions to sample that many.)
+- TRAINING: `--stream` (micro-batches built on demand; identical objective), fixed
+  candidate width, 96 positions per update in a seeded hash order (1,200 updates is
+  about 7 passes over the data), lr 1e-4, gain 128, 5-update warmup, seeds 1 and 2.
+- VARIANTS: SF (T=1), C1F (T=1), C4F (T=4). C8F is added only if C4F shows a signal.
+- METRIC AND DECISION: identical to E12 (mate-in-2 top-1 on `mate2-eval`; C4F beats C1F
+  with a fixture-clustered paired 95% CI wholly above 0 and both seeds positive).
+  Retention metrics reported: mate-in-1 top-1 on `tactics-v1`, teacher KL on `confirm2`.
+- DESCRIPTIVE: E12 vs E13 accuracy for SF and C1F shows whether data was limiting.

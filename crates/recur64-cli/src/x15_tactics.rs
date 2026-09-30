@@ -24,7 +24,7 @@ use recur64_core::{ActionId, GameState, StandardMove, Termination};
 use recur64_model::checkpoint::CheckpointMeta;
 use recur64_model::config::ProbeConfig;
 use recur64_runtime::model_io;
-use recur64_runtime::x15_inputs::{build_x15_batch, provider_for_config};
+use recur64_runtime::x15_inputs::{build_x15_batch, build_x15_batch_padded, provider_for_config};
 
 #[derive(Args, Debug)]
 pub struct GenTacticsArgs {
@@ -1252,5 +1252,194 @@ pub fn run_gen_exact(args: GenExactArgs) -> anyhow::Result<()> {
         targets.digest,
         forbidden.len()
     );
+    Ok(())
+}
+
+// --- conversion rollouts ----------------------------------------------------------------
+
+#[derive(Args, Debug)]
+pub struct RolloutArgs {
+    #[arg(long, default_value = "configs/x15_cuda.toml")]
+    pub config: PathBuf,
+    /// Fixtures whose positions are played out (white to move, a forced win exists).
+    #[arg(long)]
+    pub fixtures: PathBuf,
+    #[arg(long)]
+    pub checkpoint: Vec<PathBuf>,
+    /// Thoughts used by the network when it moves.
+    #[arg(long, default_value_t = 1)]
+    pub thoughts: usize,
+    /// Plies to play before calling the game unconverted.
+    #[arg(long, default_value_t = 40)]
+    pub max_plies: usize,
+    /// Seed for the opponent's random replies.
+    #[arg(long, default_value_t = 20261020)]
+    pub seed: u64,
+    /// Only fixtures whose kind starts with this prefix (empty = all).
+    #[arg(long, default_value = "")]
+    pub kind_prefix: String,
+    #[arg(long, default_value_t = 64)]
+    pub width: usize,
+}
+
+/// Outcome of one rollout.
+#[derive(Clone, Debug)]
+struct Outcome {
+    kind: String,
+    /// Plies until checkmate delivered by the network's side, if it happened.
+    mated_at: Option<usize>,
+    /// How the game ended when it did not end in checkmate.
+    ended: String,
+}
+
+fn rollout_one<B: Backend>(
+    cfg: &ProbeConfig,
+    fixtures: &[Fixture],
+    ck: &std::path::Path,
+    args: &RolloutArgs,
+    device: &B::Device,
+) -> anyhow::Result<Vec<Outcome>> {
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+    let provider = provider_for_config(&meta.experimental)?;
+    let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, device)?;
+    let t = if meta.experimental.reasoning.enabled {
+        args.thoughts
+    } else {
+        1
+    };
+    let mut states: Vec<GameState> = Vec::new();
+    let mut kinds: Vec<String> = Vec::new();
+    for f in fixtures
+        .iter()
+        .filter(|f| f.kind.starts_with(&args.kind_prefix))
+    {
+        states.push(GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{}: {e}", f.id))?);
+        kinds.push(f.kind.clone());
+    }
+    let n = states.len();
+    let mut done: Vec<Option<Outcome>> = vec![None; n];
+    for ply in 0..args.max_plies {
+        // Everyone starts with the network's side to move, so all live games
+        // share the parity: even plies are the network's, odd plies are random.
+        let live: Vec<usize> = (0..n).filter(|i| done[*i].is_none()).collect();
+        if live.is_empty() {
+            break;
+        }
+        if ply % 2 == 0 {
+            let batch_states: Vec<GameState> = live.iter().map(|i| states[*i].clone()).collect();
+            let batch = build_x15_batch_padded::<B>(
+                &batch_states,
+                &meta.experimental,
+                provider.as_ref(),
+                device,
+                args.width,
+            )?;
+            let out = model.forward_thoughts(&batch.input, &batch.cands, t);
+            let width = batch.cands.width;
+            let lp = out
+                .readouts
+                .last()
+                .expect("a readout")
+                .policy
+                .log_probs
+                .clone()
+                .into_data()
+                .to_vec::<f32>()
+                .unwrap_or_default();
+            for (row, &i) in live.iter().enumerate() {
+                let legal = states[i].legal_actions();
+                let r = &lp[row * width..row * width + legal.len()];
+                let arg = r
+                    .iter()
+                    .enumerate()
+                    .fold(0usize, |b, (j, v)| if *v > r[b] { j } else { b });
+                states[i] = apply_id(&states[i], legal[arg]);
+            }
+        } else {
+            for &i in &live {
+                let legal = states[i].legal_actions();
+                let pick = (mix(args.seed ^ mix(i as u64) ^ mix(ply as u64)) % legal.len() as u64)
+                    as usize;
+                states[i] = apply_id(&states[i], legal[pick]);
+            }
+        }
+        for &i in &live {
+            if states[i].is_terminal() {
+                let mated = states[i].termination() == Some(Termination::Checkmate) && ply % 2 == 0;
+                done[i] = Some(Outcome {
+                    kind: kinds[i].clone(),
+                    mated_at: mated.then_some(ply + 1),
+                    ended: format!("{:?}", states[i].termination()),
+                });
+            }
+        }
+    }
+    Ok((0..n)
+        .map(|i| {
+            done[i].clone().unwrap_or(Outcome {
+                kind: kinds[i].clone(),
+                mated_at: None,
+                ended: "not_converted_in_time".into(),
+            })
+        })
+        .collect())
+}
+
+pub fn run_rollout(args: RolloutArgs) -> anyhow::Result<()> {
+    let cfg = ProbeConfig::from_toml_str(&std::fs::read_to_string(&args.config)?)?;
+    let file: FixtureFile = serde_json::from_slice(&std::fs::read(&args.fixtures)?)?;
+    #[cfg(feature = "cuda")]
+    let device: Device<burn::backend::Cuda> = Default::default();
+    #[cfg(not(feature = "cuda"))]
+    let device: Device<burn::backend::Flex> = Default::default();
+    println!(
+        "conversion rollouts: network moves (argmax, T={}), opponent replies uniformly at random (seed {}), up to {} plies; a game counts as converted only if the network's side delivers checkmate",
+        args.thoughts, args.seed, args.max_plies
+    );
+    for ck in &args.checkpoint {
+        #[cfg(feature = "cuda")]
+        let outcomes =
+            rollout_one::<burn::backend::Cuda>(&cfg, &file.fixtures, ck, &args, &device)?;
+        #[cfg(not(feature = "cuda"))]
+        let outcomes =
+            rollout_one::<burn::backend::Flex>(&cfg, &file.fixtures, ck, &args, &device)?;
+        let mut kinds: Vec<String> = outcomes.iter().map(|o| o.kind.clone()).collect();
+        kinds.sort();
+        kinds.dedup();
+        println!("checkpoint {}", ck.display());
+        println!(
+            "  {:<14} {:>3} {:>10} {:>12}  ended (not converted)",
+            "kind", "n", "converted", "mean plies"
+        );
+        let mut total = 0usize;
+        let mut conv = 0usize;
+        for k in kinds {
+            let os: Vec<&Outcome> = outcomes.iter().filter(|o| o.kind == k).collect();
+            let c: Vec<usize> = os.iter().filter_map(|o| o.mated_at).collect();
+            let mut ends: std::collections::BTreeMap<String, usize> =
+                std::collections::BTreeMap::new();
+            for o in os.iter().filter(|o| o.mated_at.is_none()) {
+                *ends.entry(o.ended.clone()).or_insert(0) += 1;
+            }
+            total += os.len();
+            conv += c.len();
+            println!(
+                "  {:<14} {:>3} {:>10.2} {:>12.1}  {:?}",
+                k,
+                os.len(),
+                c.len() as f32 / os.len() as f32,
+                if c.is_empty() {
+                    f32::NAN
+                } else {
+                    c.iter().sum::<usize>() as f32 / c.len() as f32
+                },
+                ends
+            );
+        }
+        println!(
+            "  ALL: converted {conv}/{total} = {:.3}",
+            conv as f32 / total.max(1) as f32
+        );
+    }
     Ok(())
 }

@@ -1,0 +1,10 @@
+C:\Users\Caitl\Desktop\Code Projects\Recur64\target-dev\debug\deps\cubek_random-f6cff7e487c63f15.d: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\base.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\bernoulli.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\normal.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\tests_utils.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\uniform.rs
+
+C:\Users\Caitl\Desktop\Code Projects\Recur64\target-dev\debug\deps\libcubek_random-f6cff7e487c63f15.rmeta: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\base.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\bernoulli.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\normal.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\tests_utils.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\uniform.rs
+
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\lib.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\base.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\bernoulli.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\normal.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\tests_utils.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cubek-random-0.2.0\src\uniform.rs:
