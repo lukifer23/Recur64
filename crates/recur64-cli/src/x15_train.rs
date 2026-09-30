@@ -41,7 +41,7 @@ pub struct TrainProbeArgs {
     #[arg(long, default_value = "configs/x15_cuda.toml")]
     pub config: PathBuf,
     #[arg(long)]
-    pub targets: PathBuf,
+    pub targets: Vec<PathBuf>,
     #[arg(long)]
     pub out: PathBuf,
     /// Thoughts used in training.
@@ -390,7 +390,8 @@ fn eval_json(rows: &[PerThought], data_ids: &[String]) -> serde_json::Value {
 
 fn experiment_record(
     cfg: &ProbeConfig,
-    targets: &ReasoningTargetsV1,
+    target_digests: &[String],
+    target_teachers: &[recur64_runtime::reasoning_targets::TeacherContract],
     args: &TrainProbeArgs,
     n_train: usize,
     init: serde_json::Value,
@@ -404,8 +405,8 @@ fn experiment_record(
         "intermediate_weight": cfg.experimental.intermediate_weight,
         "value_weight": args.value_weight,
         "loss_normalization": "total_active_weight_v1",
-        "targets_digest": targets.digest,
-        "teacher": targets.teacher,
+        "targets_digests": target_digests,
+        "teachers": target_teachers,
         "train_positions": n_train,
         "optimizer_contract": recur64_model::train::OPTIMIZER_CONTRACT,
         "batch_positions": args.batch_positions,
@@ -464,8 +465,35 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
     let mode = cfg.experimental.deep_supervision;
     let weight = cfg.experimental.intermediate_weight;
 
-    let targets = ReasoningTargetsV1::load(&args.targets)?;
-    recur64_runtime::reasoning_targets::audit(&targets)?;
+    // One or more targets files. Positions are concatenated in the order given;
+    // a position with fewer rungs than the deepest file gets its LAST rung
+    // repeated (exact-label files have a single rung). The experiment record
+    // carries every file's digest and teacher contract.
+    let mut loaded = Vec::new();
+    for p in &args.targets {
+        let t = ReasoningTargetsV1::load(p)?;
+        recur64_runtime::reasoning_targets::audit(&t)?;
+        loaded.push(t);
+    }
+    let max_rungs = loaded
+        .iter()
+        .flat_map(|t| t.positions.iter().map(|p| p.rungs.len()))
+        .max()
+        .unwrap_or(1);
+    let mut targets = loaded[0].clone();
+    targets.positions = loaded
+        .iter()
+        .flat_map(|t| t.positions.iter().cloned())
+        .map(|mut p| {
+            while p.rungs.len() < max_rungs {
+                let last = p.rungs.last().expect("a position has a rung").clone();
+                p.rungs.push(last);
+            }
+            p
+        })
+        .collect();
+    let target_digests: Vec<String> = loaded.iter().map(|t| t.digest.clone()).collect();
+    let target_teachers: Vec<_> = loaded.iter().map(|t| t.teacher.clone()).collect();
     let mut train_pos = split(&targets, "train");
     if args.limit > 0 {
         train_pos.truncate(args.limit);
@@ -545,7 +573,15 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
             serde_json::json!({"kind": "fresh", "seed": args.seed}),
         ),
     };
-    let record = experiment_record(cfg, &targets, args, train_pos.len(), init, start_update)?;
+    let record = experiment_record(
+        cfg,
+        &target_digests,
+        &target_teachers,
+        args,
+        train_pos.len(),
+        init,
+        start_update,
+    )?;
     std::fs::create_dir_all(&args.out)?;
     std::fs::write(
         args.out.join("experiment.json"),

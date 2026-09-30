@@ -618,3 +618,51 @@ the fresh-clock, no-history fixture convention a 4-ply forced mate is exact unde
 Recur64 rules (no repetition or fifty-move state can arise), so the labels can be made
 rule-exact by exhaustive bounded search. The teacher's ability at those depths is the
 ceiling to establish first.
+
+## E12a - the teacher cannot do mate-in-2 (MEASURED)
+`mate2-eval` (`x15 gen-mate2`, seed 20261010, 60 fixtures = 5 material sets x 12,
+each with NO mate in one and at least one first move that forces mate in two;
+labelled by exhaustive board-rule search; 9 sampled positions cross-checked against
+the full GameState rules path; hard-disjoint from `tactics-v1`, `tactics-tune` and
+`targets-train960`). Exactness assumption, stated: fixtures are fresh-clock and
+no-history, so a 4-ply sequence cannot reach threefold repetition or the fifty-move
+claim; this is a property of the fixture convention, not of arbitrary positions.
+Teacher (Train1 trainer + deterministic PUCT, `teacher-tactics`), top-1 / mass on
+forcing moves, mean over the five sets:
+| simulations | 16 | 64 | 128 | 256 | 512 |
+|---|---|---|---|---|---|
+| top-1 | 0.19 | 0.03 | 0.07 | 0.18 | 0.33 |
+Per set at 512: KQvK 0.42, KRvK 0.58, KRRvK 0.33, KQRvK 0.25, KQQvK 0.08. The
+teacher is near chance up to 128 simulations and only starts to find these at 512
+(it took 7.5 min for this table). PUCT-at-128 targets therefore carry almost no
+information about this skill.
+**Consequence:** for this family the teacher is EXHAUSTIVE BOUNDED RULES SEARCH (allowed:
+"internal bounded rules search"), not PUCT: the target is uniform over every first move
+that forces mate in two, root value +1. It is recorded as such in the teacher contract
+(`exact_rules_search_v1`) and every variant receives identical supervision.
+
+## E12 - PRE-REGISTERED: does thought help when lookahead is required? (before training)
+- QUESTION (Q3): with one-ply facts available (they cannot reveal a mate-in-2), does a
+  network that can think 4 (or 8) times find the forcing first move better than a
+  one-pass network trained identically?
+- DATA: `targets-train960` (as E11) + `targets-mate2-exact-train` (5 material sets x 300 =
+  1500 positions, seed 20261011, exact labels, hard-disjoint from `mate2-eval`,
+  `tactics-v1`, `tactics-tune` and `targets-train960`). Merged in file order; single-rung
+  files are extended by repeating their last rung (only matters for progressive
+  supervision, not used).
+- VARIANTS (fresh start, facts gain 128 as selected in A4, `final_only_v1`, lr 1e-4, 5
+  update warmup, 600 updates x 96 positions in a seeded hash order, seeds 1 and 2):
+  SF (symbolic + facts, T=1), C1F (T=1), C4F (T=4), C8F (T=8). C8F uses micro-batch 16
+  (memory); the accumulated objective is identical.
+- METRICS: PRIMARY mate-in-2 top-1 on `mate2-eval` (60 fixtures), evaluated at the
+  trained T; retention: mate-in-1 top-1 on `tactics-v1`, teacher KL on `confirm2`.
+- DECISION: THOUGHT HELPS LOOKAHEAD iff C4F beats C1F on mate-in-2 top-1 with a
+  fixture-clustered paired bootstrap 95% CI (mean over seeds per fixture, 2000
+  resamples) wholly above 0 and BOTH seeds individually positive. Descriptive: C8F vs
+  C4F vs C1F trend, SF vs C1F.
+- FLOOR RULE: if the best variant's mate-in-2 top-1 is below 0.30 (chance is about
+  0.1-0.2), the run is labelled FLOOR (uninformative) and I make ONE pre-stated
+  extension, 1200 updates, before concluding anything; if still at the floor, stop and
+  report.
+- NOT CLAIMED: strength or conversion; that any gain is due to the latent scratchpad
+  rather than repeated shared-core depth; that thought is useful outside this family.

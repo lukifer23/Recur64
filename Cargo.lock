@@ -4492,6 +4492,7 @@ dependencies = [
  "anyhow",
  "burn",
  "clap",
+ "cozy-chess",
  "recur64-compute",
  "recur64-coproc",
  "recur64-core",

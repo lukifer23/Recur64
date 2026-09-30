@@ -937,3 +937,320 @@ pub fn run_facts_probe(args: FactsProbeArgs) -> anyhow::Result<()> {
         Ok(())
     }
 }
+
+// --- exact mate-in-2 (rule-exact for fresh-clock, no-history positions) -------------
+
+use cozy_chess::{Board as CBoard, GameStatus};
+
+fn cboard_moves(b: &CBoard) -> Vec<cozy_chess::Move> {
+    let mut v = Vec::new();
+    b.generate_moves(|mvs| {
+        v.extend(mvs);
+        false
+    });
+    v
+}
+
+/// The side to move can deliver checkmate this move.
+fn has_mate_in_one(b: &CBoard) -> bool {
+    cboard_moves(b).into_iter().any(|m| {
+        let mut n = b.clone();
+        n.play(m);
+        n.status() == GameStatus::Won
+    })
+}
+
+/// `after` (opponent to move) is a forced loss in one more move for the
+/// opponent: it is not already over, the opponent has replies, and after EVERY
+/// reply the original mover has a mate in one.
+///
+/// Exactness: the fixtures are fresh-clock, no-history positions, so a 4-ply
+/// sequence cannot reach a threefold repetition or the fifty-move claim; the
+/// only terminations are checkmate, stalemate and insufficient material, and
+/// any reply that leads to a stalemate or dead position simply has no mate in
+/// one and fails the test. This is an assumption of the FIXTURE convention, not
+/// a claim about arbitrary positions with history.
+fn forced_mate_after(after: &CBoard) -> bool {
+    if after.status() != GameStatus::Ongoing {
+        return false;
+    }
+    let replies = cboard_moves(after);
+    if replies.is_empty() {
+        return false;
+    }
+    replies.into_iter().all(|r| {
+        let mut n = after.clone();
+        n.play(r);
+        n.status() == GameStatus::Ongoing && has_mate_in_one(&n)
+    })
+}
+
+/// Legal-action indices of every first move that forces mate in two, for a
+/// position with no mate in one.
+pub(crate) fn mate_in_two_moves(state: &GameState) -> Vec<usize> {
+    if has_mate_in_one(state.board()) {
+        return Vec::new();
+    }
+    state
+        .legal_actions()
+        .iter()
+        .enumerate()
+        .filter(|(_, id)| forced_mate_after(apply_id(state, **id).board()))
+        .map(|(i, _)| i)
+        .collect()
+}
+
+fn gen_mate2(
+    rng: &mut Rng,
+    kind: &str,
+    white: &[char],
+    n: usize,
+    seen: &mut std::collections::HashSet<String>,
+) -> anyhow::Result<Vec<Fixture>> {
+    let mut out = Vec::new();
+    let mut tries = 0u64;
+    while out.len() < n {
+        tries += 1;
+        anyhow::ensure!(tries < 3_000_000, "could not find {n} {kind} positions");
+        let mut pieces: Vec<char> = white.to_vec();
+        pieces.push('k');
+        let placed = place(rng, &pieces);
+        if kings_adjacent(&placed) {
+            continue;
+        }
+        let fen = fen_from(&placed);
+        let Some(state) = try_state(&fen) else {
+            continue;
+        };
+        let firsts = mate_in_two_moves(&state);
+        if firsts.is_empty() || !seen.insert(fen.clone()) {
+            continue;
+        }
+        out.push(Fixture {
+            id: format!("{kind}-{:03}", out.len()),
+            kind: kind.into(),
+            fen,
+            history: "fen_only_fresh_clocks".into(),
+            correct: firsts,
+            material_lead: material_diff(&state.to_fen()),
+            note: "every first move that forces mate in two (no mate in one exists)".into(),
+        });
+    }
+    Ok(out)
+}
+
+const MATE2_KINDS: [(&str, &[char]); 5] = [
+    ("mate2_kqk", &['K', 'Q']),
+    ("mate2_krk", &['K', 'R']),
+    ("mate2_kqqk", &['K', 'Q', 'Q']),
+    ("mate2_kqrk", &['K', 'Q', 'R']),
+    ("mate2_krrk", &['K', 'R', 'R']),
+];
+
+/// `per_kind` exact mate-in-2 positions of each material set as `(kind, fen)`,
+/// skipping `exclude` and duplicates.
+pub(crate) fn synth_mate2_fens(
+    seed: u64,
+    per_kind: usize,
+    exclude: &std::collections::HashSet<String>,
+) -> anyhow::Result<Vec<(String, String)>> {
+    let mut rng = Rng(seed);
+    let mut seen = exclude.clone();
+    let mut out = Vec::new();
+    for (kind, white) in MATE2_KINDS {
+        for f in gen_mate2(&mut rng, kind, white, per_kind, &mut seen)? {
+            out.push((f.kind, f.fen));
+        }
+    }
+    Ok(out)
+}
+
+#[derive(Args, Debug)]
+pub struct GenMate2Args {
+    #[arg(long)]
+    pub out: PathBuf,
+    #[arg(long, default_value_t = 20261010)]
+    pub seed: u64,
+    #[arg(long, default_value_t = 12)]
+    pub per_kind: usize,
+    #[arg(long)]
+    pub disjoint_fixtures: Vec<PathBuf>,
+    #[arg(long)]
+    pub disjoint_targets: Vec<PathBuf>,
+}
+
+pub fn run_gen_mate2(args: GenMate2Args) -> anyhow::Result<()> {
+    let mut forbidden: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for p in &args.disjoint_fixtures {
+        forbidden.extend(fixture_fens(p)?);
+    }
+    for p in &args.disjoint_targets {
+        let t = recur64_runtime::reasoning_targets::ReasoningTargetsV1::load(p)?;
+        forbidden.extend(t.positions.iter().map(|q| q.start_fen.clone()));
+        forbidden.extend(t.positions.iter().map(|q| q.fen.clone()));
+    }
+    let fens = synth_mate2_fens(args.seed, args.per_kind, &forbidden)?;
+    let mut fixtures = Vec::new();
+    for (i, (kind, fen)) in fens.into_iter().enumerate() {
+        let state = GameState::from_fen(&fen).map_err(|e| anyhow::anyhow!("{e}"))?;
+        fixtures.push(Fixture {
+            id: format!("{kind}-{i:03}"),
+            kind,
+            history: "fen_only_fresh_clocks".into(),
+            correct: mate_in_two_moves(&state),
+            material_lead: material_diff(&state.to_fen()),
+            note: "every first move that forces mate in two (no mate in one exists)".into(),
+            fen,
+        });
+    }
+    // Cross-check a sample against the full GameState rules path (an independent
+    // code path: moves are applied through GameState and its own termination).
+    let mut checked = 0usize;
+    for f in fixtures.iter().step_by(7) {
+        let state = GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{e}"))?;
+        for (i, id) in state.legal_actions().iter().enumerate() {
+            let s1 = apply_id(&state, *id);
+            let forced = !s1.is_terminal()
+                && !s1.legal_actions().is_empty()
+                && s1.legal_actions().iter().all(|r| {
+                    let s2 = apply_id(&s1, *r);
+                    !s2.is_terminal() && !mating_moves(&s2).is_empty()
+                });
+            anyhow::ensure!(
+                forced == f.correct.contains(&i),
+                "{}: GameState cross-check disagrees on move {i}",
+                f.id
+            );
+        }
+        checked += 1;
+    }
+    let file = FixtureFile {
+        schema: "x15_tactics_v1".into(),
+        seed: args.seed,
+        fixtures,
+    };
+    if let Some(dir) = args.out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    std::fs::write(&args.out, serde_json::to_vec_pretty(&file)?)?;
+    let mut counts = std::collections::BTreeMap::new();
+    for f in &file.fixtures {
+        *counts.entry(f.kind.clone()).or_insert(0usize) += 1;
+    }
+    println!(
+        "wrote {} ({} mate-in-2 fixtures): {counts:?}; {checked} cross-checked against GameState rules; {} forbidden FENs respected",
+        args.out.display(),
+        file.fixtures.len(),
+        forbidden.len()
+    );
+    Ok(())
+}
+
+// --- exact-label targets (rules search as the teacher) --------------------------------
+
+#[derive(Args, Debug)]
+pub struct GenExactArgs {
+    #[arg(long)]
+    pub out: PathBuf,
+    /// Positions per material set (5 sets).
+    #[arg(long, default_value_t = 200)]
+    pub per_kind: usize,
+    #[arg(long, default_value_t = 20261011)]
+    pub seed: u64,
+    /// Split label given to every position.
+    #[arg(long, default_value = "train")]
+    pub split_label: String,
+    #[arg(long)]
+    pub disjoint_fixtures: Vec<PathBuf>,
+    #[arg(long)]
+    pub disjoint_targets: Vec<PathBuf>,
+}
+
+/// Build `ReasoningTargetsV1` whose teacher is exhaustive bounded RULES search:
+/// the target policy is uniform over every first move that forces mate in two,
+/// the root value is +1 (a forced win for the side to move). No network, no
+/// PUCT, no external data. One rung (`simulations = 0` marks "exact").
+pub fn run_gen_exact(args: GenExactArgs) -> anyhow::Result<()> {
+    use recur64_runtime::reasoning_targets::{
+        PositionTarget, Provenance, ReasoningTargetsV1, RungTarget, TeacherContract, audit,
+        observation_digest,
+    };
+    let mut forbidden: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for p in &args.disjoint_fixtures {
+        forbidden.extend(fixture_fens(p)?);
+    }
+    for p in &args.disjoint_targets {
+        let t = ReasoningTargetsV1::load(p)?;
+        forbidden.extend(t.positions.iter().map(|q| q.start_fen.clone()));
+        forbidden.extend(t.positions.iter().map(|q| q.fen.clone()));
+    }
+    let fens = synth_mate2_fens(args.seed, args.per_kind, &forbidden)?;
+    anyhow::ensure!(
+        fens.iter().all(|(_, f)| !forbidden.contains(f)),
+        "exact positions overlap the forbidden FEN set"
+    );
+    let mut positions = Vec::new();
+    for (i, (kind, fen)) in fens.into_iter().enumerate() {
+        let state = GameState::from_fen(&fen).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let legal_ids = state.legal_actions();
+        let correct = mate_in_two_moves(&state);
+        anyhow::ensure!(!correct.is_empty(), "{fen}: no forcing move");
+        let mut policy = vec![0.0f32; legal_ids.len()];
+        for c in &correct {
+            policy[*c] = 1.0 / correct.len() as f32;
+        }
+        let entropy = (correct.len() as f32).ln();
+        positions.push(PositionTarget {
+            id: format!("exact-{kind}-{i:05}"),
+            category: kind.clone(),
+            split: args.split_label.clone(),
+            source_game_id: 8_000_000 + i as u64,
+            ply: 0,
+            start_fen: fen.clone(),
+            prefix: Vec::new(),
+            fen: state.to_fen(),
+            observation_sha256: observation_digest(&state),
+            legal: legal_ids.iter().map(|a| a.index()).collect(),
+            rungs: vec![RungTarget {
+                simulations: 0,
+                policy,
+                root_value: 1.0,
+                root_network_value: 0.0,
+                total_visits: 0,
+                best: correct[0],
+                entropy,
+            }],
+        });
+    }
+    let teacher = TeacherContract {
+        checkpoint: "exact_rules_search_v1".into(),
+        model_id: "none".into(),
+        architecture: "exact_rules_search_v1: uniform over every first move forcing mate in two"
+            .into(),
+        recurrence: 0,
+        c_puct: 0.0,
+        leaves_in_flight: 0,
+        root_noise: false,
+        ladder: vec![0],
+        evaluator: "exhaustive bounded rules search; fresh-clock no-history convention".into(),
+    };
+    let provenance = Provenance {
+        git_rev: recur64_runtime::provenance::git_revision()
+            .unwrap_or("unknown")
+            .into(),
+        created_unix_s: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
+    };
+    let targets = ReasoningTargetsV1::new(teacher, args.seed, provenance, positions);
+    let n = audit(&targets)?;
+    targets.save(&args.out)?;
+    println!(
+        "wrote {} ({n} exact mate-in-2 positions audited); digest {}; {} forbidden FENs respected",
+        args.out.display(),
+        targets.digest,
+        forbidden.len()
+    );
+    Ok(())
+}
