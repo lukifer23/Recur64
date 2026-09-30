@@ -369,3 +369,14 @@ EXTENSION: the corrected rule above ((a), (b'), (c)); a FRESH 800-update run, ne
 continuation.
 STATUS: E-P1b result and this contract are committed BEFORE any P2 run. No P2 run for the
 replacement split has been launched.
+
+---
+
+## P2 statistics tooling patch (reporting only)
+Per-seed comparisons now report the exact pre-registered groups (all / M1 / M2 / M3 /
+M2+M3) for each metric (top1, mass, neg_ce), paired by model_seed identity, under
+`<metric>.per_seed.seed_N.<group>`, using the SAME grouping and bootstrap function as the
+pooled comparison. A seed's overall difference can no longer be mistaken for that seed's
+M1 difference (the Q1 gate's "both seeds positive on M1" reads `top1.per_seed.seed_N.M1`).
+No science contract, threshold, data, model, sampler, LR, bootstrap method or resample
+count changed; the earlier P2 pre-registration is not rewritten.

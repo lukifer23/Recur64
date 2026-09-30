@@ -85,10 +85,56 @@ fn ci(values: Vec<f64>, resamples: usize, seed: u64) -> serde_json::Value {
     serde_json::json!({ "n": values.len(), "mean_diff_b_minus_a": m, "ci95": [lo, hi] })
 }
 
+/// Whether a position of mate depth `depth` belongs to the named group.
+fn in_group(group: &str, depth: u8) -> bool {
+    match group {
+        "all" => true,
+        "M1" => depth == 1,
+        "M2" => depth == 2,
+        "M3" => depth == 3,
+        "M4" => depth == 4,
+        "M5" => depth == 5,
+        "M2+M3" => depth == 2 || depth == 3,
+        _ => false,
+    }
+}
+
+/// Every group reported for every metric, pooled AND per seed. Both paths call
+/// [`grouped`], so the per-seed numbers use exactly the same grouping and
+/// bootstrap as the pooled ones.
+const GROUPS: [&str; 7] = ["all", "M1", "M2", "M3", "M2+M3", "M4", "M5"];
+
+/// Paired (B minus A) bootstrap summaries of every non-empty group, from two
+/// per-position maps over the same position ids.
+fn grouped(
+    pa: &BTreeMap<String, (u8, f64)>,
+    pb: &BTreeMap<String, (u8, f64)>,
+    resamples: usize,
+    seed: u64,
+) -> Result<serde_json::Map<String, serde_json::Value>, String> {
+    if pa.keys().ne(pb.keys()) {
+        return Err("position sets differ between A and B".into());
+    }
+    let mut out = serde_json::Map::new();
+    for g in GROUPS {
+        let diffs: Vec<f64> = pa
+            .iter()
+            .filter(|(_, v)| in_group(g, v.0))
+            .map(|(k, v)| pb[k].1 - v.1)
+            .collect();
+        if !diffs.is_empty() {
+            out.insert(g.into(), ci(diffs, resamples, seed));
+        }
+    }
+    Ok(out)
+}
+
 /// Paired per-position comparison (B minus A) of top-1, correct-set mass and
-/// negative CE, pooled over positions and by depth. With `per_seed`, also each
-/// seed separately, paired by model-seed identity (refused if the seed sets do
-/// not match).
+/// negative CE. Each metric reports the pooled groups (all, M1, M2, M3, M2+M3)
+/// and, with `per_seed`, a `per_seed.seed_N` entry holding the SAME groups for
+/// each seed separately, paired by model-seed identity (refused if the seed sets
+/// do not match). A seed's overall difference can therefore never be mistaken
+/// for that seed's M1 difference.
 pub fn compare(
     a: &[EvalFile],
     b: &[EvalFile],
@@ -116,36 +162,24 @@ pub fn compare(
     ];
     let mut out = serde_json::Map::new();
     for (name, f) in metrics {
-        let (pa, pb) = (per_position(&ra, f), per_position(&rb, f));
-        if pa.keys().ne(pb.keys()) {
-            return Err("position sets differ between A and B".into());
-        }
-        let diff = |sel: &dyn Fn(u8) -> bool| -> Vec<f64> {
-            pa.iter()
-                .filter(|(_, v)| sel(v.0))
-                .map(|(k, v)| pb[k].1 - v.1)
-                .collect()
-        };
-        let mut groups = serde_json::Map::new();
-        groups.insert("all".into(), ci(diff(&|_| true), resamples, seed));
-        for d in 1..=5u8 {
-            let v = diff(&|x| x == d);
-            if !v.is_empty() {
-                groups.insert(format!("M{d}"), ci(v, resamples, seed));
-            }
-        }
-        groups.insert(
-            "M2+M3".into(),
-            ci(diff(&|x| x == 2 || x == 3), resamples, seed),
-        );
+        let mut groups = grouped(
+            &per_position(&ra, f),
+            &per_position(&rb, f),
+            resamples,
+            seed,
+        )?;
         if let Some(pairs) = &pairs {
             let mut seeds = serde_json::Map::new();
             for (s, fa, fb) in pairs {
-                let (sa, sb) = (per_position(&[fa], f), per_position(&[fb], f));
-                let d: Vec<f64> = sa.iter().map(|(k, v)| sb[k].1 - v.1).collect();
-                seeds.insert(format!("seed_{s}"), ci(d, resamples, seed));
+                let g = grouped(
+                    &per_position(&[fa], f),
+                    &per_position(&[fb], f),
+                    resamples,
+                    seed,
+                )?;
+                seeds.insert(format!("seed_{s}"), serde_json::Value::Object(g));
             }
-            groups.insert("per_seed_all".into(), serde_json::Value::Object(seeds));
+            groups.insert("per_seed".into(), serde_json::Value::Object(seeds));
         }
         out.insert(name.into(), serde_json::Value::Object(groups));
     }
@@ -184,27 +218,82 @@ mod tests {
         }
     }
 
-    #[test]
-    fn matching_seed_sets_pass_and_file_order_is_irrelevant() {
-        let a = vec![file("a1", Some(1), 0.0), file("a2", Some(2), 0.05)];
-        let b = vec![file("b1", Some(1), 0.2), file("b2", Some(2), 0.25)];
-        let b_rev = vec![b[1].clone(), b[0].clone()];
-        let a_rev = vec![a[1].clone(), a[0].clone()];
-        let x = compare(&a, &b, 500, 3, true).unwrap();
-        let y = compare(&a_rev, &b_rev, 500, 3, true).unwrap();
-        let z = compare(&a, &b_rev, 500, 3, true).unwrap();
-        assert_eq!(x["top1"]["per_seed_all"], y["top1"]["per_seed_all"]);
-        assert_eq!(x["top1"]["per_seed_all"], z["top1"]["per_seed_all"]);
-        assert!(
-            x["top1"]["per_seed_all"]["seed_1"]["mean_diff_b_minus_a"]
-                .as_f64()
-                .unwrap()
-                > 0.0
-        );
+    /// A file whose top-1 is decided per depth: `correct[d-1]` for depth d.
+    fn by_depth(model: &str, seed: u64, correct: [bool; 3]) -> EvalFile {
+        let mut f = file(model, Some(seed), 0.0);
+        for r in &mut f.results {
+            r.top1 = correct[(r.depth - 1) as usize];
+        }
+        f
+    }
+
+    fn diff(v: &serde_json::Value, path: &[&str]) -> f64 {
+        let mut cur = v;
+        for p in path {
+            cur = &cur[*p];
+        }
+        cur["mean_diff_b_minus_a"]
+            .as_f64()
+            .unwrap_or_else(|| panic!("missing {path:?}"))
     }
 
     #[test]
-    fn mismatched_duplicate_or_missing_seeds_are_refused() {
+    fn per_seed_output_has_every_preregistered_group_for_every_metric() {
+        let a = vec![file("a1", Some(1), 0.0), file("a2", Some(2), 0.05)];
+        let b = vec![file("b1", Some(1), 0.2), file("b2", Some(2), 0.25)];
+        let out = compare(&a, &b, 200, 3, true).unwrap();
+        for metric in ["top1", "mass", "neg_ce"] {
+            for g in ["all", "M1", "M2", "M3", "M2+M3"] {
+                assert!(out[metric][g]["ci95"].is_array(), "{metric} pooled {g}");
+                for s in ["seed_1", "seed_2"] {
+                    assert!(
+                        out[metric]["per_seed"][s][g]["ci95"].is_array(),
+                        "{metric} {s} {g}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn per_seed_groups_keep_their_own_signs() {
+        // seed 1: B better on M1, worse on M2; seed 2: B better on both.
+        let a = vec![
+            by_depth("a1", 1, [false, true, true]),
+            by_depth("a2", 2, [false, false, true]),
+        ];
+        let b = vec![
+            by_depth("b1", 1, [true, false, true]),
+            by_depth("b2", 2, [true, true, true]),
+        ];
+        let out = compare(&a, &b, 200, 3, true).unwrap();
+        let ps = |s: &str, g: &str| diff(&out, &["top1", "per_seed", s, g]);
+        assert!(ps("seed_1", "M1") > 0.0);
+        assert!(ps("seed_1", "M2") < 0.0);
+        assert_eq!(ps("seed_1", "M3"), 0.0);
+        assert!(ps("seed_2", "M1") > 0.0);
+        assert!(ps("seed_2", "M2") > 0.0);
+        // M2+M3 and all are different groups from M1: a seed's overall sign
+        // cannot stand in for its M1 sign.
+        assert!(ps("seed_1", "M2+M3") < 0.0);
+        assert!((ps("seed_1", "all") - ps("seed_1", "M1")).abs() > 1e-9);
+        // The pooled M1 is the mean of the two seeds' M1 differences (both +1).
+        assert!((diff(&out, &["top1", "M1"]) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn file_order_is_irrelevant_for_pooled_and_per_seed_output() {
+        let a = vec![file("a1", Some(1), 0.0), file("a2", Some(2), 0.05)];
+        let b = vec![file("b1", Some(1), 0.2), file("b2", Some(2), 0.25)];
+        let rev = |v: &[EvalFile]| vec![v[1].clone(), v[0].clone()];
+        let base = compare(&a, &b, 300, 3, true).unwrap();
+        assert_eq!(base, compare(&rev(&a), &b, 300, 3, true).unwrap());
+        assert_eq!(base, compare(&a, &rev(&b), 300, 3, true).unwrap());
+        assert_eq!(base, compare(&rev(&a), &rev(&b), 300, 3, true).unwrap());
+    }
+
+    #[test]
+    fn seed_contract_refusals_remain() {
         let a = vec![file("a1", Some(1), 0.0), file("a2", Some(2), 0.0)];
         let b_other = vec![file("b1", Some(1), 0.1), file("b3", Some(3), 0.1)];
         assert!(
@@ -229,10 +318,20 @@ mod tests {
     }
 
     #[test]
-    fn different_datasets_are_refused() {
+    fn dataset_split_and_position_mismatches_are_refused() {
         let a = vec![file("a", Some(1), 0.0)];
-        let mut b = vec![file("b", Some(1), 0.0)];
-        b[0].dataset_digest = "other".into();
-        assert!(compare(&a, &b, 100, 1, true).is_err());
+        let mut other_digest = vec![file("b", Some(1), 0.0)];
+        other_digest[0].dataset_digest = "other".into();
+        assert!(compare(&a, &other_digest, 100, 1, true).is_err());
+        let mut other_split = vec![file("b", Some(1), 0.0)];
+        other_split[0].split = "confirm".into();
+        assert!(compare(&a, &other_split, 100, 1, true).is_err());
+        let mut other_ids = vec![file("b", Some(1), 0.0)];
+        other_ids[0].results[0].id = "not-a-shared-position".into();
+        let e = compare(&a, &other_ids, 100, 1, true).unwrap_err();
+        assert!(e.contains("position sets differ"), "{e}");
+        let mut fewer = vec![file("b", Some(1), 0.0)];
+        fewer[0].results.pop();
+        assert!(compare(&a, &fewer, 100, 1, true).is_err());
     }
 }
