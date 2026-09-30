@@ -39,6 +39,7 @@ pub mod compute;
 pub mod input;
 pub mod squares;
 pub mod visual;
+pub mod world;
 
 #[cfg(test)]
 mod test_support;
@@ -114,6 +115,8 @@ pub enum CoprocError {
     /// The reconstructed board refused its castling rights, en-passant square
     /// or halfmove clock.
     InvalidBoard(&'static str),
+    /// A world-model capacity (candidates or replies) was exceeded. Never truncated.
+    Capacity(&'static str),
     /// The output buffer length is not `OUTPUT_LEN`.
     BadOutputLength(usize),
     /// The renderer was asked for an unsupported image size.
@@ -145,6 +148,7 @@ impl std::fmt::Display for CoprocError {
                 write!(f, "output buffer is {n} bytes, expected {OUTPUT_LEN}")
             }
             CoprocError::BadImageSize(n) => write!(f, "unsupported image size {n}"),
+            CoprocError::Capacity(m) => write!(f, "world-model capacity: {m}"),
         }
     }
 }

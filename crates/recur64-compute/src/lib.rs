@@ -264,6 +264,190 @@ pub fn native_bank(input: &[u8]) -> Result<Vec<u8>, ComputeError> {
     Ok(out)
 }
 
+// --- WorldModelV2 providers -------------------------------------------------------------
+
+/// A deterministic `WorldModelV2` provider (native or WebAssembly).
+pub trait WorldModelProvider: Send + Sync {
+    /// The execution backend label.
+    fn kind(&self) -> ComputeProviderKind;
+    /// The semantic version of the layout and rules (independent of the backend).
+    fn semantic_version(&self) -> &'static str {
+        recur64_coproc::world::WORLD_MODEL_VERSION
+    }
+    /// Compute the packed world model for each input into a fresh buffer of
+    /// `world_output_len(w_cap, r_cap)` bytes.
+    fn world_batch(
+        &self,
+        inputs: &[Vec<u8>],
+        w_cap: usize,
+        r_cap: usize,
+    ) -> Result<Vec<Vec<u8>>, ComputeError>;
+}
+
+/// Native `WorldModelV2`.
+pub struct NativeWorldModel;
+
+impl WorldModelProvider for NativeWorldModel {
+    fn kind(&self) -> ComputeProviderKind {
+        ComputeProviderKind::NativeV1
+    }
+    fn world_batch(
+        &self,
+        inputs: &[Vec<u8>],
+        w_cap: usize,
+        r_cap: usize,
+    ) -> Result<Vec<Vec<u8>>, ComputeError> {
+        let len = recur64_coproc::world::world_output_len(w_cap, r_cap);
+        inputs
+            .iter()
+            .map(|input| {
+                let mut out = vec![0u8; len];
+                recur64_coproc::world::world_model(input, w_cap, r_cap, &mut out)?;
+                Ok(out)
+            })
+            .collect()
+    }
+}
+
+struct WasmWorldInstance {
+    store: wasmi::Store<()>,
+    memory: wasmi::Memory,
+    alloc: wasmi::TypedFunc<i32, i32>,
+    dealloc: wasmi::TypedFunc<(i32, i32), ()>,
+    world: wasmi::TypedFunc<(i32, i32, i32, i32, i32, i32), i32>,
+    in_ptr: i32,
+}
+
+/// WebAssembly `WorldModelV2`: the same source, run by the pure-Rust interpreter.
+pub struct WasmWorldModel {
+    inner: Mutex<WasmWorldInstance>,
+}
+
+impl WasmWorldModel {
+    pub fn new() -> anyhow::Result<Self> {
+        let engine = wasmi::Engine::default();
+        let module = wasmi::Module::new(&engine, artifact::WASM_ARTIFACT)
+            .map_err(|e| anyhow::anyhow!("instantiate {}: {e}", artifact::WASM_SHA256))?;
+        let mut store = wasmi::Store::new(&engine, ());
+        let linker = wasmi::Linker::new(&engine);
+        let instance = linker
+            .instantiate(&mut store, &module)
+            .map_err(|e| anyhow::anyhow!("link: {e}"))?
+            .start(&mut store)
+            .map_err(|e| anyhow::anyhow!("start: {e}"))?;
+        let memory = instance
+            .get_memory(&store, "memory")
+            .ok_or_else(|| anyhow::anyhow!("the guest exports no `memory`"))?;
+        let alloc = instance
+            .get_typed_func::<i32, i32>(&store, "coproc_alloc")
+            .map_err(|e| anyhow::anyhow!("coproc_alloc: {e}"))?;
+        let dealloc = instance
+            .get_typed_func::<(i32, i32), ()>(&store, "coproc_dealloc")
+            .map_err(|e| anyhow::anyhow!("coproc_dealloc: {e}"))?;
+        let world = instance
+            .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(&store, "coproc_world_model")
+            .map_err(|e| anyhow::anyhow!("coproc_world_model: {e}"))?;
+        let in_ptr = alloc
+            .call(&mut store, INPUT_LEN as i32)
+            .map_err(|e| anyhow::anyhow!("alloc input: {e}"))?;
+        Ok(Self {
+            inner: Mutex::new(WasmWorldInstance {
+                store,
+                memory,
+                alloc,
+                dealloc,
+                world,
+                in_ptr,
+            }),
+        })
+    }
+}
+
+impl WorldModelProvider for WasmWorldModel {
+    fn kind(&self) -> ComputeProviderKind {
+        ComputeProviderKind::WasmV1
+    }
+    fn world_batch(
+        &self,
+        inputs: &[Vec<u8>],
+        w_cap: usize,
+        r_cap: usize,
+    ) -> Result<Vec<Vec<u8>>, ComputeError> {
+        let len = recur64_coproc::world::world_output_len(w_cap, r_cap);
+        let mut guard = self.inner.lock().map_err(|_| {
+            ComputeError::Wasm("the wasm store mutex was poisoned by an earlier panic".into())
+        })?;
+        let inst = &mut *guard;
+        let out_ptr = inst
+            .alloc
+            .call(&mut inst.store, len as i32)
+            .map_err(|e| ComputeError::Wasm(format!("alloc output: {e}")))?;
+        let mut results = Vec::with_capacity(inputs.len());
+        let mut failure: Option<ComputeError> = None;
+        for (i, input) in inputs.iter().enumerate() {
+            if input.len() != INPUT_LEN {
+                failure = Some(ComputeError::BufferShape(format!(
+                    "input {i} is {} bytes, expected {INPUT_LEN}",
+                    input.len()
+                )));
+                break;
+            }
+            if let Err(e) = inst
+                .memory
+                .write(&mut inst.store, inst.in_ptr as usize, input)
+            {
+                failure = Some(ComputeError::Wasm(format!("write input: {e}")));
+                break;
+            }
+            let status = match inst.world.call(
+                &mut inst.store,
+                (
+                    inst.in_ptr,
+                    INPUT_LEN as i32,
+                    w_cap as i32,
+                    r_cap as i32,
+                    out_ptr,
+                    len as i32,
+                ),
+            ) {
+                Ok(s) => s,
+                Err(e) => {
+                    failure = Some(ComputeError::Wasm(format!("call: {e}")));
+                    break;
+                }
+            };
+            if status != 0 {
+                failure = Some(ComputeError::Wasm(format!(
+                    "guest returned status {status} for position {i}"
+                )));
+                break;
+            }
+            let mut buf = vec![0u8; len];
+            if let Err(e) = inst.memory.read(&inst.store, out_ptr as usize, &mut buf) {
+                failure = Some(ComputeError::Wasm(format!("read output: {e}")));
+                break;
+            }
+            results.push(buf);
+        }
+        let _ = inst.dealloc.call(&mut inst.store, (out_ptr, len as i32));
+        match failure {
+            Some(e) => Err(e),
+            None => Ok(results),
+        }
+    }
+}
+
+/// Build the `WorldModelV2` provider for a label. `None` is refused: a world
+/// model that is off must not be constructed.
+pub fn world_model_provider_for(
+    kind: ComputeProviderKind,
+) -> anyhow::Result<Box<dyn WorldModelProvider>> {
+    Ok(match kind {
+        ComputeProviderKind::None => anyhow::bail!("the world model provider cannot be `none`"),
+        ComputeProviderKind::NativeV1 => Box::new(NativeWorldModel),
+        ComputeProviderKind::WasmV1 => Box::new(WasmWorldModel::new()?),
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -389,6 +573,31 @@ mod tests {
         for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
             assert_eq!(x, y, "native and wasm differ on position {i}");
         }
+    }
+
+    #[test]
+    fn world_model_native_and_wasm_agree_byte_exactly() {
+        let native = NativeWorldModel;
+        let wasm = WasmWorldModel::new().expect("wasm world model instantiates");
+        let mut inputs: Vec<Vec<u8>> = Vec::new();
+        for (fen, _) in edge_positions() {
+            let state = GameState::from_fen(&fen).expect(&fen);
+            inputs.push(input_for(&state, 0));
+        }
+        for state in rand_positions(24) {
+            inputs.push(input_for(&state, 0));
+        }
+        let (w_cap, r_cap) = (128, 64);
+        let a = native.world_batch(&inputs, w_cap, r_cap).expect("native");
+        let b = wasm.world_batch(&inputs, w_cap, r_cap).expect("wasm");
+        assert_eq!(a.len(), b.len());
+        for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
+            assert_eq!(x, y, "native and wasm world models differ on position {i}");
+        }
+        // A capacity error is an error in both providers, never a truncation.
+        let startpos = vec![input_for(&GameState::startpos(), 0)];
+        assert!(native.world_batch(&startpos, 8, 8).is_err());
+        assert!(wasm.world_batch(&startpos, 8, 8).is_err());
     }
 
     #[test]

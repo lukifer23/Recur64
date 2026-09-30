@@ -77,6 +77,41 @@ pub unsafe extern "C" fn coproc_compute(
     }
 }
 
+/// Compute `WorldModelV2` into the caller's output buffer.
+///
+/// Status: `0` ok, `1` structurally invalid input, `2` wrong buffer length,
+/// `3` the position was rejected, `4` a capacity (`w_cap` / `r_cap`) was exceeded.
+///
+/// # Safety
+/// `in_ptr..in_ptr + in_len` and `out_ptr..out_ptr + out_len` must be valid,
+/// non-overlapping guest-memory regions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn coproc_world_model(
+    in_ptr: *const u8,
+    in_len: usize,
+    w_cap: usize,
+    r_cap: usize,
+    out_ptr: *mut u8,
+    out_len: usize,
+) -> i32 {
+    if in_len != INPUT_LEN || in_ptr.is_null() || out_ptr.is_null() {
+        return 2;
+    }
+    // SAFETY: the caller guarantees the regions and their lengths.
+    let input = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
+    // SAFETY: as above; the provider never aliases the input and output.
+    let out = unsafe { std::slice::from_raw_parts_mut(out_ptr, out_len) };
+    match recur64_coproc::world::world_model(input, w_cap, r_cap, out) {
+        Ok(()) => 0,
+        Err(recur64_coproc::CoprocError::Capacity(_)) => 4,
+        Err(recur64_coproc::CoprocError::InvalidObservation(_))
+        | Err(recur64_coproc::CoprocError::InvalidBoard(_)) => 3,
+        Err(recur64_coproc::CoprocError::BadInputLength(_))
+        | Err(recur64_coproc::CoprocError::BadOutputLength(_)) => 2,
+        Err(_) => 1,
+    }
+}
+
 /// Input-buffer length the guest expects.
 #[unsafe(no_mangle)]
 pub extern "C" fn coproc_input_len() -> usize {
