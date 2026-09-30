@@ -849,6 +849,91 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
     identical.
   - `arena_tree_policy_enters_the_identity_only_when_changed`.
 
+## D55 - candidate_v25 architecture identity and CandidateFactsV1
+
+- **Status:** IMPLEMENTED (2026-09-30), branch `experiment/workstation-v25` only.
+- **Decision:**
+  1. `ModelConfig.architecture` (`probe_v1` default) plus optional `candidate` /
+     `legacy_facts` geometries. The defaults are never serialized, so every historical
+     scientific hash and `check_model` value is unchanged (the frozen P4.5 hash test still
+     passes).
+  2. The runtime dispatches over a `NeuralModel` trait and monomorphizes per architecture.
+     A Burn `Module` enum would change the recorded checkpoint layout and break every
+     historical Probe checkpoint, so it was rejected.
+  3. Checkpoints record architecture, head version, CandidateFacts version and the
+     token/block/fact-delta contracts. Loading across architectures is refused by id, in both
+     directions, for every ordered pair of {probe_v1, candidate_v25, legacy_facts_v25}.
+  4. `CandidateFactsV1` (8 exact one-ply facts per legal move, legal-action order) lives in
+     `recur64-core` and is computed from the authoritative `GameState`, only for evaluators that
+     ask (`needs_candidate_facts`); legacy evaluators pay nothing. `SyncEvaluator` now also refuses
+     non-finite/zero policy mass (it previously fell back to a uniform policy).
+- **Why:** the experiment needed a second, distinguishable architecture without touching the
+  control line.
+- **Tests:** `probe_identity_is_unchanged_by_the_architecture_field`,
+  `arena_exploration_is_a_new_identity_and_default_is_unchanged`, `candidate_facts_diff`
+  (41,353 positions vs an independent reference), `every_ordered_pair_of_architectures_is_refused_explicitly`,
+  `lf_contract_one_checkpoints_are_refused_under_contract_two`.
+
+## D56 - ProofTargetsV1: exact mate proofs, independent audit, pool-limited scale
+
+- **Status:** IMPLEMENTED (2026-09-30), branch `experiment/workstation-v25`.
+- **Decision:** exact near-mate policy targets (M1/M2/M3 over KQvK, KRvK, KQQvK, KQRvK, KRRvK,
+  white to move, `fresh_no_history_v1`) from an exhaustive memoized adversarial search. No
+  network, PUCT, engine or human data. Every position of every dataset is re-derived by an
+  independent implementation (`GameState::apply`, full termination classification, own memo).
+  Splits are hard-disjoint by exact FEN and symmetry-canonical class. Datasets carry a content
+  digest.
+- **Found:** exact eligible pools are small for KQvK/KRvK (e.g. KRvK M1 189) and KQQvK M3 (4,409),
+  so the requested 1000/100/100 was infeasible in those cells. Rule (pre-registered before any
+  dataset existed): pools >= 1200 use the targets, smaller pools split 80/10/10; holdouts take
+  priority over a training extension; no filter is ever relaxed.
+- **Found:** a repeat run caught a determinism bug (the stored FEN was whichever symmetric
+  representative a worker saw first); fixed by storing the canonical representative.
+- **Tests:** solver vs brute-force enumeration (600 positions), audit rejects a corrupted label,
+  thread-count independence, overlap refusal.
+
+## D57 - Evaluation hygiene: cell_balanced_v1, macro metrics, sealed evaluation sets
+
+- **Status:** IMPLEMENTED (2026-09-30), branch `experiment/workstation-v25`.
+- **Decision:**
+  1. `cell_balanced_v1`: a rotor over the 15 (family, depth) cells with independent seeded
+     per-cell shuffles, equal long-run exposure (within one example); oversampling is sampling,
+     not extra data.
+  2. Macro-cell/family/depth metrics and a full-TRAIN evaluation are reported beside the pooled
+     metrics (an earlier "train slice" was a single family and was removed).
+  3. Evaluation files carry `model_seed`; `proof compare --per-seed` pairs by seed identity and
+     refuses mismatches.
+  4. Every CONFIRM/holdout evaluation prints an exposure guard and appends to an exposure log.
+  5. A split assignment whose CONFIRM had been touched by a toy smoke was retired and replaced.
+- **Tests:** sampler determinism/exposure/wrap tests, macro-metric test, seed-pairing tests.
+
+## D58 - legacy_facts_v25 (LF) and fact-delta contract 2
+
+- **Status:** IMPLEMENTED (2026-09-30), branch `experiment/workstation-v25`.
+- **Decision:** LF wraps the unmodified `ProbeModel` and adds CandidateFacts as a candidate-local
+  policy delta (`Linear(64->1, no bias)(GELU(Linear(8->64)(facts)))`) added to the legacy logit.
+- **Found:** contract 1 had a final bias that adds one constant to every candidate of a row and is
+  cancelled by the softmax: an inert parameter with zero gradient. Removed; contract 2; size
+  26,810,584 (= L + 640). Gradient coverage is now checked per parameter.
+- **Found:** a same-seed wrapped-Probe-vs-independent-Probe test is only deterministic in its own
+  process, because Burn's backend RNG is global state shared by parallel test threads.
+- **Tests:** `every_facts_parameter_gets_a_finite_nonzero_gradient_on_update_one`,
+  `wrapped_probe_is_the_historical_legacy_model_under_the_same_seed`.
+
+## D59 - V2.5 outcome: P2 NO-GO, P2.5 answers, lineage stops
+
+- **Status:** RECORDED (2026-09-30). Measured results, not a code change.
+- **Found (P2):** CandidateFacts solve M1 (CF 1.000) and help M2/M3; candidate tokens without
+  facts do not beat the matched-capacity legacy head; CF M2 0.689 missed the 0.75 gate (Q3 NO-GO).
+- **Found (P2.5, heavy holdouts):** facts interact strongly with the candidate-token architecture
+  (interaction +0.085 on M2+M3); the legacy-plus-facts variant LF learned facts far too slowly
+  (M1 0.74, underfit); 5x unique heavy data closed the train/held-out gap without raising
+  held-out accuracy (M2+M3 +0.005, CI includes 0).
+- **Decision:** P3 (conversion) is not authorized by these results; the optimization-horizon test
+  was removed from scope by the owner; the lineage stops for review and V3 design.
+- **Evidence:** `docs/WORKSTATION_V25_SUMMARY.md`, `docs/WORKSTATION_V25_EXPERIMENTS.md`,
+  `docs/WORKSTATION_V25_P25_RESULTS.md`, `docs/evidence/v25/`.
+
 ## Rejected / deferred
 
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).

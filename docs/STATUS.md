@@ -475,3 +475,37 @@ The Phase 3 F10 result above predates the seed and gradient fixes and head v2.
 It is not a clean modern baseline, and its checkpoints are head v1. The HP
 F15/R15 record lives on `experiment/hp-r15`; it is external evidence, not a
 mainline result.
+
+
+---
+
+# Workstation V2.5 (branch `experiment/workstation-v25`; main is unchanged)
+
+## COMPLETED
+- candidate_v25 (27,469,204 params) and legacy_facts_v25 (26,810,584 params) architectures with
+  distinct checkpoint identities; CandidateFactsV1 in core; evaluator/inference plumbing.
+- ProofTargetsV1: exact mate solver, independent audit, exhaustive pools, sealed splits,
+  heavy-family holdouts A/B/C (C unused), P25_DATA_V1 (44,332 positions).
+- CUDA qualification (RTX 2000 Ada, FP32): guard, forward, learner layouts, lifecycle, facts cost.
+- P1a/P1b LR screens (3e-4, a grid-boundary result), P2 (L/C0/CF x 2 seeds), P2.5-F (2x2 factorial
+  with LF), P2.5-D (5x unique heavy data).
+
+## VERIFIED (test evidence)
+- fmt clean, clippy 0, 302 workspace release tests pass; Probe/F10 identity and the frozen P4.5
+  hash unchanged; 3x3 architecture cross-refusal matrix; exact checkpoint round trips.
+- CandidateFacts vs an independent reference on 41,353 positions; solver vs brute force;
+  100% independent audit of every proof position used.
+
+## FAILED (pre-registered gates, reported as failures)
+- P2 Q3: CF M2 0.689 (floor 0.75). P2.5-D: unique-data scale signal not met (M2+M3 +0.005,
+  CI includes 0) and the absolute M2 gate fails (0.662). LF did not meet its M1 >= 0.95 health
+  expectation (0.74, underfit).
+
+## NOT RUN
+- P3 conversion, M4/M5, self-play, curriculum, any optimization-horizon (800-update) test
+  (removed from scope by the owner), a fresh KQ/KR holdout (the exact small pools are fully
+  partitioned), P4 scheduling/GPU-feed optimization (utilization ~85% noted for later).
+
+## Next gate
+Owner decision after reviewing `docs/WORKSTATION_V25_SUMMARY.md`. P3 is not authorized by the
+pre-registered rules.

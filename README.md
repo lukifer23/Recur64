@@ -20,6 +20,18 @@ Phase 4 results.
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
 | 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum NO-GO; next fix pending owner decision |
 
+**Branch `experiment/workstation-v25` (Workstation V2.5).** A separate research line
+that asks whether a stronger ONE-PASS model can learn conversion technique from exact
+proof data. Main (this README's Phase 4 status) is unchanged and remains the control line.
+Result, in one paragraph: exact CandidateFacts solve mate-in-one and help deeper mates
+(especially through the candidate-token architecture); candidate tokens alone do not beat
+the matched legacy head; five times more unique exact data closed the train/held-out gap
+without raising held-out accuracy; the pre-registered M2 gate (0.75) was not met (best
+~0.69), so P3 (conversion) is not authorized and the lineage stops for V3 design. Start at
+`docs/WORKSTATION_V25_SUMMARY.md`; every rule was pre-registered in
+`docs/WORKSTATION_V25_EXPERIMENTS.md` and `docs/WORKSTATION_V25_P25_PLAN.md`, and the
+machine-readable evidence is in `docs/evidence/v25/`.
+
 Phase 4 so far:
 
 - The main-workstation hardware schedule is **measured**.
@@ -231,6 +243,26 @@ cargo run --release -p recur64-cli --features cuda -- bench \
     --config configs/r10-probe.toml --device cuda --output runs/r10-cuda \
     --inference-batches 1,16,64,128 --recurrences 1,2,4 \
     --train-batches 32,64,128 --iters 20 --warmup 5 --train-steps 3
+```
+
+### Workstation V2.5 (branch `experiment/workstation-v25`)
+
+```sh
+# Exact proof datasets (ProofTargetsV1): pool sizes, generation, independent audit.
+recur64 proof pool --output runs/v25/proof --families KQvK,KRvK,KQQvK,KQRvK,KRRvK
+recur64 proof gen --output runs/v25/proof-v2 --seed-train 2048000001 --seed-tune 2048000002 --seed-confirm 2048000003
+recur64 proof audit --dir runs/v25/proof-v2
+# P2.5: heavy-family holdouts, the scaled training set, LF/CF/C0/L comparisons.
+recur64 proof p25-holdouts --output runs/v25/p25/holdouts --exclude-dirs runs/v25/proof,runs/v25/proof-v2
+recur64 proof p25-data --base runs/v25/proof-v2 --exclude-dirs runs/v25/proof,runs/v25/proof-v2,runs/v25/p25/holdouts --output runs/v25/p25/data
+# Policy-only exact-target training and evaluation (configs/v25/*.toml, FP32).
+recur64 proof train --config configs/v25/candidate-v25-cf-cuda.toml --data runs/v25/proof-v2 --output runs/v25/p2/CF-s1 --seed 1 --lr 3e-4 --updates 400
+recur64 proof eval --config configs/v25/candidate-v25-cf-cuda.toml --checkpoint runs/v25/p2/CF-s1/checkpoint --data runs/v25/p25/holdouts --split holdout_a --output eval.json
+recur64 proof compare --a a1.json,a2.json --b b1.json,b2.json --per-seed --output compare.json
+recur64 proof interaction --c0 ... --cf ... --l ... --lf ... --output interaction.json
+# Facts cost, forward latency, learner layouts and VRAM on the real graph.
+recur64 v25-qual --config configs/v25/candidate-v25-cf-cuda.toml --output runs/v25/qual
+recur64 model-info --config configs/v25/legacy-facts.toml
 ```
 
 ## Layout

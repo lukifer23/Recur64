@@ -138,3 +138,14 @@ are from the fixed generator; earlier digests from the buggy generator were disc
   "no silent fallback". This is a behaviour change on a failure path only.
 - `PolicyOutput.base_all` became `Option` (Probe head only) and `CandidateTensors`
   gained the raw promotion code. Probe outputs and all Probe tests are unchanged.
+
+
+---
+
+## FINAL STATUS (supersedes the gate table above, which predates P1-P2.5)
+The table near the top listed P1, P2, P3 and P4 as NOT RUN. Current state: P0, P0.5, P0.6, P1a, P1b,
+P2, P2.5-F and P2.5-D have all been run and recorded in `WORKSTATION_V25_EXPERIMENTS.md` and
+`WORKSTATION_V25_P25_RESULTS.md`; P3 and P4 have NOT been run and are not authorized by the
+pre-registered rules. The P2 and P2.5 outcomes are summarized in `WORKSTATION_V25_SUMMARY.md`.
+Later corrections to this document's early numbers: the replacement split digests and sizes are
+in the P2 addendum of the ledger; LF is 26,810,584 parameters (contract 2).

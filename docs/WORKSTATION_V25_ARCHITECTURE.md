@@ -43,3 +43,17 @@ CNN, diffusion, retrieval, Stockfish/Leela/Syzygy, opening books, human PGNs, ma
 reward, contempt, handwritten evaluation, dense 20,480-way policy head, TF32, fusion,
 autotune, candidate buckets by default. Future only: deeper mate bands, trajectory
 distillation, DTM head, successor features, planner integration.
+
+
+---
+
+## Addendum: legacy_facts_v25 (LF) and the final architecture inventory
+| id | params | policy | facts | contract |
+|---|---:|---|---|---|
+| probe_v1 (L geometry 640/10/1280/8) | 26,809,944 | legacy head v2 (source/dest/promotion) | none | head v2 |
+| candidate_v25 C0 | 27,469,204 | candidate tokens + 1 candidate block | zeroed input | token/block 1 |
+| candidate_v25 CF | 27,469,204 | candidate tokens + 1 candidate block | token encoder 8->64->256 | token/block 1, facts 1 |
+| legacy_facts_v25 LF | 26,810,584 | legacy head v2 + fact delta | `Linear(64->1, no bias)(GELU(Linear(8->64)))` added to the logit | fact-delta 2 |
+Historical F10 (384/12/768/8) is 9,805,672 parameters. LF wraps the unmodified `ProbeModel`; its
+fact-delta final layer has no bias because a per-row constant is cancelled by the softmax (contract 1,
+which had one, was an engineering-only dead end). Every architecture is one pass, recurrence 1, FP32.
