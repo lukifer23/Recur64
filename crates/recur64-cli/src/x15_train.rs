@@ -97,6 +97,10 @@ pub struct EvalArgs {
     pub split: String,
     #[arg(long, default_value_t = 4)]
     pub thoughts: usize,
+    /// T_train=1 baseline checkpoint(s): report (checkpoint at the largest T) minus
+    /// (baseline at T=1), paired over positions, pooled over checkpoints by position.
+    #[arg(long)]
+    pub baseline: Vec<PathBuf>,
     /// Also report the train split.
     #[arg(long, default_value_t = false)]
     pub include_train: bool,
@@ -727,6 +731,40 @@ fn eval_ckpt<B: Backend>(cfg: &ProbeConfig, args: &EvalArgs) -> anyhow::Result<(
                 pooled.push(p);
             }
             entry["pooled_position_clustered"] = serde_json::json!(pooled);
+        }
+        if !args.baseline.is_empty() {
+            let mut base_rows: Vec<Vec<f32>> = Vec::new();
+            for bk in &args.baseline {
+                let bmeta: CheckpointMeta =
+                    serde_json::from_slice(&std::fs::read(bk.join("meta.json"))?)?;
+                let bm = model_io::load_chimera::<B>(bk, &cfg.model, &bmeta.experimental, &device)?;
+                base_rows.push(evaluate(&bm, &data, 1).remove(0).kl_deep);
+            }
+            let nb = base_rows.len() as f32;
+            let base: Vec<f32> = (0..pos.len())
+                .map(|i| base_rows.iter().map(|r| r[i]).sum::<f32>() / nb)
+                .collect();
+            let tmax = args.thoughts;
+            let cand: Vec<f32> = (0..pos.len())
+                .map(|i| {
+                    per_ckpt.iter().map(|c| c[tmax - 1].kl_deep[i]).sum::<f32>()
+                        / per_ckpt.len() as f32
+                })
+                .collect();
+            let (d, lo, hi) = paired_bootstrap(&cand, &base);
+            println!(
+                "  VS BASELINE (T_train=1 at T=1, {} ckpt): checkpoint T{tmax} mean KL {:.4} vs baseline {:.4}; diff {:+.4} 95% CI [{:+.4},{:+.4}] (position-clustered)",
+                base_rows.len(),
+                mean(&cand),
+                mean(&base),
+                d,
+                lo,
+                hi
+            );
+            entry["vs_baseline"] = serde_json::json!({
+                "t": tmax, "candidate_mean_kl": mean(&cand), "baseline_mean_kl": mean(&base),
+                "diff": d, "lo95": lo, "hi95": hi,
+            });
         }
         out.insert(name.into(), entry);
     }

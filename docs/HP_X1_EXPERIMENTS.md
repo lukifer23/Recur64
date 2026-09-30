@@ -313,3 +313,66 @@ seed-to-seed spread of T1 KL on the confirmation set.
   trained for it did not beat one pass on this tuning set. Whether that holds on
   fresh positions is what A3 asks. Peak VRAM: 2.4 GB (32x3, T4), 2.9 GB
   (progressive), 1.4 GB (T1).
+
+## A2 result - fresh confirmation set (MEASURED)
+`runs/x1/targets-confirm64.json` (evidence copy
+`docs/evidence/x1/reasoning-targets-v1-confirm64.json`), digest
+`2aad034191fe1daef4c73257d7cd43b4c7cfd22854f16ae403b72ac641775e6b`, seed
+20260930, 64 positions (opening 12 / middlegame 13 / endgame 13 / tactical 13 /
+material_advantage 13), split label `confirm`. 100 source games of `targets-128`
+excluded before selection (188 remained); disjointness re-verified after
+generation (`audit-targets --disjoint-from`: zero shared source games); every
+position audited move for move. 2 min 4 s, RTX peak 51% util.
+
+Ladder informativeness (descriptive, from `audit-targets --report`):
+| dataset | positions | entropy 16/32/64/128 | JS 16-vs-128 | JS 32-vs-128 | JS 64-vs-128 | best move differs from 128 (16/32/64) | mean abs root-value change vs 128 |
+|---|---|---|---|---|---|---|---|
+| targets-128 all | 128 | 1.34/1.62/1.76/1.78 | 0.117 | 0.071 | 0.034 | 45/37/23 | 0.031/0.030/0.023 |
+| targets-128 train | 96 | 1.25/1.52/1.68/1.72 | 0.117 | 0.074 | 0.035 | 32/25/16 | 0.032/0.032/0.023 |
+| targets-128 val (tuning) | 32 | 1.61/1.93/1.99/1.96 | 0.117 | 0.059 | 0.032 | 13/12/7 | 0.029/0.026/0.020 |
+| confirm64 | 64 | 1.58/1.93/2.10/2.11 | 0.129 | 0.072 | 0.035 | 32/24/17 | 0.029/0.024/0.021 |
+The ladder carries progressively different policy information (deeper search is
+flatter and disagrees with shallow search on the best move in roughly 25-50% of
+positions at 16 simulations); root value barely moves across rungs.
+
+## E7 RESULT (amended A3, fresh confirm set) - NOT PROMISING (MEASURED)
+Same weights, T_train=4, `final_only_v1`, lr 3e-5, 80 updates, seeds 1 and 2;
+KL(teacher_128 || X15_T) on the 64 confirmation positions.
+| | T1 | T2 | T3 | T4 |
+|---|---|---|---|---|
+| seed 1 | 0.4336 | 0.3163 | 0.3384 | 0.2934 |
+| seed 2 | 0.4073 | 0.3395 | 0.3427 | 0.3180 |
+Pooled position-clustered (mean over seeds per position, then paired bootstrap
+over the 64 positions, 2000 resamples): T2-T1 -0.093 [-0.180, -0.007]; T3-T1
+-0.080 [-0.217, +0.070]; **T4-T1 -0.115 [-0.239, +0.023]**. Per seed: S1 T4-T1
+-0.140 [-0.275, -0.003]; S2 -0.089 [-0.210, +0.057]. Even/odd halves (pooled)
+-0.119 / -0.110.
+Criteria: (1) T4 < T1 both seeds PASS; (2) pooled CI excludes 0 **FAIL** (upper
+bound +0.023); (3) halves consistent PASS; (4) T2 <= T1 both seeds PASS; (5) each
+gain (0.140, 0.089) exceeds the T1 seed spread (0.026) PASS.
+By the pre-registered rule (ALL must hold): **NOT PROMISING**. The direction is
+consistent and the point estimate is about half the tuning-set estimate; the
+evidence is insufficient at n=64.
+SECONDARY (T_train=1 Chimera controls, one thought, same set): T1 KL 0.2981 and
+0.3323 (mean 0.315) versus the T_train=4 networks at T4 0.2934 and 0.3180
+(mean 0.306). The thought-trained network at its trained depth is not better
+than a one-pass network trained identically, and the T_train=1 networks get
+steadily worse with more thoughts (T4 0.524 / 0.589). Each network is best at
+the depth it was trained at.
+INTERPRETATION: the within-network T1 -> T4 improvement is largely "the network
+is best at its trained depth"; it is not evidence that extra thought beats one
+pass. Not established: any strength, conversion, visual or compute benefit.
+
+## E8 - PRE-REGISTERED: the single progressive_search_v1 rescue (before evaluation)
+Stated and committed BEFORE the `progressive_search_v1` checkpoint is evaluated
+on the confirmation set. The checkpoint (`runs/x1/e7-prog-s1`: train 96, lr 3e-5,
+T_train=4, 4 rungs = 4 thoughts, seed 1, 80 updates, loss normalized to unit
+total weight, 32x3 accumulation) was trained before A1 and evaluated only on the
+tuning set (T4 KL 0.189 there); it has never seen the confirmation set.
+- QUESTION: does per-thought search supervision make recurrence beat one pass?
+- RULE: RESCUED iff the paired position-bootstrap 95% CI (64 confirmation
+  positions) of `KL(prog T4) - KL(T_train=1 control seed 1, at T=1)` has an upper
+  bound below 0. Otherwise LATENT REASONING = NO SIGNAL for X1 at this scale.
+- Also reported (not decisive): the same comparison for the `final_only_v1`
+  networks against the pooled T_train=1 controls, and the prog network's T1..T4.
+- No other rescue attempts (no LR / update / architecture tuning for this).
