@@ -686,3 +686,41 @@ that forces mate in two, root value +1. It is recorded as such in the teacher co
   with a fixture-clustered paired 95% CI wholly above 0 and both seeds positive).
   Retention metrics reported: mate-in-1 top-1 on `tactics-v1`, teacher KL on `confirm2`.
 - DESCRIPTIVE: E12 vs E13 accuracy for SF and C1F shows whether data was limiting.
+
+## E12 RESULT - mate-in-2, thought vs one pass (MEASURED; pre-registered rule applied as written)
+Data `targets-train960` + 1,500 exact mate-in-2 positions; facts gain 128; 600 updates x
+96 positions; seeds 1, 2. Evaluated on `mate2-eval` (60 fixtures).
+| variant | wall | peak VRAM | final loss (s1 / s2) | mate-in-2 top-1 (mean of 2 seeds) |
+|---|---|---|---|---|
+| SF (T=1) | 294 s | 1.45 GB | 1.39 / - | 0.600 |
+| C1F (T=1) | 399-427 s | 1.99 GB | 1.41 / - | 0.575 |
+| C4F (T=4) | 706-727 s | 2.67 GB | 1.40 / - | 0.542 |
+| C8F (T=8, micro-batch 16) | 1255-1285 s | 3.82 GB | 1.59 / - | 0.300 |
+Not at the floor (best 0.60 > 0.30), so the test is informative. **Q3: C4F vs C1F = -0.033,
+95% CI [-0.108, +0.042], per-seed [0.00, -0.067]: THOUGHT DOES NOT HELP LOOKAHEAD**
+(rule needed a CI wholly above 0 and both seeds positive). Descriptive: C8F vs C1F -0.275
+[-0.358, -0.192] (both seeds negative), C8F vs C4F -0.242 [-0.317, -0.167]; SF vs C1F
++0.025 [-0.058, +0.108]. Per set (C4F / C1F): KQvK 0.71/0.88, KQQvK 0.29/0.46, KQRvK
+0.62/0.50, KRvK 0.42/0.38, KRRvK 0.67/0.67. The one-pass symbolic-plus-facts network
+finds a forced mate in two 60% of the time, against 3-7% for the teacher at 128
+simulations and 33% at 512.
+INTERPRETATION: unrolling the shared core more times made fitting WORSE (T=8 has higher
+training loss and much lower accuracy), so the failure looks like an optimisation
+problem of the deep unroll under final-only supervision, not evidence that thought is
+useless in principle. Deep supervision is the standard remedy and is already
+implemented, hence E14. E13 (15k positions, streaming) is running as pre-registered.
+
+## E14 - PRE-REGISTERED (written before any deep-supervision result exists)
+- QUESTION: does deep supervision (`same_target_v1`, every thought trained against the
+  exact target, intermediates weighted 0.25, loss normalised to unit total weight) rescue
+  the recurrent network, so that more thoughts help find the forcing first move?
+- DESIGN: identical to E12 in every respect (data, gain 128, lr 1e-4, 600 updates x 96,
+  seeds 1 and 2, non-streaming) except `--supervision same_target_v1`: C4F-DS (T=4) and
+  C8F-DS (T=8, micro-batch 16). Reuses E12's C1F (T=1) as the one-pass baseline.
+- DECISION: DEEP SUPERVISION RESCUES RECURRENCE iff C4F-DS beats E12 C1F on mate-in-2 top-1
+  with a fixture-clustered paired 95% CI wholly above 0 and both seeds positive.
+  Reported: the per-thought curve of each DS network (T=1..T_train from one diagnostic
+  pass; monotone improvement with T is the signature of useful thought), C8F-DS vs
+  E12 C8F (does supervision fix the T=8 collapse), retention (mate-in-1, teacher KL).
+- NOT CLAIMED even if it succeeds: strength, conversion, or that the latent scratchpad
+  (rather than repeated core depth) is responsible.
