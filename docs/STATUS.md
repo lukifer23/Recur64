@@ -560,3 +560,21 @@ unchanged.
   multi-step captures; labels can be rule-exact for fresh-clock fixtures), conversion
   rollouts, larger gains than 128, any strength claim, self-play. Ledger and evidence:
   `docs/HP_X1_EXPERIMENTS.md`, `docs/evidence/x1/`.
+
+### HP X1 lookahead experiments (2026-09-30)
+- **Tools (MEASURED):** exact mate-in-2 / mate-in-3 generators (exhaustive board-rule
+  search, cross-checked through the full GameState rules path, hard-disjoint from every
+  evaluation set), exact-label targets, streaming trainer, fixed-width batches, conversion
+  rollout harness, paired position/fixture-clustered comparison tool.
+- **Teacher ceiling:** the Train1 PUCT teacher cannot do mate-in-2 (3-19% up to 128
+  simulations, 33% at 512), so mate-in-2 uses exhaustive rules search as the teacher.
+- **Results (pre-registered):** the one-pass symbolic-plus-facts network finds forced mates in
+  two 60% of the time at 1.5k positions and 79% at 15k. Recurrent networks (T=4, T=8; final-only
+  or deep supervision) never beat it: E12 -0.033, E13 -0.033, E14 +0.033 (all CIs include 0).
+  T=8 final-only collapses (0.30), deep supervision repairs it (0.62) but the accuracy is flat
+  in the number of thoughts. Measured: the latent state grows about 1.3x per thought
+  (unbounded); E15 (normalise_latent, pre-registered) is running.
+- **Data scale:** 10x more exact positions took the one-pass network from 0.60 to 0.79.
+- **Process notes:** a `git add -A` once pushed ~2,400 build files (fixed by a follow-up commit;
+  history still holds them - rewriting it needs the owner's approval); background jobs are
+  limited to 2 h each.

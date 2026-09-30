@@ -823,3 +823,20 @@ Skill learned on forced mates in two transfers well to mate-in-3 (0.5 vs chance 
 final-only T=4 network improves from 0.45 to 0.56 as it is allowed its four thoughts, but
 that is the network reaching the level of the one-pass symbolic network (0.558), not
 exceeding it. No pre-registered claim rests on this table.
+
+## E14 RESULT (complete, MEASURED; pre-registered rule as written)
+| variant (deep supervision, T_train) | wall | peak VRAM | mate-in-2 top-1 (mean of 2 seeds) |
+|---|---|---|---|
+| C4F-DS (4) | 876-908 s | 3.2-3.8 GB | 0.608 |
+| C8F-DS (8, micro-batch 16) | 2046-2068 s | 3.91 GB (near the 4 GB limit) | 0.617 |
+Primary (C4F-DS vs E12 C1F): +0.033, CI [-0.050, +0.108], per-seed [-0.033, +0.100]:
+**DEEP SUPERVISION DOES NOT RESCUE RECURRENCE.**
+Secondary: C8F-DS vs E12 C8F final-only = 0.617 vs 0.292, **+0.325, CI [+0.242, +0.408], both
+seeds positive**: deep supervision REPAIRS the T=8 collapse. C8F-DS vs E12 C1F +0.042
+[-0.042, +0.125] (tie). Per-thought curve of C8F-DS (mean of 2 seeds): T=1 0.625, T=2
+0.617, T=4 0.625, T=8 0.617: FLAT.
+CONCLUSION OF E12+E14: the deep-unroll optimisation problem was real and deep supervision
+fixes it, but once fixed the recurrent networks only equal the one-pass network, and their
+accuracy does not depend on how many thoughts are used. On mate-in-2 the loop is redundant.
+Cost: T=8 with deep supervision needs 3.9 GB at micro-batch 16 and takes 34 min for 600
+updates (vs 7 min for T=1).
