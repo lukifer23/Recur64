@@ -7,7 +7,6 @@
 
 use std::path::{Path, PathBuf};
 
-use burn::module::Module;
 use burn::optim::Optimizer;
 use burn::prelude::*;
 use burn::record::{FullPrecisionSettings, NamedMpkFileRecorder, Recorder};
@@ -17,7 +16,7 @@ use crate::config::{
     Architecture, CANDIDATE_BLOCK_CONTRACT, CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION,
     CANDIDATE_TOKEN_CONTRACT, ModelConfig,
 };
-use crate::model::ProbeModel;
+use crate::net::NeuralModel;
 
 /// Current checkpoint schema version. Bump on any breaking change.
 ///
@@ -226,16 +225,23 @@ pub fn hash_file(path: &Path) -> anyhow::Result<String> {
 }
 
 /// Save a full training checkpoint.
-pub fn save_training<B, O>(
+pub fn save_training<B, M, O>(
     dir: &Path,
-    model: &ProbeModel<B>,
+    model: &M,
     optim: &O,
     meta: &CheckpointMeta,
 ) -> anyhow::Result<()>
 where
     B: AutodiffBackend,
-    O: Optimizer<ProbeModel<B>, B>,
+    M: NeuralModel<B> + burn::module::AutodiffModule<B>,
+    O: Optimizer<M, B>,
 {
+    anyhow::ensure!(
+        meta.architecture == M::ARCHITECTURE.id() && meta.model.architecture == M::ARCHITECTURE,
+        "refusing to save: checkpoint metadata says architecture '{}' but the model is '{}'",
+        meta.architecture,
+        M::ARCHITECTURE.id()
+    );
     std::fs::create_dir_all(dir)?;
     let (model_path, optim_path, meta_path) = paths(dir);
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
@@ -265,15 +271,16 @@ where
 /// Load a full training checkpoint into a freshly built model and optimizer.
 ///
 /// Refuses to load a checkpoint whose schema version does not match.
-pub fn load_training<B, O>(
+pub fn load_training<B, M, O>(
     dir: &Path,
-    template: ProbeModel<B>,
+    template: M,
     optim: O,
     device: &B::Device,
-) -> anyhow::Result<(ProbeModel<B>, O, CheckpointMeta)>
+) -> anyhow::Result<(M, O, CheckpointMeta)>
 where
     B: AutodiffBackend,
-    O: Optimizer<ProbeModel<B>, B>,
+    M: NeuralModel<B> + burn::module::AutodiffModule<B>,
+    O: Optimizer<M, B>,
 {
     let (model_path, optim_path, meta_path) = paths(dir);
     let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
@@ -284,7 +291,7 @@ where
         SCHEMA_VERSION
     );
     meta.check_contracts()?;
-    meta.check_model(template.config())?;
+    meta.check_model(template.model_config())?;
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     let model = template.load_file(model_path, &recorder, device)?;
     let optim_record = recorder.load(optim_path, device)?;
@@ -293,9 +300,9 @@ where
 }
 
 /// Save a weights-only inference export (NOT a resumable checkpoint).
-pub fn save_inference_export<B: Backend>(
+pub fn save_inference_export<B: Backend, M: NeuralModel<B>>(
     dir: &Path,
-    model: &ProbeModel<B>,
+    model: &M,
 ) -> anyhow::Result<PathBuf> {
     std::fs::create_dir_all(dir)?;
     let path = dir.join("weights");

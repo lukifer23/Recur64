@@ -8,6 +8,7 @@ use burn::tensor::ElementConversion;
 
 use recur64_model::config::ModelConfig;
 use recur64_model::model::ProbeModel;
+use recur64_model::net::NeuralModel;
 
 /// How long the device check may take (first-use JIT compilation included).
 const DEVICE_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
@@ -55,21 +56,38 @@ pub fn verify_device<B: Backend>(device: &B::Device) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Build a fresh model (random init, eagerly initialized) after verifying
-/// that the device runs kernels correctly.
-pub fn build<B: Backend>(cfg: &ModelConfig, device: &B::Device) -> anyhow::Result<ProbeModel<B>> {
+/// Build a fresh model of architecture `M` (random init, eagerly initialized)
+/// after verifying that the device runs kernels correctly. Refuses a config of
+/// another architecture.
+pub fn build_as<B: Backend, M: NeuralModel<B>>(
+    cfg: &ModelConfig,
+    device: &B::Device,
+) -> anyhow::Result<M> {
     verify_device::<B>(device)?;
-    Ok(ProbeModel::<B>::new(cfg.clone(), device))
+    M::build(cfg, device)
 }
 
-/// Load model weights from a checkpoint directory (expects `<dir>/model[.mpk]`).
-pub fn load<B: Backend>(
+/// Build a fresh Probe model.
+pub fn build<B: Backend>(cfg: &ModelConfig, device: &B::Device) -> anyhow::Result<ProbeModel<B>> {
+    build_as::<B, ProbeModel<B>>(cfg, device)
+}
+
+/// Load model weights of architecture `M` from a checkpoint directory (expects
+/// `<dir>/model[.mpk]`). A checkpoint of another architecture, or a config of
+/// another architecture, is refused by id before any weight is read.
+pub fn load_as<B: Backend, M: NeuralModel<B>>(
     dir: &Path,
     cfg: &ModelConfig,
     device: &B::Device,
-) -> anyhow::Result<ProbeModel<B>> {
-    // Every load path checks the checkpoint contracts (chess contracts and
-    // head version), not only full training loads.
+) -> anyhow::Result<M> {
+    anyhow::ensure!(
+        cfg.architecture == M::ARCHITECTURE,
+        "cannot load a {} checkpoint into a {} loader",
+        cfg.architecture.id(),
+        M::ARCHITECTURE.id()
+    );
+    // Every load path checks the checkpoint contracts (chess contracts, head
+    // version, architecture contracts), not only full training loads.
     let meta: recur64_model::checkpoint::CheckpointMeta =
         serde_json::from_slice(&std::fs::read(dir.join("meta.json")).map_err(|e| {
             anyhow::anyhow!(
@@ -77,13 +95,22 @@ pub fn load<B: Backend>(
                 dir.display()
             )
         })?)?;
-    meta.check_contracts()?;
     meta.check_model(cfg)?;
+    meta.check_contracts()?;
     verify_device::<B>(device)?;
-    let template = ProbeModel::<B>::new(cfg.clone(), device);
+    let template = M::build(cfg, device)?;
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     let model = template.load_file(dir.join("model"), &recorder, device)?;
     Ok(model)
+}
+
+/// Load Probe model weights from a checkpoint directory.
+pub fn load<B: Backend>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    device: &B::Device,
+) -> anyhow::Result<ProbeModel<B>> {
+    load_as::<B, ProbeModel<B>>(dir, cfg, device)
 }
 
 #[cfg(test)]

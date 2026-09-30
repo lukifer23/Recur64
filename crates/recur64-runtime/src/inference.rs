@@ -15,9 +15,11 @@ use std::time::{Duration, Instant};
 use burn::prelude::*;
 use burn::tensor::TensorData;
 
-use recur64_core::{ActionId, ObservationV1};
+use recur64_core::{ActionId, CandidateFactsV1, ObservationV1};
 use recur64_model::action::CandidateBatch;
+use recur64_model::candidate::facts_tensor;
 use recur64_model::model::{CandidateTensors, ProbeModel};
+use recur64_model::net::NeuralModel;
 use recur64_search::{EvalError, EvalRequest, EvalResult, Evaluator};
 
 /// Batcher configuration. All values are pilot hypotheses, not tuned constants.
@@ -50,6 +52,24 @@ pub trait BatchEvaluator: Send + 'static {
         observations: &[ObservationV1],
         legal: &[Vec<ActionId>],
     ) -> Result<Vec<EvalResult>, EvalError>;
+
+    /// Whether this model consumes `CandidateFactsV1` (default: no).
+    fn needs_candidate_facts(&self) -> bool {
+        false
+    }
+
+    /// Evaluate with per-position candidate facts (aligned to `legal`). The
+    /// default ignores them and calls [`Self::evaluate_batch`], which is right
+    /// for models that do not consume facts.
+    fn evaluate_batch_with_facts(
+        &self,
+        observations: &[ObservationV1],
+        legal: &[Vec<ActionId>],
+        facts: &[Option<Vec<CandidateFactsV1>>],
+    ) -> Result<Vec<EvalResult>, EvalError> {
+        let _ = facts;
+        self.evaluate_batch(observations, legal)
+    }
 }
 
 /// Softmax over three logits.
@@ -64,16 +84,16 @@ fn softmax3(logits: [f32; 3]) -> [f32; 3] {
 }
 
 /// The production batch evaluator over a Burn model.
-pub struct BatchedModel<B: Backend> {
-    model: ProbeModel<B>,
+pub struct BatchedModel<B: Backend, M: NeuralModel<B> = ProbeModel<B>> {
+    model: M,
     recurrence: usize,
     device: B::Device,
     /// Round the candidate width up to fixed buckets (T6, execution only).
     bucket_candidates: bool,
 }
 
-impl<B: Backend> BatchedModel<B> {
-    pub fn new(model: ProbeModel<B>, recurrence: usize, device: B::Device) -> Self {
+impl<B: Backend, M: NeuralModel<B>> BatchedModel<B, M> {
+    pub fn new(model: M, recurrence: usize, device: B::Device) -> Self {
         Self {
             model,
             recurrence,
@@ -98,19 +118,39 @@ impl<B: Backend> BatchedModel<B> {
 /// `Drop` runs on the thread that owns the model, so the cleanup targets that
 /// thread's stream. Parameter buffers belong to the loading thread's stream
 /// and are unaffected.
-impl<B: Backend> Drop for BatchedModel<B> {
+impl<B: Backend, M: NeuralModel<B>> Drop for BatchedModel<B, M> {
     fn drop(&mut self) {
         B::memory_cleanup(&self.device);
     }
 }
 
-impl<B: Backend> BatchEvaluator for BatchedModel<B> {
+impl<B: Backend, M: NeuralModel<B>> BatchEvaluator for BatchedModel<B, M> {
     fn evaluate_batch(
         &self,
         observations: &[ObservationV1],
         legal: &[Vec<ActionId>],
     ) -> Result<Vec<EvalResult>, EvalError> {
+        let none = vec![None; observations.len()];
+        self.evaluate_batch_with_facts(observations, legal, &none)
+    }
+
+    fn needs_candidate_facts(&self) -> bool {
+        self.model.needs_candidate_facts()
+    }
+
+    fn evaluate_batch_with_facts(
+        &self,
+        observations: &[ObservationV1],
+        legal: &[Vec<ActionId>],
+        facts: &[Option<Vec<CandidateFactsV1>>],
+    ) -> Result<Vec<EvalResult>, EvalError> {
         let b = observations.len();
+        if facts.len() != b {
+            return Err(EvalError::Invalid(format!(
+                "facts batch {} != observation batch {b}",
+                facts.len()
+            )));
+        }
         if b == 0 {
             return Ok(Vec::new());
         }
@@ -147,7 +187,36 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
         }
         let cands = CandidateTensors::from_batch(&cb, &self.device);
 
-        let out = self.model.forward_r(board, &cands, self.recurrence, false);
+        // Facts are supplied only to models that consume them; a model that
+        // needs them and does not get them is an error, never a zero fallback.
+        let facts_t = if self.model.needs_candidate_facts() {
+            let mut rows: Vec<&[CandidateFactsV1]> = Vec::with_capacity(b);
+            for (i, (f, l)) in facts.iter().zip(legal).enumerate() {
+                let f = f.as_deref().ok_or_else(|| {
+                    EvalError::Invalid(format!(
+                        "position {i}: this model requires CandidateFacts and none were supplied"
+                    ))
+                })?;
+                if f.len() != l.len() {
+                    return Err(EvalError::Invalid(format!(
+                        "position {i}: {} fact rows for {} legal actions",
+                        f.len(),
+                        l.len()
+                    )));
+                }
+                rows.push(f);
+            }
+            Some(
+                facts_tensor::<B>(&rows, cb.width, &self.device)
+                    .map_err(|e| EvalError::Invalid(format!("facts tensor: {e}")))?,
+            )
+        } else {
+            None
+        };
+
+        let out = self
+            .model
+            .forward_inputs(board, &cands, facts_t, self.recurrence, false);
         let readout = out
             .readouts
             .first()
@@ -201,6 +270,8 @@ impl<B: Backend> BatchEvaluator for BatchedModel<B> {
 struct Request {
     observation: ObservationV1,
     legal: Vec<ActionId>,
+    /// Owned copy of the candidate facts (None for models that do not use them).
+    facts: Option<Vec<CandidateFactsV1>>,
     submitted_at: Instant,
     respond: SyncSender<Result<EvalResult, EvalError>>,
 }
@@ -334,6 +405,7 @@ pub struct InferenceOwner {
     cancel: Arc<AtomicBool>,
     metrics: Arc<InferenceMetrics>,
     handles: Vec<JoinHandle<()>>,
+    needs_facts: bool,
 }
 
 impl InferenceOwner {
@@ -353,6 +425,13 @@ impl InferenceOwner {
         assert!(
             !models.is_empty(),
             "an inference pool needs at least one model"
+        );
+        let needs_facts = models[0].needs_candidate_facts();
+        assert!(
+            models
+                .iter()
+                .all(|m| m.needs_candidate_facts() == needs_facts),
+            "every model in an inference pool must be the same network"
         );
         let (tx, rx) = sync_channel::<Request>(cfg.channel_bound.max(1));
         let rx = Arc::new(Mutex::new(rx));
@@ -378,6 +457,7 @@ impl InferenceOwner {
             cancel,
             metrics,
             handles,
+            needs_facts,
         }
     }
 
@@ -386,6 +466,7 @@ impl InferenceOwner {
         BatchedEvaluator {
             tx: self.tx.clone(),
             metrics: self.metrics.clone(),
+            needs_facts: self.needs_facts,
         }
     }
 
@@ -478,9 +559,11 @@ fn owner_loop<M: BatchEvaluator>(
         let observations: Vec<ObservationV1> =
             batch.iter().map(|r| r.observation.clone()).collect();
         let legal: Vec<Vec<ActionId>> = batch.iter().map(|r| r.legal.clone()).collect();
+        let facts: Vec<Option<Vec<CandidateFactsV1>>> =
+            batch.iter().map(|r| r.facts.clone()).collect();
 
         let t0 = Instant::now();
-        let results = model.evaluate_batch(&observations, &legal);
+        let results = model.evaluate_batch_with_facts(&observations, &legal, &facts);
         let forward_us = t0.elapsed().as_micros() as u64;
 
         metrics.record_batch(size, queue_wait, forward_us);
@@ -524,9 +607,14 @@ fn drain(rx: &Receiver<Request>, metrics: &InferenceMetrics) {
 pub struct BatchedEvaluator {
     tx: SyncSender<Request>,
     metrics: Arc<InferenceMetrics>,
+    needs_facts: bool,
 }
 
 impl Evaluator for BatchedEvaluator {
+    fn needs_candidate_facts(&self) -> bool {
+        self.needs_facts
+    }
+
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
         // Real-concurrency gauge: count simultaneous evaluator calls so a
         // configured `cpu_workers`/`active_games` can be checked against actual
@@ -567,10 +655,32 @@ impl BatchedEvaluator {
         &self,
         request: &EvalRequest<'_>,
     ) -> Result<Receiver<Result<EvalResult, EvalError>>, EvalError> {
+        if self.needs_facts {
+            match request.facts {
+                Some(f) if f.len() == request.legal.len() => {}
+                Some(f) => {
+                    return Err(EvalError::Invalid(format!(
+                        "{} fact rows for {} legal actions",
+                        f.len(),
+                        request.legal.len()
+                    )));
+                }
+                None => {
+                    return Err(EvalError::Invalid(
+                        "this evaluator requires CandidateFacts and the request carries none"
+                            .into(),
+                    ));
+                }
+            }
+        }
         let (respond, response_rx) = sync_channel(1);
         let msg = Request {
             observation: request.observation.clone(),
             legal: request.legal.to_vec(),
+            facts: request
+                .facts
+                .filter(|_| self.needs_facts)
+                .map(<[CandidateFactsV1]>::to_vec),
             submitted_at: Instant::now(),
             respond,
         };

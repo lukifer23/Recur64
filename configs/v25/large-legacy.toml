@@ -1,0 +1,18 @@
+# V25-LargeLegacy (cell L): the existing ProbeModel at the V2.5 board geometry
+# (width 640, 10 heads, FFN 1280, 8 blocks), head-v2 bilinear/promotion policy,
+# no CandidateFacts. Capacity control for the action-representation comparison.
+name = "v25-large-legacy"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0

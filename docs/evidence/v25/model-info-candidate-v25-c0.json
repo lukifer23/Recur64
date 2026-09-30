@@ -1,0 +1,81 @@
+{
+  "architecture": "candidate_v25",
+  "config": "candidate-v25-c0",
+  "f10_params": 9805672,
+  "groups": [
+    {
+      "group": "input_projection",
+      "params": 76800
+    },
+    {
+      "group": "square_embeddings",
+      "params": 40960
+    },
+    {
+      "group": "board_blocks",
+      "params": 26278480
+    },
+    {
+      "group": "final_norm",
+      "params": 640
+    },
+    {
+      "group": "from_to_projection",
+      "params": 327936
+    },
+    {
+      "group": "global_projection",
+      "params": 164096
+    },
+    {
+      "group": "promotion_embedding",
+      "params": 1280
+    },
+    {
+      "group": "facts_encoder",
+      "params": 17216
+    },
+    {
+      "group": "token_norm",
+      "params": 256
+    },
+    {
+      "group": "candidate_blocks",
+      "params": 526592
+    },
+    {
+      "group": "policy_scorer",
+      "params": 33025
+    },
+    {
+      "group": "wdl_head",
+      "params": 1923
+    }
+  ],
+  "model": {
+    "architecture": "candidate_v25",
+    "candidate": {
+      "blocks": 1,
+      "dim": 256,
+      "facts_enabled": false,
+      "facts_hidden": 64,
+      "ffn": 512,
+      "heads": 4,
+      "policy_hidden": 128
+    },
+    "core_blocks": 8,
+    "ffn": 1280,
+    "heads": 10,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 640
+  },
+  "param_bytes_fp32": 109876816,
+  "total_params": 27469204
+}

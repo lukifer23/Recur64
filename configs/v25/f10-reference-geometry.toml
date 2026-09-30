@@ -1,0 +1,16 @@
+# Historical F10 geometry, for descriptive parameter comparison only.
+name = "f10-geometry"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+width = 384
+heads = 12
+ffn = 768
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0

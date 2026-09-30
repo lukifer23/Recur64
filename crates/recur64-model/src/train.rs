@@ -12,6 +12,7 @@ use burn::tensor::backend::AutodiffBackend;
 
 use crate::loss::{Targets, model_loss, policy_ce, wdl_ce};
 use crate::model::{CandidateTensors, ProbeModel};
+use crate::net::NeuralModel;
 
 /// CPU FP32 autodiff backend used for correctness work in Phase 0.
 pub type CpuTrainBackend = burn::backend::Autodiff<burn::backend::Flex>;
@@ -42,8 +43,35 @@ where
         .init::<B, M>()
 }
 
-/// One forward/backward/optimizer step. Returns the updated model and the
-/// (pre-update) loss.
+/// One forward/backward/optimizer step for any [`NeuralModel`]. `facts` is the
+/// `[b, width, 8]` CandidateFacts tensor for architectures that consume it.
+/// Returns the updated model and the (pre-update) loss.
+#[allow(clippy::too_many_arguments)]
+pub fn train_step_any<B, M, O>(
+    model: M,
+    optim: &mut O,
+    board: Tensor<B, 3>,
+    cands: &CandidateTensors<B>,
+    facts: Option<Tensor<B, 3>>,
+    targets: &Targets<B>,
+    r: usize,
+    deep: bool,
+    lr: f64,
+) -> (M, Tensor<B, 1>)
+where
+    B: AutodiffBackend,
+    M: NeuralModel<B> + AutodiffModule<B>,
+    O: Optimizer<M, B>,
+{
+    let out = model.forward_inputs(board, cands, facts, r, deep);
+    let loss = model_loss(&out, targets);
+    let grads = GradientsParams::from_grads(loss.backward(), &model);
+    let model = optim.step(lr, model, grads);
+    (model, loss)
+}
+
+/// One forward/backward/optimizer step of the Probe model. Returns the updated
+/// model and the (pre-update) loss.
 #[allow(clippy::too_many_arguments)]
 pub fn train_step<B, O>(
     model: ProbeModel<B>,
@@ -59,11 +87,7 @@ where
     B: AutodiffBackend,
     O: Optimizer<ProbeModel<B>, B>,
 {
-    let out = model.forward_r(board, cands, r, deep);
-    let loss = model_loss(&out, targets);
-    let grads = GradientsParams::from_grads(loss.backward(), &model);
-    let model = optim.step(lr, model, grads);
-    (model, loss)
+    train_step_any(model, optim, board, cands, None, targets, r, deep, lr)
 }
 
 /// Loss components and gradient norm for one optimizer step.
@@ -101,7 +125,10 @@ impl<B: AutodiffBackend> ModuleVisitor<B> for GradNormVisitor<'_, B> {
 }
 
 /// Global L2 norm of the parameter gradients.
-pub fn global_grad_norm<B: AutodiffBackend>(grads: &GradientsParams, model: &ProbeModel<B>) -> f32 {
+pub fn global_grad_norm<B: AutodiffBackend, M: AutodiffModule<B>>(
+    grads: &GradientsParams,
+    model: &M,
+) -> f32 {
     let mut visitor = GradNormVisitor::<B> {
         grads,
         sum_sq: 0.0,
@@ -111,7 +138,47 @@ pub fn global_grad_norm<B: AutodiffBackend>(grads: &GradientsParams, model: &Pro
     visitor.sum_sq.sqrt() as f32
 }
 
-/// One forward/backward/optimizer step returning loss components and grad norm.
+/// One forward/backward/optimizer step of any [`NeuralModel`] returning loss
+/// components and gradient norm.
+#[allow(clippy::too_many_arguments)]
+pub fn train_step_reporting_any<B, M, O>(
+    model: M,
+    optim: &mut O,
+    board: Tensor<B, 3>,
+    cands: &CandidateTensors<B>,
+    facts: Option<Tensor<B, 3>>,
+    targets: &Targets<B>,
+    r: usize,
+    deep: bool,
+    lr: f64,
+) -> (M, StepReport)
+where
+    B: AutodiffBackend,
+    M: NeuralModel<B> + AutodiffModule<B>,
+    O: Optimizer<M, B>,
+{
+    let out = model.forward_inputs(board, cands, facts, r, deep);
+    let readout = &out.readouts[0];
+    let policy_loss = scalar1(policy_ce(&readout.policy, &targets.policy_target));
+    let wdl_loss = scalar1(wdl_ce(&readout.wdl_logits, &targets.wdl_target));
+    let loss = model_loss(&out, targets);
+    let total_loss = scalar1(loss.clone());
+    let grads = GradientsParams::from_grads(loss.backward(), &model);
+    let grad_norm = global_grad_norm::<B, M>(&grads, &model);
+    let model = optim.step(lr, model, grads);
+    (
+        model,
+        StepReport {
+            total_loss,
+            policy_loss,
+            wdl_loss,
+            grad_norm,
+        },
+    )
+}
+
+/// One forward/backward/optimizer step of the Probe model returning loss
+/// components and gradient norm.
 #[allow(clippy::too_many_arguments)]
 pub fn train_step_reporting<B, O>(
     model: ProbeModel<B>,
@@ -127,22 +194,5 @@ where
     B: AutodiffBackend,
     O: Optimizer<ProbeModel<B>, B>,
 {
-    let out = model.forward_r(board, cands, r, deep);
-    let readout = &out.readouts[0];
-    let policy_loss = scalar1(policy_ce(&readout.policy, &targets.policy_target));
-    let wdl_loss = scalar1(wdl_ce(&readout.wdl_logits, &targets.wdl_target));
-    let loss = model_loss(&out, targets);
-    let total_loss = scalar1(loss.clone());
-    let grads = GradientsParams::from_grads(loss.backward(), &model);
-    let grad_norm = global_grad_norm::<B>(&grads, &model);
-    let model = optim.step(lr, model, grads);
-    (
-        model,
-        StepReport {
-            total_loss,
-            policy_loss,
-            wdl_loss,
-            grad_norm,
-        },
-    )
+    train_step_reporting_any(model, optim, board, cands, None, targets, r, deep, lr)
 }

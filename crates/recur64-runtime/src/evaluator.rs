@@ -9,18 +9,20 @@ use burn::prelude::*;
 use burn::tensor::TensorData;
 
 use recur64_model::action::CandidateBatch;
+use recur64_model::candidate::facts_tensor;
 use recur64_model::model::{CandidateTensors, ProbeModel};
+use recur64_model::net::NeuralModel;
 use recur64_search::{EvalError, EvalRequest, EvalResult, Evaluator};
 
 /// A single-model, single-position evaluator.
-pub struct SyncEvaluator<B: Backend> {
-    model: ProbeModel<B>,
+pub struct SyncEvaluator<B: Backend, M: NeuralModel<B> = ProbeModel<B>> {
+    model: M,
     recurrence: usize,
     device: B::Device,
 }
 
-impl<B: Backend> SyncEvaluator<B> {
-    pub fn new(model: ProbeModel<B>, recurrence: usize, device: B::Device) -> Self {
+impl<B: Backend, M: NeuralModel<B>> SyncEvaluator<B, M> {
+    pub fn new(model: M, recurrence: usize, device: B::Device) -> Self {
         Self {
             model,
             recurrence,
@@ -28,7 +30,7 @@ impl<B: Backend> SyncEvaluator<B> {
         }
     }
 
-    pub fn model(&self) -> &ProbeModel<B> {
+    pub fn model(&self) -> &M {
         &self.model
     }
 }
@@ -38,14 +40,16 @@ fn softmax3(logits: [f32; 3]) -> [f32; 3] {
     let max = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
     let exps = logits.map(|v| (v - max).exp());
     let sum = exps.iter().sum::<f32>();
-    if sum > 0.0 {
-        exps.map(|v| v / sum)
-    } else {
-        [1.0 / 3.0; 3]
-    }
+    // NaN/Inf logits propagate as NaN so the caller's finiteness check refuses
+    // them; a uniform fallback would hide them as value 0.
+    exps.map(|v| v / sum)
 }
 
-impl<B: Backend> Evaluator for SyncEvaluator<B> {
+impl<B: Backend, M: NeuralModel<B>> Evaluator for SyncEvaluator<B, M> {
+    fn needs_candidate_facts(&self) -> bool {
+        self.model.needs_candidate_facts()
+    }
+
     fn evaluate(&self, request: EvalRequest<'_>) -> Result<EvalResult, EvalError> {
         if request.legal.is_empty() {
             return Err(EvalError::Invalid(
@@ -70,7 +74,24 @@ impl<B: Backend> Evaluator for SyncEvaluator<B> {
             &self.device,
         );
 
-        let out = self.model.forward_r(board, &cands, self.recurrence, false);
+        let facts = if self.model.needs_candidate_facts() {
+            let rows = request.facts.filter(|f| f.len() == request.legal.len());
+            let rows = rows.ok_or_else(|| {
+                EvalError::Invalid(
+                    "this model requires CandidateFacts aligned to the legal actions".into(),
+                )
+            })?;
+            Some(
+                facts_tensor::<B>(&[rows], cb.width, &self.device)
+                    .map_err(|e| EvalError::Invalid(format!("facts tensor: {e}")))?,
+            )
+        } else {
+            None
+        };
+
+        let out = self
+            .model
+            .forward_inputs(board, &cands, facts, self.recurrence, false);
         let readout = out
             .readouts
             .first()
@@ -87,12 +108,15 @@ impl<B: Backend> Evaluator for SyncEvaluator<B> {
         let n = request.legal.len();
         let mut policy: Vec<f32> = (0..n).map(|k| log_probs[k].exp()).collect();
         let sum: f32 = policy.iter().sum();
-        if sum > 0.0 {
-            for p in policy.iter_mut() {
-                *p /= sum;
-            }
-        } else {
-            policy = vec![1.0 / n as f32; n];
+        // A NaN/Inf or all-zero legal policy is a model failure, never a
+        // uniform prior (no silent fallback).
+        if !(sum.is_finite() && sum > 0.0) {
+            return Err(EvalError::Backend(format!(
+                "non-finite or zero legal policy mass ({sum})"
+            )));
+        }
+        for p in policy.iter_mut() {
+            *p /= sum;
         }
 
         let wdl_logits = readout

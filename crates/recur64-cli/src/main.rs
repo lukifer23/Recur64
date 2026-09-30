@@ -42,6 +42,9 @@ enum Commands {
     ModelInfo {
         #[arg(long)]
         config: PathBuf,
+        /// Also write machine-readable accounting (candidate_v25 only).
+        #[arg(long)]
+        json: Option<PathBuf>,
     },
     /// Bounded benchmark matrix; writes raw data to --output.
     Bench(bench::BenchArgs),
@@ -99,7 +102,9 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Doctor => doctor::run_doctor(),
-        Commands::ModelInfo { config } => model_info::run_model_info(&config),
+        Commands::ModelInfo { config, json } => {
+            model_info::run_model_info(&config, json.as_deref())
+        }
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),
         Commands::ValidatePosition(args) => inspect::run_validate(args),

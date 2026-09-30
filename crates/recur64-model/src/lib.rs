@@ -18,6 +18,7 @@ pub mod config;
 pub mod fixture;
 pub mod loss;
 pub mod model;
+pub mod net;
 pub mod precision;
 pub mod train;
 
