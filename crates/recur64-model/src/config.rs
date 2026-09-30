@@ -95,6 +95,11 @@ pub struct ModelConfig {
     /// Facts-delta geometry; present iff `architecture == legacy_facts_v25`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legacy_facts: Option<LegacyFactsConfig>,
+    /// Active-search geometry and contract identities; present iff
+    /// `architecture == active_search_v3`. Skipped when absent so every
+    /// historical scientific hash is unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active: Option<ActiveConfig>,
 }
 
 /// Which network a `ModelConfig` instantiates.
@@ -109,6 +114,9 @@ pub enum Architecture {
     /// P2.5: the legacy head-v2 policy plus a candidate-local CandidateFacts
     /// policy delta (the missing cell of the 2x2 factorial).
     LegacyFactsV25,
+    /// Recur64 V3: one root encoding plus a budgeted number of exact
+    /// single-edge state queries (`active_search_v3`).
+    ActiveSearchV3,
 }
 
 impl Architecture {
@@ -121,6 +129,7 @@ impl Architecture {
             Architecture::ProbeV1 => "probe_v1",
             Architecture::CandidateV25 => "candidate_v25",
             Architecture::LegacyFactsV25 => "legacy_facts_v25",
+            Architecture::ActiveSearchV3 => "active_search_v3",
         }
     }
 }
@@ -186,6 +195,150 @@ impl Default for LegacyFactsConfig {
     }
 }
 
+// ---------------------------------------------------------------------------
+// V3 active search (`active_search_v3`). Every contract below enters the model
+// identity through `ActiveConfig::contracts`, so a checkpoint built under one
+// contract refuses another (see `CheckpointMeta::check_model`).
+// ---------------------------------------------------------------------------
+
+pub const ACTIVE_ROOT_ENCODER: &str = "v25_root_encoder_v1";
+pub const ACTIVE_ROOT_CANDIDATE_TOKENS: &str = "candidate_token_v3_root_v1";
+pub const ACTIVE_STATE_QUERY: &str = "state_query_v1";
+pub const ACTIVE_QUERY_STATE_ENCODER: &str = "query_state_encoder_v1";
+pub const ACTIVE_FRONTIER: &str = "frontier_v1";
+pub const ACTIVE_SEARCH_MEMORY: &str = "branch_workspace_v1";
+pub const ACTIVE_SELECTOR: &str = "active_selector_v1";
+pub const ACTIVE_PLANNER: &str = "active_planner_v1";
+pub const ACTIVE_PROOF_TRACE: &str = "proof_trace_v1";
+pub const ACTIVE_BUDGET_TRAINING: &str = "budget_0_2_4_8_v1";
+pub const ACTIVE_ROOT_POLICY: &str = "root_policy_v3_v1";
+
+/// Version of the V3 readout function (root policy readout + neutral WDL head).
+pub const ACTIVE_HEAD_VERSION: u32 = 1;
+
+/// Largest ply depth the planner depth features accept. Deeper nodes are
+/// refused, never clipped.
+pub const ACTIVE_MAX_DEPTH: usize = 64;
+/// Largest query budget the model accepts (B16 is the extrapolation point).
+pub const ACTIVE_MAX_BUDGET: usize = 64;
+
+/// Versioned identities of every V3 scientific contract.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ActiveContracts {
+    pub root_encoder: String,
+    pub root_candidate_tokens: String,
+    pub state_query: String,
+    pub query_state_encoder: String,
+    pub frontier: String,
+    pub search_memory: String,
+    pub selector: String,
+    pub planner: String,
+    pub proof_trace: String,
+    pub budget_training: String,
+    pub root_policy: String,
+}
+
+impl Default for ActiveContracts {
+    fn default() -> Self {
+        Self {
+            root_encoder: ACTIVE_ROOT_ENCODER.into(),
+            root_candidate_tokens: ACTIVE_ROOT_CANDIDATE_TOKENS.into(),
+            state_query: ACTIVE_STATE_QUERY.into(),
+            query_state_encoder: ACTIVE_QUERY_STATE_ENCODER.into(),
+            frontier: ACTIVE_FRONTIER.into(),
+            search_memory: ACTIVE_SEARCH_MEMORY.into(),
+            selector: ACTIVE_SELECTOR.into(),
+            planner: ACTIVE_PLANNER.into(),
+            proof_trace: ACTIVE_PROOF_TRACE.into(),
+            budget_training: ACTIVE_BUDGET_TRAINING.into(),
+            root_policy: ACTIVE_ROOT_POLICY.into(),
+        }
+    }
+}
+
+fn d_q_dim() -> usize {
+    256
+}
+fn d_q_heads() -> usize {
+    4
+}
+fn d_q_ffn() -> usize {
+    512
+}
+fn d_q_blocks() -> usize {
+    2
+}
+fn d_workspace_tokens() -> usize {
+    8
+}
+fn d_planner_heads() -> usize {
+    4
+}
+fn d_planner_ffn() -> usize {
+    512
+}
+fn d_selector_hidden() -> usize {
+    256
+}
+fn d_readout_hidden() -> usize {
+    128
+}
+fn d_rms_ceiling() -> f64 {
+    16.0
+}
+
+/// Active-search geometry. The workspace, branch memory, edge and node
+/// embeddings all have width `query_dim`, which must equal the root candidate
+/// dimension.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ActiveConfig {
+    /// Root candidate geometry (V2.5 CF: dim 256, 4 heads, FFN 512, 1 block, facts on).
+    #[serde(default)]
+    pub candidate: CandidateConfig,
+    #[serde(default = "d_q_dim")]
+    pub query_dim: usize,
+    #[serde(default = "d_q_heads")]
+    pub query_heads: usize,
+    #[serde(default = "d_q_ffn")]
+    pub query_ffn: usize,
+    #[serde(default = "d_q_blocks")]
+    pub query_blocks: usize,
+    #[serde(default = "d_workspace_tokens")]
+    pub workspace_tokens: usize,
+    #[serde(default = "d_planner_heads")]
+    pub planner_heads: usize,
+    #[serde(default = "d_planner_ffn")]
+    pub planner_ffn: usize,
+    #[serde(default = "d_selector_hidden")]
+    pub selector_hidden: usize,
+    #[serde(default = "d_readout_hidden")]
+    pub readout_hidden: usize,
+    /// Health guard: a workspace or branch-memory RMS above this errors.
+    #[serde(default = "d_rms_ceiling")]
+    pub rms_ceiling: f64,
+    #[serde(default)]
+    pub contracts: ActiveContracts,
+}
+
+impl Default for ActiveConfig {
+    fn default() -> Self {
+        Self {
+            candidate: CandidateConfig::default(),
+            query_dim: d_q_dim(),
+            query_heads: d_q_heads(),
+            query_ffn: d_q_ffn(),
+            query_blocks: d_q_blocks(),
+            workspace_tokens: d_workspace_tokens(),
+            planner_heads: d_planner_heads(),
+            planner_ffn: d_planner_ffn(),
+            selector_hidden: d_selector_hidden(),
+            readout_hidden: d_readout_hidden(),
+            rms_ceiling: d_rms_ceiling(),
+            contracts: ActiveContracts::default(),
+        }
+    }
+}
+
 /// Candidate-transformer geometry (V2.5).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CandidateConfig {
@@ -245,6 +398,7 @@ impl ModelConfig {
                 ..CandidateConfig::default()
             }),
             legacy_facts: None,
+            active: None,
         }
     }
 
@@ -267,7 +421,18 @@ impl ModelConfig {
             architecture: Architecture::LegacyFactsV25,
             candidate: None,
             legacy_facts: Some(LegacyFactsConfig::default()),
+            active: None,
         }
+    }
+
+    /// V3 `active_search_v3`: the V2.5 CF root geometry plus the active-search
+    /// components. Root CandidateFacts are enabled.
+    pub fn active_search_v3() -> Self {
+        let mut m = Self::candidate_v25(true);
+        m.architecture = Architecture::ActiveSearchV3;
+        m.candidate = None;
+        m.active = Some(ActiveConfig::default());
+        m
     }
 
     /// Refuse an architecture/geometry combination that is not a real model.
@@ -276,6 +441,47 @@ impl ModelConfig {
             self.legacy_facts.is_none() || self.architecture == Architecture::LegacyFactsV25,
             "only legacy_facts_v25 may carry a facts-delta geometry"
         );
+        anyhow::ensure!(
+            self.active.is_none() || self.architecture == Architecture::ActiveSearchV3,
+            "only active_search_v3 may carry an active-search geometry"
+        );
+        if self.architecture == Architecture::ActiveSearchV3 {
+            let a = self
+                .active
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("active_search_v3 requires an active geometry"))?;
+            anyhow::ensure!(
+                self.candidate.is_none() && self.legacy_facts.is_none(),
+                "active_search_v3 carries its candidate geometry inside `active`"
+            );
+            anyhow::ensure!(
+                self.input_blocks == 0 && self.output_blocks == 0,
+                "active_search_v3 root encoder has no input or output blocks"
+            );
+            anyhow::ensure!(
+                a.candidate.dim == a.query_dim,
+                "root candidate dim {} must equal query_dim {} (shared token space)",
+                a.candidate.dim,
+                a.query_dim
+            );
+            anyhow::ensure!(
+                a.candidate.facts_enabled,
+                "active_search_v3 root CandidateFacts must be enabled"
+            );
+            anyhow::ensure!(
+                a.query_dim.is_multiple_of(a.query_heads)
+                    && a.query_dim.is_multiple_of(a.planner_heads)
+                    && a.candidate.dim.is_multiple_of(a.candidate.heads),
+                "active_search_v3 dims must divide by their head counts"
+            );
+            anyhow::ensure!(a.workspace_tokens > 0, "workspace needs at least one token");
+            anyhow::ensure!(
+                a.contracts == ActiveContracts::default(),
+                "active_search_v3 contracts {:?} differ from the current contracts",
+                a.contracts
+            );
+            return Ok(());
+        }
         if self.architecture == Architecture::LegacyFactsV25 {
             anyhow::ensure!(
                 self.candidate.is_none(),
@@ -296,7 +502,9 @@ impl ModelConfig {
             (Architecture::ProbeV1, Some(_)) => {
                 anyhow::bail!("probe_v1 must not carry a candidate geometry")
             }
-            (Architecture::LegacyFactsV25, _) => unreachable!("handled above"),
+            (Architecture::LegacyFactsV25, _) | (Architecture::ActiveSearchV3, _) => {
+                unreachable!("handled above")
+            }
             (Architecture::CandidateV25, None) => {
                 anyhow::bail!("candidate_v25 requires a candidate geometry")
             }
@@ -321,7 +529,9 @@ impl ModelConfig {
     pub fn check_recurrence(&self, recurrence: usize) -> anyhow::Result<()> {
         if matches!(
             self.architecture,
-            Architecture::CandidateV25 | Architecture::LegacyFactsV25
+            Architecture::CandidateV25
+                | Architecture::LegacyFactsV25
+                | Architecture::ActiveSearchV3
         ) {
             anyhow::ensure!(
                 recurrence == 1,
@@ -416,6 +626,7 @@ mod tests {
             architecture: Default::default(),
             candidate: None,
             legacy_facts: None,
+            active: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         assert_eq!(m.executed_blocks_final(1), 8);
@@ -439,6 +650,7 @@ mod tests {
             architecture: Default::default(),
             candidate: None,
             legacy_facts: None,
+            active: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         // 2 + 4R + 2

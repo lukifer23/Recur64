@@ -13,8 +13,9 @@ use burn::record::{FullPrecisionSettings, NamedMpkFileRecorder, Recorder};
 use burn::tensor::backend::AutodiffBackend;
 
 use crate::config::{
-    Architecture, CANDIDATE_BLOCK_CONTRACT, CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION,
-    CANDIDATE_TOKEN_CONTRACT, FACT_DELTA_CONTRACT, ModelConfig,
+    ACTIVE_HEAD_VERSION, ActiveContracts, Architecture, CANDIDATE_BLOCK_CONTRACT,
+    CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION, CANDIDATE_TOKEN_CONTRACT, FACT_DELTA_CONTRACT,
+    ModelConfig,
 };
 use crate::net::NeuralModel;
 
@@ -81,6 +82,10 @@ pub struct CheckpointMeta {
     /// LF fact-delta contract (0 = none).
     #[serde(default)]
     pub fact_delta_contract: u32,
+    /// V3 scientific contracts (present iff `active_search_v3`). A checkpoint
+    /// written under one set of contracts refuses another.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_contracts: Option<ActiveContracts>,
 }
 
 fn legacy_architecture() -> String {
@@ -108,10 +113,12 @@ impl CheckpointMeta {
         let v = recur64_core::ContractVersions::V1;
         let cand = model.architecture == Architecture::CandidateV25;
         let lf = model.architecture == Architecture::LegacyFactsV25;
+        let act = model.architecture == Architecture::ActiveSearchV3;
         Self {
+            active_contracts: act.then(ActiveContracts::default),
             architecture: model.architecture.id().to_string(),
             fact_delta_contract: if lf { FACT_DELTA_CONTRACT } else { 0 },
-            candidate_facts_version: if cand || lf {
+            candidate_facts_version: if cand || lf || act {
                 CANDIDATE_FACTS_VERSION
             } else {
                 0
@@ -138,7 +145,9 @@ impl CheckpointMeta {
             run_id: String::new(),
             update_counter: step,
             lr_schedule_step: step,
-            head_version: if cand {
+            head_version: if act {
+                ACTIVE_HEAD_VERSION
+            } else if cand {
                 CANDIDATE_HEAD_VERSION
             } else {
                 crate::model::HEAD_VERSION
@@ -185,6 +194,20 @@ impl CheckpointMeta {
                 self.candidate_facts_version,
                 self.candidate_token_contract,
                 self.candidate_block_contract
+            );
+        } else if self.architecture == Architecture::ActiveSearchV3.id() {
+            anyhow::ensure!(
+                self.head_version == ACTIVE_HEAD_VERSION
+                    && self.candidate_facts_version == CANDIDATE_FACTS_VERSION,
+                "active_search_v3 checkpoint head {} / facts {} differ from the current (head {ACTIVE_HEAD_VERSION}, facts {CANDIDATE_FACTS_VERSION})",
+                self.head_version,
+                self.candidate_facts_version
+            );
+            anyhow::ensure!(
+                self.active_contracts.as_ref() == Some(&ActiveContracts::default()),
+                "active_search_v3 checkpoint contracts {:?} differ from the current contracts {:?}",
+                self.active_contracts,
+                ActiveContracts::default()
             );
         } else if self.architecture == Architecture::LegacyFactsV25.id() {
             anyhow::ensure!(

@@ -508,6 +508,9 @@ pub fn run(args: V25QualArgs) -> anyhow::Result<()> {
         "v25-qual is an FP32 qualification (fusion/autotune/TF32 are not part of V2.5)"
     );
     let report = match (cfg.device, cfg.model.architecture) {
+        (_, Architecture::ActiveSearchV3) => anyhow::bail!(
+            "active_search_v3 is not supported by `v25-qual`: it has no fixed-data batched path,              because every budget above 0 needs the live query tool (use the v3 commands)"
+        ),
         (DeviceKind::Cpu, Architecture::CandidateV25) => run_arch::<
             recur64_model::train::CpuTrainBackend,
             recur64_model::candidate::CandidateV25Model<recur64_model::train::CpuTrainBackend>,

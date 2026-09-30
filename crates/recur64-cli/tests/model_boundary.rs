@@ -29,6 +29,7 @@ fn micro_cfg() -> ModelConfig {
         architecture: Default::default(),
         candidate: None,
         legacy_facts: None,
+        active: None,
     }
 }
 

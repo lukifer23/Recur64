@@ -762,6 +762,9 @@ fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
     let cfg = probe_config(&a.config)?;
     type Cpu = recur64_model::train::CpuTrainBackend;
     let summary = match (cfg.device, cfg.model.architecture) {
+        (_, Architecture::ActiveSearchV3) => anyhow::bail!(
+            "active_search_v3 is not supported by `proof train`: it has no fixed-data batched path,              because every budget above 0 needs the live query tool (use the v3 commands)"
+        ),
         (DeviceKind::Cpu, Architecture::CandidateV25) => {
             run_train::<Cpu, CandidateV25Model<Cpu>, CandidateV25Model<burn::backend::Flex>>(
                 &cfg, &a,
@@ -858,6 +861,9 @@ fn eval_cmd(a: EvalArgs) -> anyhow::Result<()> {
     use recur64_model::model::ProbeModel;
     let cfg = probe_config(&a.config)?;
     match (cfg.device, cfg.model.architecture) {
+        (_, Architecture::ActiveSearchV3) => anyhow::bail!(
+            "active_search_v3 is not supported by `proof eval`: it has no fixed-data batched path,              because every budget above 0 needs the live query tool (use the v3 commands)"
+        ),
         (DeviceKind::Cpu, Architecture::CandidateV25) => {
             run_eval::<burn::backend::Flex, CandidateV25Model<burn::backend::Flex>>(&cfg, &a)
         }

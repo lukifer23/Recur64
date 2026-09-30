@@ -9,6 +9,7 @@
 use burn::module::Module;
 use burn::prelude::*;
 
+use crate::active::ActiveSearchModel;
 use crate::candidate::CandidateV25Model;
 use crate::config::{Architecture, ModelConfig};
 use crate::legacy_facts::LegacyFactsModel;
@@ -180,6 +181,60 @@ impl<B: Backend> NeuralModel<B> for LegacyFactsModel<B> {
         let facts =
             facts.expect("legacy_facts_v25 requires CandidateFactsV1 (facts tensor is None)");
         self.forward(board, cands, facts)
+    }
+
+    fn param_count(&self) -> usize {
+        self.num_params()
+    }
+
+    fn param_groups(&self) -> Vec<(&'static str, usize)> {
+        self.param_breakdown()
+    }
+}
+
+impl<B: Backend> NeuralModel<B> for ActiveSearchModel<B> {
+    const ARCHITECTURE: Architecture = Architecture::ActiveSearchV3;
+
+    fn build(cfg: &ModelConfig, device: &B::Device) -> anyhow::Result<Self> {
+        cfg.validate()?;
+        anyhow::ensure!(
+            cfg.architecture == Architecture::ActiveSearchV3,
+            "cannot build an active_search_v3 model from a {} configuration",
+            cfg.architecture.id()
+        );
+        Ok(ActiveSearchModel::new(cfg.clone(), device))
+    }
+
+    fn model_config(&self) -> &ModelConfig {
+        self.config()
+    }
+
+    fn needs_candidate_facts(&self) -> bool {
+        true
+    }
+
+    /// The trait's batched path has no query tool, so it is explicitly budget 0:
+    /// one root encoding and zero queries. Budgets above 0 go through
+    /// [`ActiveSearchModel::run`], never through this method.
+    fn forward_inputs(
+        &self,
+        board: Tensor<B, 3>,
+        cands: &CandidateTensors<B>,
+        facts: Option<Tensor<B, 3>>,
+        recurrence: usize,
+        deep_supervision: bool,
+    ) -> ModelOutput<B> {
+        assert_eq!(
+            recurrence, 1,
+            "active_search_v3 has no recurrence; recurrence {recurrence} is refused"
+        );
+        assert!(
+            !deep_supervision,
+            "active_search_v3 has no per-step readouts; deep supervision is refused"
+        );
+        let facts =
+            facts.expect("active_search_v3 requires CandidateFactsV1 (facts tensor is None)");
+        self.forward_b0(board, cands, facts)
     }
 
     fn param_count(&self) -> usize {

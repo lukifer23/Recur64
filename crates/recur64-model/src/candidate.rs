@@ -26,11 +26,11 @@ const MASKED_KEY: f32 = -1.0e9;
 
 /// Std of the final policy scorer's weights. Small and nonzero: the fresh policy
 /// is near-uniform, yet gradient reaches the facts encoder from update 1.
-const POLICY_INIT_STD: f64 = 0.01;
+pub(crate) const POLICY_INIT_STD: f64 = 0.01;
 
 /// Pre-norm masked self-attention + GeLU FFN over candidate tokens.
 #[derive(Module, Debug)]
-struct CandidateBlock<B: Backend> {
+pub(crate) struct CandidateBlock<B: Backend> {
     norm1: RmsNorm<B>,
     q_proj: Linear<B>,
     k_proj: Linear<B>,
@@ -44,7 +44,7 @@ struct CandidateBlock<B: Backend> {
 }
 
 impl<B: Backend> CandidateBlock<B> {
-    fn new(c: &CandidateConfig, eps: f64, device: &B::Device) -> Self {
+    pub(crate) fn new(c: &CandidateConfig, eps: f64, device: &B::Device) -> Self {
         let d = c.dim;
         Self {
             norm1: RmsNormConfig::new(d).with_epsilon(eps).init(device),
@@ -61,7 +61,7 @@ impl<B: Backend> CandidateBlock<B> {
     }
 
     /// `key_pad`: `[b, w]`, true where the candidate slot is padding.
-    fn forward(&self, x: Tensor<B, 3>, key_pad: Tensor<B, 2, Bool>) -> Tensor<B, 3> {
+    pub(crate) fn forward(&self, x: Tensor<B, 3>, key_pad: Tensor<B, 2, Bool>) -> Tensor<B, 3> {
         let [b, w, d] = x.dims();
         let (h, hd) = (self.heads, self.head_dim);
         let n = self.norm1.forward(x.clone());

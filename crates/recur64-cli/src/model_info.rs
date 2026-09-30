@@ -30,6 +30,7 @@ fn f10_params() -> usize {
         architecture: Default::default(),
         candidate: None,
         legacy_facts: None,
+        active: None,
     };
     ProbeModel::<Flex>::new(cfg, &Default::default()).num_params()
 }

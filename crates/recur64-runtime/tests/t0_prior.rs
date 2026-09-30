@@ -34,6 +34,7 @@ fn f10() -> ModelConfig {
         architecture: Default::default(),
         candidate: None,
         legacy_facts: None,
+        active: None,
     }
 }
 

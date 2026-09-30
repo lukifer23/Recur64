@@ -86,3 +86,24 @@ corrections as new entries.
   history identity, visible refusals, sealed HOLDOUT_C, set-valued ProofTraceV1,
   `fixed_bfs_actionid_v1`, ALL-INFO interpretation, the B0/B2/B4/B8/B16 design.
 - **NOT RUN:** workspace-wide release tests (P2 model work is uncommitted in the working tree).
+
+## V3-E4 - P2 active_search_v3 model skeleton (CPU)
+
+- **Date:** 2026-09-30
+- **Status:** MEASURED (engineering). Detail in `docs/V3_BUILD_RESULTS.md`.
+- **Commands:**
+  - `cargo test -p recur64-model --release --test active_v3`
+  - `cargo test --workspace --release`
+  - `cargo fmt --all -- --check`
+  - `cargo clippy --workspace --all-targets`
+- **Result:** 17 new engineering tests pass; full workspace release suite exit 0 (historical V2.5 and
+  mainline tests and pinned hashes unchanged); fmt and clippy clean. Total unique parameters
+  30,853,790. Root encoder runs once at every budget (measured by in-function counters), query
+  encoder and planner run once per round, counts equal successful queries, parameter count is
+  budget independent, every non-STOP parameter gets a finite non-zero gradient on update one,
+  4x4 architecture cross-refusal and all 11 V3 contract ids enforced, resume matches an
+  uninterrupted run (max abs diff < 1e-4 in log-probs).
+- **Findings:** inert planner key bias found by the gradient test and removed; inherited inert key
+  biases in the V2.5 `Block`/`CandidateBlock` recorded and deliberately not changed (see build results).
+- **Gate:** P2 CPU correctness gate PASSED for the tested surface.
+- **NOT RUN:** CUDA, compute and VRAM measurement (P3); all science.
