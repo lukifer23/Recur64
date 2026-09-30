@@ -376,3 +376,30 @@ tuning set (T4 KL 0.189 there); it has never seen the confirmation set.
 - Also reported (not decisive): the same comparison for the `final_only_v1`
   networks against the pooled T_train=1 controls, and the prog network's T1..T4.
 - No other rescue attempts (no LR / update / architecture tuning for this).
+
+## E8 RESULT - progressive_search_v1 rescue: NOT RESCUED (MEASURED, rule applied as pre-registered)
+`runs/x1/e7-prog-s1` on the 64 confirmation positions (KL to the 128-simulation
+teacher): T1 0.4877, T2 0.3857, T3 0.3353, T4 0.2997 (monotone, all differences
+vs T1 have CIs below 0; per-thought supervision makes T2 and T3 useful). But the
+rescue rule compares against a one-pass network: `KL(prog T4) - KL(T_train=1
+control s1 at T1)` = 0.2997 - 0.2981 = **+0.0016, 95% CI [-0.0392, +0.0462]**,
+position-clustered. Upper bound is not below 0, so it is **NOT RESCUED**.
+Formal secondary (final_only networks, seeds 1+2, T4, vs T_train=1 controls at
+T1): 0.3057 vs 0.3152, diff -0.0095 [-0.0338, +0.0187]: a tie.
+- **DECISION (per the pre-registered E7/E8 rules): LATENT REASONING = NO SIGNAL
+  for X1 at this scale** (96 training positions, 80 updates, 2 seeds, one
+  teacher). Not "proved useless": the data is small and the training short. What
+  is established is that, on fresh held-out positions, spending 4 thoughts did not
+  beat spending 1, under either final-only or per-thought supervision.
+- EXPLORATORY (one seed, not pre-registered): symbolic-only network (no latents,
+  compute or visual; T=1) on the confirmation set: KL 0.3002 (top-1 0.516),
+  against 0.298 / 0.332 for the Chimera T_train=1 controls and 0.293 / 0.318 for
+  the T4 networks. All variants are within noise of each other. Neither compute,
+  visual nor recurrence shows a measurable benefit at this data scale.
+- NEXT (owner decision, per stop condition "fixed-data result clear enough to
+  need an owner decision"): options C/D. Cheap, decisive follow-ups if wanted:
+  (a) scale the training set (needs batched teacher labelling, see outstanding
+  item 6) so that a capacity-bound variant could separate from the symbolic
+  control; (b) P6 tactical / conversion suite, where exact compute tokens could
+  matter even if teacher-KL does not; (c) pivot. No self-play was earned.
+- GPU experiment time used so far: about 1.5 hours of the 2-hour budget.

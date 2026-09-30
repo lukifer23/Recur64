@@ -519,3 +519,16 @@ unchanged.
   experiment provenance hash. See `docs/HP_X1_EXPERIMENTS.md`.
 - **Known limits:** kernel JIT/autotune cold start costs minutes per new shape;
   teacher labelling is CPU/latency-bound at batch 1.
+
+### HP X1 fixed-data reasoning screen - result (2026-09-29)
+- **MEASURED:** on 64 fresh, source-game-disjoint confirmation positions, the same
+  trained X15 gets closer to the 128-simulation Recur64 teacher with more thoughts
+  (T4-T1 -0.115, CI [-0.239, +0.023]), but this fails the pre-registered
+  criterion (CI must exclude 0), and it is no better than a training-matched
+  one-thought network (0.306 vs 0.315) or a symbolic-only network (0.300).
+  `progressive_search_v1` rescue: not rescued (+0.002, CI [-0.039, +0.046]).
+- **DECISION:** latent reasoning = NO SIGNAL for X1 at this scale. Not proof of
+  uselessness (96 training positions, 80 updates). No self-play was earned.
+- Engineering results stand: X15 runs on CUDA, 32x4 T4 training fits in 2.4 GB,
+  exact-history teacher targets, deterministic bootstrap eval.
+- Evidence: `docs/evidence/x1/`; ledger: `docs/HP_X1_EXPERIMENTS.md`.
