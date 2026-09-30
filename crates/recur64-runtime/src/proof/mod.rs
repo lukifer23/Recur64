@@ -5,3 +5,4 @@ pub mod audit;
 pub mod generator;
 pub mod mate;
 pub mod targets;
+pub mod train;

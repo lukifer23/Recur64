@@ -63,3 +63,39 @@ EXPECTED SIZES: TRAIN 11,501, TUNE 1,208, CONFIRM 1,208.
 DECISION: proceed. This is a scale decision inside the "approximately" latitude, not a
 change to the exactness contract; if it should be treated as a material contract change the
 owner can regenerate under a different rule in minutes (generation is cheap).
+
+---
+
+## Disclosure — CONFIRM touched once by a toy-model pipeline smoke test
+While validating the `proof train / eval / compare` pipeline, a tiny throwaway model
+(width 32, 2 blocks; 30 updates; CF and C0 variants) was evaluated on CONFIRM. Result:
+CF M1 top-1 0.997 vs C0 0.10; M2/M3 near chance. It was a plumbing check only: it used no
+V2.5-geometry model, informed no threshold, LR or selection, and the CF-vs-C0 M1 gap it
+showed is the expected mechanical effect of the `mate` fact. It is disclosed here because
+CONFIRM is otherwise reserved for the final evaluations. From this point CONFIRM is
+evaluated only by the pre-registered P2 runs (with `--eval-confirm`) and the single
+permitted extension.
+
+## E-P1 — LR / training microscreen (PRE-REGISTERED before it was run)
+
+QUESTION: which peak learning rate should the V2.5 fixed-data runs use (a new architecture;
+the mainline 3e-4 is not assumed)?
+
+HYPOTHESIS: a lower rate than 3e-4 is at least as good at 27M parameters, as the HP branch
+found at 15M (there 7.5e-5). Not assumed.
+
+CONFIG: CF (`configs/v25/candidate-v25-cf-cuda.toml`), seed 1, FP32, fixed TRAIN/TUNE
+(digests in BUILD_RESULTS), policy-only exact-target loss (no WDL), effective batch 256
+(64x4), 90 updates, warmup 9 (10%), cosine to 0 over the 90 updates, LR in
+{3e-5, 7.5e-5, 1.5e-4, 3e-4}. No CONFIRM. Evaluate TUNE at update 45 and 90.
+
+PRE-REGISTERED RULE:
+1. A run is STABLE iff every update has finite loss and gradient norm AND its final
+   TRAIN loss is below its first-update loss (no divergence).
+2. Among STABLE runs, select the lowest final TUNE policy cross-entropy.
+3. If the two lowest TUNE CEs are within 0.02 nats, prefer the run with the higher TUNE
+   correct-set mass; if still tied, prefer the lower LR.
+4. Train loss alone is never a selection criterion.
+Known bias, stated in advance: short screens favor larger rates. The selected LR is used
+for L, C0 and CF in P2; if the selected LR is the largest grid point, that is reported as
+a boundary result, not silently accepted as optimal.

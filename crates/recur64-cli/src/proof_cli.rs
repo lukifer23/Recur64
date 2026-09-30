@@ -28,6 +28,81 @@ pub enum ProofCmd {
     Audit(AuditArgs),
     /// Exact (exhaustive) pool sizes per family, to size the datasets.
     Pool(PoolArgs),
+    /// Policy-only fixed-data training on ProofTargetsV1.
+    Train(TrainArgs),
+    /// Evaluate a saved checkpoint on a split (per-position results).
+    Eval(EvalArgs),
+    /// Paired per-position bootstrap between two sets of evaluations.
+    Compare(CompareArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct TrainArgs {
+    /// ProbeConfig TOML: model geometry, device and precision.
+    #[arg(long)]
+    pub config: PathBuf,
+    /// Directory holding proof-{train,tune,confirm}.json.
+    #[arg(long)]
+    pub data: PathBuf,
+    #[arg(long)]
+    pub output: PathBuf,
+    #[arg(long)]
+    pub seed: u64,
+    #[arg(long)]
+    pub lr: f64,
+    #[arg(long)]
+    pub updates: usize,
+    /// Warmup updates (default: 10% of updates, at least 5).
+    #[arg(long)]
+    pub warmup: Option<usize>,
+    #[arg(long, default_value_t = 64)]
+    pub micro: usize,
+    #[arg(long, default_value_t = 4)]
+    pub accum: usize,
+    #[arg(long, default_value_t = 50)]
+    pub eval_every: usize,
+    /// Also evaluate CONFIRM at the end. CONFIRM is never touched otherwise; the
+    /// summary records whether it was evaluated.
+    #[arg(long)]
+    pub eval_confirm: bool,
+    /// Skip saving the checkpoint (LR screens).
+    #[arg(long)]
+    pub no_checkpoint: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct EvalArgs {
+    #[arg(long)]
+    pub config: PathBuf,
+    /// Checkpoint directory; omit to evaluate a fresh (untrained) model.
+    #[arg(long)]
+    pub checkpoint: Option<PathBuf>,
+    #[arg(long)]
+    pub data: PathBuf,
+    /// train | tune | confirm
+    #[arg(long)]
+    pub split: String,
+    #[arg(long)]
+    pub output: PathBuf,
+    /// Seed for a fresh model's initialization.
+    #[arg(long, default_value_t = 1)]
+    pub seed: u64,
+}
+
+#[derive(Args, Debug)]
+pub struct CompareArgs {
+    /// Comma-separated eval files for side A (one per seed).
+    #[arg(long)]
+    pub a: String,
+    /// Comma-separated eval files for side B (one per seed).
+    #[arg(long)]
+    pub b: String,
+    #[arg(long, default_value_t = 10000)]
+    pub resamples: usize,
+    #[arg(long, default_value_t = 17)]
+    pub seed: u64,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -112,6 +187,9 @@ pub fn run(cmd: ProofCmd) -> anyhow::Result<()> {
         ProofCmd::Gen(a) => gen_all(a),
         ProofCmd::Audit(a) => audit(a),
         ProofCmd::Pool(a) => pool(a),
+        ProofCmd::Train(a) => train_cmd(a),
+        ProofCmd::Eval(a) => eval_cmd(a),
+        ProofCmd::Compare(a) => compare_cmd(a),
     }
 }
 
@@ -339,5 +417,377 @@ fn pool(a: PoolArgs) -> anyhow::Result<()> {
         )?;
         reports.push(r);
     }
+    Ok(())
+}
+
+use recur64_model::config::{Architecture, DeviceKind, ProbeConfig};
+use recur64_model::net::NeuralModel;
+use recur64_runtime::proof::train::{
+    EvalSummary, PosResult, PreparedPos, TrainSpec, evaluate, paired_bootstrap, prepare,
+    summarize, train,
+};
+use recur64_runtime::{gpu_telemetry, model_io};
+
+fn load_split(dir: &std::path::Path, split: &str) -> anyhow::Result<ProofTargets> {
+    ProofTargets::load(&dir.join(format!("proof-{split}.json")))
+}
+
+fn probe_config(path: &std::path::Path) -> anyhow::Result<ProbeConfig> {
+    let cfg = ProbeConfig::from_toml_str(&std::fs::read_to_string(path)?)?;
+    cfg.model.validate()?;
+    anyhow::ensure!(
+        cfg.precision == recur64_model::config::Precision::Fp32,
+        "fixed-data training is FP32 (fusion/autotune/TF32 are not part of V2.5)"
+    );
+    Ok(cfg)
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct EvalFile {
+    split: String,
+    dataset_digest: String,
+    model: String,
+    model_id: String,
+    summary: EvalSummary,
+    results: Vec<PosResult>,
+}
+
+fn write_eval(
+    path: &std::path::Path,
+    split: &str,
+    digest: &str,
+    model: &str,
+    model_id: &str,
+    results: Vec<PosResult>,
+) -> anyhow::Result<EvalSummary> {
+    let summary = summarize(&results);
+    let file = EvalFile {
+        split: split.into(),
+        dataset_digest: digest.into(),
+        model: model.into(),
+        model_id: model_id.into(),
+        summary: summary.clone(),
+        results,
+    };
+    std::fs::write(path, serde_json::to_vec(&file)?)?;
+    Ok(summary)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_train<B, MT, MI>(cfg: &ProbeConfig, a: &TrainArgs) -> anyhow::Result<serde_json::Value>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    MT: NeuralModel<B> + burn::module::AutodiffModule<B, InnerModule = MI>,
+    MI: NeuralModel<B::InnerBackend>,
+{
+    let device: burn::tensor::Device<B> = Default::default();
+    let inner: burn::tensor::Device<B::InnerBackend> = Default::default();
+    B::seed(&device, a.seed);
+    let train_set = load_split(&a.data, "train")?;
+    let tune_set = load_split(&a.data, "tune")?;
+    let train_pos = prepare(&train_set)?;
+    let tune_pos = prepare(&tune_set)?;
+
+    let model = model_io::build_as::<B, MT>(&cfg.model, &device)?;
+    let params = model.param_count();
+    let mut optim = recur64_model::train::adamw::<B, MT>();
+    let spec = TrainSpec {
+        updates: a.updates,
+        warmup: a.warmup.unwrap_or((a.updates / 10).max(5)),
+        lr: a.lr,
+        micro: a.micro,
+        accum: a.accum,
+        seed: a.seed,
+        eval_every: a.eval_every,
+    };
+    let gpu = cfg.device == DeviceKind::Cuda;
+    std::fs::create_dir_all(&a.output)?;
+    let t0 = Instant::now();
+    let (out, gpu_samples) = gpu_telemetry::monitor(gpu, || {
+        train::<B, MT, MI, _>(
+            model,
+            &mut optim,
+            &spec,
+            &train_pos,
+            &tune_pos,
+            &device,
+            &inner,
+            |r| {
+                if r.update % 25 == 0 {
+                    eprintln!(
+                        "update {:>4}  lr {:.2e}  loss {:.4}  gnorm {:.3}",
+                        r.update, r.lr, r.report.total_loss, r.report.grad_norm
+                    );
+                }
+            },
+        )
+    });
+    let (model, run) = out?;
+    let wall = t0.elapsed().as_secs_f64();
+
+    // Final per-position TUNE results, and CONFIRM only when explicitly asked.
+    let inner_model = burn::module::AutodiffModule::valid(&model);
+    let mid = |dir: &std::path::Path| -> String {
+        std::fs::read(dir.join("meta.json"))
+            .ok()
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+            .and_then(|v| v["model_id"].as_str().map(str::to_string))
+            .unwrap_or_default()
+    };
+    let mut model_id = String::new();
+    if !a.no_checkpoint {
+        let dir = a.output.join("checkpoint");
+        let meta = recur64_model::checkpoint::CheckpointMeta::new(
+            cfg.model.clone(),
+            1,
+            false,
+            a.updates as u64,
+            a.lr,
+            a.seed,
+            0,
+            "proof-train",
+            cfg.precision.label(),
+        );
+        recur64_model::checkpoint::save_training(&dir, &model, &optim, &meta)?;
+        model_id = mid(&dir);
+    }
+    let tune_results = evaluate::<B::InnerBackend, MI>(&inner_model, &inner, &tune_pos)?;
+    let tune_summary = write_eval(
+        &a.output.join("eval-tune.json"),
+        "tune",
+        &tune_set.digest,
+        &cfg.name,
+        &model_id,
+        tune_results,
+    )?;
+    let confirm = if a.eval_confirm {
+        let confirm_set = load_split(&a.data, "confirm")?;
+        let confirm_pos = prepare(&confirm_set)?;
+        let r = evaluate::<B::InnerBackend, MI>(&inner_model, &inner, &confirm_pos)?;
+        let s = write_eval(
+            &a.output.join("eval-confirm.json"),
+            "confirm",
+            &confirm_set.digest,
+            &cfg.name,
+            &model_id,
+            r,
+        )?;
+        serde_json::json!({ "evaluated": true, "digest": confirm_set.digest, "summary": s })
+    } else {
+        serde_json::json!({ "evaluated": false })
+    };
+
+    let first = run.updates.first().map(|u| u.report.total_loss);
+    let last = run.updates.last().map(|u| u.report.total_loss);
+    let max_gnorm = run
+        .updates
+        .iter()
+        .map(|u| u.report.grad_norm)
+        .fold(0.0f32, f32::max);
+    // Train-set summary on a fixed slice, so an overfit gap is visible.
+    let train_slice: Vec<&PreparedPos> = train_pos.iter().take(1208).collect();
+    let train_owned: Vec<PreparedPos> = train_slice
+        .into_iter()
+        .map(|p| PreparedPos {
+            id: p.id.clone(),
+            family: p.family.clone(),
+            depth: p.depth,
+            obs: p.obs.clone(),
+            legal: p.legal.clone(),
+            facts: p.facts.clone(),
+            target: p.target.clone(),
+            correct: p.correct.clone(),
+            chance: p.chance,
+        })
+        .collect();
+    let train_summary = summarize(&evaluate::<B::InnerBackend, MI>(
+        &inner_model,
+        &inner,
+        &train_owned,
+    )?);
+    std::fs::write(
+        a.output.join("updates.json"),
+        serde_json::to_vec(&run.updates)?,
+    )?;
+    let summary = serde_json::json!({
+        "name": cfg.name,
+        "architecture": cfg.model.architecture.id(),
+        "params": params,
+        "spec": spec,
+        "wall_s": wall,
+        "sec_per_update": wall / a.updates as f64,
+        "gpu": gpu_samples,
+        "epochs_seen": run.epochs_seen,
+        "loss_first": first,
+        "loss_last": last,
+        "max_grad_norm": max_gnorm,
+        "all_finite": run.updates.iter().all(|u| u.report.total_loss.is_finite() && u.report.grad_norm.is_finite()),
+        "train_digest": train_set.digest,
+        "tune_digest": tune_set.digest,
+        "tune_curve": run.tune_curve,
+        "tune_final": tune_summary,
+        "train_slice_final": train_summary,
+        "confirm": confirm,
+        "model_id": model_id,
+    });
+    std::fs::write(a.output.join("summary.json"), serde_json::to_vec_pretty(&summary)?)?;
+    Ok(summary)
+}
+
+fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
+    use recur64_model::candidate::CandidateV25Model;
+    use recur64_model::model::ProbeModel;
+    let cfg = probe_config(&a.config)?;
+    type Cpu = recur64_model::train::CpuTrainBackend;
+    let summary = match (cfg.device, cfg.model.architecture) {
+        (DeviceKind::Cpu, Architecture::CandidateV25) => {
+            run_train::<Cpu, CandidateV25Model<Cpu>, CandidateV25Model<burn::backend::Flex>>(&cfg, &a)?
+        }
+        (DeviceKind::Cpu, Architecture::ProbeV1) => {
+            run_train::<Cpu, ProbeModel<Cpu>, ProbeModel<burn::backend::Flex>>(&cfg, &a)?
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::CandidateV25) => {
+            type G = burn::backend::Autodiff<burn::backend::Cuda>;
+            run_train::<G, CandidateV25Model<G>, CandidateV25Model<burn::backend::Cuda>>(&cfg, &a)?
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::ProbeV1) => {
+            type G = burn::backend::Autodiff<burn::backend::Cuda>;
+            run_train::<G, ProbeModel<G>, ProbeModel<burn::backend::Cuda>>(&cfg, &a)?
+        }
+        #[cfg(not(feature = "cuda"))]
+        (DeviceKind::Cuda, _) => {
+            anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+        }
+    };
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    Ok(())
+}
+
+fn run_eval<B, MI>(cfg: &ProbeConfig, a: &EvalArgs) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::Backend,
+    MI: NeuralModel<B>,
+{
+    let device: burn::tensor::Device<B> = Default::default();
+    B::seed(&device, a.seed);
+    let set = load_split(&a.data, &a.split)?;
+    let pos = prepare(&set)?;
+    let (model, id) = match &a.checkpoint {
+        Some(dir) => {
+            let id = std::fs::read(dir.join("meta.json"))
+                .ok()
+                .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+                .and_then(|v| v["model_id"].as_str().map(str::to_string))
+                .unwrap_or_default();
+            (model_io::load_as::<B, MI>(dir, &cfg.model, &device)?, id)
+        }
+        None => (model_io::build_as::<B, MI>(&cfg.model, &device)?, "fresh".into()),
+    };
+    let results = evaluate::<B, MI>(&model, &device, &pos)?;
+    let s = write_eval(&a.output, &a.split, &set.digest, &cfg.name, &id, results)?;
+    println!("{}", serde_json::to_string_pretty(&s)?);
+    Ok(())
+}
+
+fn eval_cmd(a: EvalArgs) -> anyhow::Result<()> {
+    use recur64_model::candidate::CandidateV25Model;
+    use recur64_model::model::ProbeModel;
+    let cfg = probe_config(&a.config)?;
+    match (cfg.device, cfg.model.architecture) {
+        (DeviceKind::Cpu, Architecture::CandidateV25) => {
+            run_eval::<burn::backend::Flex, CandidateV25Model<burn::backend::Flex>>(&cfg, &a)
+        }
+        (DeviceKind::Cpu, Architecture::ProbeV1) => {
+            run_eval::<burn::backend::Flex, ProbeModel<burn::backend::Flex>>(&cfg, &a)
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::CandidateV25) => {
+            run_eval::<burn::backend::Cuda, CandidateV25Model<burn::backend::Cuda>>(&cfg, &a)
+        }
+        #[cfg(feature = "cuda")]
+        (DeviceKind::Cuda, Architecture::ProbeV1) => {
+            run_eval::<burn::backend::Cuda, ProbeModel<burn::backend::Cuda>>(&cfg, &a)
+        }
+        #[cfg(not(feature = "cuda"))]
+        (DeviceKind::Cuda, _) => {
+            anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+        }
+    }
+}
+
+fn read_evals(list: &str) -> anyhow::Result<Vec<EvalFile>> {
+    list.split(',')
+        .map(|p| Ok(serde_json::from_slice(&std::fs::read(p.trim())?)?))
+        .collect()
+}
+
+/// Per-position value averaged over the seeds of one side, keyed by id.
+fn per_position(
+    files: &[EvalFile],
+    f: impl Fn(&PosResult) -> f64,
+) -> std::collections::BTreeMap<String, (u8, f64)> {
+    let mut acc: std::collections::BTreeMap<String, (u8, f64)> = Default::default();
+    for file in files {
+        for r in &file.results {
+            let e = acc.entry(r.id.clone()).or_insert((r.depth, 0.0));
+            e.1 += f(r) / files.len() as f64;
+        }
+    }
+    acc
+}
+
+fn compare_cmd(a: CompareArgs) -> anyhow::Result<()> {
+    let (fa, fb) = (read_evals(&a.a)?, read_evals(&a.b)?);
+    anyhow::ensure!(
+        fa.iter().chain(&fb).all(|f| f.dataset_digest == fa[0].dataset_digest && f.split == fa[0].split),
+        "compared evaluations must be on the same split and dataset digest"
+    );
+    let metrics: [(&str, fn(&PosResult) -> f64); 3] = [
+        ("top1", |r| f64::from(u8::from(r.top1))),
+        ("mass", |r| r.mass as f64),
+        ("neg_ce", |r| -(r.ce as f64)),
+    ];
+    let mut out = serde_json::Map::new();
+    for (name, f) in metrics {
+        let (pa, pb) = (per_position(&fa, f), per_position(&fb, f));
+        let ids: Vec<&String> = pa.keys().filter(|k| pb.contains_key(*k)).collect();
+        anyhow::ensure!(ids.len() == pa.len() && ids.len() == pb.len(), "position sets differ");
+        let diff = |sel: &dyn Fn(u8) -> bool| -> Vec<f64> {
+            ids.iter()
+                .filter(|k| sel(pa[**k].0))
+                .map(|k| pb[*k].1 - pa[*k].1)
+                .collect()
+        };
+        let ci = |v: Vec<f64>| {
+            let (m, lo, hi) = paired_bootstrap(&v, a.resamples, a.seed);
+            serde_json::json!({ "n": v.len(), "mean_diff_b_minus_a": m, "ci95": [lo, hi] })
+        };
+        let mut groups = serde_json::Map::new();
+        groups.insert("all".into(), ci(diff(&|_| true)));
+        for d in 1..=5u8 {
+            let v = diff(&|x| x == d);
+            if !v.is_empty() {
+                groups.insert(format!("M{d}"), ci(v));
+            }
+        }
+        groups.insert("M2+M3".into(), ci(diff(&|x| x == 2 || x == 3)));
+        // Each seed separately (B_i - A_i), when the sides have the same seed count.
+        if fa.len() == fb.len() {
+            let mut seeds = Vec::new();
+            for (x, y) in fa.iter().zip(&fb) {
+                let (sx, sy) = (per_position(std::slice::from_ref(x), f), per_position(std::slice::from_ref(y), f));
+                let d: Vec<f64> = sx.iter().map(|(k, v)| sy[k].1 - v.1).collect();
+                let (m, lo, hi) = paired_bootstrap(&d, a.resamples, a.seed);
+                seeds.push(serde_json::json!({ "mean_diff": m, "ci95": [lo, hi] }));
+            }
+            groups.insert("per_seed_all".into(), serde_json::Value::Array(seeds));
+        }
+        out.insert(name.into(), serde_json::Value::Object(groups));
+    }
+    let v = serde_json::Value::Object(out);
+    std::fs::write(&a.output, serde_json::to_vec_pretty(&v)?)?;
+    println!("{}", serde_json::to_string_pretty(&v)?);
     Ok(())
 }
