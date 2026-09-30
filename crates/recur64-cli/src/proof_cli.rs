@@ -68,6 +68,10 @@ pub struct TrainArgs {
     /// Skip saving the checkpoint (LR screens).
     #[arg(long)]
     pub no_checkpoint: bool,
+    /// Example sampler: cell_balanced_v1 (default, the P1b/P2 contract) or
+    /// uniform_v0 (the historical P1a sampler).
+    #[arg(long, default_value = "cell_balanced_v1")]
+    pub sampler: String,
 }
 
 #[derive(Args, Debug)]
@@ -101,6 +105,10 @@ pub struct CompareArgs {
     pub resamples: usize,
     #[arg(long, default_value_t = 17)]
     pub seed: u64,
+    /// Also report each seed separately, paired by model-seed identity (refused
+    /// unless both sides carry unique, equal seed sets).
+    #[arg(long)]
+    pub per_seed: bool,
     #[arg(long)]
     pub output: PathBuf,
 }
@@ -422,14 +430,35 @@ fn pool(a: PoolArgs) -> anyhow::Result<()> {
 
 use recur64_model::config::{Architecture, DeviceKind, ProbeConfig};
 use recur64_model::net::NeuralModel;
+use recur64_runtime::proof::compare::{EvalFile, compare};
 use recur64_runtime::proof::train::{
-    EvalSummary, PosResult, PreparedPos, TrainSpec, evaluate, paired_bootstrap, prepare,
-    summarize, train,
+    EvalSummary, PosResult, SamplerKind, TrainSpec, evaluate, prepare, summarize, train,
 };
 use recur64_runtime::{gpu_telemetry, model_io};
 
 fn load_split(dir: &std::path::Path, split: &str) -> anyhow::Result<ProofTargets> {
     ProofTargets::load(&dir.join(format!("proof-{split}.json")))
+}
+
+/// Experimental-hygiene guard (not a security mechanism): make every CONFIRM
+/// evaluation loud and leave a trace next to the datasets.
+fn announce_confirm(data: &std::path::Path, digest: &str, who: &str, seed: u64) {
+    eprintln!("CONFIRM DATASET IS BEING EVALUATED:\n{digest}");
+    let line = format!(
+        "{} digest={digest} model={who} seed={seed}\n",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    );
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(data.join("confirm-exposure.log"))
+    {
+        let _ = f.write_all(line.as_bytes());
+    }
 }
 
 fn probe_config(path: &std::path::Path) -> anyhow::Result<ProbeConfig> {
@@ -442,35 +471,48 @@ fn probe_config(path: &std::path::Path) -> anyhow::Result<ProbeConfig> {
     Ok(cfg)
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-struct EvalFile {
-    split: String,
-    dataset_digest: String,
-    model: String,
-    model_id: String,
-    summary: EvalSummary,
-    results: Vec<PosResult>,
+/// Provenance recorded in every evaluation file.
+struct Provenance<'a> {
+    model: &'a str,
+    model_id: &'a str,
+    seed: u64,
+    architecture: &'a str,
+    updates: Option<usize>,
+    peak_lr: Option<f64>,
+    sampler: Option<String>,
 }
 
 fn write_eval(
     path: &std::path::Path,
     split: &str,
     digest: &str,
-    model: &str,
-    model_id: &str,
+    prov: &Provenance,
     results: Vec<PosResult>,
 ) -> anyhow::Result<EvalSummary> {
     let summary = summarize(&results);
     let file = EvalFile {
         split: split.into(),
         dataset_digest: digest.into(),
-        model: model.into(),
-        model_id: model_id.into(),
+        model: prov.model.into(),
+        model_id: prov.model_id.into(),
+        model_seed: Some(prov.seed),
+        architecture: Some(prov.architecture.into()),
+        training_updates: prov.updates,
+        peak_lr: prov.peak_lr,
+        sampler_version: prov.sampler.clone(),
         summary: summary.clone(),
         results,
     };
     std::fs::write(path, serde_json::to_vec(&file)?)?;
     Ok(summary)
+}
+
+fn model_id_of(dir: &std::path::Path) -> String {
+    std::fs::read(dir.join("meta.json"))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+        .and_then(|v| v["model_id"].as_str().map(str::to_string))
+        .unwrap_or_default()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -483,6 +525,11 @@ where
     let device: burn::tensor::Device<B> = Default::default();
     let inner: burn::tensor::Device<B::InnerBackend> = Default::default();
     B::seed(&device, a.seed);
+    let sampler = match a.sampler.as_str() {
+        "cell_balanced_v1" => SamplerKind::CellBalancedV1,
+        "uniform_v0" => SamplerKind::UniformV0,
+        other => anyhow::bail!("unknown sampler '{other}'"),
+    };
     let train_set = load_split(&a.data, "train")?;
     let tune_set = load_split(&a.data, "tune")?;
     let train_pos = prepare(&train_set)?;
@@ -499,6 +546,7 @@ where
         accum: a.accum,
         seed: a.seed,
         eval_every: a.eval_every,
+        sampler,
     };
     let gpu = cfg.device == DeviceKind::Cuda;
     std::fs::create_dir_all(&a.output)?;
@@ -525,15 +573,7 @@ where
     let (model, run) = out?;
     let wall = t0.elapsed().as_secs_f64();
 
-    // Final per-position TUNE results, and CONFIRM only when explicitly asked.
     let inner_model = burn::module::AutodiffModule::valid(&model);
-    let mid = |dir: &std::path::Path| -> String {
-        std::fs::read(dir.join("meta.json"))
-            .ok()
-            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
-            .and_then(|v| v["model_id"].as_str().map(str::to_string))
-            .unwrap_or_default()
-    };
     let mut model_id = String::new();
     if !a.no_checkpoint {
         let dir = a.output.join("checkpoint");
@@ -549,27 +589,45 @@ where
             cfg.precision.label(),
         );
         recur64_model::checkpoint::save_training(&dir, &model, &optim, &meta)?;
-        model_id = mid(&dir);
+        model_id = model_id_of(&dir);
     }
+    let prov = Provenance {
+        model: &cfg.name,
+        model_id: &model_id,
+        seed: a.seed,
+        architecture: cfg.model.architecture.id(),
+        updates: Some(a.updates),
+        peak_lr: Some(a.lr),
+        sampler: Some(sampler.label().to_string()),
+    };
     let tune_results = evaluate::<B::InnerBackend, MI>(&inner_model, &inner, &tune_pos)?;
     let tune_summary = write_eval(
         &a.output.join("eval-tune.json"),
         "tune",
         &tune_set.digest,
-        &cfg.name,
-        &model_id,
+        &prov,
         tune_results,
+    )?;
+    // Every TRAIN position, so an overfit gap is visible per family and cell
+    // (this replaces the earlier first-1,208 slice, which was one family).
+    let train_results = evaluate::<B::InnerBackend, MI>(&inner_model, &inner, &train_pos)?;
+    let train_full = write_eval(
+        &a.output.join("eval-train.json"),
+        "train",
+        &train_set.digest,
+        &prov,
+        train_results,
     )?;
     let confirm = if a.eval_confirm {
         let confirm_set = load_split(&a.data, "confirm")?;
+        announce_confirm(&a.data, &confirm_set.digest, &cfg.name, a.seed);
         let confirm_pos = prepare(&confirm_set)?;
         let r = evaluate::<B::InnerBackend, MI>(&inner_model, &inner, &confirm_pos)?;
         let s = write_eval(
             &a.output.join("eval-confirm.json"),
             "confirm",
             &confirm_set.digest,
-            &cfg.name,
-            &model_id,
+            &prov,
             r,
         )?;
         serde_json::json!({ "evaluated": true, "digest": confirm_set.digest, "summary": s })
@@ -584,27 +642,6 @@ where
         .iter()
         .map(|u| u.report.grad_norm)
         .fold(0.0f32, f32::max);
-    // Train-set summary on a fixed slice, so an overfit gap is visible.
-    let train_slice: Vec<&PreparedPos> = train_pos.iter().take(1208).collect();
-    let train_owned: Vec<PreparedPos> = train_slice
-        .into_iter()
-        .map(|p| PreparedPos {
-            id: p.id.clone(),
-            family: p.family.clone(),
-            depth: p.depth,
-            obs: p.obs.clone(),
-            legal: p.legal.clone(),
-            facts: p.facts.clone(),
-            target: p.target.clone(),
-            correct: p.correct.clone(),
-            chance: p.chance,
-        })
-        .collect();
-    let train_summary = summarize(&evaluate::<B::InnerBackend, MI>(
-        &inner_model,
-        &inner,
-        &train_owned,
-    )?);
     std::fs::write(
         a.output.join("updates.json"),
         serde_json::to_vec(&run.updates)?,
@@ -614,10 +651,12 @@ where
         "architecture": cfg.model.architecture.id(),
         "params": params,
         "spec": spec,
+        "sampler_version": sampler.label(),
         "wall_s": wall,
         "sec_per_update": wall / a.updates as f64,
         "gpu": gpu_samples,
-        "epochs_seen": run.epochs_seen,
+        "epochs_seen_over_all_positions": run.epochs_seen,
+        "sampler_stats": run.sampler_stats,
         "loss_first": first,
         "loss_last": last,
         "max_grad_norm": max_gnorm,
@@ -626,11 +665,14 @@ where
         "tune_digest": tune_set.digest,
         "tune_curve": run.tune_curve,
         "tune_final": tune_summary,
-        "train_slice_final": train_summary,
+        "train_full_final": train_full,
         "confirm": confirm,
         "model_id": model_id,
     });
-    std::fs::write(a.output.join("summary.json"), serde_json::to_vec_pretty(&summary)?)?;
+    std::fs::write(
+        a.output.join("summary.json"),
+        serde_json::to_vec_pretty(&summary)?,
+    )?;
     Ok(summary)
 }
 
@@ -641,7 +683,9 @@ fn train_cmd(a: TrainArgs) -> anyhow::Result<()> {
     type Cpu = recur64_model::train::CpuTrainBackend;
     let summary = match (cfg.device, cfg.model.architecture) {
         (DeviceKind::Cpu, Architecture::CandidateV25) => {
-            run_train::<Cpu, CandidateV25Model<Cpu>, CandidateV25Model<burn::backend::Flex>>(&cfg, &a)?
+            run_train::<Cpu, CandidateV25Model<Cpu>, CandidateV25Model<burn::backend::Flex>>(
+                &cfg, &a,
+            )?
         }
         (DeviceKind::Cpu, Architecture::ProbeV1) => {
             run_train::<Cpu, ProbeModel<Cpu>, ProbeModel<burn::backend::Flex>>(&cfg, &a)?
@@ -673,20 +717,45 @@ where
     let device: burn::tensor::Device<B> = Default::default();
     B::seed(&device, a.seed);
     let set = load_split(&a.data, &a.split)?;
-    let pos = prepare(&set)?;
-    let (model, id) = match &a.checkpoint {
+    let (model, id, seed, updates, lr) = match &a.checkpoint {
         Some(dir) => {
-            let id = std::fs::read(dir.join("meta.json"))
-                .ok()
-                .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
-                .and_then(|v| v["model_id"].as_str().map(str::to_string))
-                .unwrap_or_default();
-            (model_io::load_as::<B, MI>(dir, &cfg.model, &device)?, id)
+            // The authoritative seed comes from checkpoint metadata, never from a name.
+            let meta: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(dir.join("meta.json"))?)?;
+            let seed = meta["seed"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("{}: meta.json carries no seed", dir.display()))?;
+            (
+                model_io::load_as::<B, MI>(dir, &cfg.model, &device)?,
+                model_id_of(dir),
+                seed,
+                meta["update_counter"].as_u64().map(|u| u as usize),
+                meta["lr"].as_f64(),
+            )
         }
-        None => (model_io::build_as::<B, MI>(&cfg.model, &device)?, "fresh".into()),
+        None => (
+            model_io::build_as::<B, MI>(&cfg.model, &device)?,
+            "fresh".to_string(),
+            a.seed,
+            None,
+            None,
+        ),
     };
+    if a.split == "confirm" {
+        announce_confirm(&a.data, &set.digest, &cfg.name, seed);
+    }
+    let pos = prepare(&set)?;
     let results = evaluate::<B, MI>(&model, &device, &pos)?;
-    let s = write_eval(&a.output, &a.split, &set.digest, &cfg.name, &id, results)?;
+    let prov = Provenance {
+        model: &cfg.name,
+        model_id: &id,
+        seed,
+        architecture: cfg.model.architecture.id(),
+        updates,
+        peak_lr: lr,
+        sampler: None,
+    };
+    let s = write_eval(&a.output, &a.split, &set.digest, &prov, results)?;
     println!("{}", serde_json::to_string_pretty(&s)?);
     Ok(())
 }
@@ -723,70 +792,15 @@ fn read_evals(list: &str) -> anyhow::Result<Vec<EvalFile>> {
         .collect()
 }
 
-/// Per-position value averaged over the seeds of one side, keyed by id.
-fn per_position(
-    files: &[EvalFile],
-    f: impl Fn(&PosResult) -> f64,
-) -> std::collections::BTreeMap<String, (u8, f64)> {
-    let mut acc: std::collections::BTreeMap<String, (u8, f64)> = Default::default();
-    for file in files {
-        for r in &file.results {
-            let e = acc.entry(r.id.clone()).or_insert((r.depth, 0.0));
-            e.1 += f(r) / files.len() as f64;
-        }
-    }
-    acc
-}
-
 fn compare_cmd(a: CompareArgs) -> anyhow::Result<()> {
     let (fa, fb) = (read_evals(&a.a)?, read_evals(&a.b)?);
-    anyhow::ensure!(
-        fa.iter().chain(&fb).all(|f| f.dataset_digest == fa[0].dataset_digest && f.split == fa[0].split),
-        "compared evaluations must be on the same split and dataset digest"
-    );
-    let metrics: [(&str, fn(&PosResult) -> f64); 3] = [
-        ("top1", |r| f64::from(u8::from(r.top1))),
-        ("mass", |r| r.mass as f64),
-        ("neg_ce", |r| -(r.ce as f64)),
-    ];
-    let mut out = serde_json::Map::new();
-    for (name, f) in metrics {
-        let (pa, pb) = (per_position(&fa, f), per_position(&fb, f));
-        let ids: Vec<&String> = pa.keys().filter(|k| pb.contains_key(*k)).collect();
-        anyhow::ensure!(ids.len() == pa.len() && ids.len() == pb.len(), "position sets differ");
-        let diff = |sel: &dyn Fn(u8) -> bool| -> Vec<f64> {
-            ids.iter()
-                .filter(|k| sel(pa[**k].0))
-                .map(|k| pb[*k].1 - pa[*k].1)
-                .collect()
-        };
-        let ci = |v: Vec<f64>| {
-            let (m, lo, hi) = paired_bootstrap(&v, a.resamples, a.seed);
-            serde_json::json!({ "n": v.len(), "mean_diff_b_minus_a": m, "ci95": [lo, hi] })
-        };
-        let mut groups = serde_json::Map::new();
-        groups.insert("all".into(), ci(diff(&|_| true)));
-        for d in 1..=5u8 {
-            let v = diff(&|x| x == d);
-            if !v.is_empty() {
-                groups.insert(format!("M{d}"), ci(v));
-            }
-        }
-        groups.insert("M2+M3".into(), ci(diff(&|x| x == 2 || x == 3)));
-        // Each seed separately (B_i - A_i), when the sides have the same seed count.
-        if fa.len() == fb.len() {
-            let mut seeds = Vec::new();
-            for (x, y) in fa.iter().zip(&fb) {
-                let (sx, sy) = (per_position(std::slice::from_ref(x), f), per_position(std::slice::from_ref(y), f));
-                let d: Vec<f64> = sx.iter().map(|(k, v)| sy[k].1 - v.1).collect();
-                let (m, lo, hi) = paired_bootstrap(&d, a.resamples, a.seed);
-                seeds.push(serde_json::json!({ "mean_diff": m, "ci95": [lo, hi] }));
-            }
-            groups.insert("per_seed_all".into(), serde_json::Value::Array(seeds));
-        }
-        out.insert(name.into(), serde_json::Value::Object(groups));
+    if fa.iter().chain(&fb).any(|f| f.split == "confirm") {
+        eprintln!(
+            "NOTE: comparing CONFIRM evaluations (digest {})",
+            fa[0].dataset_digest
+        );
     }
-    let v = serde_json::Value::Object(out);
+    let v = compare(&fa, &fb, a.resamples, a.seed, a.per_seed).map_err(anyhow::Error::msg)?;
     std::fs::write(&a.output, serde_json::to_vec_pretty(&v)?)?;
     println!("{}", serde_json::to_string_pretty(&v)?);
     Ok(())

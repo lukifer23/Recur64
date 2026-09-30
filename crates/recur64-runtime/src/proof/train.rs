@@ -20,6 +20,7 @@ use recur64_model::loss::Targets;
 use recur64_model::net::NeuralModel;
 
 use super::generator::{Rng, mix};
+use super::sampler::{CellSampler, SamplerStats};
 use super::targets::ProofTargets;
 use crate::accum::{LossMode, MicroBatch, UpdateReport, accumulated_update};
 use crate::inference::{BatchEvaluator, BatchedModel};
@@ -94,12 +95,39 @@ pub struct Agg {
     pub chance_top1: f64,
 }
 
-/// Aggregates overall, by depth ("M1".."M5") and by family.
+/// Aggregates overall (pooled over positions), by depth ("M1".."M5"), by family
+/// and by cell ("KQvK-M2"), plus MACRO averages: each non-empty group is averaged
+/// separately, then the group means are averaged with equal weight. Pooled
+/// metrics are dominated by the larger cells; the macro metrics are mandatory
+/// diagnostics beside them (the pre-registered gates stay on the pooled depth
+/// metrics).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EvalSummary {
     pub overall: Agg,
     pub by_depth: BTreeMap<String, Agg>,
     pub by_family: BTreeMap<String, Agg>,
+    #[serde(default)]
+    pub by_cell: BTreeMap<String, Agg>,
+    #[serde(default)]
+    pub macro_cell: Agg,
+    #[serde(default)]
+    pub macro_family: Agg,
+    #[serde(default)]
+    pub macro_depth: Agg,
+}
+
+/// Equal-weight mean of group aggregates (`n` is the total position count).
+fn macro_of<'a>(groups: impl Iterator<Item = &'a Agg>) -> Agg {
+    let gs: Vec<&Agg> = groups.collect();
+    let k = gs.len().max(1) as f64;
+    Agg {
+        n: gs.iter().map(|g| g.n).sum(),
+        top1: gs.iter().map(|g| g.top1).sum::<f64>() / k,
+        mass: gs.iter().map(|g| g.mass).sum::<f64>() / k,
+        ce: gs.iter().map(|g| g.ce).sum::<f64>() / k,
+        entropy: gs.iter().map(|g| g.entropy).sum::<f64>() / k,
+        chance_top1: gs.iter().map(|g| g.chance_top1).sum::<f64>() / k,
+    }
 }
 
 fn agg(rs: &[&PosResult]) -> Agg {
@@ -118,14 +146,27 @@ pub fn summarize(results: &[PosResult]) -> EvalSummary {
     let all: Vec<&PosResult> = results.iter().collect();
     let mut by_depth: BTreeMap<String, Vec<&PosResult>> = BTreeMap::new();
     let mut by_family: BTreeMap<String, Vec<&PosResult>> = BTreeMap::new();
+    let mut by_cell: BTreeMap<String, Vec<&PosResult>> = BTreeMap::new();
     for r in results {
         by_depth.entry(format!("M{}", r.depth)).or_default().push(r);
         by_family.entry(r.family.clone()).or_default().push(r);
+        by_cell
+            .entry(format!("{}-M{}", r.family, r.depth))
+            .or_default()
+            .push(r);
     }
+    let by_depth: BTreeMap<String, Agg> = by_depth.into_iter().map(|(k, v)| (k, agg(&v))).collect();
+    let by_family: BTreeMap<String, Agg> =
+        by_family.into_iter().map(|(k, v)| (k, agg(&v))).collect();
+    let by_cell: BTreeMap<String, Agg> = by_cell.into_iter().map(|(k, v)| (k, agg(&v))).collect();
     EvalSummary {
         overall: agg(&all),
-        by_depth: by_depth.into_iter().map(|(k, v)| (k, agg(&v))).collect(),
-        by_family: by_family.into_iter().map(|(k, v)| (k, agg(&v))).collect(),
+        macro_cell: macro_of(by_cell.values()),
+        macro_family: macro_of(by_family.values()),
+        macro_depth: macro_of(by_depth.values()),
+        by_depth,
+        by_family,
+        by_cell,
     }
 }
 
@@ -165,7 +206,13 @@ where
                 .target
                 .iter()
                 .zip(&r.policy)
-                .map(|(t, q)| if *t > 0.0 { -t * q.max(1e-12).ln() } else { 0.0 })
+                .map(|(t, q)| {
+                    if *t > 0.0 {
+                        -t * q.max(1e-12).ln()
+                    } else {
+                        0.0
+                    }
+                })
                 .sum();
             let entropy: f32 = r
                 .policy
@@ -204,6 +251,28 @@ pub struct TrainSpec {
     pub seed: u64,
     /// Evaluate on `tune` every this many updates (0 = only at the end).
     pub eval_every: usize,
+    /// Which example sampler drives training.
+    pub sampler: SamplerKind,
+}
+
+/// Example sampler contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SamplerKind {
+    /// Historical (E-P1a): a fresh seeded permutation of ALL positions per epoch,
+    /// so exposure follows raw cell cardinality. Kept only to reproduce P1a.
+    UniformV0,
+    /// `cell_balanced_v1`: equal long-run exposure for every (family, depth) cell.
+    CellBalancedV1,
+}
+
+impl SamplerKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            SamplerKind::UniformV0 => "uniform_v0",
+            SamplerKind::CellBalancedV1 => super::sampler::VERSION,
+        }
+    }
 }
 
 /// One update's record.
@@ -221,6 +290,8 @@ pub struct TrainRun {
     /// (update, tune summary) at each evaluation point.
     pub tune_curve: Vec<(usize, EvalSummary)>,
     pub epochs_seen: f64,
+    /// Exposure statistics (cell_balanced_v1 only).
+    pub sampler_stats: Option<SamplerStats>,
 }
 
 /// Micro-batch tensors for `idx` positions of `data`.
@@ -274,12 +345,14 @@ where
     anyhow::ensure!(!train.is_empty(), "no training positions");
     let needs = model.needs_candidate_facts();
     let effective = spec.micro * spec.accum;
+    let cell_keys: Vec<(String, u8)> = train.iter().map(|p| (p.family.clone(), p.depth)).collect();
+    let mut cell_sampler = (spec.sampler == SamplerKind::CellBalancedV1)
+        .then(|| CellSampler::new(&cell_keys, spec.seed));
     let mut order: Vec<usize> = Vec::new();
     let mut epoch = 0u64;
     let mut cursor = 0usize;
-    let next_index = |order: &mut Vec<usize>, cursor: &mut usize, epoch: &mut u64| -> usize {
+    let uniform_next = |order: &mut Vec<usize>, cursor: &mut usize, epoch: &mut u64| -> usize {
         if *cursor >= order.len() {
-            // A fresh seeded permutation each epoch (deterministic ordering).
             let mut p: Vec<usize> = (0..train.len()).collect();
             let mut rng = Rng(mix(spec.seed ^ mix(*epoch + 0xE90C)));
             for i in (1..p.len()).rev() {
@@ -299,6 +372,7 @@ where
         updates: Vec::with_capacity(spec.updates),
         tune_curve: Vec::new(),
         epochs_seen: 0.0,
+        sampler_stats: None,
     };
     let eval_now = |model: &MT| -> anyhow::Result<EvalSummary> {
         let inner = model.valid();
@@ -313,7 +387,10 @@ where
         let mut micros = Vec::with_capacity(spec.accum);
         for _ in 0..spec.accum {
             let idx: Vec<usize> = (0..spec.micro)
-                .map(|_| next_index(&mut order, &mut cursor, &mut epoch))
+                .map(|_| match cell_sampler.as_mut() {
+                    Some(cs) => cs.next_index(),
+                    None => uniform_next(&mut order, &mut cursor, &mut epoch),
+                })
                 .collect();
             micros.push(micro_batch::<B>(train, &idx, needs, device)?);
         }
@@ -334,6 +411,7 @@ where
     }
     run.tune_curve.push((spec.updates, eval_now(&model)?));
     run.epochs_seen = (spec.updates * effective) as f64 / train.len() as f64;
+    run.sampler_stats = cell_sampler.as_ref().map(CellSampler::stats);
     Ok((model, run))
 }
 
@@ -365,7 +443,9 @@ mod tests {
 
     #[test]
     fn bootstrap_ci_brackets_the_mean_and_is_seeded() {
-        let v: Vec<f64> = (0..400).map(|i| if i % 4 == 0 { 1.0 } else { 0.0 }).collect();
+        let v: Vec<f64> = (0..400)
+            .map(|i| if i % 4 == 0 { 1.0 } else { 0.0 })
+            .collect();
         let (m, lo, hi) = paired_bootstrap(&v, 2000, 5);
         assert!((m - 0.25).abs() < 1e-9);
         assert!(lo < m && m < hi && hi - lo < 0.12);
@@ -373,6 +453,35 @@ mod tests {
         let zeros = vec![0.0; 50];
         let (m0, lo0, hi0) = paired_bootstrap(&zeros, 500, 1);
         assert_eq!((m0, lo0, hi0), (0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn macro_metrics_weight_groups_equally_and_pooled_metrics_do_not() {
+        let mk = |depth, family: &str, top1| PosResult {
+            id: "x".into(),
+            family: family.into(),
+            depth,
+            top1,
+            mass: 0.0,
+            ce: 0.0,
+            entropy: 0.0,
+            chance: 0.0,
+        };
+        // Big cell: 9 of 10 correct; small cell: 0 of 1 correct.
+        let mut rs: Vec<PosResult> = (0..10).map(|i| mk(1, "KQQvK", i < 9)).collect();
+        rs.push(mk(1, "KRvK", false));
+        let s = summarize(&rs);
+        assert!(
+            (s.overall.top1 - 9.0 / 11.0).abs() < 1e-12,
+            "pooled follows cardinality"
+        );
+        assert!(
+            (s.macro_cell.top1 - 0.45).abs() < 1e-12,
+            "macro = (0.9 + 0.0) / 2"
+        );
+        assert!((s.macro_family.top1 - 0.45).abs() < 1e-12);
+        assert_eq!(s.by_cell["KRvK-M1"].n, 1);
+        assert_eq!(s.macro_cell.n, 11);
     }
 
     #[test]
@@ -387,7 +496,11 @@ mod tests {
             entropy: 2.0,
             chance: 0.1,
         };
-        let s = summarize(&[mk(1, "KQvK", true), mk(1, "KRvK", false), mk(2, "KQvK", true)]);
+        let s = summarize(&[
+            mk(1, "KQvK", true),
+            mk(1, "KRvK", false),
+            mk(2, "KQvK", true),
+        ]);
         assert_eq!(s.overall.n, 3);
         assert!((s.by_depth["M1"].top1 - 0.5).abs() < 1e-12);
         assert!((s.by_depth["M2"].top1 - 1.0).abs() < 1e-12);
