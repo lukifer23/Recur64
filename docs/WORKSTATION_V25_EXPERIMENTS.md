@@ -382,3 +382,16 @@ No science contract, threshold, data, model, sampler, LR, bootstrap method or re
 count changed; the earlier P2 pre-registration is not rewritten.
 
 Statistics patch commit: `1f03cfca8c051e5e74795fa388af6b9167d956a8` (P2 was launched only after this commit existed).
+
+## P2 launch attempt 1 - infrastructure failure (documented; no result)
+The first attempt of the frozen P2 contract (launched from commit `238f2f0`) failed
+immediately in the RUNNER SCRIPT, not in the experiment: the PowerShell runner set
+`$ErrorActionPreference = "Stop"`, and Windows PowerShell 5.1 converts the first stderr line
+of a native program into a terminating `NativeCommandError`. The trainer logs progress to
+stderr, so the script aborted at `update 0` of L seed 1. Consequences, verified afterwards:
+no trainer process left running, GPU idle, `L-s1` output directory empty, log empty, NO
+CONFIRM evaluation occurred (`confirm-exposure.log` absent), no metrics produced.
+Remedy: the runner now redirects both streams with `cmd /c ... > log 2>&1` and does not use
+`Stop`. The SAME cell is rerun from scratch with the SAME configuration; no hyperparameter,
+data, sampler, seed, or order change. (A stale `runs/p2-C0-s1.log` from the earlier aborted
+launch on the retired split was moved into `runs/v25/aborted/`.)
