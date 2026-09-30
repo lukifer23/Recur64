@@ -543,3 +543,29 @@ INTERPRETATION: more thought did not help and cost 1.6x wall time and 1.6x VRAM;
 equal updates the T=4 network is, if anything, slower to fit. The facts channel
 should have made mates easy (a unit test shows a small network learning it in 60
 steps), so its failure here needs a diagnosis, not a conclusion about facts.
+
+## AMENDMENT A4 (after the E11 result, BEFORE any gain result) - facts scale
+- **Diagnosis (MEASURED, `x15 facts-probe` on the E11 checkpoints):** the learned
+  fact bias separates mating moves from the other legal moves by only **+0.014
+  logits** (SF s1 +0.0144, SF s2 +0.0177, C1F s1 +0.0143, C4F s1 +0.0144). AdamW moves
+  each weight by about the learning rate per step (1e-4), and the fact MLP starts
+  at zero, so in 100 updates it cannot reach the several logits needed to single
+  out one move among ~20-30. The unit test that learned the mate used lr 2e-2. The
+  E11 Q1 failure is therefore an optimization-scale failure of the channel, not
+  evidence about facts.
+- **Change:** `[experimental.candidate_facts] gain` (default 1.0, in the identity):
+  bias = gain * MLP(facts). Default behaviour is unchanged.
+- **Tuning set** `tactics-tune`: `gen-tactics` seed 20261005, 8 per kind, no
+  repetition-draw positions; hard-verified to share no FEN with `tactics-v1` and no
+  start / current FEN with `targets-train960`. It is used ONLY for choosing the gain.
+- **Screen:** SF (symbolic + facts), seed 1, gains {8, 32, 128}, all other E11
+  settings unchanged. Metric: mate top-1 on the 40 `tactics-tune` mate fixtures.
+  Select the highest; ties go to the smaller gain; a run with a non-finite value is
+  disqualified. Reference: E11 S seed 1 on the same set.
+- **E11b (amended rerun):** SF, C1F, C4F with the selected gain, seeds 1 and 2, all
+  else as E11; S, C1 and C4 are unchanged (they do not use facts) and are reused.
+  Judged by the SAME E11 rules on `tactics-v1` and `confirm2`: Q1 (SF vs S mate top-1
+  >= +0.30 absolute, both seeds above) and Q2b (C4F vs C1F wholly favourable on
+  mates and KL, seeds agreeing). **The original E11 outcome (Q1 fail, no thought
+  signal) stands and is reported alongside; E11b does not replace it.**
+- Still NOT claimed: facts are a tool, not reasoning; strength and conversion.

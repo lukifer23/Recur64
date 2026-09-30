@@ -532,6 +532,15 @@ impl<B: Backend> ChimeraModel<B> {
         flat.mean_dim(1).squeeze_dim::<1>(1)
     }
 
+    /// The fact MLP's raw output `[b, width]` for supplied facts, regardless of
+    /// whether the pathway is enabled (diagnostics only).
+    pub fn facts_bias_raw(&self, facts: Tensor<B, 3>) -> Tensor<B, 2> {
+        let h = activation::gelu(linear_rows(&self.facts_l1, facts));
+        linear_rows(&self.facts_l2, h)
+            .squeeze_dim::<2>(2)
+            .mul_scalar(self.exp.candidate_facts.gain)
+    }
+
     /// The per-candidate policy bias from `CandidateFactsV1`, `[b, width]`, or
     /// `None` when the pathway is off or no facts were supplied. When it is off
     /// the facts parameters are not executed, so the output does not depend on
@@ -542,7 +551,9 @@ impl<B: Backend> ChimeraModel<B> {
         }
         input.cand_facts.as_ref().map(|facts| {
             let h = activation::gelu(linear_rows(&self.facts_l1, facts.clone()));
-            linear_rows(&self.facts_l2, h).squeeze_dim::<2>(2)
+            linear_rows(&self.facts_l2, h)
+                .squeeze_dim::<2>(2)
+                .mul_scalar(self.exp.candidate_facts.gain)
         })
     }
 

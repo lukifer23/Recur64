@@ -295,6 +295,10 @@ pub const CANDIDATE_FACTS_VERSION: &str = "candidate_facts_v1";
 /// Fields per candidate in `CandidateFactsV1`.
 pub const CANDIDATE_FACT_FIELDS: usize = 8;
 
+fn d_facts_gain() -> f32 {
+    1.0
+}
+
 fn d_facts_hidden() -> usize {
     16
 }
@@ -334,6 +338,12 @@ pub struct CandidateFactsConfig {
     pub provider: CandidateFactsProviderKind,
     #[serde(default)]
     pub enabled: bool,
+    /// Multiplier on the fact bias: bias = gain * MLP(facts). AdamW moves each
+    /// weight by about the learning rate per step, so a zero-initialised MLP alone
+    /// learns a bias of only ~0.01 logits in a short run (measured); the gain sets
+    /// the scale at which the facts can influence the policy. Default 1.0.
+    #[serde(default = "d_facts_gain")]
+    pub gain: f32,
     /// Hidden width of the fact MLP.
     #[serde(default = "d_facts_hidden")]
     pub hidden: usize,
@@ -344,6 +354,7 @@ impl Default for CandidateFactsConfig {
         Self {
             provider: CandidateFactsProviderKind::None,
             enabled: false,
+            gain: d_facts_gain(),
             hidden: d_facts_hidden(),
         }
     }
@@ -510,8 +521,10 @@ impl ExperimentalConfig {
             "experimental.candidate_facts.enabled is true but provider is \"none\""
         );
         anyhow::ensure!(
-            self.candidate_facts.hidden >= 1,
-            "experimental.candidate_facts.hidden must be >= 1"
+            self.candidate_facts.hidden >= 1
+                && self.candidate_facts.gain.is_finite()
+                && self.candidate_facts.gain > 0.0,
+            "experimental.candidate_facts.hidden must be >= 1 and gain finite and > 0"
         );
         // Compute and visual tokens are consumed only by the latent thought
         // loop; with the latents off they would be dead weight, and a

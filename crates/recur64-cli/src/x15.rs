@@ -60,6 +60,8 @@ pub enum X15Command {
     TeacherTactics(crate::x15_tactics::TeacherTacticsArgs),
     /// Paired comparison of two checkpoint groups (E11 decision statistics).
     Compare(crate::x15_compare::CompareArgs),
+    /// Measure the learned fact bias on correct vs other moves.
+    FactsProbe(crate::x15_tactics::FactsProbeArgs),
     /// Module gradient probe: every gated subsystem must receive a non-zero
     /// gradient on the first training step.
     Grads(BatchArgs),
@@ -157,6 +159,7 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::EvalTactics(a) => crate::x15_tactics::run_eval(a),
         X15Command::TeacherTactics(a) => crate::x15_tactics::run_teacher(a),
         X15Command::Compare(a) => crate::x15_compare::run(a),
+        X15Command::FactsProbe(a) => crate::x15_tactics::run_facts_probe(a),
     }
 }
 

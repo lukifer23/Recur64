@@ -41,6 +41,12 @@ pub struct GenTacticsArgs {
         default_value = "docs/evidence/train1/final-arena/eval-arena.json"
     )]
     pub arena: PathBuf,
+    /// Fail unless no fixture FEN appears in any of these fixtures files.
+    #[arg(long)]
+    pub disjoint_fixtures: Vec<PathBuf>,
+    /// Fail unless no fixture FEN appears as a start position in these targets files.
+    #[arg(long)]
+    pub disjoint_targets: Vec<PathBuf>,
     /// Repetition-draw FEN fixtures to include.
     #[arg(long, default_value_t = 24)]
     pub hp_draws: usize,
@@ -415,6 +421,34 @@ pub fn run_gen(args: GenTacticsArgs) -> anyhow::Result<()> {
     )?);
     fixtures.extend(gen_material(&mut rng, "promotion", true, args.per_kind)?);
     fixtures.extend(gen_hp_draws(&args.arena, args.hp_draws, args.seed)?);
+    // Hard disjointness checks (not filters): the set must share no FEN with
+    // the evaluation suite or with training start positions.
+    let mut forbidden: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for p in &args.disjoint_fixtures {
+        forbidden.extend(fixture_fens(p)?);
+    }
+    for p in &args.disjoint_targets {
+        let t = recur64_runtime::reasoning_targets::ReasoningTargetsV1::load(p)?;
+        forbidden.extend(t.positions.iter().map(|q| q.start_fen.clone()));
+        forbidden.extend(t.positions.iter().map(|q| q.fen.clone()));
+    }
+    let clashes: Vec<_> = fixtures
+        .iter()
+        .filter(|f| forbidden.contains(&f.fen))
+        .map(|f| f.id.clone())
+        .collect();
+    anyhow::ensure!(
+        clashes.is_empty(),
+        "{} fixtures overlap the forbidden FEN set: {:?}",
+        clashes.len(),
+        clashes
+    );
+    if !forbidden.is_empty() {
+        println!(
+            "verified: no fixture FEN overlaps {} forbidden FENs",
+            forbidden.len()
+        );
+    }
     let mut counts = std::collections::BTreeMap::new();
     for f in &fixtures {
         *counts.entry(f.kind.clone()).or_insert(0usize) += 1;
@@ -816,4 +850,90 @@ pub(crate) fn tactic_vector<B: Backend>(
         v.push((f.kind.clone(), f32::from(f.correct.contains(&arg))));
     }
     Ok(v)
+}
+
+// --- facts probe ------------------------------------------------------------------
+
+#[derive(Args, Debug)]
+pub struct FactsProbeArgs {
+    #[arg(long, default_value = "configs/x15_cuda.toml")]
+    pub config: PathBuf,
+    #[arg(long)]
+    pub fixtures: PathBuf,
+    #[arg(long)]
+    pub checkpoint: Vec<PathBuf>,
+}
+
+fn facts_probe_one<B: Backend>(
+    cfg: &ProbeConfig,
+    fixtures: &[Fixture],
+    ck: &std::path::Path,
+    device: &B::Device,
+) -> anyhow::Result<()> {
+    let states: Vec<GameState> = fixtures
+        .iter()
+        .map(|f| GameState::from_fen(&f.fen).map_err(|e| anyhow::anyhow!("{}: {e}", f.id)))
+        .collect::<anyhow::Result<_>>()?;
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(ck.join("meta.json"))?)?;
+    anyhow::ensure!(
+        meta.experimental.candidate_facts.enabled,
+        "{} has no candidate facts",
+        ck.display()
+    );
+    let provider = provider_for_config(&meta.experimental)?;
+    let batch = build_x15_batch::<B>(&states, &meta.experimental, provider.as_ref(), device)?;
+    let model = model_io::load_chimera::<B>(ck, &cfg.model, &meta.experimental, device)?;
+    let width = batch.cands.width;
+    let bias = model
+        .facts_bias_raw(batch.input.cand_facts.clone().expect("facts supplied"))
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap_or_default();
+    let (mut on, mut off) = (Vec::new(), Vec::new());
+    for (i, f) in fixtures.iter().enumerate() {
+        if f.correct.is_empty() {
+            continue;
+        }
+        let n = states[i].legal_actions().len();
+        for k in 0..n {
+            let b = bias[i * width + k];
+            if f.correct.contains(&k) {
+                on.push(b);
+            } else {
+                off.push(b);
+            }
+        }
+    }
+    let m = |v: &[f32]| v.iter().sum::<f32>() / v.len().max(1) as f32;
+    println!(
+        "{}: fact-bias on correct moves {:+.4} (n={}), on other legal moves {:+.4} (n={}), gap {:+.4} logits",
+        ck.display(),
+        m(&on),
+        on.len(),
+        m(&off),
+        off.len(),
+        m(&on) - m(&off)
+    );
+    Ok(())
+}
+
+pub fn run_facts_probe(args: FactsProbeArgs) -> anyhow::Result<()> {
+    let cfg = ProbeConfig::from_toml_str(&std::fs::read_to_string(&args.config)?)?;
+    let file: FixtureFile = serde_json::from_slice(&std::fs::read(&args.fixtures)?)?;
+    #[cfg(feature = "cuda")]
+    {
+        let device: Device<burn::backend::Cuda> = Default::default();
+        for ck in &args.checkpoint {
+            facts_probe_one::<burn::backend::Cuda>(&cfg, &file.fixtures, ck, &device)?;
+        }
+        Ok(())
+    }
+    #[cfg(not(feature = "cuda"))]
+    {
+        let device: Device<burn::backend::Flex> = Default::default();
+        for ck in &args.checkpoint {
+            facts_probe_one::<burn::backend::Flex>(&cfg, &file.fixtures, ck, &device)?;
+        }
+        Ok(())
+    }
 }
