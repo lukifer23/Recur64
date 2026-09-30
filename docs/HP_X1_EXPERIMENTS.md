@@ -773,3 +773,26 @@ accuracy). This is a measurement plus a hypothesis, not a proof.
   retention.
 - If it does not rescue: recurrence stays NO SIGNAL at this scale under final-only
   supervision (E12), deep supervision (E14) and a bounded latent (E15).
+
+## E14 RESULT (primary, MEASURED; T=8 runs still pending at this entry)
+Deep supervision (`same_target_v1`, intermediates 0.25, loss normalised to unit total weight),
+E12 setting, seeds 1 and 2. `C4F-DS` (T=4): wall 876-908 s, peak VRAM 3.2-3.8 GB (readouts
+after every thought), final loss 1.33 (s1).
+**Primary: C4F-DS vs E12 C1F on mate-in-2 top-1 = 0.608 vs 0.575, +0.033, 95% CI
+[-0.050, +0.108], per-seed [-0.033, +0.100]: DEEP SUPERVISION DOES NOT RESCUE RECURRENCE**
+(rule: CI wholly above 0 and both seeds positive). Deep supervision did help the recurrent
+network relative to final-only (C4F final-only 0.542 -> C4F-DS 0.608) but only to the
+one-pass level.
+Per-thought curve, mean of 2 seeds, mate-in-2 top-1 when the network is stopped after k
+thoughts:
+| k | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| C4F-DS (deep supervision) | 0.600 | 0.600 | 0.608 | 0.608 |
+| C4F final-only (E12) | 0.142 | 0.567 | - | 0.542 |
+INTERPRETATION: with deep supervision the first thought already reaches the network's
+ceiling and thoughts 2-4 add nothing; without it the network needs two thoughts to reach
+the same ceiling and the extra two add nothing. Accuracy on this task is set by what the
+network can learn (E13: 0.60 -> 0.79 with 10x data), not by how many times the shared core
+is applied. This is direct evidence that the loop is not being used for iterative
+refinement on this problem. It does not say what happens on problems the one-pass network
+cannot represent (mate-in-3 and deeper).
