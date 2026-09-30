@@ -167,7 +167,11 @@ pub struct VisualEncoder<B: Backend> {
 }
 
 impl<B: Backend> VisualEncoder<B> {
-    fn new(cfg: &crate::experimental::VisualConfig, daux: usize, device: &B::Device) -> Self {
+    pub(crate) fn new(
+        cfg: &crate::experimental::VisualConfig,
+        daux: usize,
+        device: &B::Device,
+    ) -> Self {
         let c = cfg.channels;
         let stages = (cfg.resolution / 8).trailing_zeros() as usize;
         assert!(
@@ -210,7 +214,7 @@ impl<B: Backend> VisualEncoder<B> {
     }
 
     /// `[b, 3, S, S]` in `0..1` -> `[b, 64, Daux]`.
-    fn forward(&self, x: Tensor<B, 4>) -> Tensor<B, 3> {
+    pub(crate) fn forward(&self, x: Tensor<B, 4>) -> Tensor<B, 3> {
         let mut h = activation::gelu(self.stem.forward(x));
         let n = self.downs.len();
         let intermediate = n - 1;
@@ -1068,7 +1072,10 @@ fn scalar_f32<B: Backend>(t: Tensor<B, 1>) -> f32 {
         .unwrap_or(f32::NAN)
 }
 
-fn module_grad_norm<B: AutodiffBackend, M: Module<B>>(m: &M, grads: &GradientsParams) -> f32 {
+pub(crate) fn module_grad_norm<B: AutodiffBackend, M: Module<B>>(
+    m: &M,
+    grads: &GradientsParams,
+) -> f32 {
     struct V<'a, B: AutodiffBackend> {
         grads: &'a GradientsParams,
         sum_sq: f64,

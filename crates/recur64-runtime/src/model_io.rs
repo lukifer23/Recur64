@@ -200,7 +200,7 @@ fn read_meta(dir: &Path) -> anyhow::Result<recur64_model::checkpoint::Checkpoint
 }
 
 #[cfg(test)]
-#[allow(clippy::field_reassign_with_default)]
+#[allow(clippy::field_reassign_with_default, clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use recur64_model::experimental::{Architecture, ExperimentalConfig};
@@ -264,4 +264,73 @@ mod tests {
         let err = build_chimera::<Cpu>(&tiny_model_cfg(), &ExperimentalConfig::default(), &device);
         assert!(err.is_err());
     }
+}
+
+// --- Chimera V2 ---------------------------------------------------------------------
+
+use recur64_model::chimera2::ChimeraV2Model;
+
+/// Build a fresh Chimera V2 model after validating its contract and verifying the device.
+pub fn build_chimera_v2<B: Backend>(
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraV2Model<B>> {
+    verify_device::<B>(device)?;
+    build_chimera_v2_unverified(cfg, exp, device)
+}
+
+/// [`build_chimera_v2`] without the behavioural device check (callers that already ran it).
+pub fn build_chimera_v2_unverified<B: Backend>(
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraV2Model<B>> {
+    anyhow::ensure!(
+        exp.is_chimera_v2(),
+        "build_chimera_v2 requires architecture = chimera_v2 (got {:?})",
+        exp.architecture
+    );
+    exp.validate(cfg.width)?;
+    Ok(ChimeraV2Model::<B>::new(cfg.clone(), exp.clone(), device))
+}
+
+/// Load V2 weights (no optimizer) after the device check. Refuses probe and V1
+/// checkpoints and any model or experimental contract mismatch.
+pub fn load_chimera_v2<B: Backend>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    device: &B::Device,
+) -> anyhow::Result<ChimeraV2Model<B>> {
+    verify_device::<B>(device)?;
+    let meta = read_meta(dir)?;
+    meta.check_contracts()?;
+    meta.check_model(cfg)?;
+    meta.check_architecture(Architecture::ChimeraV2)?;
+    meta.check_experimental(exp)?;
+    let template = build_chimera_v2_unverified::<B>(cfg, exp, device)?;
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    Ok(template.load_file(dir.join("model"), &recorder, device)?)
+}
+
+/// Resume a V2 training checkpoint (weights, optimizer state, metadata) after the device check.
+pub fn load_chimera_v2_training<B, O>(
+    dir: &Path,
+    cfg: &ModelConfig,
+    exp: &ExperimentalConfig,
+    optim: O,
+    device: &B::Device,
+) -> anyhow::Result<(
+    ChimeraV2Model<B>,
+    O,
+    recur64_model::checkpoint::CheckpointMeta,
+)>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    O: burn::optim::Optimizer<ChimeraV2Model<B>, B>,
+{
+    verify_device::<B>(device)?;
+    let template = build_chimera_v2_unverified::<B>(cfg, exp, device)?;
+    recur64_model::checkpoint::load_training_v2(dir, template, optim, device)
 }

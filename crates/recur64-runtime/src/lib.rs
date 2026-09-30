@@ -25,6 +25,7 @@ pub mod replay_identity;
 pub mod run_dir;
 pub mod search_gain;
 pub mod sweep;
+pub mod v2_inputs;
 pub mod x15_inputs;
 
 pub use cancel::CancelToken;

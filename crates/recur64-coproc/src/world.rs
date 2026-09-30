@@ -170,6 +170,9 @@ fn play_facts(board: &Board, mv: Move) -> Played {
     after.play(mv);
     let replies = moves_of(&after);
     let terminal = terminal_code(&after, !replies.is_empty());
+    // A terminal position (mate, stalemate, dead position, fifty-move) has no
+    // continuation, exactly as in the game rules: it exposes no replies.
+    let replies = if terminal == 0 { replies } else { Vec::new() };
     let dest = uci_to(board, mv);
     let attacked = terminal == 0 && replies.iter().any(|r| uci_to(&after, *r) == dest);
     let facts = [
@@ -296,7 +299,7 @@ pub fn world_model(
         let (ps, pl) = rights(!child);
         out[s + 68] = os | (ol << 1) | (ps << 2) | (pl << 3);
         out[s + 69] = played.after.en_passant().map_or(0, |f| f as u8 + 1);
-        out[s + 70] = played.after.halfmove_clock().min(255);
+        out[s + 70] = played.after.halfmove_clock();
 
         // Reply set.
         if played.replies.len() > r_cap {

@@ -373,3 +373,72 @@ pub fn save_inference_export<B: Backend>(
     model.clone().save_file(path.clone(), &recorder)?;
     Ok(path)
 }
+
+/// Save a full Chimera V2 training checkpoint. The metadata must already carry the
+/// V2 architecture ([`CheckpointMeta::with_experimental`]); this is what makes the
+/// artifact refusable by every V1 and probe loader.
+pub fn save_training_v2<B, O>(
+    dir: &Path,
+    model: &crate::chimera2::ChimeraV2Model<B>,
+    optim: &O,
+    meta: &CheckpointMeta,
+) -> anyhow::Result<()>
+where
+    B: AutodiffBackend,
+    O: burn::optim::Optimizer<crate::chimera2::ChimeraV2Model<B>, B>,
+{
+    meta.check_architecture(Architecture::ChimeraV2)?;
+    std::fs::create_dir_all(dir)?;
+    let (model_path, optim_path, meta_path) = paths(dir);
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    model
+        .clone()
+        .save_file(model_path.clone(), &recorder)
+        .map_err(|e| anyhow::anyhow!("save model to {}: {e}", model_path.display()))?;
+    recorder
+        .record(optim.to_record(), optim_path.clone())
+        .map_err(|e| anyhow::anyhow!("save optimizer to {}: {e}", optim_path.display()))?;
+    let mut meta = meta.clone();
+    let with_mpk = model_path.with_extension("mpk");
+    let model_file = if with_mpk.exists() {
+        with_mpk
+    } else {
+        model_path.clone()
+    };
+    meta.model_id = hash_file(&model_file)
+        .map_err(|e| anyhow::anyhow!("hash {}: {e}", model_file.display()))?;
+    std::fs::write(&meta_path, serde_json::to_vec_pretty(&meta)?)
+        .map_err(|e| anyhow::anyhow!("write {}: {e}", meta_path.display()))?;
+    Ok(())
+}
+
+/// Load a full Chimera V2 training checkpoint, refusing any other architecture and
+/// any experimental-contract mismatch.
+pub fn load_training_v2<B, O>(
+    dir: &Path,
+    template: crate::chimera2::ChimeraV2Model<B>,
+    optim: O,
+    device: &B::Device,
+) -> anyhow::Result<(crate::chimera2::ChimeraV2Model<B>, O, CheckpointMeta)>
+where
+    B: AutodiffBackend,
+    O: burn::optim::Optimizer<crate::chimera2::ChimeraV2Model<B>, B>,
+{
+    let (model_path, optim_path, meta_path) = paths(dir);
+    let meta: CheckpointMeta = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
+    anyhow::ensure!(
+        meta.schema_version == SCHEMA_VERSION,
+        "checkpoint schema mismatch: found {} expected {}",
+        meta.schema_version,
+        SCHEMA_VERSION
+    );
+    meta.check_architecture(Architecture::ChimeraV2)?;
+    meta.check_experimental(template.experimental())?;
+    meta.check_contracts()?;
+    meta.check_model(template.config())?;
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    let model = template.load_file(model_path, &recorder, device)?;
+    let optim_record = recorder.load(optim_path, device)?;
+    let optim = optim.load_record(optim_record);
+    Ok((model, optim, meta))
+}

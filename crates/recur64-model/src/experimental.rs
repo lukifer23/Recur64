@@ -32,6 +32,9 @@ pub enum Architecture {
     /// X15 "Chimera": symbolic trunk + latent reasoning + compute coprocessor
     /// + visual pathway ([`crate::chimera::ChimeraModel`]).
     ChimeraV1,
+    /// Chimera V2: one-shot board encoder + candidate tokens + exact world model +
+    /// bounded recurrent planner ([`crate::chimera2::ChimeraV2Model`]).
+    ChimeraV2,
 }
 
 impl Architecture {
@@ -39,6 +42,7 @@ impl Architecture {
         match self {
             Architecture::ProbeV1 => "probe_v1",
             Architecture::ChimeraV1 => "chimera_v1",
+            Architecture::ChimeraV2 => "chimera_v2",
         }
     }
 
@@ -50,6 +54,7 @@ impl Architecture {
         match self {
             Architecture::ProbeV1 => crate::model::HEAD_VERSION,
             Architecture::ChimeraV1 => CHIMERA_HEAD_VERSION,
+            Architecture::ChimeraV2 => CHIMERA_V2_HEAD_VERSION,
         }
     }
 }
@@ -379,6 +384,162 @@ pub struct RetrievalConfig {
     pub memory_tokens: usize,
 }
 
+// --- Chimera V2 ---------------------------------------------------------------------
+
+/// Readout-head function version for the Chimera V2 family.
+pub const CHIMERA_V2_HEAD_VERSION: u32 = 1;
+
+/// Planner contract (the order of operations of one planner step).
+pub const PLANNER_CONTRACT_VERSION: &str = "chimera-v2-planner-v1";
+
+/// Candidate token contract.
+pub const CANDIDATE_TOKEN_VERSION: &str = "candidate_token_v1";
+
+/// One-shot visual fusion contract.
+pub const VISUAL_FUSION_VERSION: &str = "visual_fusion_v1";
+
+/// World-model contract (layout and rules of the exact consequence engine).
+pub const WORLD_MODEL_VERSION: &str = "world_model_v2";
+
+/// How the exact world-model information becomes visible to the planner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum InfoSchedule {
+    /// Thought 1 root, thought 2 + successors, thought 3 + reply sets, thought 4 nothing new.
+    #[default]
+    Progressive,
+    /// Every tool is visible at every thought (the one-pass all-information control).
+    AllAtOnce,
+    /// Tools are never visible (the root-only control).
+    RootOnly,
+}
+
+impl InfoSchedule {
+    pub fn label(self) -> &'static str {
+        match self {
+            InfoSchedule::Progressive => "progressive",
+            InfoSchedule::AllAtOnce => "all_at_once",
+            InfoSchedule::RootOnly => "root_only",
+        }
+    }
+
+    /// Whether successor tokens are visible at (1-based) thought `t`.
+    pub fn successors_visible(self, t: usize) -> bool {
+        match self {
+            InfoSchedule::Progressive => t >= 2,
+            InfoSchedule::AllAtOnce => true,
+            InfoSchedule::RootOnly => false,
+        }
+    }
+
+    /// Whether reply-set tokens are visible at (1-based) thought `t`.
+    pub fn replies_visible(self, t: usize) -> bool {
+        match self {
+            InfoSchedule::Progressive => t >= 3,
+            InfoSchedule::AllAtOnce => true,
+            InfoSchedule::RootOnly => false,
+        }
+    }
+
+    /// Whether any world-model bytes are needed at all.
+    pub fn needs_world_model(self) -> bool {
+        self != InfoSchedule::RootOnly
+    }
+}
+
+fn d_v2_cand_dim() -> usize {
+    192
+}
+fn d_v2_planner_dim() -> usize {
+    192
+}
+fn d_v2_planner_heads() -> usize {
+    4
+}
+fn d_v2_planner_ffn() -> usize {
+    384
+}
+fn d_v2_workspace() -> usize {
+    8
+}
+fn d_v2_reply_dim() -> usize {
+    128
+}
+fn d_v2_succ_hidden() -> usize {
+    48
+}
+fn d_v2_max_thoughts() -> usize {
+    8
+}
+fn d_v2_w_cap() -> usize {
+    64
+}
+fn d_v2_r_cap() -> usize {
+    16
+}
+fn d_v2_provider() -> ComputeProviderKind {
+    ComputeProviderKind::NativeV1
+}
+
+/// The `[experimental.v2]` block. Part of the scientific identity of a V2 model.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChimeraV2Config {
+    #[serde(default = "d_v2_cand_dim")]
+    pub cand_dim: usize,
+    #[serde(default = "d_v2_planner_dim")]
+    pub planner_dim: usize,
+    #[serde(default = "d_v2_planner_heads")]
+    pub planner_heads: usize,
+    #[serde(default = "d_v2_planner_ffn")]
+    pub planner_ffn: usize,
+    /// Workspace tokens `K`.
+    #[serde(default = "d_v2_workspace")]
+    pub workspace_tokens: usize,
+    #[serde(default = "d_v2_reply_dim")]
+    pub reply_dim: usize,
+    /// Per-square hidden width of the successor encoder.
+    #[serde(default = "d_v2_succ_hidden")]
+    pub succ_hidden: usize,
+    /// Thought-embedding table size (T <= max_thoughts; T5-8 reserved for diagnostics).
+    #[serde(default = "d_v2_max_thoughts")]
+    pub max_thoughts: usize,
+    #[serde(default)]
+    pub info_schedule: InfoSchedule,
+    /// Which world-model implementation feeds the tool tokens.
+    #[serde(default = "d_v2_provider")]
+    pub world_provider: ComputeProviderKind,
+    /// Candidate capacity of the world-model buffers.
+    #[serde(default = "d_v2_w_cap")]
+    pub w_cap: usize,
+    /// Reply capacity per candidate.
+    #[serde(default = "d_v2_r_cap")]
+    pub r_cap: usize,
+    /// An independently gated small direct fact-logit shortcut (ablation; OFF).
+    #[serde(default)]
+    pub fact_shortcut: bool,
+}
+
+impl Default for ChimeraV2Config {
+    fn default() -> Self {
+        Self {
+            cand_dim: d_v2_cand_dim(),
+            planner_dim: d_v2_planner_dim(),
+            planner_heads: d_v2_planner_heads(),
+            planner_ffn: d_v2_planner_ffn(),
+            workspace_tokens: d_v2_workspace(),
+            reply_dim: d_v2_reply_dim(),
+            succ_hidden: d_v2_succ_hidden(),
+            max_thoughts: d_v2_max_thoughts(),
+            info_schedule: InfoSchedule::Progressive,
+            world_provider: d_v2_provider(),
+            w_cap: d_v2_w_cap(),
+            r_cap: d_v2_r_cap(),
+            fact_shortcut: false,
+        }
+    }
+}
+
 /// The complete `[experimental]` block.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -408,6 +569,9 @@ pub struct ExperimentalConfig {
     /// Per-candidate exact facts (off by default).
     #[serde(default)]
     pub candidate_facts: CandidateFactsConfig,
+    /// The Chimera V2 block (used only when `architecture = "chimera_v2"`).
+    #[serde(default)]
+    pub v2: ChimeraV2Config,
 }
 
 impl Default for ExperimentalConfig {
@@ -423,6 +587,7 @@ impl Default for ExperimentalConfig {
             visual: VisualConfig::default(),
             retrieval: RetrievalConfig::default(),
             candidate_facts: CandidateFactsConfig::default(),
+            v2: ChimeraV2Config::default(),
         }
     }
 }
@@ -435,13 +600,71 @@ impl ExperimentalConfig {
     }
 
     /// Whether this config describes the X15 family.
+    /// Whether this config describes the Chimera V2 family.
+    pub fn is_chimera_v2(&self) -> bool {
+        self.architecture == Architecture::ChimeraV2
+    }
+
     pub fn is_chimera(&self) -> bool {
         self.architecture == Architecture::ChimeraV1
+    }
+
+    /// Validation of a `chimera_v2` config. V2 owns its own block; V1-only settings
+    /// (thought loop, reasoning latents, compute bank) do not apply and must stay default.
+    fn validate_v2(&self, model_width: usize) -> anyhow::Result<()> {
+        let v = &self.v2;
+        anyhow::ensure!(
+            v.planner_dim.is_multiple_of(v.planner_heads) && v.planner_heads >= 1,
+            "v2.planner_dim {} must be divisible by planner_heads {}",
+            v.planner_dim,
+            v.planner_heads
+        );
+        anyhow::ensure!(
+            v.cand_dim >= 8 && v.reply_dim >= 8 && v.succ_hidden >= 1 && v.planner_ffn >= 1,
+            "v2 widths must be positive (cand_dim, reply_dim >= 8)"
+        );
+        anyhow::ensure!(
+            v.workspace_tokens >= 1 && v.workspace_tokens <= 64,
+            "v2.workspace_tokens must be in 1..=64"
+        );
+        anyhow::ensure!(
+            (4..=64).contains(&v.max_thoughts),
+            "v2.max_thoughts must be in 4..=64 (T1-T4 are trained; the rest is reserved)"
+        );
+        anyhow::ensure!(
+            v.w_cap >= 8 && v.w_cap <= 224 && v.r_cap >= 1 && v.r_cap <= 96,
+            "v2.w_cap must be in 8..=224 and v2.r_cap in 1..=96"
+        );
+        anyhow::ensure!(
+            v.world_provider.is_active() || !v.info_schedule.needs_world_model(),
+            "v2.world_provider = \"none\" is only valid with info_schedule = \"root_only\""
+        );
+        anyhow::ensure!(
+            self.candidate_facts.provider == CandidateFactsProviderKind::NativeV1
+                && self.candidate_facts.enabled,
+            "chimera_v2 requires candidate facts (they are part of the candidate token): \
+             set [experimental.candidate_facts] provider = \"native_v1\", enabled = true"
+        );
+        anyhow::ensure!(
+            self.visual.resolution == VISUAL_RESOLUTION_X1,
+            "experimental.visual.resolution {} is not supported (only {VISUAL_RESOLUTION_X1})",
+            self.visual.resolution
+        );
+        anyhow::ensure!(
+            self.retrieval.provider == RetrievalProviderKind::None
+                && self.retrieval.memory_tokens == 0,
+            "retrieval is not implemented; it must stay \"none\""
+        );
+        anyhow::ensure!(model_width >= 8, "model width too small");
+        Ok(())
     }
 
     /// Validate the block, refusing combinations that would silently do
     /// something other than what the config says.
     pub fn validate(&self, model_width: usize) -> anyhow::Result<()> {
+        if self.is_chimera_v2() {
+            return self.validate_v2(model_width);
+        }
         anyhow::ensure!(
             self.thought_steps >= 1,
             "experimental.thought_steps must be >= 1"
@@ -560,6 +783,21 @@ impl ExperimentalConfig {
 
     /// The identity fields a checkpoint and a scientific hash must record.
     pub fn identity(&self) -> anyhow::Result<serde_json::Value> {
+        if self.is_chimera_v2() {
+            return Ok(serde_json::json!({
+                "architecture": self.architecture,
+                "architecture_head_version": self.architecture.head_version(),
+                "planner_contract_version": PLANNER_CONTRACT_VERSION,
+                "world_model_version": WORLD_MODEL_VERSION,
+                "candidate_token_version": CANDIDATE_TOKEN_VERSION,
+                "candidate_facts_version": CANDIDATE_FACTS_VERSION,
+                "visual_fusion_version": VISUAL_FUSION_VERSION,
+                "visual_render_version": recur64_coproc::VISUAL_RENDER_VERSION,
+                "v2": self.v2,
+                "candidate_facts": self.candidate_facts,
+                "visual": self.visual,
+            }));
+        }
         Ok(serde_json::json!({
             "architecture": self.architecture,
             "architecture_head_version": self.architecture.head_version(),

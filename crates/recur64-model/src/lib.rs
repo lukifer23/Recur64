@@ -14,6 +14,7 @@ pub const BURN_VERSION: &str = "0.21.0";
 pub mod action;
 pub mod checkpoint;
 pub mod chimera;
+pub mod chimera2;
 pub mod config;
 pub mod digest;
 pub mod experimental;

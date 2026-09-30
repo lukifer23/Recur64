@@ -275,6 +275,8 @@ pub struct CandidateTensors<B: Backend> {
     pub from_idx: Tensor<B, 2, Int>,
     pub to_idx: Tensor<B, 2, Int>,
     pub promo_idx: Tensor<B, 2, Int>,
+    /// Raw promotion code per candidate (0 none, 1..=4 knight/bishop/rook/queen).
+    pub promo_code: Tensor<B, 2, Int>,
     pub mask: Tensor<B, 2, Bool>,
     pub valid: Tensor<B, 1, Bool>,
     pub width: usize,
@@ -297,6 +299,13 @@ impl<B: Backend> CandidateTensors<B> {
             .map(|&p| if p == 0 { 0 } else { p as i32 - 1 })
             .collect();
         let promo_idx = Tensor::<B, 2, Int>::from_data(TensorData::new(promo_col, [b, w]), device);
+        let promo_code = Tensor::<B, 2, Int>::from_data(
+            TensorData::new(
+                cb.promo.iter().map(|&p| p as i32).collect::<Vec<_>>(),
+                [b, w],
+            ),
+            device,
+        );
         let mask =
             Tensor::<B, 2, Bool>::from_data(TensorData::new(cb.mask.clone(), [b, w]), device);
         let valid = Tensor::<B, 1, Bool>::from_data(
@@ -308,6 +317,7 @@ impl<B: Backend> CandidateTensors<B> {
             from_idx,
             to_idx,
             promo_idx,
+            promo_code,
             mask,
             valid,
             width: w,
