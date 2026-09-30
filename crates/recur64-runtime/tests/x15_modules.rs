@@ -693,6 +693,7 @@ fn facts_exp(reasoning: bool) -> ExperimentalConfig {
     e.candidate_facts = CandidateFactsConfig {
         provider: CandidateFactsProviderKind::NativeV1,
         enabled: true,
+        gain: 1.0,
         hidden: 8,
     };
     e
@@ -836,4 +837,54 @@ fn a_symbolic_network_with_facts_learns_to_play_the_mating_move() {
         after > 0.5 && after > before * 3.0,
         "policy mass on the mating move only went {before} -> {after}"
     );
+}
+
+#[test]
+fn the_facts_gain_scales_the_bias_linearly() {
+    let device = Default::default();
+    let cfg = tiny_cfg();
+    let states = probe_positions(3, 12);
+    let mut e1 = facts_exp(false);
+    e1.candidate_facts.gain = 1.0;
+    let mut e8 = e1.clone();
+    e8.candidate_facts.gain = 8.0;
+    e8.validate(cfg.width).unwrap();
+    let provider = provider_for_config(&e1).unwrap();
+    let batch = build_x15_batch::<EvalB>(&states, &e1, provider.as_ref(), &device).unwrap();
+    let facts = batch.input.cand_facts.clone().unwrap();
+
+    // Same weights under both gains: build with gain 1, give the second model
+    // the same record and only change its config's gain via a rebuilt model whose
+    // weights are copied (record round-trip).
+    let m1 = ChimeraModel::<EvalB>::new(cfg.clone(), e1.clone(), &device);
+    let record = m1.clone().into_record();
+    let m8 = ChimeraModel::<EvalB>::new(cfg, e8, &device).load_record(record);
+    // Make the (zero-initialised) last layer non-trivial so the bias is non-zero.
+    let mut mapper = RandomizeAux {
+        stack: Vec::new(),
+        touched: 0,
+    };
+    let m1 = m1.map(&mut mapper);
+    let record = m1.clone().into_record();
+    let m8 = m8.load_record(record);
+    let b1 = m1
+        .facts_bias_raw(facts.clone())
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap();
+    let b8 = m8
+        .facts_bias_raw(facts)
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap();
+    assert!(
+        b1.iter().any(|v| v.abs() > 1e-6),
+        "bias must be non-trivial"
+    );
+    for (a, b) in b1.iter().zip(&b8) {
+        assert!(
+            (a * 8.0 - b).abs() <= 1e-4 * a.abs().max(1.0),
+            "{a} * 8 != {b}"
+        );
+    }
 }
