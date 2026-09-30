@@ -1061,6 +1061,9 @@ fn run_analyze(args: AnalyzeArgs) -> anyhow::Result<()> {
 pub struct InfoArgs {
     #[arg(long)]
     pub config: PathBuf,
+    /// Audited positions used for the per-budget compute counts.
+    #[arg(long, default_value = "runs/x2/data/tune.json")]
+    pub data: PathBuf,
 }
 
 fn run_info(args: InfoArgs) -> anyhow::Result<()> {
@@ -1093,11 +1096,9 @@ fn run_info(args: InfoArgs) -> anyhow::Result<()> {
     );
     // Per-budget compute counts from a real forward on CPU over a few positions.
     let v = &cfg.experimental.v2;
-    let states: Vec<GameState> = recur64_runtime::x15_inputs::probe_positions(4, 30)
-        .into_iter()
-        .filter(|s| !s.is_terminal() && s.legal_actions().len() <= v.w_cap)
-        .take(2)
-        .collect();
+    let d = V2Data::load(&args.data)?;
+    d.audit_and_enforce(v.w_cap, v.r_cap)?;
+    let states: Vec<GameState> = d.states()?.into_iter().take(2).collect();
     let prov = provider(&cfg)?;
     for t in 1..=4 {
         let h = horizon_for_budget(v.info_schedule, t).unwrap_or(WorldHorizon::Root);

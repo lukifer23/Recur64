@@ -416,6 +416,11 @@ pub struct GenArgs {
     pub out_dir: PathBuf,
     #[arg(long, default_value_t = 2400)]
     pub train_per_kind: usize,
+    /// The KQK and KRK families have only a few hundred distinct symmetry classes that
+    /// satisfy the filters (measured: ~560 for KQK); their TRAIN count is capped here
+    /// and the shortfall is reported, never silently relaxed.
+    #[arg(long, default_value_t = 350)]
+    pub train_small_family_cap: usize,
     #[arg(long, default_value_t = 52)]
     pub tune_per_kind: usize,
     #[arg(long, default_value_t = 52)]
@@ -477,11 +482,19 @@ pub fn run_gen(args: GenArgs) -> anyhow::Result<()> {
         let mut positions = Vec::new();
         let mut stats = BTreeMap::new();
         for (kind, white) in KINDS {
+            let want = if split == "train" && matches!(kind, "kqk" | "krk") {
+                per_kind.min(args.train_small_family_cap)
+            } else {
+                per_kind
+            };
+            if want < per_kind {
+                println!("  {split} {kind}: capped at {want} of the requested {per_kind} (small pool)");
+            }
             let (v, st) = gen_kind(
                 seed,
                 kind,
                 white,
-                per_kind,
+                want,
                 args.threads.max(1),
                 &forbid_fen,
                 &forbid_canon,
