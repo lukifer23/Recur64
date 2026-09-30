@@ -126,3 +126,52 @@ dataset overlaps A/B/C; non-finite model output; CUDA guard failure; a run with 
 seed/LR/sampler/digest; science configuration differing between seeds; a failure that cannot
 be cleanly rerun under the same frozen contract. Infrastructure failures may be repaired only
 with an identical scientific configuration, and are documented.
+
+
+---
+
+# OWNER SCOPE ADDENDUM - BEFORE P2.5 SCIENCE
+
+The owner deliberately narrowed P2.5 before any P2.5 science was run. This is a SCOPE
+decision, not a result-driven change; the original pre-registration above is left intact.
+
+State at the time of the change: no P2.5-F scientific (contract-2) LF training had been
+completed or read; no HOLDOUT_A/B/C result had been read and no holdout had been evaluated.
+(An engineering-only LF run under the superseded contract 1 had been started by the agent
+before this addendum was received; it is void as science, quarantined unread, and described in
+`docs/WORKSTATION_V25_P25_RESULTS.md`.)
+
+1. **P2.5-O is CANCELLED / DEFERRED.** No 800-update optimization-horizon experiment will be run
+   in this lineage. The P2.5-O trigger, training contract and signal in the plan above are
+   retained only as historical pre-registration and are NOT active.
+2. **Revised stop rule.** After P2.5-D finishes, STOP ALWAYS. Do not trigger P2.5-O; do not run 800
+   updates, P3, P3', conversion, M4/M5, self-play, recurrence, a world model, a planner or any new
+   architecture rescue. The evidence is reported to the owner, and V3 is designed from P2, the LF
+   factorial, the unique-data-scale result, the HP V2 evidence and the main-branch
+   conversion/value evidence.
+3. **HOLDOUT_C is reserved but unused** (seed 0x7A130003 is kept as historical reference). It was
+   generated and audited before this scope change but never evaluated; it stays sealed and is not
+   repurposed for any other decision inside P2.5. Active science uses HOLDOUT_A (P2.5-F) and
+   HOLDOUT_B (P2.5-D) only.
+4. **Everything else in P2.5-F and P2.5-D is unchanged**: LF seeds 1/2 on the P2 data (400 updates,
+   LR 3e-4, cell_balanced_v1), the full 2x2 factorial {L, C0, CF, LF} on HOLDOUT_A, the LF-vs-CF
+   selection rule, the interaction effect, and the matched 1k-vs-scaled same-architecture
+   comparison on HOLDOUT_B (same seeds, updates, LR, sampler and optimizer). Thresholds are not
+   changed after seeing results. The P3' gate text is retained as a description of what would be
+   needed, but P2.5 makes no P3' decision: it stops and reports.
+
+# LF CONTRACT CORRECTION (pre-science; supersedes the LF parameter statements above)
+
+The original LF specification above gave the final fact-delta layer a bias and claimed every
+facts parameter receives gradient from update 1 and a size of "L + 641". That was wrong for
+the final bias: it adds the same constant to every candidate logit of a row, and the softmax
+cancels it (`softmax(z_i + b) == softmax(z_i)`), so it was an inert parameter with identically
+zero policy gradient.
+- `facts2 = Linear(hidden -> 1)` now has NO bias; `facts1` keeps its bias; the `facts2` weight
+  init (normal, std 0.01) and everything else in LF is unchanged.
+- `FACT_DELTA_CONTRACT` 1 -> 2. Contract-1 LF checkpoints are engineering-only and are refused by
+  the contract-2 loader (demonstrated on the real contract-1 checkpoint and by a unit test).
+- Exact LF parameter count: **26,810,584** = L 26,809,944 + 640 (no replacement parameters were
+  added to preserve the old count).
+- Gradient coverage is now checked per parameter: `facts1.weight`, `facts1.bias`, `facts2.weight`
+  each have a gradient tensor, all finite, at least one nonzero element, after update 1.

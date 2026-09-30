@@ -382,4 +382,22 @@ mod architecture_identity_tests {
                 .is_err()
         );
     }
+
+    #[test]
+    fn lf_contract_one_checkpoints_are_refused_under_contract_two() {
+        let mut lf = ModelConfig::legacy_facts_v25();
+        lf.width = 32;
+        lf.heads = 4;
+        lf.ffn = 64;
+        lf.core_blocks = 2;
+        let mut m = meta(lf);
+        assert_eq!(m.fact_delta_contract, FACT_DELTA_CONTRACT);
+        assert_eq!(FACT_DELTA_CONTRACT, 2);
+        m.check_contracts().unwrap();
+        m.fact_delta_contract = 1; // an engineering-only pre-fix checkpoint
+        let e = m.check_contracts().unwrap_err().to_string();
+        assert!(e.contains("fact-delta"), "{e}");
+        m.fact_delta_contract = 0; // or none at all
+        assert!(m.check_contracts().is_err());
+    }
 }

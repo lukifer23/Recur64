@@ -52,7 +52,7 @@
     },
     {
       "group": "facts_delta_mlp",
-      "params": 641
+      "params": 640
     }
   ],
   "model": {
@@ -73,5 +73,5 @@
     "wdl_classes": 3,
     "width": 640
   },
-  "total_params": 26810585
+  "total_params": 26810584
 }

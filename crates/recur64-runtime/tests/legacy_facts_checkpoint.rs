@@ -153,7 +153,7 @@ fn lf_checkpoint_round_trips_exactly() {
     let dir = tmp("rt");
     let meta = CheckpointMeta::new(cfg.clone(), 1, false, 2, 1e-3, 7, 0, "flex", "fp32");
     assert_eq!(meta.architecture, "legacy_facts_v25");
-    assert_eq!(meta.fact_delta_contract, 1);
+    assert_eq!(meta.fact_delta_contract, 2);
     save_training(&dir, &model, &optim, &meta).unwrap();
     let (loaded, _o, m2) = load_training(
         &dir,

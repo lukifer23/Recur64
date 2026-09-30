@@ -160,7 +160,12 @@ pub const CANDIDATE_HEAD_VERSION: u32 = 1;
 
 /// Version of the LF fact-delta contract (8 -> hidden -> 1 logit delta added to the
 /// legacy policy logit before the masked softmax).
-pub const FACT_DELTA_CONTRACT: u32 = 1;
+///
+/// * v1 - engineering only, never science: the final `Linear(hidden -> 1)` had a bias,
+///   which adds the same constant to every candidate of a row and is cancelled by the
+///   softmax (an inert parameter with identically zero policy gradient).
+/// * v2 - the final layer has NO bias.
+pub const FACT_DELTA_CONTRACT: u32 = 2;
 
 fn d_facts_delta_hidden() -> usize {
     64

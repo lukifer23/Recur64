@@ -4,7 +4,7 @@
 //! historical [`ProbeModel`] (wrapped unchanged, so its record layout and identity
 //! are untouched). CandidateFacts enter as a small candidate-local POLICY DELTA:
 //!
-//! `final_logit_i = base_logit_i + Linear(hidden -> 1)(GELU(Linear(8 -> hidden)(facts_i)))`
+//! `final_logit_i = base_logit_i + Linear_nobias(hidden -> 1)(GELU(Linear(8 -> hidden)(facts_i)))`
 //!
 //! and then the usual masked legal softmax. There is no gain multiplier and no
 //! zero-gated path; the final layer has a small NONZERO initialization so the fresh
@@ -54,8 +54,10 @@ impl<B: Backend> LegacyFactsModel<B> {
             facts1: LinearConfig::new(CANDIDATE_FACT_FIELDS, hidden)
                 .with_bias(true)
                 .init(device),
+            // No bias: a constant added to every candidate of a row is cancelled by the
+            // softmax, so it would be an inert parameter with zero policy gradient.
             facts2: LinearConfig::new(hidden, 1)
-                .with_bias(true)
+                .with_bias(false)
                 .with_initializer(Initializer::Normal {
                     mean: 0.0,
                     std: FACT_DELTA_INIT_STD,
@@ -134,6 +136,16 @@ impl<B: Backend> LegacyFactsModel<B> {
     /// Identity of the first fact-delta weight (gradient tests).
     pub fn facts_weight_id(&self) -> burn::module::ParamId {
         self.facts1.weight.id
+    }
+
+    /// Identity of the first fact-delta layer's bias (gradient tests).
+    pub fn facts_bias_id(&self) -> burn::module::ParamId {
+        self.facts1.bias.as_ref().expect("facts1 has a bias").id
+    }
+
+    /// Whether the final fact-delta layer has a bias (it must not).
+    pub fn delta_layer_has_bias(&self) -> bool {
+        self.facts2.bias.is_some()
     }
 
     /// Identity of the final fact-delta weight (gradient tests).

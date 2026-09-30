@@ -510,3 +510,12 @@ unauthorized under the old rule. No P2 number, threshold or decision is altered.
 P2.5 (factorial + data scale + optional optimization horizon) is a separate, owner-authorized
 experiment motivated by P2 evidence; it is neither the P2 extension nor a P2 rescue. All of
 its rules are pre-registered in `docs/WORKSTATION_V25_P25_PLAN.md` before any P2.5 science.
+
+
+---
+
+## P2.5 pre-science cleanup
+LF contract 2 (inert final bias removed; 26,810,584 parameters) and the owner scope narrowing
+(P2.5-O cancelled/deferred, HOLDOUT_C reserved-unused, STOP after P2.5-D) are recorded in
+`docs/WORKSTATION_V25_P25_PLAN.md` (owner scope addendum) and
+`docs/WORKSTATION_V25_P25_RESULTS.md` (correction). No P2.5 science had been run.

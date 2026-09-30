@@ -63,3 +63,34 @@ TRAIN positions, not 5,000; the other eight heavy cells get 5,000. `cell_balance
 per-cell EXPOSURE equal, so KQQvK M3 will be oversampled (~3.7 local epochs at 400 updates
 vs ~1.4 for a 5,000 cell). INFERRED: this slightly dilutes the "5k vs 1k" contrast in exactly one
 of nine heavy cells; it is reported, not hidden.
+
+
+---
+
+## CORRECTION (pre-science) - LF contract 2, scope narrowing, and an incident
+Supersedes the LF size and gradient statements in Phase 1 above (the original text is kept).
+- **Fix:** the final fact-delta layer's bias was inert (constant per row, cancelled by the
+  softmax, zero gradient) and is removed; `FACT_DELTA_CONTRACT` 1 -> 2; exact LF size
+  **26,810,584** = L + 640. MEASURED after the fix: per-parameter gradients for `facts1.weight`,
+  `facts1.bias`, `facts2.weight` are finite and nonzero after update 1; the final layer has no bias;
+  fresh entropy 0.994 x uniform, worst top-1 1.69 x uniform, WDL exactly 0; CUDA (RTX 2000 Ada):
+  device guard, forward finite (p50 26.9 ms), 64x4 training step finite (peak 2.6 GB), lifecycle
+  growth 0 MiB. Evidence: `docs/evidence/v25/p25/model-info-legacy-facts.json`,
+  `docs/evidence/v25/p25/factorial/lf-cuda-qual.json` (the contract-1 run is kept as
+  `lf-cuda-qual-contract1-engineering-only.json`).
+- **Legacy-base identity (new structural regression test):** with the backend seeded identically,
+  LF's wrapped Probe is BIT-IDENTICAL to an independently built Probe, and zero-fact LF equals its
+  wrapped Probe (max diff < 1e-6). The test first failed when it shared a file with other tests:
+  Burn's backend RNG is global process state, so a sibling test consuming random numbers between
+  `seed()` and the constructions broke the comparison. Run alone it passes 3/3, so the legacy path is
+  unchanged; the test now lives in its own integration-test file (its own process) and is stable.
+- **Scope:** P2.5-O cancelled/deferred; HOLDOUT_C reserved but unused; STOP after P2.5-D (see the
+  scope addendum in `WORKSTATION_V25_P25_PLAN.md`).
+- **Incident (disclosed):** the agent had started LF training under contract 1 and had generated
+  and committed HOLDOUT_A/B/C (`934210c`, after the `808943b` this addendum expected) before the
+  addendum arrived. Stopped on receipt. LF seed 1 had COMPLETED (contract 1) and, as a descriptive
+  check, evaluated the OLD P2 CONFIRM (the seventh entry in `confirm-exposure.log`); LF seed 2 was
+  at update 325 with no outputs. Both are engineering-only and void as science, quarantined UNREAD
+  in `runs/v25/aborted/lf-contract1-engineering-only/`. No holdout was evaluated
+  (no `holdout-exposure.log`); the holdouts are deterministic data generated without any model, so they
+  were kept as committed.

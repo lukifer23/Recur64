@@ -84,8 +84,13 @@ fn full_geometry_is_l_plus_the_facts_mlp_and_a_distinct_identity() {
     assert_eq!(n, sum);
     assert_eq!(
         n,
-        l.num_params() + 8 * 64 + 64 + 64 + 1,
-        "only the facts MLP is added"
+        l.num_params() + 8 * 64 + 64 + 64,
+        "only the facts MLP is added: facts1 weight+bias and a bias-free facts2 weight"
+    );
+    assert_eq!(n, 26_810_584, "exact LF parameter count");
+    assert!(
+        !lf.delta_layer_has_bias(),
+        "the final fact-delta layer must have no bias"
     );
     assert_eq!(lf.config().architecture.id(), "legacy_facts_v25");
 }
@@ -234,6 +239,10 @@ fn every_facts_parameter_gets_a_finite_nonzero_gradient_on_update_one() {
     type Inner = burn::backend::Flex;
     let device = Default::default();
     let m = LegacyFactsModel::<TB>::new(tiny(), &device);
+    assert!(
+        !m.delta_layer_has_bias(),
+        "no final bias (it would be inert)"
+    );
     let states = positions(8, 17);
     let inp = CandidateInputs::<TB>::from_states(&states, &device).unwrap();
     let (b, w) = (states.len(), inp.cands.width);
@@ -254,17 +263,29 @@ fn every_facts_parameter_gets_a_finite_nonzero_gradient_on_update_one() {
     let out = m.forward(inp.board.clone(), &inp.cands, inp.facts.clone());
     let loss = model_loss(&out, &targets);
     let grads = GradientsParams::from_grads(loss.backward(), &m);
-    for (name, id) in [
-        ("facts1", m.facts_weight_id()),
-        ("facts2", m.delta_weight_id()),
-    ] {
-        let g = grads
-            .get::<Inner, 2>(id)
-            .unwrap_or_else(|| panic!("no gradient for {name}"))
-            .into_data()
-            .to_vec::<f32>()
-            .unwrap();
+    // EVERY learnable fact-path parameter, individually (not an aggregate).
+    let check = |name: &str, g: Vec<f32>| {
+        assert!(!g.is_empty(), "{name}: empty gradient");
         assert!(g.iter().all(|v| v.is_finite()), "{name} non-finite");
         assert!(g.iter().any(|v| v.abs() > 1e-12), "{name} gradient is zero");
-    }
+    };
+    let rank2 = |id| {
+        grads
+            .get::<Inner, 2>(id)
+            .expect("gradient tensor exists")
+            .into_data()
+            .to_vec::<f32>()
+            .unwrap()
+    };
+    let rank1 = |id| {
+        grads
+            .get::<Inner, 1>(id)
+            .expect("gradient tensor exists")
+            .into_data()
+            .to_vec::<f32>()
+            .unwrap()
+    };
+    check("facts1.weight", rank2(m.facts_weight_id()));
+    check("facts1.bias", rank1(m.facts_bias_id()));
+    check("facts2.weight", rank2(m.delta_weight_id()));
 }
