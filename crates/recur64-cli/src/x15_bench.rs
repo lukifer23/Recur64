@@ -34,6 +34,8 @@ use recur64_runtime::x15_inputs::{build_x15_batch, probe_positions, provider_for
 pub enum BenchMode {
     /// Normal (non-diagnostic) forward only.
     Infer,
+    /// Repeated build / forward / drop cycles; VRAM must plateau.
+    Lifecycle,
     /// Forward + backward + accumulate + AdamW step.
     Train,
 }
@@ -231,4 +233,49 @@ where
     }
     let model = optim.step(lr, model, acc.grads());
     (model, loss_sum, finite)
+}
+
+/// Build -> forward -> drop -> cleanup, repeated. Post-cleanup VRAM must
+/// plateau; a monotonic climb is a per-owner leak (the D44 failure mode).
+pub fn run_lifecycle<B: Backend>(cfg: &ProbeConfig, args: &BenchArgs) -> anyhow::Result<()> {
+    let device: B::Device = Default::default();
+    let provider = provider_for_config(&cfg.experimental)?;
+    let states = probe_positions(args.batch.max(1), 40);
+    let t = args.thoughts.last().copied().unwrap_or(1);
+    println!(
+        "bench lifecycle: {} cycles, T={t}, batch={}",
+        args.iters, args.batch
+    );
+    let mut after = Vec::new();
+    for cycle in 0..args.iters.max(2) {
+        let model = recur64_runtime::model_io::build_chimera_unverified::<B>(
+            &cfg.model,
+            &cfg.experimental,
+            &device,
+        )?;
+        let batch = build_x15_batch::<B>(&states, &cfg.experimental, provider.as_ref(), &device)?;
+        let out = model.forward_thoughts(&batch.input, &batch.cands, t);
+        let _ = out
+            .readouts
+            .last()
+            .map(|r| r.wdl_logits.clone().into_data());
+        let during = recur64_runtime::gpu_telemetry::sample_gpu().map(|s| s.0);
+        drop(out);
+        drop(batch);
+        drop(model);
+        let _ = B::sync(&device);
+        B::memory_cleanup(&device);
+        let post = recur64_runtime::gpu_telemetry::sample_gpu().map(|s| s.0);
+        println!("  cycle {cycle}: during={during:?} MiB after_drop={post:?} MiB");
+        after.push(post);
+    }
+    if let (Some(Some(first)), Some(Some(last))) = (after.get(1), after.last()) {
+        let growth = last.saturating_sub(*first);
+        println!("post-drop VRAM cycle1 -> last: {first} -> {last} MiB (growth {growth} MiB)");
+        anyhow::ensure!(
+            growth <= 64,
+            "VRAM did not plateau: grew {growth} MiB across cycles"
+        );
+    }
+    Ok(())
 }

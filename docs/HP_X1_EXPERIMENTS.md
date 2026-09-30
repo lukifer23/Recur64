@@ -67,3 +67,58 @@ hours cumulative GPU time, then stop and report.
   - T=1 train cells are NOT valid (autotune still settling in the timed steps).
 - DECISION: physical 32 x accumulation 4 (effective 128). T=8 not run.
 - NEXT: lifecycle plateau, owner-pool / D55 checks, then ReasoningTargetsV1.
+
+## E3 - lifecycle (P1.4)
+- MEASURED (`x15 bench --mode lifecycle`, D55 build, T=4, 5 build/forward/drop
+  cycles): post-drop VRAM 483 MiB every cycle, growth 0 MiB. Plateau, no
+  per-owner leak.
+- NOT RUN: plain-CUDA (no fusion) lifecycle. The raw model has no owner thread;
+  the owner-thread lifecycle (D44) is only relevant once X15 gets an inference
+  owner (P7).
+
+## E4 - ReasoningTargetsV1 generation (P2)
+- QUESTION: can we build an exact, deterministic, self-teacher target set?
+- CONTRACT (frozen before generating): teacher = Train1 final trainer
+  (`runs/hp-r15-train1-r1/checkpoints/trainer`, model_id `073357a98882...`,
+  0.633 vs M), probe_v1 architecture, recurrence 1; deterministic PUCT, c_puct
+  1.0, 1 leaf in flight, NO root noise; ladder 16/32/64/128 simulations; seed
+  20260929. Positions = exact `start_fen + action-id prefix` from that run's 288
+  self-play games; no external engine, tablebase, book or human data.
+- Selection: seeded hash order, equal quota over opening / middlegame / endgame /
+  tactical (side to move in check) / material_advantage (|diff| >= 3); train/val
+  split by source game (about a quarter of games in val).
+- MEASURED:
+  - 32-position smoke: 94 s single thread, 70 s at 4 threads; digest identical
+    (`7b6bba18...`), so labels are independent of thread count.
+  - 128 positions (25/26/26/26/25 by category; train 96 / val 32): 249 s at 6
+    threads. Digest `8c9237ff6a0c...`. Every position reconstructs move for move
+    (FEN, legal list and observation digest all reproduce).
+  - RTX during labelling: peak 52% util, 43% busy-mean, 321 MiB. The GPU is used
+    but latency-starved: batch-1 search is CPU-bound.
+- Evidence: `docs/evidence/x1/reasoning-targets-v1-128.json`.
+- INTERPRETATION: good enough to proceed. Labelling throughput is an
+  engineering limit, not a science limit; 256/512 positions would need batched
+  labelling.
+
+## Outstanding (as of this entry)
+1. Fixed-data trainer (`x15 train-probe`): checkpoint save/resume + optimizer
+   state, supervision modes on ReasoningTargetsV1, value target. NOT BUILT.
+2. Micro-overfit, then LR screen (3e-5 / 7.5e-5 / 1.5e-4). NOT RUN.
+3. P4 screen: same weights at T1/T2/T4 (diagnostic forward) vs the deepest
+   teacher rung. Pre-registration to be committed BEFORE running. NOT RUN.
+4. Loss-scale normalization before any supervision A/B (addendum item 1):
+   `thought_loss` weights final 1.0 + intermediates 0.25 each, i.e. 1.75 total at
+   T=4 vs 1.0 for final_only. Must normalize by total active weight (with a unit
+   test) or compensate LR. NOT DONE.
+5. Experiment provenance hash (addendum item 6): git SHA, geometry, X15 config,
+   thought count, dataset digest, teacher, ladder, supervision mode, weight, LR /
+   optimizer / updates, seed. NOT DONE.
+6. Throughput: batch the teacher labelling through the existing
+   InferenceOwner/BatchedEvaluator instead of batch-1 SyncEvaluator; overlap host
+   batch building with GPU steps in training; re-measure T=1 train cells warm
+   (current T=1 train numbers are invalid). Cold start (kernel JIT/autotune)
+   costs minutes per new shape; keep shapes fixed. NOT DONE.
+7. P1.5 owner-pool (1 vs 2) and D55-vs-plain on X15: NOT RUN (X15 has no
+   inference owner yet; plain-CUDA build not built).
+8. P5 ablations, P6 tactical suite, mate-in-2 rule-exactness audit: NOT RUN.
+9. P7 tiny self-play: not earned yet.

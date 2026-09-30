@@ -26,6 +26,7 @@ mod replay_merge;
 mod search_gain;
 mod x15;
 mod x15_bench;
+mod x15_reasoning;
 
 #[derive(Parser)]
 #[command(

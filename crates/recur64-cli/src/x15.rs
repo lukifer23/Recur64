@@ -44,6 +44,10 @@ pub enum X15Command {
     Parity(ParityArgs),
     /// Steady-state latency / throughput / VRAM (normal forward or train step).
     Bench(crate::x15_bench::BenchArgs),
+    /// Generate ReasoningTargetsV1 with a Recur64 teacher (deterministic PUCT).
+    GenTargets(crate::x15_reasoning::GenTargetsArgs),
+    /// Re-verify a targets file move for move.
+    AuditTargets(crate::x15_reasoning::AuditTargetsArgs),
     /// Module gradient probe: every gated subsystem must receive a non-zero
     /// gradient on the first training step.
     Grads(BatchArgs),
@@ -133,6 +137,8 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::Thoughts(a) => dispatch_device(&a.config, &a, run_thoughts),
         X15Command::Parity(a) => run_parity(a),
         X15Command::Bench(a) => run_bench(a),
+        X15Command::GenTargets(a) => crate::x15_reasoning::run_gen(a),
+        X15Command::AuditTargets(a) => crate::x15_reasoning::run_audit(a),
     }
 }
 
@@ -654,11 +660,14 @@ pub fn default_experimental() -> recur64_model::experimental::ExperimentalConfig
 // --- bench -----------------------------------------------------------------
 
 fn run_bench(args: crate::x15_bench::BenchArgs) -> anyhow::Result<()> {
-    use crate::x15_bench::{BenchMode, run_infer, run_train};
+    use crate::x15_bench::{BenchMode, run_infer, run_lifecycle, run_train};
     let cfg = load_config(&args.config)?;
     match (cfg.device, args.mode) {
         (recur64_model::config::DeviceKind::Cpu, BenchMode::Infer) => {
             run_infer::<burn::backend::Flex>(&cfg, &args)
+        }
+        (recur64_model::config::DeviceKind::Cpu, BenchMode::Lifecycle) => {
+            run_lifecycle::<burn::backend::Flex>(&cfg, &args)
         }
         (recur64_model::config::DeviceKind::Cpu, BenchMode::Train) => {
             run_train::<recur64_model::train::CpuTrainBackend>(&cfg, &args)
@@ -666,6 +675,10 @@ fn run_bench(args: crate::x15_bench::BenchArgs) -> anyhow::Result<()> {
         #[cfg(feature = "cuda")]
         (recur64_model::config::DeviceKind::Cuda, BenchMode::Infer) => {
             run_infer::<burn::backend::Cuda>(&cfg, &args)
+        }
+        #[cfg(feature = "cuda")]
+        (recur64_model::config::DeviceKind::Cuda, BenchMode::Lifecycle) => {
+            run_lifecycle::<burn::backend::Cuda>(&cfg, &args)
         }
         #[cfg(feature = "cuda")]
         (recur64_model::config::DeviceKind::Cuda, BenchMode::Train) => {

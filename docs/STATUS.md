@@ -505,3 +505,17 @@ unchanged.
   (64), flattened cross-attention linears, deep-supervision loss API (D61).
 - **NOT RUN:** X15 on CUDA, any training, ReasoningTargetsV1, tactical suite.
 - Ledger: `docs/HP_X1_EXPERIMENTS.md`.
+
+### HP X1 progress update (2026-09-29, later)
+- **CUDA (MEASURED):** X15 runs on the RTX 2050: sanity, gradients (all 8
+  subsystems), diagnostic thoughts, normal-forward bench, training-step bench
+  (32x4, effective 128: T=4 1.47 s/update, 87 ex/s, 2.38 GB peak), lifecycle
+  plateau. New: `x15 bench --mode infer|train|lifecycle`.
+- **ReasoningTargetsV1 (MEASURED):** 128 exact-history positions labelled by the
+  Train1 trainer with a 16/32/64/128 deterministic-PUCT ladder; audited move for
+  move. New: `x15 gen-targets`, `x15 audit-targets`.
+- **NOT RUN / OUTSTANDING:** fixed-data trainer, LR screen, the T1/T2/T4
+  reasoning screen, ablations, tactical suite, loss-scale normalization,
+  experiment provenance hash. See `docs/HP_X1_EXPERIMENTS.md`.
+- **Known limits:** kernel JIT/autotune cold start costs minutes per new shape;
+  teacher labelling is CPU/latency-bound at batch 1.
