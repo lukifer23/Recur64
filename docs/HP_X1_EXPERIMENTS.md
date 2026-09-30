@@ -403,3 +403,42 @@ T1): 0.3057 vs 0.3152, diff -0.0095 [-0.0338, +0.0187]: a tie.
   control; (b) P6 tactical / conversion suite, where exact compute tokens could
   matter even if teacher-KL does not; (c) pivot. No self-play was earned.
 - GPU experiment time used so far: about 1.5 hours of the 2-hour budget.
+
+## E9 - tactical / conversion suite (P6), first reading (MEASURED)
+- SUITE (`x15 gen-tactics`, seed 20261001, 0.5 s, evidence
+  `docs/evidence/x1/tactics-v1.json`): 80 deterministic fixtures. Mates in five
+  material sets (KQvK, KRvK, KQQvK, KQRvK, KRRvK; 8 each; every mating move is
+  correct), `material_gain` (8; best 2-ply material outcome, margin >= 3),
+  `promotion` (8; margin >= 2), and 24 `hp_repetition_fen` positions (final FENs
+  of Train1 arena games that ended by threefold repetition, material lead >= 3,
+  repetition history LOST: they carry no move label). Synthetic kinds are FEN-only
+  with fresh clocks and no history, so mate labels are decided by the board alone.
+  The 2-ply labels are bounded material claims, not "best move".
+- Mate-in-2 rule-exactness: NOT USED as a target. The coprocessor's bounded
+  mate-in-2 uses a plain cozy-chess board without Recur64's repetition / fifty-move
+  history, so it is at most "board-forced mate"; it stays diagnostic only
+  (`mate_depth = 1` everywhere in X1).
+- TEACHER CEILING (Train1 trainer + deterministic PUCT, `x15 teacher-tactics`,
+  55 s): top-1 correct / mass on correct moves. Mates at 16 simulations 0.38-0.62,
+  at **64 and 128 simulations 1.00** (mass 0.66-0.91). `material_gain` 0.62-0.88,
+  `promotion` 0.25-0.50 (this network is not strong there). So search converts
+  depth into mate-finding; the fixtures are solvable.
+- X15 VARIANTS (trained on the 96-position set, 80 updates; T1 -> T4 shown for
+  networks trained at T=4): top-1 correct on mates 0.00-0.25 (chance level; mass on
+  correct moves 3-7%), promotion 0.12 (chance), `material_gain` 0.75-1.00 for
+  ALL variants including symbolic-only (0.88). No variant separates from another.
+  P(win) rises with T only in T-trained nets (0.39 -> 0.46 for `final_only` T4;
+  0.42 -> 0.44 progressive) while correct-move rate does not. The value sign
+  agrees with the material lead on 96% of the repetition-draw FEN positions.
+- INTERPRETATION (MEASURED + INFERRED): at this training scale the networks have
+  not learned tactics at all, so the suite cannot yet separate recurrence, compute
+  or vision. It is a useful, solvable target: the teacher reaches 100% on mates
+  with 64 simulations. INFERRED design lead for the reasoning work: mate-in-1
+  needs one ply of look-ahead plus terminal detection. `ComputeBankV1` reports
+  whether a mate exists (a global token) but not WHICH candidate mates, so the
+  network cannot read the answer off the bank. A candidate-level exact-fact channel
+  (per legal move: gives mate / gives check / captures value / hangs the mover) is
+  the natural next contract, and it belongs to a versioned bank change.
+- NOT RUN: playing fixtures out (conversion rollouts), which needs fixed candidate
+  widths to avoid per-shape kernel compilation; the ~2-hour GPU budget is essentially
+  spent (about 1.7 h).

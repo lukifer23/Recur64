@@ -52,6 +52,12 @@ pub enum X15Command {
     TrainProbe(crate::x15_train::TrainProbeArgs),
     /// Evaluate one checkpoint at T=1..N (same weights) vs the deep teacher.
     EvalReasoning(crate::x15_train::EvalArgs),
+    /// Generate the deterministic tactical / conversion fixtures.
+    GenTactics(crate::x15_tactics::GenTacticsArgs),
+    /// Evaluate checkpoints on the tactical suite at T=1..N.
+    EvalTactics(crate::x15_tactics::EvalTacticsArgs),
+    /// Teacher (probe + PUCT) reference score on the tactical suite.
+    TeacherTactics(crate::x15_tactics::TeacherTacticsArgs),
     /// Module gradient probe: every gated subsystem must receive a non-zero
     /// gradient on the first training step.
     Grads(BatchArgs),
@@ -145,6 +151,9 @@ pub fn run(args: X15Args) -> anyhow::Result<()> {
         X15Command::AuditTargets(a) => crate::x15_reasoning::run_audit(a),
         X15Command::TrainProbe(a) => crate::x15_train::run_train(a),
         X15Command::EvalReasoning(a) => crate::x15_train::run_eval(a),
+        X15Command::GenTactics(a) => crate::x15_tactics::run_gen(a),
+        X15Command::EvalTactics(a) => crate::x15_tactics::run_eval(a),
+        X15Command::TeacherTactics(a) => crate::x15_tactics::run_teacher(a),
     }
 }
 

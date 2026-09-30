@@ -532,3 +532,12 @@ unchanged.
 - Engineering results stand: X15 runs on CUDA, 32x4 T4 training fits in 2.4 GB,
   exact-history teacher targets, deterministic bootstrap eval.
 - Evidence: `docs/evidence/x1/`; ledger: `docs/HP_X1_EXPERIMENTS.md`.
+
+### HP X1 tactical suite (2026-09-29)
+- **MEASURED:** 80 deterministic fixtures. Teacher + 64-128 simulations solves
+  mate-in-1 (100%); every X15 variant trained at the fixed-data scale is at chance
+  on mates and promotions, and all variants (symbolic-only included) tie.
+- **INFERRED next contract:** candidate-level exact facts (which move mates) rather
+  than only a global mate-exists flag; a scaled, search-distilled training set.
+- **NOT RUN:** conversion rollouts; scaled data; mate-in-2 as a target (kept as
+  board-forced-mate diagnostic only).
