@@ -82,9 +82,23 @@ child), `legal_actions` (complete, never truncated), `side_to_move`, `in_check`,
 `terminal_reason`, continuation fields (`castling`, `ep_square`, `halfmove_clock`,
 `repetition_count`), `semantic_id` (semantic state identity, below).
 
-`StatePacketV1::content_digest()` (a method, not a field) is a SHA-256 over the complete packet
-content including the observation and `semantic_id`. It proves that cached and live packets are
-field-equivalent; it is not the identity of the state.
+Every packet field belongs to exactly one class (enforced by a test):
+
+| Class | Fields |
+|---|---|
+| state content, covered by `state_digest()` | `observation`, `legal_actions`, `side_to_move`, `in_check`, `terminal`, `terminal_reason`, `castling`, `ep_square`, `halfmove_clock`, `repetition_count`, `semantic_id` |
+| edge / path, covered by `QueryIdentity` | `incoming_action`, `ply_from_root` |
+| ephemeral, never in a persistent digest or cache key | `node_id`, `parent_id` |
+
+`StatePacketV1::state_digest()` is a SHA-256 over every state-content field above. It says what the
+state is and what the model observes of it, not how it was reached. Mutation tests prove that
+changing any one of those fields changes the digest, and that the ephemeral and edge fields do not.
+
+`QueryIdentity` is the persistent identity of one query edge: the parent's `semantic_id`, the
+incoming ActionId, `ply_from_root`, and the child's `state_digest`. Its `digest()` covers all four.
+A persistent cache keys on it, never on `node_id` / `parent_id`, which are handles inside one
+`QueryManager`. Cached-versus-live validation recomputes the live identity and compares the whole
+thing, so a packet attached to the wrong parent, the wrong edge or the wrong depth is detected.
 
 ### Semantic state identity (`STATE_IDENTITY_VERSION` 1)
 `semantic_id` is SHA-256 over everything Rules Profile V1 needs to decide future legality and
@@ -111,9 +125,28 @@ PUCT/MCTS visits, neural value, downstream mate count, downstream checking-move 
 "number of winning replies", continuation-quality score, any aggregate tactical summary, anything
 derived from the exact mate solver.
 
+### Operation story of one successful query
+1. the ActionId is checked against the parent's stored, sorted legal set (no move generation);
+2. it is decoded directly, under the parent's canonical perspective, into the one physical move;
+3. the authoritative `GameState::apply` validates and performs that single transition (no sibling
+   is transitioned or inspected);
+4. the child's legal list is generated exactly once.
+
+Counters make this checkable: `legal_generations() == 1 + successful_queries()` (the given root
+plus one per query), `state_transitions() == successful_queries()`, and
+`legal_moves_generated()` counts the moves in child lists only. A refused query performs none of
+steps 2 to 4.
+
 ### Refusals (visible errors)
-illegal action; parent terminal; duplicate edge; unknown node; legal list > 256; depth beyond the
-declared range.
+illegal action (including an index outside the ActionId space); parent terminal; duplicate edge;
+unknown node; legal list > 256; budget exhausted.
+
+### Depth
+The query tool has **no depth limit**. The exact tree may follow any depth the budget allows.
+Depth is bounded only where a consumer cannot represent it: the model refuses a node deeper than
+`ACTIVE_MAX_DEPTH` with a visible error (versioned model contract, enforced in
+`active::tree` and `active::features`, never by clipping). That limit belongs to the model
+contract, not to StateQueryV1.
 
 ## 6. QueryStateEncoder (`query_state_encoder_v1`)
 

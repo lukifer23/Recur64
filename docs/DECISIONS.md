@@ -1011,5 +1011,25 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Status:** IMPLEMENTED (2026-09-30), `recur64-statequery`.
 - **Decision:** `StatePacketV1.semantic_id` (identity version 1) covers side to move, castling,
   en passant, halfmove clock, the repetition-relevant history window and the ply cap. It replaces
-  the former `state_hash` field. Packet content equivalence uses `content_digest()`. Board-
-  placement-only identity is never used for nodes or transpositions.
+  the former `state_hash` field. Board-placement-only identity is never used for nodes or
+  transpositions. Digest semantics are refined in V3-D8.
+
+## V3-D8 - P1.1: exact digest contract, one-generation query path, no tool depth cap
+
+- **Status:** IMPLEMENTED (2026-09-30), `recur64-statequery`.
+- **Decision (digests):** `content_digest()` is replaced by `state_digest()`, covering every
+  state-content field (observation included) and named so it does not claim path information.
+  Persistent cache identity is a separate `QueryIdentity` (parent semantic id, incoming ActionId,
+  ply from root, child state digest). `node_id` and `parent_id` are ephemeral and never enter
+  either. Mutation tests cover every declared field; a test classifies every packet field into
+  exactly one class.
+- **Decision (query path):** `query()` checks the ActionId against the parent's stored legal set,
+  decodes it directly into the one physical move, applies it through `GameState::apply`, and
+  generates the child's legal list exactly once. The earlier full parent move generation per query
+  is removed. `legal_generations() == 1 + successful_queries()`.
+- **Decision (depth):** the tool has no depth limit. The model enforces its own representable
+  depth with a visible error under its versioned contract. The earlier architecture text listing a
+  tool depth refusal described something that did not exist and is corrected.
+- **Decision (frozen gates):** the owner-adjustment sentence for the `C_8 >= 0.25` threshold is
+  removed; a changed threshold needs a new versioned preregistration. Gate I's `0.75` is a
+  reported diagnostic, not a pass condition. No approximate number remains as a success condition.

@@ -2,7 +2,23 @@
 //!
 //! `QueryManager::query(parent, action)` expands exactly ONE legal tree edge and
 //! returns a [`StatePacketV1`] for the child. One successful call is one unit of
-//! query budget. Legal-move generation at the child is part of that call.
+//! query budget.
+//!
+//! # Operation story of one successful query
+//!
+//! 1. the requested ActionId is looked up in the parent's stored, sorted legal
+//!    set (no move generation; the set was produced once when the parent was
+//!    created);
+//! 2. the ActionId is decoded directly, under the parent's canonical
+//!    perspective, into the one physical move it names;
+//! 3. the authoritative [`GameState::apply`] validates and performs that one
+//!    transition (no sibling is transitioned or inspected);
+//! 4. the child's legal list is generated exactly once.
+//!
+//! Refused queries (unknown node, terminal parent, illegal, duplicate, budget)
+//! perform none of steps 2 to 4. The tool has no depth limit of its own: the
+//! exact tree may follow any depth the budget allows. A model that can only
+//! represent a bounded depth enforces that itself.
 //!
 //! The packet carries exact state facts only. It never carries solver-derived,
 //! search-derived, value-derived or aggregate-tactical information; the field set
@@ -11,6 +27,17 @@
 //!
 //! The manager keeps an authoritative [`GameState`] (full history) per node so
 //! castling, en passant, repetition and the fifty-move rule are exact.
+//!
+//! # Identities and digests
+//!
+//! * `semantic_id`: the rules-semantic identity of a state ([`semantic_state_id`]).
+//! * [`StatePacketV1::state_digest`]: a digest over every *state-content* field
+//!   of the packet (see [`STATE_DIGEST_FIELDS`]). It says what the state is and
+//!   what the model observes of it; it says nothing about how it was reached.
+//! * [`QueryIdentity`]: the persistent identity of one query edge: the parent's
+//!   semantic id, the incoming ActionId, the ply from the root and the child's
+//!   state digest. Persistent caches key on this, never on `node_id` or
+//!   `parent_id`, which are ephemeral per manager.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -22,7 +49,7 @@ use recur64_core::{
 use serde::{Serialize, Serializer};
 use sha2::{Digest, Sha256};
 
-/// Contract version of the packet schema and hash definition.
+/// Contract version of the packet schema and digest definitions.
 pub const STATE_QUERY_VERSION: u32 = 1;
 
 /// Version of the semantic state identity definition.
@@ -47,12 +74,36 @@ pub const PACKET_FIELDS: [&str; 15] = [
     "semantic_id",
 ];
 
+/// Fields covered by [`StatePacketV1::state_digest`]: every state-content field.
+pub const STATE_DIGEST_FIELDS: [&str; 11] = [
+    "observation",
+    "legal_actions",
+    "side_to_move",
+    "in_check",
+    "terminal",
+    "terminal_reason",
+    "castling",
+    "ep_square",
+    "halfmove_clock",
+    "repetition_count",
+    "semantic_id",
+];
+
+/// Edge and path fields covered by [`QueryIdentity`] (through the packet's
+/// `incoming_action` and `ply_from_root`; the parent is identified by semantic id).
+pub const QUERY_IDENTITY_PACKET_FIELDS: [&str; 2] = ["incoming_action", "ply_from_root"];
+
+/// Ephemeral per-manager handles: never part of a persistent digest or cache key.
+pub const EPHEMERAL_FIELDS: [&str; 2] = ["node_id", "parent_id"];
+
 pub type NodeId = u32;
 
 /// Exact facts about one queried state. No solver, search or value fields.
 #[derive(Debug, Clone, Serialize)]
 pub struct StatePacketV1 {
+    /// Ephemeral handle inside one [`QueryManager`].
     pub node_id: NodeId,
+    /// Ephemeral handle inside one [`QueryManager`].
     pub parent_id: Option<NodeId>,
     /// Canonical ActionId index taken from the parent (None for the root).
     pub incoming_action: Option<u16>,
@@ -80,12 +131,89 @@ pub struct StatePacketV1 {
 }
 
 impl StatePacketV1 {
-    /// Digest of the complete packet content (observation included, node ids
-    /// excluded). Used to prove cached and live packets are field-equivalent;
-    /// it is NOT the identity of the state (see `semantic_id`).
-    pub fn content_digest(&self) -> String {
-        hash_packet(self)
+    /// SHA-256 (hex) over every state-content field listed in
+    /// [`STATE_DIGEST_FIELDS`], observation included. It excludes the ephemeral
+    /// handles and the edge/path fields (`incoming_action`, `ply_from_root`),
+    /// which belong to [`QueryIdentity`]. Two packets with equal digests describe
+    /// the same state and present the same observation, however they were
+    /// reached.
+    pub fn state_digest(&self) -> String {
+        let mut h = Sha256::new();
+        h.update(b"recur64.state_digest");
+        h.update(STATE_QUERY_VERSION.to_le_bytes());
+        h.update((self.semantic_id.len() as u32).to_le_bytes());
+        h.update(self.semantic_id.as_bytes());
+        for f in self.observation.as_slice() {
+            h.update(f.to_bits().to_le_bytes());
+        }
+        h.update((self.legal_actions.len() as u32).to_le_bytes());
+        for a in &self.legal_actions {
+            h.update(a.to_le_bytes());
+        }
+        h.update((self.side_to_move.len() as u32).to_le_bytes());
+        h.update(self.side_to_move.as_bytes());
+        h.update([u8::from(self.in_check), u8::from(self.terminal)]);
+        match self.terminal_reason {
+            Some(r) => {
+                h.update([1u8]);
+                h.update((r.len() as u32).to_le_bytes());
+                h.update(r.as_bytes());
+            }
+            None => h.update([0u8]),
+        }
+        h.update(self.castling.map(u8::from));
+        match self.ep_square {
+            Some(s) => h.update([1u8, s]),
+            None => h.update([0u8, 0]),
+        }
+        h.update(self.halfmove_clock.to_le_bytes());
+        h.update(self.repetition_count.to_le_bytes());
+        hex(h)
     }
+
+    /// The persistent identity of the edge that produced this packet, given the
+    /// semantic id of the parent state. Errors for a root packet.
+    pub fn query_identity(&self, parent_semantic_id: &str) -> Result<QueryIdentity, QueryError> {
+        let incoming_action = self.incoming_action.ok_or(QueryError::RootHasNoEdge)?;
+        Ok(QueryIdentity {
+            parent_semantic_id: parent_semantic_id.to_string(),
+            incoming_action,
+            ply_from_root: self.ply_from_root,
+            child_state_digest: self.state_digest(),
+        })
+    }
+}
+
+/// Persistent identity of one query edge, independent of ephemeral node ids.
+///
+/// A cached packet is valid for a live query only if the whole identity matches,
+/// so a packet attached to the wrong edge or the wrong depth is detected.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct QueryIdentity {
+    pub parent_semantic_id: String,
+    pub incoming_action: u16,
+    pub ply_from_root: u32,
+    pub child_state_digest: String,
+}
+
+impl QueryIdentity {
+    /// SHA-256 (hex) over all four components.
+    pub fn digest(&self) -> String {
+        let mut h = Sha256::new();
+        h.update(b"recur64.query_identity");
+        h.update(STATE_QUERY_VERSION.to_le_bytes());
+        h.update((self.parent_semantic_id.len() as u32).to_le_bytes());
+        h.update(self.parent_semantic_id.as_bytes());
+        h.update(self.incoming_action.to_le_bytes());
+        h.update(self.ply_from_root.to_le_bytes());
+        h.update((self.child_state_digest.len() as u32).to_le_bytes());
+        h.update(self.child_state_digest.as_bytes());
+        hex(h)
+    }
+}
+
+fn hex(h: Sha256) -> String {
+    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
 fn ser_observation<S: Serializer>(obs: &ObservationV1, s: S) -> Result<S::Ok, S::Error> {
@@ -116,6 +244,8 @@ pub enum QueryError {
     BudgetExhausted {
         budget: u32,
     },
+    /// A query identity was requested for the root, which has no incoming edge.
+    RootHasNoEdge,
     Core(CoreError),
 }
 
@@ -139,6 +269,7 @@ impl fmt::Display for QueryError {
             QueryError::BudgetExhausted { budget } => {
                 write!(f, "query budget {budget} exhausted")
             }
+            QueryError::RootHasNoEdge => write!(f, "the root has no incoming edge"),
             QueryError::Core(e) => write!(f, "core error: {e}"),
         }
     }
@@ -157,7 +288,9 @@ struct Node {
     parent: Option<NodeId>,
     incoming: Option<u16>,
     ply: u32,
+    /// Sorted legal ActionIds; empty iff terminal. Generated once.
     legal: Vec<ActionId>,
+    semantic_id: String,
     /// action index -> child node
     children: BTreeMap<u16, NodeId>,
 }
@@ -168,56 +301,45 @@ pub struct QueryManager {
     budget: Option<u32>,
     successful_queries: u32,
     legal_moves_generated: u64,
+    legal_generations: u64,
 }
 
-fn action_of(state: &GameState, mv: &StandardMove) -> ActionId {
-    ActionId::from_physical(
-        mv.from,
-        mv.to,
-        mv.promotion.unwrap_or(PromotionCode::NONE),
-        state.perspective(),
-    )
-}
-
-/// Legal ActionIds with their standard moves; empty when terminal.
-fn legal_edges(state: &GameState) -> Vec<(ActionId, StandardMove)> {
+/// The sorted legal ActionIds of a state; empty when terminal. This is the only
+/// place the tool generates legal moves: once per node.
+fn legal_ids(state: &GameState) -> Vec<ActionId> {
     if state.is_terminal() {
         return Vec::new();
     }
-    let mut v: Vec<(ActionId, StandardMove)> = state
-        .legal_standard_moves()
-        .into_iter()
-        .map(|mv| (action_of(state, &mv), mv))
-        .collect();
-    v.sort_unstable_by_key(|(a, _)| *a);
-    v
+    state.legal_actions()
 }
 
 impl QueryManager {
-    /// New manager rooted at `root` with no budget cap.
+    /// New manager rooted at `root` with no budget cap. Generates the root's
+    /// legal list (one generation; the root itself is given, not queried).
     pub fn new(root: GameState) -> Result<Self, QueryError> {
-        let mut m = Self {
-            nodes: Vec::new(),
-            budget: None,
-            successful_queries: 0,
-            legal_moves_generated: 0,
-        };
-        let legal = legal_edges(&root);
+        let legal = legal_ids(&root);
         if legal.len() > MAX_LEGAL_MOVES {
             return Err(QueryError::TooManyLegalMoves {
                 node: 0,
                 count: legal.len(),
             });
         }
-        m.nodes.push(Node {
-            state: root,
-            parent: None,
-            incoming: None,
-            ply: 0,
-            legal: legal.into_iter().map(|(a, _)| a).collect(),
-            children: BTreeMap::new(),
-        });
-        Ok(m)
+        let semantic_id = semantic_state_id(&root);
+        Ok(Self {
+            nodes: vec![Node {
+                state: root,
+                parent: None,
+                incoming: None,
+                ply: 0,
+                legal,
+                semantic_id,
+                children: BTreeMap::new(),
+            }],
+            budget: None,
+            successful_queries: 0,
+            legal_moves_generated: 0,
+            legal_generations: 1,
+        })
     }
 
     /// Cap on successful queries; a further query errors visibly.
@@ -234,8 +356,21 @@ impl QueryManager {
         self.successful_queries
     }
 
+    /// Exact transitions performed: equal to [`Self::successful_queries`].
+    pub fn state_transitions(&self) -> u64 {
+        u64::from(self.successful_queries)
+    }
+
+    /// Legal moves contained in the child lists generated by queries (the
+    /// per-query cost). The given root's list is not counted.
     pub fn legal_moves_generated(&self) -> u64 {
         self.legal_moves_generated
+    }
+
+    /// Legal-list generations performed: one for the root plus exactly one per
+    /// successful query.
+    pub fn legal_generations(&self) -> u64 {
+        self.legal_generations
     }
 
     pub fn node_count(&self) -> usize {
@@ -257,6 +392,20 @@ impl QueryManager {
     pub fn packet(&self, id: NodeId) -> Result<StatePacketV1, QueryError> {
         let n = self.node(id)?;
         Ok(build_packet(id, n))
+    }
+
+    /// Persistent identity of the edge that created `id`; `None` for the root.
+    pub fn query_identity(&self, id: NodeId) -> Result<Option<QueryIdentity>, QueryError> {
+        let n = self.node(id)?;
+        match n.parent {
+            None => Ok(None),
+            Some(p) => {
+                let parent = self.node(p)?;
+                Ok(Some(
+                    build_packet(id, n).query_identity(&parent.semantic_id)?,
+                ))
+            }
+        }
     }
 
     /// Legal, not-yet-queried ActionIds at `id`, ascending. Empty if terminal.
@@ -281,6 +430,18 @@ impl QueryManager {
             if p.state.is_terminal() {
                 return Err(QueryError::TerminalParent(parent));
             }
+            // 1. membership in the stored, sorted legal set: no move generation.
+            let id =
+                ActionId::from_index(u32::from(action)).map_err(|_| QueryError::IllegalAction {
+                    node: parent,
+                    action,
+                })?;
+            if p.legal.binary_search(&id).is_err() {
+                return Err(QueryError::IllegalAction {
+                    node: parent,
+                    action,
+                });
+            }
             if p.children.contains_key(&action) {
                 return Err(QueryError::DuplicateEdge {
                     node: parent,
@@ -292,19 +453,24 @@ impl QueryManager {
             {
                 return Err(QueryError::BudgetExhausted { budget: b });
             }
-            let mv = legal_edges(&p.state)
-                .into_iter()
-                .find(|(a, _)| a.index() == u32::from(action))
-                .map(|(_, mv)| mv)
-                .ok_or(QueryError::IllegalAction {
-                    node: parent,
-                    action,
-                })?;
+            // 2. decode the one named move under the parent's canonical perspective.
+            let (from, to, promo) = id.to_physical(p.state.perspective());
+            let mv = StandardMove {
+                from,
+                to,
+                promotion: if promo == PromotionCode::NONE {
+                    None
+                } else {
+                    Some(promo)
+                },
+            };
+            // 3. the authoritative transition: validates and applies that one move.
             let mut child = p.state.clone();
             child.apply(mv)?;
             (child, p.ply + 1)
         };
-        let legal = legal_edges(&child_state);
+        // 4. the child's legal list, generated exactly once.
+        let legal = legal_ids(&child_state);
         let id = self.nodes.len() as NodeId;
         if legal.len() > MAX_LEGAL_MOVES {
             return Err(QueryError::TooManyLegalMoves {
@@ -312,13 +478,16 @@ impl QueryManager {
                 count: legal.len(),
             });
         }
+        self.legal_generations += 1;
         self.legal_moves_generated += legal.len() as u64;
+        let semantic_id = semantic_state_id(&child_state);
         self.nodes.push(Node {
             state: child_state,
             parent: Some(parent),
             incoming: Some(action),
             ply,
-            legal: legal.into_iter().map(|(a, _)| a).collect(),
+            legal,
+            semantic_id,
             children: BTreeMap::new(),
         });
         self.nodes[parent as usize].children.insert(action, id);
@@ -368,7 +537,7 @@ fn build_packet(id: NodeId, n: &Node) -> StatePacketV1 {
         ep_square,
         halfmove_clock: u32::from(board.halfmove_clock()),
         repetition_count: s.repetition_count(),
-        semantic_id: semantic_state_id(s),
+        semantic_id: n.semantic_id.clone(),
     }
 }
 
@@ -427,43 +596,5 @@ pub fn semantic_state_id(state: &GameState) -> String {
         }
         None => h.update([0u8]),
     }
-    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
-}
-
-/// Packet content digest: fixed field order, little-endian, length-prefixed.
-/// Node/parent ids and the incoming action are excluded.
-fn hash_packet(p: &StatePacketV1) -> String {
-    let mut h = Sha256::new();
-    h.update(b"recur64.state_packet_v1");
-    h.update(STATE_QUERY_VERSION.to_le_bytes());
-    h.update((p.semantic_id.len() as u32).to_le_bytes());
-    h.update(p.semantic_id.as_bytes());
-    for f in p.observation.as_slice() {
-        h.update(f.to_bits().to_le_bytes());
-    }
-    h.update((p.legal_actions.len() as u32).to_le_bytes());
-    for a in &p.legal_actions {
-        h.update(a.to_le_bytes());
-    }
-    h.update([
-        p.side_to_move.as_bytes()[0],
-        p.in_check as u8,
-        p.terminal as u8,
-    ]);
-    match p.terminal_reason {
-        Some(r) => {
-            h.update([1u8]);
-            h.update((r.len() as u32).to_le_bytes());
-            h.update(r.as_bytes());
-        }
-        None => h.update([0u8]),
-    }
-    h.update(p.castling.map(u8::from));
-    match p.ep_square {
-        Some(s) => h.update([1u8, s]),
-        None => h.update([0u8, 0]),
-    }
-    h.update(p.halfmove_clock.to_le_bytes());
-    h.update(p.repetition_count.to_le_bytes());
-    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+    hex(h)
 }

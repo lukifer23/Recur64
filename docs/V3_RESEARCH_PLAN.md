@@ -163,9 +163,10 @@ Rationale, recorded as a judgement and not derived: Gate II asks for +0.10 top-1
 than a quarter of the stress cell's positions even admit a complete certificate within eight
 queries, then reaching +0.10 would require resolving a large share of everything that is
 resolvable, leaving no room for an imperfect selector, so a null result could not be read as a
-failure of the hypothesis. The 0.25 figure is committed now, before the measurement exists. The
-owner may change it only **before** P4 runs, by a documented new commit. `C_2, C_4, C_16` and all
-other cells are reported but do not enter the rule.
+failure of the hypothesis. The 0.25 figure is committed now, before the measurement exists, and is
+frozen under this experiment identity. If it is ever to change, it must be superseded by a new
+versioned preregistration and experiment identity; HOLDOUT_C remains sealed throughout.
+`C_2, C_4, C_16` and all other cells are reported but do not enter the rule.
 
 ## Gates (frozen)
 
@@ -173,9 +174,11 @@ Use ≥3 final seeds if the measured cost projection is reasonable, else stop an
 projection. Paired position-level bootstrap CIs plus per-seed direction.
 
 - **Gate I information sufficiency (TUNE):** AllInfo − B0 ≥ +0.20 top-1 on KQRvK M3, paired 95% CI
-  wholly > 0; secondary sanity AllInfo absolute ≥ ~0.75. Interpreted as in "ALL-INFO
-  interpretation": it shows the model family can exploit raw future states, not a pure causal
-  information effect. Failure → STOP and diagnose; no direct jump to active confirmation.
+  wholly > 0. That is the whole pass condition. The AllInfo absolute top-1 on KQRvK M3 is reported
+  as a **diagnostic that does not affect Gate I pass/fail**; 0.75 is only a reference value for
+  reading it. Interpreted as in "ALL-INFO interpretation": it shows the model family can exploit
+  raw future states, not a pure causal information effect. Failure → STOP and diagnose; no direct
+  jump to active confirmation.
 - **Gate II useful same-weight compute:** ACTIVE_B8 − ACTIVE_B0 on KQRvK M3 ≥ +0.10, CI > 0, every
   seed positive. Also report correct mass and CE.
 - **Gate III learned selection:** ACTIVE_B8 − FIXED_B8 (`fixed_bfs_actionid_v1`) on KQRvK M3 ≥
@@ -247,12 +250,12 @@ checkpoint given more states.
 - **Conversion transfer:** frozen suite, paired starts, `root_player_v1` semantics; ACTIVE beats B0
   by ≥10 converted wins per 128 TARGET starts, CI > 0, no catastrophic HEAVY regression.
 - **Self-play:** only after conversion gate; very short, separately pre-registered; watch failed
-  conversion and draw composition; no 24h runs; no job > ~2h without owner approval.
+  conversion and draw composition; no 24h runs; no job that would run longer than 2 hours wall-clock without owner approval.
 
 ## Stop conditions
 
 Any non-finite/runaway state, query-tool correctness failure, unexpected HOLDOUT_C exposure, a
-failed P4 feasibility rule, projected run cost beyond the ~2h/job rule, or a NO-GO outcome.
+failed P4 feasibility rule, a projected job longer than 2 hours wall-clock without owner approval, or a NO-GO outcome.
 
 ## Integrity rules carried over
 

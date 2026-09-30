@@ -164,7 +164,7 @@ fn packets_and_hashes_are_deterministic_and_state_keyed() {
     let (a, b) = (run(), run());
     for (x, y) in a.iter().zip(&b) {
         assert_eq!(x.semantic_id, y.semantic_id);
-        assert_eq!(x.content_digest(), y.content_digest());
+        assert_eq!(x.state_digest(), y.state_digest());
         assert_eq!(x.observation.as_slice(), y.observation.as_slice());
         assert_eq!(
             serde_json::to_string(x).unwrap(),

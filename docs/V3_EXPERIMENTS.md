@@ -56,3 +56,33 @@ corrections as new entries.
   oracle was not used in this crate (GPL, core dev/test only); legality and mate parity with it is
   covered by `recur64-core` tests, which are unchanged and not re-run here.
 - **NOT RUN:** workspace-wide release tests after the P2 config change (pending).
+
+## V3-E3 - P1.1 cleanup of StateQueryV1
+
+- **Date:** 2026-09-30
+- **Status:** MEASURED (tests) / PRE-REGISTERED (rule edits). Decision V3-D8.
+- **Changes:**
+  - `content_digest()` replaced by `state_digest()` over every state-content field, plus a
+    separate persistent `QueryIdentity` (parent semantic id, incoming ActionId, ply from root,
+    child state digest). `node_id` / `parent_id` are ephemeral and in no persistent digest.
+  - `query()` no longer regenerates the parent's legal moves: membership in the stored legal set,
+    direct ActionId decode, one authoritative `GameState::apply`, one child legal generation.
+    `legal_generations() == 1 + successful_queries()`.
+  - The nonexistent tool depth refusal is removed from the architecture text; the tool has no
+    depth limit and the model enforces its own representable depth (`ACTIVE_MAX_DEPTH`).
+  - The owner-adjustment sentence for `C_8 >= 0.25` is removed; Gate I `0.75` is a reported
+    diagnostic only; the job-length guard is stated exactly (2 hours wall-clock).
+- **Commands:** `cargo test -p recur64-statequery --release`; `cargo fmt --all -- --check`;
+  `cargo clippy -p recur64-statequery --all-targets`.
+- **Result:** fmt clean; clippy 0 warnings on the crate; 35 tests pass (8 digest/identity/counter,
+  17 query/identity, 5 differential, 3 whitelist, 2 dependency-boundary). The independent
+  differential reference (which decodes ActionIds itself) still matches every edge through the new
+  query path: 203,426 random-descent edges, 105,670 fixture edges, start-position depth-3 BFS.
+  Mutation tests: every declared state-content field changes `state_digest`; every query identity
+  component changes its digest; ephemeral fields change neither; every packet field is in exactly
+  one class. Refused queries leave all counters unchanged.
+- **Preserved unchanged:** crate boundary, one edge = one query, authoritative GameState per node,
+  root-only CandidateFacts, prohibited fields, terminal nodes exposing no frontier, semantic
+  history identity, visible refusals, sealed HOLDOUT_C, set-valued ProofTraceV1,
+  `fixed_bfs_actionid_v1`, ALL-INFO interpretation, the B0/B2/B4/B8/B16 design.
+- **NOT RUN:** workspace-wide release tests (P2 model work is uncommitted in the working tree).
