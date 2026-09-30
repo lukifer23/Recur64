@@ -156,3 +156,21 @@ corrections as new entries.
 - **Gate:** P3 CUDA/system qualification gate PASSED for the tested surface.
 - **NOT RUN:** HOLDOUT_C, P4 feasibility measurement, ProofTraceV1, TUNE generation or training, P5 to P11,
   BF16/TF32, fusion/graph capture/shape bucketing.
+
+## V3-E7 - Commit index for P0 to P3
+
+- **Date:** 2026-09-30
+- **Status:** RECORD (no new measurement).
+
+| Entry | Commit | Content |
+|---|---|---|
+| V3-E0 | `2cf14b3` | P0 lineage, architecture, research plan, ledger |
+| V3-E2 | `bb6a5c0` | P1 StateQueryV1 crate |
+| V3-E1 | `e61c2e5` | P0 review addendum (frozen meaning, feasibility rule, set-valued traces, semantic identity) |
+| - | `fffdec4` | ledger entries E1 and E2 |
+| V3-E3 | `3072caf` | P1.1 digest contract, one-generation query path, no tool depth cap |
+| V3-E4 | `8b709a5` | P2 model skeleton and CPU correctness |
+| V3-E5, E6 | `81f9c61` | P2.1 hardening and P3 CUDA qualification, docs and evidence |
+
+Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). Main
+(`fef1ffcf9c38381d4adc671e5e2c5ead9f141e33`) and the V2.5 branch are unchanged.
