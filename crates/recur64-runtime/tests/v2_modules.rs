@@ -7,6 +7,7 @@ use burn::prelude::*;
 
 use recur64_compute::NativeWorldModel;
 use recur64_coproc::ComputeProviderKind;
+use recur64_coproc::world::WorldHorizon;
 use recur64_coproc::world::{REPLY_BYTES, SUCC_BYTES, reply_offset, succ_offset, world_output_len};
 use recur64_core::{GameState, StandardMove};
 use recur64_model::chimera2::{ChimeraV2Model, V2Options};
@@ -105,8 +106,15 @@ fn the_board_encoder_runs_exactly_once_at_every_thought_budget() {
     let e = exp(InfoSchedule::Progressive);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let batch =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let batch = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let mut params = None;
     for t in 1..=4usize {
         let before = model.board_encoder_runs();
@@ -132,8 +140,15 @@ fn planner_state_stays_bounded_through_eight_thoughts() {
     let e = exp(InfoSchedule::Progressive);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let batch =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let batch = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let out = model.forward(
         &batch.input,
         &batch.cands,
@@ -211,7 +226,14 @@ fn child_of(state: &GameState, id: recur64_core::ActionId) -> GameState {
 fn successors_reconstruct_the_children_and_replies_are_enumerated_exactly_once() {
     let (w_cap, r_cap) = (64, 48);
     let states = positions();
-    let bytes = compute_world_bytes(&states, &NativeWorldModel, w_cap, r_cap).unwrap();
+    let bytes = compute_world_bytes(
+        &states,
+        &NativeWorldModel,
+        w_cap,
+        r_cap,
+        WorldHorizon::Replies,
+    )
+    .unwrap();
     for (s, out) in states.iter().zip(&bytes) {
         assert_eq!(out.len(), world_output_len(w_cap, r_cap));
         let legal = s.legal_actions();
@@ -249,7 +271,14 @@ fn successors_reconstruct_the_children_and_replies_are_enumerated_exactly_once()
 fn world_root_facts_equal_the_native_candidate_facts_v1_and_follow_legal_order() {
     let (w_cap, r_cap) = (64, 12);
     let states = positions();
-    let bytes = compute_world_bytes(&states, &NativeWorldModel, w_cap, r_cap).unwrap();
+    let bytes = compute_world_bytes(
+        &states,
+        &NativeWorldModel,
+        w_cap,
+        r_cap,
+        WorldHorizon::Replies,
+    )
+    .unwrap();
     let native = recur64_runtime::candidate_facts::candidate_facts(&states, w_cap).unwrap();
     let fields = recur64_model::experimental::CANDIDATE_FACT_FIELDS;
     for (i, out) in bytes.iter().enumerate() {
@@ -273,8 +302,15 @@ fn scrambled_world_input(
 ) -> recur64_model::chimera2::ChimeraV2Input<EvalB> {
     let device = Default::default();
     let _ = model;
-    let mut batch =
-        build_v2_batch::<EvalB>(states, e, Some(&NativeWorldModel), None, &device).unwrap();
+    let mut batch = build_v2_batch::<EvalB>(
+        states,
+        e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let w = batch.input.world.as_mut().unwrap();
     match which {
         "succ" => {
@@ -295,8 +331,15 @@ fn each_thought_sees_exactly_the_intended_tokens() {
     let e = exp(InfoSchedule::Progressive);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let base =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let base = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let alt_s = scrambled_world_input(&model, &e, &states, "succ");
     let alt_r = scrambled_world_input(&model, &e, &states, "reply");
     let run = |input: &recur64_model::chimera2::ChimeraV2Input<EvalB>, t: usize| {
@@ -339,7 +382,8 @@ fn the_root_only_control_is_independent_of_every_tool_token() {
     let e = exp(InfoSchedule::RootOnly);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let base = build_v2_batch::<EvalB>(&states, &e, None, None, &device).unwrap();
+    let base =
+        build_v2_batch::<EvalB>(&states, &e, None, None, WorldHorizon::Replies, &device).unwrap();
     assert!(
         base.input.world.is_none(),
         "no world model is even computed"
@@ -363,8 +407,24 @@ fn all_info_at_one_step_contains_the_same_content_as_progressive_at_three() {
         "same trainable parameter set"
     );
     let states = positions();
-    let bp = build_v2_batch::<EvalB>(&states, &ep, Some(&NativeWorldModel), None, &device).unwrap();
-    let ba = build_v2_batch::<EvalB>(&states, &ea, Some(&NativeWorldModel), None, &device).unwrap();
+    let bp = build_v2_batch::<EvalB>(
+        &states,
+        &ep,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
+    let ba = build_v2_batch::<EvalB>(
+        &states,
+        &ea,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let cp = mp
         .forward(&bp.input, &bp.cands, 3, V2Options::default())
         .counts;
@@ -391,15 +451,29 @@ fn reply_padding_and_masks_do_not_leak_into_the_output() {
     let e = exp(InfoSchedule::AllAtOnce);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let base =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let base = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let clean = logits(
         &model.forward(&base.input, &base.cands, 1, V2Options::default()),
         0,
     );
     // Put garbage into every padded reply slot (mask == 0); nothing may change.
-    let mut dirty =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let mut dirty = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let w = dirty.input.world.as_mut().unwrap();
     let mask = w.reply_mask.clone().unsqueeze_dim::<4>(3);
     let noise = w.reply_feats.clone().ones_like().mul_scalar(3.7);
@@ -422,8 +496,15 @@ fn visual_off_does_not_execute_the_cnn_and_facts_params_matter() {
     let e = exp(InfoSchedule::Progressive);
     let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
     let states = positions();
-    let base =
-        build_v2_batch::<EvalB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let base = build_v2_batch::<EvalB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     assert!(
         base.input.visual.is_none(),
         "no image is rendered when visual is off"
@@ -545,8 +626,15 @@ fn optimizer_step_body() {
     let mut model = ChimeraV2Model::<TrainB>::new(tiny_cfg(), e.clone(), &device);
     let mut optim = recur64_model::train::adamw::<TrainB, _>();
     let states = positions();
-    let batch =
-        build_v2_batch::<TrainB>(&states, &e, Some(&NativeWorldModel), None, &device).unwrap();
+    let batch = build_v2_batch::<TrainB>(
+        &states,
+        &e,
+        Some(&NativeWorldModel),
+        None,
+        WorldHorizon::Replies,
+        &device,
+    )
+    .unwrap();
     let mask = batch.cands.mask.clone().float();
     let denom = mask.clone().sum_dim(1).clamp_min(1.0);
     let t = Targets {
@@ -580,4 +668,128 @@ fn big_stack<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
         .unwrap()
         .join()
         .unwrap()
+}
+
+fn batch_at(
+    e: &ExperimentalConfig,
+    states: &[GameState],
+    horizon: WorldHorizon,
+) -> recur64_runtime::v2_inputs::V2Batch<EvalB> {
+    build_v2_batch::<EvalB>(
+        states,
+        e,
+        Some(&NativeWorldModel),
+        None,
+        horizon,
+        &Default::default(),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_thought_never_depends_on_information_beyond_its_horizon() {
+    let device = Default::default();
+    let e = exp(InfoSchedule::Progressive);
+    let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
+    let states = positions();
+    let root = batch_at(&e, &states, WorldHorizon::Root);
+    let succ = batch_at(&e, &states, WorldHorizon::Successor);
+    let full = batch_at(&e, &states, WorldHorizon::Replies);
+    assert_eq!(
+        (
+            root.phases.horizon,
+            succ.phases.horizon,
+            full.phases.horizon
+        ),
+        (1, 2, 3)
+    );
+    let run = |b: &recur64_runtime::v2_inputs::V2Batch<EvalB>, t: usize| {
+        logits(
+            &model.forward(&b.input, &b.cands, t, V2Options::default()),
+            0,
+        )
+    };
+    // Same output whether or not deeper sections were even computed.
+    assert_eq!(
+        run(&root, 1),
+        run(&full, 1),
+        "T=1 must be independent of successor/reply data"
+    );
+    assert_eq!(run(&succ, 1), run(&full, 1));
+    assert_eq!(
+        run(&succ, 2),
+        run(&full, 2),
+        "T=2 must be independent of reply data"
+    );
+    // The hidden sections are exact zeros (no "empty board" placeholder, no mask leak).
+    let wr = root.input.world.as_ref().unwrap();
+    assert!(
+        wr.succ_board
+            .clone()
+            .abs()
+            .sum()
+            .into_scalar()
+            .elem::<f32>()
+            == 0.0
+    );
+    assert!(wr.reply_mask.clone().sum().into_scalar().elem::<f32>() == 0.0);
+    let ws = succ.input.world.as_ref().unwrap();
+    assert!(
+        ws.reply_feats
+            .clone()
+            .abs()
+            .sum()
+            .into_scalar()
+            .elem::<f32>()
+            == 0.0
+    );
+    assert!(
+        ws.succ_board
+            .clone()
+            .abs()
+            .sum()
+            .into_scalar()
+            .elem::<f32>()
+            > 0.0
+    );
+}
+
+#[test]
+#[should_panic(expected = "needs reply information")]
+fn a_budget_whose_information_was_never_computed_fails_visibly() {
+    let device = Default::default();
+    let e = exp(InfoSchedule::Progressive);
+    let model = ChimeraV2Model::<EvalB>::new(tiny_cfg(), e.clone(), &device);
+    let succ = batch_at(&e, &positions(), WorldHorizon::Successor);
+    let _ = model.forward(&succ.input, &succ.cands, 3, V2Options::default());
+}
+
+#[test]
+fn progressive_requests_only_what_the_budget_needs_and_all_info_requests_everything() {
+    use recur64_runtime::v2_inputs::horizon_for_budget;
+    let states = positions();
+    let e = exp(InfoSchedule::Progressive);
+    let mut work = Vec::new();
+    for t in 1..=3usize {
+        let h = horizon_for_budget(e.v2.info_schedule, t).unwrap();
+        let b = batch_at(&e, &states, h);
+        work.push(b.phases.stats);
+    }
+    // Successor adds records but no search work over root; replies add a lot.
+    assert_eq!(
+        work[0].total_move_operations(),
+        work[1].total_move_operations()
+    );
+    assert!(work[2].total_move_operations() > 3 * work[1].total_move_operations());
+    assert_eq!(work[0].reply_records, 0);
+    assert_eq!(work[1].reply_records, 0);
+    assert!(work[2].reply_records > 0);
+    // The all-information control pays the full price at T=1.
+    let ea = exp(InfoSchedule::AllAtOnce);
+    let h = horizon_for_budget(ea.v2.info_schedule, 1).unwrap();
+    let ba = batch_at(&ea, &states, h);
+    assert_eq!(
+        ba.phases.stats, work[2],
+        "same deterministic content and cost as progressive T>=3"
+    );
 }

@@ -28,6 +28,7 @@ use recur64_core::{ActionId, ObservationV1};
 pub mod artifact;
 
 pub use recur64_coproc::ComputeProviderKind as ProviderKind;
+pub use recur64_coproc::world::{WorldHorizon, WorldStats};
 
 /// A provider failure. Never a silent fallback to zeros.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -281,6 +282,7 @@ pub trait WorldModelProvider: Send + Sync {
         inputs: &[Vec<u8>],
         w_cap: usize,
         r_cap: usize,
+        horizon: WorldHorizon,
     ) -> Result<Vec<Vec<u8>>, ComputeError>;
 }
 
@@ -296,25 +298,29 @@ impl WorldModelProvider for NativeWorldModel {
         inputs: &[Vec<u8>],
         w_cap: usize,
         r_cap: usize,
+        horizon: WorldHorizon,
     ) -> Result<Vec<Vec<u8>>, ComputeError> {
         let len = recur64_coproc::world::world_output_len(w_cap, r_cap);
         inputs
             .iter()
             .map(|input| {
                 let mut out = vec![0u8; len];
-                recur64_coproc::world::world_model(input, w_cap, r_cap, &mut out)?;
+                recur64_coproc::world::world_model(input, w_cap, r_cap, horizon, &mut out)?;
                 Ok(out)
             })
             .collect()
     }
 }
 
+/// (in_ptr, in_len, w_cap, r_cap, horizon, out_ptr, out_len)
+type WorldArgs = (i32, i32, i32, i32, i32, i32, i32);
+
 struct WasmWorldInstance {
     store: wasmi::Store<()>,
     memory: wasmi::Memory,
     alloc: wasmi::TypedFunc<i32, i32>,
     dealloc: wasmi::TypedFunc<(i32, i32), ()>,
-    world: wasmi::TypedFunc<(i32, i32, i32, i32, i32, i32), i32>,
+    world: wasmi::TypedFunc<WorldArgs, i32>,
     in_ptr: i32,
 }
 
@@ -345,7 +351,10 @@ impl WasmWorldModel {
             .get_typed_func::<(i32, i32), ()>(&store, "coproc_dealloc")
             .map_err(|e| anyhow::anyhow!("coproc_dealloc: {e}"))?;
         let world = instance
-            .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(&store, "coproc_world_model")
+            .get_typed_func::<(i32, i32, i32, i32, i32, i32, i32), i32>(
+                &store,
+                "coproc_world_model",
+            )
             .map_err(|e| anyhow::anyhow!("coproc_world_model: {e}"))?;
         let in_ptr = alloc
             .call(&mut store, INPUT_LEN as i32)
@@ -372,6 +381,7 @@ impl WorldModelProvider for WasmWorldModel {
         inputs: &[Vec<u8>],
         w_cap: usize,
         r_cap: usize,
+        horizon: WorldHorizon,
     ) -> Result<Vec<Vec<u8>>, ComputeError> {
         let len = recur64_coproc::world::world_output_len(w_cap, r_cap);
         let mut guard = self.inner.lock().map_err(|_| {
@@ -406,6 +416,7 @@ impl WorldModelProvider for WasmWorldModel {
                     INPUT_LEN as i32,
                     w_cap as i32,
                     r_cap as i32,
+                    horizon.code() as i32,
                     out_ptr,
                     len as i32,
                 ),
@@ -588,16 +599,83 @@ mod tests {
             inputs.push(input_for(&state, 0));
         }
         let (w_cap, r_cap) = (128, 64);
-        let a = native.world_batch(&inputs, w_cap, r_cap).expect("native");
-        let b = wasm.world_batch(&inputs, w_cap, r_cap).expect("wasm");
-        assert_eq!(a.len(), b.len());
-        for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
-            assert_eq!(x, y, "native and wasm world models differ on position {i}");
+        for horizon in WorldHorizon::ALL {
+            let a = native
+                .world_batch(&inputs, w_cap, r_cap, horizon)
+                .expect("native");
+            let b = wasm
+                .world_batch(&inputs, w_cap, r_cap, horizon)
+                .expect("wasm");
+            assert_eq!(a.len(), b.len());
+            for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
+                assert_eq!(
+                    x,
+                    y,
+                    "native and wasm world models differ on position {i} at horizon {}",
+                    horizon.label()
+                );
+            }
         }
         // A capacity error is an error in both providers, never a truncation.
         let startpos = vec![input_for(&GameState::startpos(), 0)];
-        assert!(native.world_batch(&startpos, 8, 8).is_err());
-        assert!(wasm.world_batch(&startpos, 8, 8).is_err());
+        assert!(
+            native
+                .world_batch(&startpos, 8, 8, WorldHorizon::Replies)
+                .is_err()
+        );
+        assert!(
+            wasm.world_batch(&startpos, 8, 8, WorldHorizon::Replies)
+                .is_err()
+        );
+    }
+
+    /// The pinned source digest must equal the digest of the sources in the tree. A
+    /// change to the coprocessor sources without re-running
+    /// `scripts/build-compute-wasm.ps1` fails here. Algorithm is documented in that
+    /// script: SHA-256 over, per file in ordinal path order, path + 0x00 +
+    /// CRLF-normalised bytes + 0x00.
+    #[test]
+    fn artifact_source_digest_matches_the_sources() {
+        use sha2::{Digest, Sha256};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..");
+        let mut files: Vec<String> = std::fs::read_dir(root.join("crates/recur64-coproc/src"))
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .filter(|n| n.ends_with(".rs"))
+            .map(|n| format!("crates/recur64-coproc/src/{n}"))
+            .collect();
+        files.push("crates/recur64-coproc-guest/src/lib.rs".into());
+        files.push("crates/recur64-coproc/Cargo.toml".into());
+        files.push("crates/recur64-coproc-guest/Cargo.toml".into());
+        files.sort();
+        let mut hasher = Sha256::new();
+        for rel in &files {
+            hasher.update(rel.as_bytes());
+            hasher.update([0u8]);
+            let raw = std::fs::read(root.join(rel)).unwrap();
+            let mut norm = Vec::with_capacity(raw.len());
+            let mut i = 0;
+            while i < raw.len() {
+                if raw[i] == b'\r' && raw.get(i + 1) == Some(&b'\n') {
+                    i += 1;
+                    continue;
+                }
+                norm.push(raw[i]);
+                i += 1;
+            }
+            hasher.update(&norm);
+            hasher.update([0u8]);
+        }
+        let digest = format!("{:x}", hasher.finalize());
+        assert_eq!(
+            digest,
+            artifact::WASM_SOURCE_DIGEST,
+            "the coprocessor sources changed since the WASM artifact was built: run \
+             scripts/build-compute-wasm.ps1 and commit the result"
+        );
     }
 
     #[test]

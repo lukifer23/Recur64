@@ -38,6 +38,9 @@ pub const REPLY_FEAT_DIM: usize = 21;
 
 /// The world-model information as tensors (already unpacked and normalised).
 pub struct WorldTensors<B: Backend> {
+    /// The world-model horizon the tensors were built at (1 root, 2 successor, 3 replies).
+    /// Sections above it are exact zeros and must never be consumed.
+    pub horizon: u8,
     /// `[b, W, 64, BOARD_CODES]` one-hot successor placement in the child's canonical frame.
     pub succ_board: Tensor<B, 4>,
     /// `[b, W, SUCC_FLAG_DIM]`.
@@ -728,6 +731,18 @@ impl<B: Backend> ChimeraV2Model<B> {
             world.is_some() || (!need_s && !need_r),
             "the info schedule needs world-model tensors but none were supplied"
         );
+        if let Some(wm) = world {
+            assert!(
+                !need_s || wm.horizon >= 2,
+                "thought budget {t} needs successor information but the world model was computed at horizon {}",
+                wm.horizon
+            );
+            assert!(
+                !need_r || wm.horizon >= 3,
+                "thought budget {t} needs reply information but the world model was computed at horizon {}",
+                wm.horizon
+            );
+        }
         let succ = match (need_s, world) {
             (true, Some(wm)) => {
                 counts.successor_encodes = b * w;

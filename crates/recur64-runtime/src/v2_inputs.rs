@@ -12,8 +12,8 @@ use burn::tensor::TensorData;
 
 use recur64_compute::{WorldModelProvider, encode_input};
 use recur64_coproc::world::{
-    REPLY_BYTES, ROOT_FIELDS, SUCC_BYTES, WORLD_HEADER, reply_offset, root_offset, succ_offset,
-    world_output_len,
+    REPLY_BYTES, ROOT_FIELDS, SUCC_BYTES, WORLD_HEADER, WorldHorizon, WorldStats, reply_offset,
+    root_offset, succ_offset, world_output_len,
 };
 use recur64_core::{GameState, ObservationV1, encode_observation_v1};
 use recur64_model::action::CandidateBatch;
@@ -35,6 +35,10 @@ pub struct V2PhaseTimes {
     pub world_states: usize,
     pub successors: usize,
     pub replies: usize,
+    /// The horizon the world model was computed at (0 when no world model was used).
+    pub horizon: u8,
+    /// Deterministic work actually executed, summed over the batch.
+    pub stats: WorldStats,
 }
 
 pub struct V2Batch<B: Backend> {
@@ -73,6 +77,7 @@ fn unpack_one(
     bytes: &[u8],
     w_cap: usize,
     r_cap: usize,
+    horizon: WorldHorizon,
     succ_board: &mut Vec<f32>,
     succ_flags: &mut Vec<f32>,
     reply_feats: &mut Vec<f32>,
@@ -84,8 +89,9 @@ fn unpack_one(
     let ro = reply_offset(w_cap);
     for ci in 0..w_cap {
         let s = so + ci * SUCC_BYTES;
-        let live = ci < n;
-        // One-hot placement.
+        let live = ci < n && horizon >= WorldHorizon::Successor;
+        // One-hot placement (a section above the horizon is emitted as exact zeros,
+        // never as an empty board).
         for sq in 0..64 {
             let code = bytes[s + 4 + sq] as usize;
             for k in 0..BOARD_CODES {
@@ -117,7 +123,7 @@ fn unpack_one(
         }
         for ri in 0..r_cap {
             let base = ro + (ci * r_cap + ri) * REPLY_BYTES;
-            let valid = live && bytes[base] == 1;
+            let valid = live && horizon >= WorldHorizon::Replies && bytes[base] == 1;
             reply_mask.push(if valid { 1.0 } else { 0.0 });
             if !valid {
                 reply_feats.extend(std::iter::repeat_n(0.0f32, REPLY_FEAT_DIM));
@@ -172,10 +178,11 @@ pub fn compute_world_bytes(
     provider: &dyn WorldModelProvider,
     w_cap: usize,
     r_cap: usize,
+    horizon: WorldHorizon,
 ) -> anyhow::Result<Vec<Vec<u8>>> {
     let inputs = world_inputs(states)?;
     let out = provider
-        .world_batch(&inputs, w_cap, r_cap)
+        .world_batch(&inputs, w_cap, r_cap, horizon)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     debug_assert!(
         out.iter()
@@ -193,6 +200,7 @@ pub fn build_v2_batch<B: Backend>(
     exp: &ExperimentalConfig,
     provider: Option<&dyn WorldModelProvider>,
     world_bytes: Option<&[Vec<u8>]>,
+    horizon: WorldHorizon,
     device: &B::Device,
 ) -> anyhow::Result<V2Batch<B>> {
     anyhow::ensure!(!states.is_empty(), "a V2 batch needs at least one position");
@@ -246,7 +254,7 @@ pub fn build_v2_batch<B: Backend>(
             anyhow::anyhow!("the info schedule needs a world-model provider and none was given")
         })?;
         let t1 = Instant::now();
-        owned = compute_world_bytes(states, p, w_cap, r_cap)?;
+        owned = compute_world_bytes(states, p, w_cap, r_cap, horizon)?;
         phases.world_us = t1.elapsed().as_micros() as u64;
         Some(&owned)
     } else {
@@ -267,6 +275,9 @@ pub fn build_v2_batch<B: Backend>(
     let world = match (bytes, v.info_schedule.needs_world_model()) {
         (Some(bs), true) => {
             let (mut sb, mut sf, mut rf, mut rm) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+            // The horizon is read from the bytes themselves, so a cache can never be
+            // mistaken for a deeper one than it is.
+            let mut batch_horizon: Option<WorldHorizon> = None;
             for x in bs {
                 anyhow::ensure!(
                     x.len() == world_output_len(w_cap, r_cap),
@@ -274,14 +285,24 @@ pub fn build_v2_batch<B: Backend>(
                     x.len(),
                     world_output_len(w_cap, r_cap)
                 );
-                let (s, r) = unpack_one(x, w_cap, r_cap, &mut sb, &mut sf, &mut rf, &mut rm);
+                let h = WorldHorizon::from_code(x[4]).ok_or_else(|| {
+                    anyhow::anyhow!("world bytes carry an unknown horizon code {}", x[4])
+                })?;
+                anyhow::ensure!(
+                    *batch_horizon.get_or_insert(h) == h,
+                    "world bytes in one batch were computed at different horizons"
+                );
+                phases.stats.add(&WorldStats::from_bytes(x));
+                let (s, r) = unpack_one(x, w_cap, r_cap, h, &mut sb, &mut sf, &mut rf, &mut rm);
                 phases.successors += s;
                 phases.replies += r;
                 phases.world_states += 1 + s + r;
             }
             phases.unpack_us = t2.elapsed().as_micros() as u64;
             let t3 = Instant::now();
+            phases.horizon = batch_horizon.map_or(0, WorldHorizon::code);
             let w = WorldTensors {
+                horizon: phases.horizon,
                 succ_board: Tensor::<B, 4>::from_data(
                     TensorData::new(sb, [b, w_cap, 64, BOARD_CODES]),
                     device,
@@ -373,4 +394,64 @@ fn render_visual<B: Backend>(
         TensorData::new(data, [b, 3, side, side]),
         device,
     ))
+}
+
+/// The world-model horizon a thought budget needs under a schedule, i.e. the least
+/// computation that reveals everything the network is allowed to see by thought `t`.
+/// `None` means no world-model computation is required at all (root-only control:
+/// its root facts come from the native `CandidateFactsV1` function).
+pub fn horizon_for_budget(
+    schedule: recur64_model::experimental::InfoSchedule,
+    t: usize,
+) -> Option<WorldHorizon> {
+    use recur64_model::experimental::InfoSchedule as S;
+    match schedule {
+        S::RootOnly => None,
+        // The all-information control explicitly requests the full horizon.
+        S::AllAtOnce => Some(WorldHorizon::Replies),
+        S::Progressive => Some(match t {
+            0 | 1 => WorldHorizon::Root,
+            2 => WorldHorizon::Successor,
+            _ => WorldHorizon::Replies,
+        }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use recur64_model::experimental::InfoSchedule;
+
+    #[test]
+    fn horizon_follows_the_frozen_schedule() {
+        let p = InfoSchedule::Progressive;
+        assert_eq!(horizon_for_budget(p, 1), Some(WorldHorizon::Root));
+        assert_eq!(horizon_for_budget(p, 2), Some(WorldHorizon::Successor));
+        assert_eq!(horizon_for_budget(p, 3), Some(WorldHorizon::Replies));
+        // Thought 4 reveals nothing new, so it needs no deeper computation.
+        assert_eq!(horizon_for_budget(p, 4), Some(WorldHorizon::Replies));
+        assert_eq!(
+            horizon_for_budget(InfoSchedule::AllAtOnce, 1),
+            Some(WorldHorizon::Replies)
+        );
+        assert_eq!(horizon_for_budget(InfoSchedule::RootOnly, 4), None);
+    }
+
+    #[test]
+    fn the_root_fact_decoder_restores_the_candidate_facts_v1_scale() {
+        // Raw wire values: captured piece value 9 (a queen) and promotion gain 8.
+        let w_cap = 2;
+        let mut bytes = vec![0u8; world_output_len(w_cap, 1)];
+        let f = root_offset();
+        bytes[f..f + ROOT_FIELDS].copy_from_slice(&[1, 1, 1, 9, 1, 1, 8, 1]);
+        bytes[f + ROOT_FIELDS..f + 2 * ROOT_FIELDS].copy_from_slice(&[0, 0, 1, 3, 0, 0, 0, 0]);
+        let d = root_facts_from_bytes(&bytes, w_cap);
+        // captured value / 9 and promotion gain / 8 -> exactly 1.0, never raw 9.0 / 8.0.
+        assert_eq!(&d[0..8], &[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+        assert_eq!(d[8 + 3], 3.0 / 9.0);
+        assert!(
+            d.iter().all(|v| (0.0..=1.0).contains(v)),
+            "every decoded fact is in 0..=1"
+        );
+    }
 }

@@ -81,6 +81,7 @@ pub unsafe extern "C" fn coproc_compute(
 ///
 /// Status: `0` ok, `1` structurally invalid input, `2` wrong buffer length,
 /// `3` the position was rejected, `4` a capacity (`w_cap` / `r_cap`) was exceeded.
+/// `horizon` is the [`recur64_coproc::world::WorldHorizon`] code (1 root, 2 successor, 3 replies).
 ///
 /// # Safety
 /// `in_ptr..in_ptr + in_len` and `out_ptr..out_ptr + out_len` must be valid,
@@ -91,6 +92,7 @@ pub unsafe extern "C" fn coproc_world_model(
     in_len: usize,
     w_cap: usize,
     r_cap: usize,
+    horizon: usize,
     out_ptr: *mut u8,
     out_len: usize,
 ) -> i32 {
@@ -101,7 +103,10 @@ pub unsafe extern "C" fn coproc_world_model(
     let input = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
     // SAFETY: as above; the provider never aliases the input and output.
     let out = unsafe { std::slice::from_raw_parts_mut(out_ptr, out_len) };
-    match recur64_coproc::world::world_model(input, w_cap, r_cap, out) {
+    let Some(horizon) = recur64_coproc::world::WorldHorizon::from_code(horizon as u8) else {
+        return 1;
+    };
+    match recur64_coproc::world::world_model(input, w_cap, r_cap, horizon, out) {
         Ok(()) => 0,
         Err(recur64_coproc::CoprocError::Capacity(_)) => 4,
         Err(recur64_coproc::CoprocError::InvalidObservation(_))
