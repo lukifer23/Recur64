@@ -1,0 +1,168 @@
+{
+  "beats_root_only": true,
+  "comparisons": [
+    {
+      "hi95": 0.5019230842590332,
+      "label": "progressive T3 - T1",
+      "lo95": 0.39423078298568726,
+      "mean_diff": 0.44807693362236023,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.4923076629638672,
+        0.4038461446762085
+      ],
+      "signal": true
+    },
+    {
+      "hi95": 0.6800312995910645,
+      "label": "progressive T3 - T1",
+      "lo95": 0.6202402114868164,
+      "mean_diff": 0.649493396282196,
+      "metric": "mass",
+      "per_seed_diff": [
+        0.634942889213562,
+        0.6640447378158569
+      ],
+      "signal": true
+    },
+    {
+      "hi95": 0.5019230842590332,
+      "label": "progressive T4 - T1",
+      "lo95": 0.39423078298568726,
+      "mean_diff": 0.44807693362236023,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.4923076629638672,
+        0.4038461446762085
+      ],
+      "signal": true
+    },
+    {
+      "hi95": 0.6799587607383728,
+      "label": "progressive T4 - T1",
+      "lo95": 0.6200965046882629,
+      "mean_diff": 0.6493625044822693,
+      "metric": "mass",
+      "per_seed_diff": [
+        0.6349159479141235,
+        0.6638097763061523
+      ],
+      "signal": true
+    },
+    {
+      "hi95": 0.0,
+      "label": "progressive T4 - T3",
+      "lo95": 0.0,
+      "mean_diff": 0.0,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.0,
+        0.0
+      ],
+      "signal": false
+    },
+    {
+      "hi95": 0.0,
+      "label": "progressive T4 - all-info T1",
+      "lo95": 0.0,
+      "mean_diff": 0.0,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.0,
+        0.0
+      ],
+      "signal": false
+    },
+    {
+      "hi95": -0.000048014750063885,
+      "label": "progressive T4 - all-info T1",
+      "lo95": -0.0005655639688484371,
+      "mean_diff": -0.00023503349802922457,
+      "metric": "mass",
+      "per_seed_diff": [
+        -0.000050127506256103516,
+        -0.0004203915596008301
+      ],
+      "signal": false
+    },
+    {
+      "hi95": 0.0,
+      "label": "all-info T1 - progressive T4",
+      "lo95": 0.0,
+      "mean_diff": 0.0,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.0,
+        0.0
+      ],
+      "signal": false
+    },
+    {
+      "hi95": -0.023076923564076424,
+      "label": "progressive T1 - root-only T1",
+      "lo95": -0.09038461744785309,
+      "mean_diff": -0.05576923117041588,
+      "metric": "top1",
+      "per_seed_diff": [
+        -0.08461534976959229,
+        -0.026923060417175293
+      ],
+      "signal": false
+    },
+    {
+      "hi95": 0.4442307651042938,
+      "label": "progressive T3 - root-only T1",
+      "lo95": 0.3403846025466919,
+      "mean_diff": 0.39230769872665405,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.4076923131942749,
+        0.3769230842590332
+      ],
+      "signal": true
+    },
+    {
+      "hi95": 0.4442307651042938,
+      "label": "progressive T4 - root-only T1",
+      "lo95": 0.3403846025466919,
+      "mean_diff": 0.39230769872665405,
+      "metric": "top1",
+      "per_seed_diff": [
+        0.4076923131942749,
+        0.3769230842590332
+      ],
+      "signal": true
+    }
+  ],
+  "families": {
+    "kqk": [
+      0.7307692170143127,
+      0.6346153616905212,
+      0.817307710647583
+    ],
+    "kqqk": [
+      0.2884615361690521,
+      0.18269230425357819,
+      0.39423078298568726
+    ],
+    "kqrk": [
+      0.24038460850715637,
+      0.14423076808452606,
+      0.3461538553237915
+    ],
+    "krk": [
+      0.7115384340286255,
+      0.6057692170143127,
+      0.817307710647583
+    ],
+    "krrk": [
+      0.26923078298568726,
+      0.17307692766189575,
+      0.375
+    ]
+  },
+  "outcome": "PARTIAL GO - TOOL",
+  "planner_stable": true,
+  "q1_tool_use": true,
+  "q2_iterative": false
+}

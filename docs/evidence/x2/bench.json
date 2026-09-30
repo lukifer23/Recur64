@@ -1,0 +1,89 @@
+{
+  "forward": [
+    {
+      "batch": 32,
+      "end_to_end_ms": 31.68051666666667,
+      "forward_ms": 30.966850000000004,
+      "t": 1,
+      "tool_cpu_ms": 0.7136666666666667
+    },
+    {
+      "batch": 32,
+      "end_to_end_ms": 39.887283333333336,
+      "forward_ms": 39.14645,
+      "t": 2,
+      "tool_cpu_ms": 0.7408333333333332
+    },
+    {
+      "batch": 32,
+      "end_to_end_ms": 69.66175833333332,
+      "forward_ms": 58.183175,
+      "t": 3,
+      "tool_cpu_ms": 11.478583333333333
+    },
+    {
+      "batch": 32,
+      "end_to_end_ms": 75.002875,
+      "forward_ms": 63.49995833333333,
+      "t": 4,
+      "tool_cpu_ms": 11.502916666666666
+    }
+  ],
+  "peak_vram_mb": 515,
+  "world": [
+    {
+      "horizon": "root",
+      "native_us_per_position": 41.73046875,
+      "payload_bytes": 560,
+      "positions": 256,
+      "stats_total": {
+        "continuation_moves_enumerated": 0,
+        "next_moves_applied": 0,
+        "next_moves_enumerated": 0,
+        "reply_moves_applied": 0,
+        "reply_moves_enumerated": 25169,
+        "reply_records": 0,
+        "root_candidates": 8462,
+        "root_moves_applied": 8462,
+        "successor_records": 0
+      },
+      "wasm_us_per_position": 503.875
+    },
+    {
+      "horizon": "successor",
+      "native_us_per_position": 43.08984375,
+      "payload_bytes": 5168,
+      "positions": 256,
+      "stats_total": {
+        "continuation_moves_enumerated": 0,
+        "next_moves_applied": 0,
+        "next_moves_enumerated": 0,
+        "reply_moves_applied": 0,
+        "reply_moves_enumerated": 25169,
+        "reply_records": 0,
+        "root_candidates": 8462,
+        "root_moves_applied": 8462,
+        "successor_records": 8462
+      },
+      "wasm_us_per_position": 1425.4375
+    },
+    {
+      "horizon": "replies",
+      "native_us_per_position": 536.1953125,
+      "payload_bytes": 25648,
+      "positions": 256,
+      "stats_total": {
+        "continuation_moves_enumerated": 3315262,
+        "next_moves_applied": 903101,
+        "next_moves_enumerated": 903869,
+        "reply_moves_applied": 25169,
+        "reply_moves_enumerated": 25169,
+        "reply_records": 25169,
+        "root_candidates": 8462,
+        "root_moves_applied": 8462,
+        "successor_records": 8462
+      },
+      "wasm_us_per_position": 26474.9375
+    }
+  ]
+}

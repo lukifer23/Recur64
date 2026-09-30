@@ -1,0 +1,30 @@
+chance top-1 (mean correct/legal): 0.0590
+  progressive  T1: top1 0.5519  mass 0.3504  ce 2.0801
+  progressive  T2: top1 0.6596  mass 0.4754  ce 1.6148
+  progressive  T3: top1 1.0000  mass 0.9999  ce 0.4996
+  progressive  T4: top1 1.0000  mass 0.9998  ce 0.4997
+  all-info     T1: top1 1.0000  mass 1.0000  ce 0.6361
+  root-only    T1: top1 0.6077  mass 0.4253  ce 1.8177
+Q1  does progressive information help? (same weights, T3/T4 vs T1)
+  progressive T3 - T1                  top1  diff +0.4481  95% CI [+0.3942, +0.5019]  per-seed ["+0.4923", "+0.4038"]  => SIGNAL
+  progressive T3 - T1                  mass  diff +0.6495  95% CI [+0.6202, +0.6800]  per-seed ["+0.6349", "+0.6640"]  => SIGNAL
+  progressive T4 - T1                  top1  diff +0.4481  95% CI [+0.3942, +0.5019]  per-seed ["+0.4923", "+0.4038"]  => SIGNAL
+  progressive T4 - T1                  mass  diff +0.6494  95% CI [+0.6201, +0.6800]  per-seed ["+0.6349", "+0.6638"]  => SIGNAL
+Q3  does the extra integration step help after all information? (T4 vs T3)
+  progressive T4 - T3                  top1  diff +0.0000  95% CI [+0.0000, +0.0000]  per-seed ["+0.0000", "+0.0000"]  => no signal
+Q2  does iterative integration add value beyond availability? (progressive T4 vs all-info T1)
+  progressive T4 - all-info T1         top1  diff +0.0000  95% CI [+0.0000, +0.0000]  per-seed ["+0.0000", "+0.0000"]  => no signal
+  progressive T4 - all-info T1         mass  diff -0.0002  95% CI [-0.0006, -0.0000]  per-seed ["-0.0001", "-0.0004"]  => no signal
+  all-info T1 - progressive T4         top1  diff +0.0000  95% CI [+0.0000, +0.0000]  per-seed ["+0.0000", "+0.0000"]  => no signal
+Root-only control (progressive vs root-only at T1)
+  progressive T1 - root-only T1        top1  diff -0.0558  95% CI [-0.0904, -0.0231]  per-seed ["-0.0846", "-0.0269"]  => no signal
+  progressive T3 - root-only T1        top1  diff +0.3923  95% CI [+0.3404, +0.4442]  per-seed ["+0.4077", "+0.3769"]  => SIGNAL
+  progressive T4 - root-only T1        top1  diff +0.3923  95% CI [+0.3404, +0.4442]  per-seed ["+0.4077", "+0.3769"]  => SIGNAL
+  family kqk   progressive T4-T1 top1 +0.7308 [+0.6346, +0.8173]
+  family kqqk  progressive T4-T1 top1 +0.2885 [+0.1827, +0.3942]
+  family kqrk  progressive T4-T1 top1 +0.2404 [+0.1442, +0.3462]
+  family krk   progressive T4-T1 top1 +0.7115 [+0.6058, +0.8173]
+  family krrk  progressive T4-T1 top1 +0.2692 [+0.1731, +0.3750]
+planner stable across T1..T4: true
+Q1 tool-use signal: true   Q2 iterative signal: Some(false)   progressive beats root-only: true
+OUTCOME: PARTIAL GO - TOOL

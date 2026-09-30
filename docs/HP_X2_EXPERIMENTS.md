@@ -92,3 +92,44 @@ self-play evaluator.
 
 ## Measured results
 *(none yet — see `HP_X2_BUILD_RESULTS.md` for engineering gates)*
+
+## X2-E1 — primary V2 confirmation (MEASURED; evidence in `docs/evidence/x2/`)
+
+Rules were frozen in X2-PRE (commit 6c4800a) before any confirm evaluation. LR screen on
+tune, progressive, 300 updates, seed 1 (`prog-lr*.log`): tune top-1 at T4 = 0.262 (3e-5),
+1.000 (1e-4), 1.000 (3e-4); tie broken by CE 0.4443 < 0.4547 → **3e-4** for every variant.
+All six runs: 300 updates × 128 positions, seeds 1 and 2, visual off, cached tool mode
+for training, LIVE tool execution for evaluation.
+
+Confirm set (260 positions, chance top-1 0.0590), seed-averaged:
+
+| | T1 | T2 | T3 | T4 |
+|---|---|---|---|---|
+| A root-only | 0.608 | – | – | – |
+| B all-info one pass | 1.000 | – | – | – |
+| C progressive | 0.552 | 0.660 | 1.000 | 1.000 |
+
+* Q1 (T3/T4 − T1, top-1): +0.448, CI [+0.394, +0.502], both seeds positive → **SIGNAL**
+  (mass +0.649).
+* Q2 (progressive T4 − all-info T1): 0.000, CI [0,0] → **no iterative-integration signal**
+  (mass −0.0002).
+* Q3 (T4 − T3): exactly 0 on every position → the final integration step is redundant.
+* Progressive T1 is *below* root-only (−0.056, CI [−0.090, −0.023]); T3/T4 − root-only
+  +0.392 (SIGNAL). Planner stable (RMS ratio < 4 in both seeds).
+* **OUTCOME: PARTIAL GO – TOOL.** The exact world-model information is what solves the task
+  and a progressively-trained network exploits it at T3; a one-pass network exploits the
+  same information equally well. Recurrent integration has not earned itself.
+
+Caveats (INFERRED): the reply-set records include next-player mate counts, so the task is
+close to solvable from a single feature once replies are visible (ceiling at 1.000 for both
+B and C); this task cannot discriminate recurrence from one-pass integration. No process
+supervision rescue was run: the rescue is only permitted when the information is available
+but unexploited, and here it is fully exploited. Visual A/B not run (allowed after a tool
+signal; nothing indicates it is needed). Two seeds, 300 updates per run.
+
+Compute (MEASURED, `bench.json`, 256 confirm positions, native/WASM byte-identical at every
+horizon): Root 41.7 µs/pos native (33 root moves applied, 0 reply work), Successor 43.1,
+Replies 536 µs/pos (98 reply moves applied, 3530 next-player moves enumerated); WASM
+0.50 / 1.43 / 26.5 ms/pos. GPU forward per batch of 32 (steady): T1 31.0 ms, T2 39.2,
+T3 58.2, T4 63.5; tool CPU 0.7 / 0.7 / 11.5 / 11.5 ms; board encoder runs 1 at every T;
+peak VRAM 515 MiB forward, 1607 MiB training (batch 32 micro-batches).
