@@ -1,0 +1,8 @@
+﻿phase=P2.5-D scaled CF training
+git_sha=985087fa6cb87b7a65a3dcbf72de81047640099f
+train_digest=3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6 (P25_DATA_V1, 44332 positions)
+tune_digest=f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4
+lr=3e-4 updates=400 warmup=40 micro=64 accum=4 sampler=cell_balanced_v1 eval_every=50
+model=candidate_v25 facts_enabled (CF), seeds 1 2, from scratch
+matched baseline = original P2 CF seeds 1 2 (1k heavy data)
+HOLDOUT_B not evaluated by this script

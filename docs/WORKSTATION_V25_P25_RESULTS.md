@@ -229,3 +229,95 @@ full 5,000 in all nine heavy cells). Small families are unchanged (KQvK 1,570, K
 INFERRED: per-cell EXPOSURE is unchanged by construction (~6,827 examples per cell at 400 updates), so the scaled run
 changes UNIQUE data, not example counts: a 5,000-position heavy cell is seen ~1.37 times instead of ~6.8, and KQQvK M3
 ~3.7 times. Evidence: `docs/evidence/v25/p25/data-scale/dataset-meta.json`.
+
+
+---
+
+## P2.5-D RESULT - does 5x unique heavy data help? (HOLDOUT_B, matched same-architecture same-seed)
+QUESTION: was P2 primarily limited by recycling ~1,000 unique heavy examples per cell?
+HYPOTHESIS (C in the plan): the remaining M2 gap is a unique-data / generalization problem.
+PRE-REGISTERED RULE: plan above. Matched baseline = original P2 CF seeds 1/2 (1k heavy data). SCALE POSITIVE iff
+(scaled - baseline) on HOLDOUT_B M2+M3 top-1 has mean > 0, paired 95% CI wholly > 0, both seeds positive. ABSOLUTE
+GATE on HOLDOUT_B: seed-averaged M2 >= 0.75 and M3 >= 0.55, neither seed more than 0.03 below a floor, M1 >= 0.95,
+finite training, no severe train/eval collapse. KQ/KR descriptive: catastrophic iff pooled KQvK+KRvK M2+M3 drops
+> 0.10 in BOTH seeds. (P2.5-O is cancelled by the owner scope addendum: nothing follows this phase.)
+CONFIG: CF (candidate_v25, facts enabled), seeds 1/2 from scratch; P25_DATA_V1 `3b25dc85...` (44,332 positions);
+TUNE `f59d744a...`; cell_balanced_v1; LR 3e-4; 400 updates; warmup 40; cosine over 400; batch 256 (64x4);
+policy-only; FP32. Identical to the baseline except the TRAIN set. git_sha in `MANIFEST-D.txt`.
+DATA: HOLDOUT_B `13c8e018beea71058dbbbf510c723ebbe85b3a057c7b0e4a845a1039e107df10` (4,500 heavy positions). Exposure log: HOLDOUT_B evaluated exactly 4 times (two baseline,
+two scaled checkpoints), HOLDOUT_C never, HOLDOUT_A only in P2.5-F.
+MODEL IDS / RESOURCES:
+| run | model_id | wall | peak VRAM | loss | max grad norm | all finite |
+|---|---|---:|---:|---|---:|---|
+| CFD-s1 | 0c891fc856bb | 369 s | 2674 MB | 3.444 -> 1.148 | 21.8 | True |
+| CFD-s2 | f10effa468ff | 365 s | 2674 MB | 3.443 -> 1.115 | 26.2 | True |
+
+MEASURED - absolute HOLDOUT_B and the train/held-out relationship (heavy TRAIN positions only; "gap" = TRAIN top-1 minus
+HOLDOUT_B top-1; CE columns: heavy-TRAIN CE / HOLDOUT_B CE (pooled gap, macro-cell gap)):
+| model | M1 | M2 | M3 | heavy-TRAIN M2 | heavy-TRAIN M3 | top-1 gap M2 / M3 | CE |
+|---|---:|---:|---:|---:|---:|---|---|
+| CF 1k s1 | 1.000 | 0.665 | 0.629 | 0.734 | 0.678 | +0.069 / +0.049 | 1.478 / 1.588 (+0.110 / +0.110) |
+| CF 1k s2 | 1.000 | 0.659 | 0.619 | 0.716 | 0.666 | +0.057 / +0.046 | 1.506 / 1.611 (+0.105 / +0.105) |
+| CF 5k s1 | 1.000 | 0.667 | 0.630 | 0.696 | 0.597 | +0.028 / -0.033 | 1.469 / 1.588 (+0.118 / +0.026) |
+| CF 5k s2 | 1.000 | 0.656 | 0.638 | 0.689 | 0.609 | +0.033 / -0.029 | 1.458 / 1.576 (+0.118 / +0.029) |
+
+Seed-averaged HOLDOUT_B top-1: 1k baseline M2 0.662 / M3 0.624; 5k scaled M2 0.662 / M3 0.634.
+
+MEASURED - scaled minus 1k baseline on HOLDOUT_B (paired bootstrap, B minus A; per seed in the last column):
+| metric | group | pooled [95% CI] | seed 1 / seed 2 |
+|---|---|---|---|
+| top1 | M1 | +0.000 [+0.000, +0.000] | +0.000 / +0.000 |
+|  | M2 | +0.000 [-0.014, +0.014] | +0.003 / -0.003 |
+|  | M3 | +0.010 [-0.004, +0.024] | +0.001 / +0.019 |
+|  | M2+M3 | +0.005 [-0.004, +0.015] | +0.002 / +0.008 |
+| mass | M1 | +0.000 [+0.000, +0.000] | +0.000 / +0.000 |
+|  | M2 | +0.009 [+0.004, +0.013] | +0.013 / +0.004 |
+|  | M3 | +0.002 [-0.001, +0.006] | +0.004 / +0.000 |
+|  | M2+M3 | +0.005 [+0.003, +0.008] | +0.009 / +0.002 |
+| neg_ce | M1 | -0.002 [-0.003, -0.002] | -0.006 / +0.002 |
+|  | M2 | +0.014 [-0.004, +0.032] | +0.004 / +0.023 |
+|  | M3 | +0.043 [+0.025, +0.060] | +0.004 / +0.081 |
+|  | M2+M3 | +0.028 [+0.016, +0.041] | +0.004 / +0.052 |
+
+MEASURED - per cell, seed-averaged HOLDOUT_B top-1:
+| cell | 1k | 5k | change |
+|---|---:|---:|---:|
+| KQQvK-M1 | 1.000 | 1.000 | +0.000 |
+| KQQvK-M2 | 0.638 | 0.642 | +0.004 |
+| KQQvK-M3 | 0.753 | 0.775 | +0.022 |
+| KQRvK-M1 | 1.000 | 1.000 | +0.000 |
+| KQRvK-M2 | 0.686 | 0.660 | -0.026 |
+| KQRvK-M3 | 0.451 | 0.471 | +0.020 |
+| KRRvK-M1 | 1.000 | 1.000 | +0.000 |
+| KRRvK-M2 | 0.661 | 0.683 | +0.022 |
+| KRRvK-M3 | 0.668 | 0.656 | -0.012 |
+
+MEASURED - KQ/KR descriptive health (old P2 CONFIRM, pooled KQvK+KRvK M2+M3 top-1; not the primary gate):
+| | 1k baseline | 5k scaled | change | n |
+|---|---:|---:|---:|---:|
+| seed 1 | 0.792 | 0.746 | -0.046 | 260 |
+| seed 2 | 0.773 | 0.812 | +0.038 | 260 |
+Catastrophic (drop > 0.10 in both seeds): **False**.
+
+GATES:
+- UNIQUE-DATA SCALE POSITIVE: **NOT MET**. M2+M3 top-1 +0.005 [-0.004, +0.015], both seeds positive (+0.002, +0.008) but the CI
+  includes 0. (Secondary, not the pre-registered criterion: correct-set mass M2+M3 +0.005 [+0.003, +0.008] and
+  -CE +0.028 [+0.016, +0.041] are statistically detectable but tiny.)
+- ABSOLUTE GATE: **FAILS (M2)**. Seed-averaged M2 0.662 (< 0.75; both seeds 0.667 / 0.656, i.e. more than 0.03 below
+  the floor), M3 0.634 (>= 0.55, both seeds above), M1 1.000, training finite, CE gaps within the plan's
+  0.30 / 0.40 limits (+0.118 / +0.026 for seed 1, +0.118 / +0.029 for seed 2), KQ/KR not catastrophic.
+- P2.5-D decision: **NO-GO for P3' qualification.** P2.5-O is cancelled, so this lineage STOPS here.
+
+INFERRED (reasoning from the measurements above; NOT directly tested):
+1. Unique data is not the binding constraint. With 1k data the model fit its heavy training positions better than
+   held-out ones (M2 gap +0.06 to +0.07): partly memorization. With 5k data that gap shrinks (M2 +0.03, M3 turns
+   negative) - the models now generalize as well as they fit - yet held-out accuracy does not move. The extra
+   unique data removed memorization without raising the level.
+2. The level (~0.66 M2, ~0.63 M3 on heavy positions) is therefore limited by something other than data: what the
+   one-pass model learns within 400 updates at this capacity/representation, i.e. optimization budget and/or
+   capacity/depth. This evidence cannot separate those two, and the optimization-horizon test that would
+   separate them was removed from scope by the owner. A longer-schedule run is an untested possibility, not a
+   result.
+3. The weakest cell is KQRvK M3 (~0.45-0.47, essentially unchanged by 5x data); KQQvK M3, the only cell whose
+   unique count stayed small (1,831), improved slightly (+0.022). Neither supports a data-scale story.
+NEXT ACTION: none inside P2.5 (scope). Full summary and the owner decision follow in the handoff.

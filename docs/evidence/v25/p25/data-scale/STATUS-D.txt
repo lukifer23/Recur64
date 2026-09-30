@@ -1,0 +1,3 @@
+﻿CFD-s1 exit=0 wall=414s
+CFD-s2 exit=0 wall=409s
+CFD DONE
