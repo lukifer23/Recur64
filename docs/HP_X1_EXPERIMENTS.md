@@ -585,3 +585,36 @@ Monotone in the gain, exactly as the diagnosis predicts. **Selected gain = 128**
 larger gain may be better still; one seed; the tuning set only. KQQvK stays hard even
 at gain 128 (0.50).
 Configs: `configs/x15_facts_g128_cuda.toml`, `configs/x15_symbolic_facts_g128_cuda.toml`.
+
+## E11b RESULT - amended rerun with facts gain 128 (MEASURED, E11 rules applied as written)
+SF, C1F, C4F at gain 128, seeds 1 and 2, all else as E11; S, C1, C4 reused from E11.
+Evaluated on the frozen `tactics-v1` (40 mate fixtures) and `confirm2` (64 positions).
+| variant | wall | peak VRAM | final train loss (s1 / s2) |
+|---|---|---|---|
+| SF g128 (T=1) | 48-49 s | 1.35 GB | 1.673 / 1.727 |
+| C1F g128 (T=1) | 86 s | 1.51 GB | 1.681 / 1.732 |
+| C4F g128 (T=4) | 136-139 s | 2.44 GB | 1.707 / 1.744 |
+**Q1 - facts work: PASS.** SF g128 mate top-1 **0.950** vs S 0.300, diff **+0.650**, 95% CI
+[+0.513, +0.775], per-seed diffs [+0.65, +0.65] (rule: >= +0.30, both seeds). Per set:
+KQvK 1.00, KRvK 1.00, KRRvK 1.00, KQQvK 0.88, KQRvK 0.88 (S: 0.06 / 0.50 / 0.50 / 0.25 /
+0.19). Teacher with 64 simulations: 1.00. Teacher KL on `confirm2` is unchanged
+(0.2871 vs 0.2821, CI includes 0); `material_gain` and `promotion` are unchanged or
+slightly worse: the facts help exactly where they carry the answer.
+**Q2b - thought beats one pass with facts: FAIL (no thought signal).** C4F 0.9125 vs
+C1F 0.9000 on mates (+0.0125 [-0.038, +0.063]); teacher KL 0.2987 vs 0.2846 (+0.014
+[-0.012, +0.044]); `material_gain` worse at T=4 (0.31 vs 0.56, CI wholly below 0).
+E11 (gain 1) outcome stands as recorded above: Q1 fail (facts inert because the module
+could not learn a useful scale), Q2a no thought signal.
+INTERPRETATION (MEASURED + INFERRED): (1) the candidate-fact channel is a real, cheap
+capability gain: mate-in-1 goes from chance to ~95% in ~50 s of training. (2) With that
+answer available from a one-ply fact, mate-in-1 can no longer discriminate anything
+about thinking: the benchmark is at its ceiling for the one-pass network, so a null
+here says little. (3) Across E7, E8, E11 and E11b, extra recurrent thoughts have
+never beaten a one-pass network trained the same way on any fixed-data metric, and
+cost 1.6x wall time and VRAM.
+NEXT (needs an owner decision): a problem family where the one-ply facts do NOT reveal
+the answer and lookahead is required, i.e. mate-in-2 and multi-step captures. Under
+the fresh-clock, no-history fixture convention a 4-ply forced mate is exact under
+Recur64 rules (no repetition or fifty-move state can arise), so the labels can be made
+rule-exact by exhaustive bounded search. The teacher's ability at those depths is the
+ceiling to establish first.

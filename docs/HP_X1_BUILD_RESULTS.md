@@ -267,3 +267,13 @@ E1/E2. Normal forward batch 32: 91.5 / 108 / 142.5 ms at T=1/2/4, 517 MiB.
 Training 32x4 (eff 128) at T=4: 1.47 s/update, 87 ex/s, 2.38 GB peak. New
 command `recur64 x15 bench --mode infer|train`. In-process GPU telemetry is
 printed by every CUDA `x15` command.
+
+## Update 2026-09-29 (scaled runs, MEASURED)
+- Training on `targets-train960` (T=4, 96 positions per update as 3 x 32 accumulated):
+  100 updates in 136-144 s, 2.44 GB peak, GPU 86-89% busy; T=1 in 86-103 s (1.51 GB);
+  symbolic-only in 47-51 s (1.35 GB).
+- Teacher labelling through the shared inference owner: 2.6 positions/s (960 positions
+  in 6 min 8 s, 152,135 evaluations, 0 errors), about 5x the batch-1 path with
+  identical labels; owner batches stayed at 16 (tuning knob).
+- Head v2 (`candidate_facts`) adds 8x16+16 and 16x1+1 parameters; the probe head is
+  unchanged. Old X15 head-v1 checkpoints are refused.

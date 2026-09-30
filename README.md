@@ -360,18 +360,44 @@ recur64 x15 thoughts --config configs/x15.toml --thoughts 4
 recur64 x15 bench --mode infer --config configs/x15_cuda.toml   # or --mode train --batch 32 --accum 4
 ```
 
-Current measured state (see `docs/HP_X1_BUILD_RESULTS.md` for the full
-MEASURED / INFERRED / NOT RUN split):
+More commands (all fast; cold GPU kernel compilation costs minutes once per shape):
 
-- **16,018,606 parameters**, identical at T = 1/2/4/8; the R15 trunk geometry is
-  unchanged, so the new subsystems are additive and reported separately.
-- Forward sanity and the module-gradient gate **pass on CPU**.
-- Native and WASM coprocessor outputs are **byte-identical on 253 positions**
-  (including castling, en passant, promotions, checks, pins and mate-in-1/2).
-- WASM costs ~16x native per position, so `native_v1` is the practical training
-  provider and `wasm_v1` is the real-WebAssembly experiment.
+```bash
+# fixed-data teacher targets (deterministic PUCT ladder), batched through the inference owner
+recur64 x15 gen-targets --teacher-config <run>/config.toml --teacher-checkpoint <ckpt> \
+    --replay <run>/replay --out targets.json --positions 400 --synthetic-tactics 80 --batched
+recur64 x15 audit-targets --targets targets.json --report --disjoint-from other.json
 
-**Not** established: any CUDA X15 execution, any X15 training, peak VRAM, or
-that the architecture works at all. X15 is wired into batched inference and the
-probe harness, not the pilot. The historical F15/R15 model is untouched and old
-checkpoints are refused by the X15 loader (and vice versa).
+# train on the targets (micro-batched, seeded order), evaluate the SAME weights at T=1..N
+recur64 x15 train-probe   --targets targets.json --out ckpt --thoughts 4 --batch-positions 96
+recur64 x15 eval-reasoning --targets confirm.json --split confirm --checkpoint ckpt --thoughts 4
+recur64 x15 compare --a ckA1 --a ckA2 --t-a 4 --b ckB1 --b ckB2 --t-b 1 --fixtures f.json --targets t.json
+
+# tactical suite: generate, evaluate networks, and score the teacher as a ceiling
+recur64 x15 gen-tactics --out tactics.json
+recur64 x15 eval-tactics --fixtures tactics.json --checkpoint ckpt
+recur64 x15 teacher-tactics --teacher-config ... --teacher-checkpoint ... --fixtures tactics.json
+recur64 x15 facts-probe --fixtures tactics.json --checkpoint ckpt
+```
+
+Current measured state (the full MEASURED / INFERRED / NOT RUN split, every
+experiment, its pre-registered rule and its outcome are in
+`docs/HP_X1_EXPERIMENTS.md`; decisions in `docs/DECISIONS.md` D57-D63):
+
+- **16.0M parameters**, identical at T = 1/2/4/8. X15 **runs and trains on the RTX 2050**:
+  a T=4 training update of 96 positions takes about 1.4 s and peaks at 2.4 GB; the
+  normal forward costs 91 / 108 / 142 ms at T = 1 / 2 / 4 (batch 32).
+- Native and WASM coprocessor outputs are byte-identical (parity is a standing gate).
+- **Fixed-data reasoning screens** (exact-history teacher targets from Recur64's own
+  search; fresh, source-game-disjoint confirmation sets): extra recurrent thoughts have
+  **not** beaten a one-pass network trained the same way, on teacher-KL or on tactics,
+  in any pre-registered comparison so far (E7, E8, E11, E11b). Result: latent reasoning =
+  no signal at this scale. Not proof that it cannot help; the data is small.
+- **Candidate facts** (exact one-ply facts per legal move, D62) take mate-in-1 from
+  chance to about 95% with about 50 s of training, once the channel is given a usable
+  scale (gain 128; at gain 1 it learned almost nothing, which was measured and diagnosed).
+- **Not established:** any playing-strength or conversion gain, any benefit of the
+  visual or compute pathways, anything about problems that need multi-ply lookahead
+  (the natural next test: mate-in-2 and multi-step captures). X15 is not wired into the
+  pilot or self-play. The historical F15/R15 model is untouched and old checkpoints are
+  refused by the X15 loader (and vice versa; X15 head v1 checkpoints are refused too).

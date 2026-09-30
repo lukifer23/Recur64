@@ -253,3 +253,16 @@ retrieval** (positions Recur64 itself has searched to a proven result), not an
 external chess corpus. No vector store, no HNSW, no opening database, and no
 external corpus exists in X1; `ExperimentalConfig::validate` refuses any
 setting other than `none` with `memory_tokens = 0`.
+
+## Addendum: head v2 and CandidateFactsV1 (2026-09-29, D62)
+`CHIMERA_HEAD_VERSION` is 2. The policy readout accepts an optional per-candidate
+bias `gain * MLP(facts)` computed from `CandidateFactsV1`: eight exact one-ply facts per
+legal move (mate, check, capture, captured value, destination attacked after the move,
+promotion, promotion gain, stalemate), produced natively and deterministically in
+`recur64-runtime::candidate_facts`. It is configured by `[experimental.candidate_facts]`
+(`provider`, `enabled`, `hidden`, `gain`), sits outside the latent state, and is inert
+when disabled (its parameters are not executed). The final MLP layer starts at zero, so
+a fresh network is neutral; because AdamW moves weights by about the learning rate, a
+gain of 128 is needed for the channel to reach a useful scale in a short run (MEASURED:
+bias gap +0.014 logits at gain 1 after 100 updates, +1.66 at gain 128). X15 checkpoints
+written under head v1 are refused. The probe architecture is unchanged.
