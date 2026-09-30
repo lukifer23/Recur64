@@ -65,6 +65,10 @@ pub fn align_by_seed<'a>(
     Ok(ia.iter().map(|(s, fa)| (*s, *fa, ib[s])).collect())
 }
 
+fn refs(v: &[EvalFile]) -> Vec<&EvalFile> {
+    v.iter().collect()
+}
+
 /// A per-position metric extractor.
 type Metric = fn(&PosResult) -> f64;
 
@@ -178,6 +182,77 @@ pub fn compare(
                     seed,
                 )?;
                 seeds.insert(format!("seed_{s}"), serde_json::Value::Object(g));
+            }
+            groups.insert("per_seed".into(), serde_json::Value::Object(seeds));
+        }
+        out.insert(name.into(), serde_json::Value::Object(groups));
+    }
+    Ok(serde_json::Value::Object(out))
+}
+
+/// The 2x2 factorial interaction `(CF - C0) - (LF - L)` (equivalently
+/// `(CF - LF) - (C0 - L)`): does the architecture effect change when facts are
+/// present? Per position, each model's value is averaged over seeds, then the
+/// interaction is bootstrapped with the SAME grouped paired bootstrap as every
+/// other comparison. With `per_seed`, each model seed is also reported separately,
+/// requiring the same unique seed set in all four cells.
+pub fn interaction(
+    c0: &[EvalFile],
+    cf: &[EvalFile],
+    l: &[EvalFile],
+    lf: &[EvalFile],
+    resamples: usize,
+    seed: u64,
+    per_seed: bool,
+) -> Result<serde_json::Value, String> {
+    let first = c0.first().ok_or("C0 side is empty")?;
+    if [c0, cf, l, lf]
+        .iter()
+        .flat_map(|side| side.iter())
+        .any(|f| f.dataset_digest != first.dataset_digest || f.split != first.split)
+    {
+        return Err("all four cells must be evaluated on the same split and dataset digest".into());
+    }
+    // The four cells must carry identical unique seed sets, matched by identity.
+    let quad: Vec<(u64, &EvalFile, &EvalFile, &EvalFile, &EvalFile)> = {
+        let base = align_by_seed(c0, cf)?;
+        let against_l = align_by_seed(c0, l)?;
+        let against_lf = align_by_seed(c0, lf)?;
+        base.iter()
+            .zip(&against_l)
+            .zip(&against_lf)
+            .map(|(((s, a, b), (_, _, bl)), (_, _, blf))| (*s, *a, *b, *bl, *blf))
+            .collect()
+    };
+    let metrics: [(&str, Metric); 3] = [
+        ("top1", |r| f64::from(u8::from(r.top1))),
+        ("mass", |r| r.mass as f64),
+        ("neg_ce", |r| -(r.ce as f64)),
+    ];
+    // interaction map pair: A = (LF - L), B = (CF - C0), so B - A is the interaction.
+    let diff_map = |hi: &[&EvalFile], lo: &[&EvalFile], f: Metric| {
+        let (ph, pl) = (per_position(hi, f), per_position(lo, f));
+        ph.into_iter()
+            .map(|(k, (d, v))| {
+                let base = pl.get(&k).map_or(f64::NAN, |x| x.1);
+                (k, (d, v - base))
+            })
+            .collect::<BTreeMap<_, _>>()
+    };
+    let mut out = serde_json::Map::new();
+    for (name, f) in metrics {
+        let facts_in_legacy = diff_map(&refs(lf), &refs(l), f);
+        let facts_in_candidate = diff_map(&refs(cf), &refs(c0), f);
+        let mut groups = grouped(&facts_in_legacy, &facts_in_candidate, resamples, seed)?;
+        if per_seed {
+            let mut seeds = serde_json::Map::new();
+            for (s, a_c0, a_cf, a_l, a_lf) in &quad {
+                let legacy = diff_map(&[a_lf], &[a_l], f);
+                let candidate = diff_map(&[a_cf], &[a_c0], f);
+                seeds.insert(
+                    format!("seed_{s}"),
+                    serde_json::Value::Object(grouped(&legacy, &candidate, resamples, seed)?),
+                );
             }
             groups.insert("per_seed".into(), serde_json::Value::Object(seeds));
         }
@@ -333,5 +408,50 @@ mod tests {
         let mut fewer = vec![file("b", Some(1), 0.0)];
         fewer[0].results.pop();
         assert!(compare(&a, &fewer, 100, 1, true).is_err());
+    }
+
+    #[test]
+    fn interaction_is_the_difference_of_the_two_facts_effects() {
+        // top-1 by depth. Facts help the candidate model on M1 and M2 but the legacy
+        // model only on M1, so the interaction is + on M2 and 0 on M1.
+        let mk = |m: &str, seed: u64, c: [bool; 3]| by_depth(m, seed, c);
+        let c0 = vec![
+            mk("c0a", 1, [false, false, false]),
+            mk("c0b", 2, [false, false, false]),
+        ];
+        let cf = vec![
+            mk("cfa", 1, [true, true, false]),
+            mk("cfb", 2, [true, true, false]),
+        ];
+        let l = vec![
+            mk("la", 1, [false, false, false]),
+            mk("lb", 2, [false, false, false]),
+        ];
+        let lf = vec![
+            mk("lfa", 1, [true, false, false]),
+            mk("lfb", 2, [true, false, false]),
+        ];
+        let out = interaction(&c0, &cf, &l, &lf, 200, 3, true).unwrap();
+        let d = |g: &str| diff(&out, &["top1", g]);
+        assert!(d("M1").abs() < 1e-12, "same facts effect on M1");
+        assert!(
+            (d("M2") - 1.0).abs() < 1e-12,
+            "candidate gains M2 from facts, legacy does not"
+        );
+        assert_eq!(d("M3"), 0.0);
+        assert!(diff(&out, &["top1", "per_seed", "seed_1", "M2"]) > 0.0);
+        assert!(diff(&out, &["top1", "per_seed", "seed_2", "M2"]) > 0.0);
+        // Order of files is irrelevant; mismatched seed sets are refused.
+        let rev = |v: &[EvalFile]| vec![v[1].clone(), v[0].clone()];
+        assert_eq!(
+            out,
+            interaction(&rev(&c0), &cf, &rev(&l), &rev(&lf), 200, 3, true).unwrap()
+        );
+        let bad = vec![mk("x", 1, [true; 3]), mk("y", 3, [true; 3])];
+        assert!(
+            interaction(&c0, &cf, &l, &bad, 200, 3, true)
+                .unwrap_err()
+                .contains("seed sets differ")
+        );
     }
 }

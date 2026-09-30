@@ -36,6 +36,8 @@ pub enum ProofCmd {
     Eval(EvalArgs),
     /// Paired per-position bootstrap between two sets of evaluations.
     Compare(CompareArgs),
+    /// 2x2 factorial interaction (CF-C0)-(LF-L), paired by model-seed identity.
+    Interaction(InteractionArgs),
 }
 
 #[derive(Args, Debug)]
@@ -114,6 +116,24 @@ pub struct EvalArgs {
     /// Seed for a fresh model's initialization.
     #[arg(long, default_value_t = 1)]
     pub seed: u64,
+}
+
+#[derive(Args, Debug)]
+pub struct InteractionArgs {
+    #[arg(long)]
+    pub c0: String,
+    #[arg(long)]
+    pub cf: String,
+    #[arg(long)]
+    pub l: String,
+    #[arg(long)]
+    pub lf: String,
+    #[arg(long, default_value_t = 10000)]
+    pub resamples: usize,
+    #[arg(long, default_value_t = 17)]
+    pub seed: u64,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -222,6 +242,7 @@ pub fn run(cmd: ProofCmd) -> anyhow::Result<()> {
         ProofCmd::Train(a) => train_cmd(a),
         ProofCmd::Eval(a) => eval_cmd(a),
         ProofCmd::Compare(a) => compare_cmd(a),
+        ProofCmd::Interaction(a) => interaction_cmd(a),
     }
 }
 
@@ -957,5 +978,22 @@ fn holdouts_cmd(a: HoldoutArgs) -> anyhow::Result<()> {
     )?;
     println!("{}", serde_json::to_string_pretty(&metas)?);
     println!("{}", serde_json::to_string_pretty(&accounting["cells"])?);
+    Ok(())
+}
+
+fn interaction_cmd(a: InteractionArgs) -> anyhow::Result<()> {
+    use recur64_runtime::proof::compare::interaction;
+    let v = interaction(
+        &read_evals(&a.c0)?,
+        &read_evals(&a.cf)?,
+        &read_evals(&a.l)?,
+        &read_evals(&a.lf)?,
+        a.resamples,
+        a.seed,
+        true,
+    )
+    .map_err(anyhow::Error::msg)?;
+    std::fs::write(&a.output, serde_json::to_vec_pretty(&v)?)?;
+    println!("{}", serde_json::to_string_pretty(&v)?);
     Ok(())
 }
