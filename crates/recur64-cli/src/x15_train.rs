@@ -457,11 +457,10 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
         "train thoughts {} outside 1..={max_t}",
         args.thoughts
     );
-    anyhow::ensure!(
-        (1..=max_t).contains(&args.eval_thoughts),
-        "eval thoughts {} outside 1..={max_t}",
-        args.eval_thoughts
-    );
+    // The evaluation depth is a request, clamped to what the model can run (a
+    // reasoning-disabled model always evaluates one thought); 0 is a mistake.
+    anyhow::ensure!(args.eval_thoughts >= 1, "eval thoughts must be >= 1");
+    let eval_thoughts = args.eval_thoughts.min(max_t);
     let mode = cfg.experimental.deep_supervision;
     let weight = cfg.experimental.intermediate_weight;
 
@@ -625,7 +624,7 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
                 &val_data,
                 args.eval_every > 0 && (u + 1) % args.eval_every == 0 && u + 1 < args.updates,
             ) {
-                let rows = evaluate(&model.valid(), val_data, args.eval_thoughts);
+                let rows = evaluate(&model.valid(), val_data, eval_thoughts);
                 let s: Vec<String> = rows
                     .iter()
                     .map(|r| format!("T{}={:.4}", r.t, mean(&r.kl_deep)))
@@ -660,7 +659,7 @@ fn train<B: AutodiffBackend>(cfg: &mut ProbeConfig, args: &TrainProbeArgs) -> an
     );
 
     if let Some(val_data) = &val_data {
-        let rows = evaluate(&model.valid(), val_data, args.eval_thoughts);
+        let rows = evaluate(&model.valid(), val_data, eval_thoughts);
         println!("final held-out evaluation (SAME weights, diagnostic forward):");
         print_eval("val", &rows);
         std::fs::write(

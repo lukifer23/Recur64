@@ -510,3 +510,36 @@ hash order over train960, cycling; evaluation inputs are built from each
 checkpoint's own experimental contract. Tooling: `x15 compare` computes the
 pre-registered statistics (fixture / position-clustered paired bootstrap of the
 seed-averaged difference, 2000 resamples, with per-seed signs).
+
+## E11 RESULT - scaled ablation (MEASURED, pre-registered rules applied as written)
+12 fresh-start runs on `targets-train960` (lr 1e-4, 100 updates x 96 positions,
+seeds 1 and 2), evaluated on the frozen sets: `tactics-v1` (40 mate fixtures = 5
+material sets x 8) and `confirm2` (64 positions; teacher KL at the trained T).
+| variant | wall | peak VRAM | final train loss (s1 / s2) |
+|---|---|---|---|
+| S symbolic (T=1) | 48-51 s | 1.35 GB | 2.181 / 2.098 |
+| SF symbolic + facts (T=1) | 47-50 s | 1.35 GB | 2.194 / 2.041 |
+| C1 Chimera (T=1) | 86-103 s | 1.51 GB | 2.145 / 2.087 |
+| C4 Chimera (T=4) | 144 s | 2.44 GB | 2.184 / - |
+| C1F Chimera + facts (T=1) | 86-110 s | 1.51 GB | 2.140 / - |
+| C4F Chimera + facts (T=4) | 140-142 s | 2.44 GB | 2.172 / 2.240 |
+Training is cheap now: 100 updates in under 2.5 minutes at T=4.
+
+Q1 (facts let a network find mates?): SF mate top-1 0.325 vs S 0.300, diff +0.025,
+95% CI [-0.038, +0.088], per-seed diffs [0.00, +0.05]. Rule required >= +0.30 with
+both seeds above: **FAILS. Facts did not help at this optimization budget.**
+Q2a (no facts) C4 (T=4) vs C1 (T=1): mate top-1 0.200 vs 0.288, diff -0.088 [-0.175,
+0.000]; teacher KL 0.3250 vs 0.2882, diff +0.037 [+0.004, +0.073] (C4 worse).
+Q2b (facts) C4F vs C1F: mate 0.263 vs 0.300, diff -0.038 [-0.125, +0.038]; KL
+0.3142 vs 0.2874, diff +0.027 [-0.004, +0.062]. Promotion top-1 is also worse at T4
+(0.19 vs 0.69; 0.44 vs 0.69).
+**Rule outcome: NO THOUGHT SIGNAL** (no facts setting has C4 wholly favourable).
+Further descriptive rows: C1F vs C1 mate +0.013 [-0.025, +0.050], KL -0.0009: the
+facts channel is inert here in the latent architecture too.
+Per mate set (mean of 2 seeds, top-1): KQvK 0.00-0.06 for every variant (never
+solved), KRvK 0.44-0.56, KQQvK/KQRvK 0.12-0.38, KRRvK 0.19-0.56. Teacher with 64
+simulations: 1.00 everywhere.
+INTERPRETATION: more thought did not help and cost 1.6x wall time and 1.6x VRAM; at
+equal updates the T=4 network is, if anything, slower to fit. The facts channel
+should have made mates easy (a unit test shows a small network learning it in 60
+steps), so its failure here needs a diagnosis, not a conclusion about facts.
