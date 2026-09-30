@@ -499,3 +499,14 @@ averaged ~85% with dips to 60-70% (see `gpu_util_busy_mean`). Candidate causes f
 reporting-only), CPU micro-batch assembly inline with the GPU work, and small-batch evaluation
 passes. Fix later: one combined readback, background batch prefetch, per-update idle-fraction
 logging.
+
+---
+
+## Owner decision after P2: P2.5 is a NEW research lineage
+P2 remains a formal Q3 NO-GO: CF M2 0.690 / 0.688 (pooled ~0.689, floor 0.75), CF M3 0.671 /
+0.647 (pooled ~0.659, floor 0.55). The old 800-update extension remains UNTRIGGERED (its
+update-350-to-400 CE-drop condition failed in both seeds) and is closed. P3 remains
+unauthorized under the old rule. No P2 number, threshold or decision is altered.
+P2.5 (factorial + data scale + optional optimization horizon) is a separate, owner-authorized
+experiment motivated by P2 evidence; it is neither the P2 extension nor a P2 rescue. All of
+its rules are pre-registered in `docs/WORKSTATION_V25_P25_PLAN.md` before any P2.5 science.
