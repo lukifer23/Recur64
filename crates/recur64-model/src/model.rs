@@ -30,7 +30,7 @@ const REL_BUCKETS: usize = 225;
 
 /// Row-major relative-displacement bucket index for each `(from, to)` square
 /// pair, repeated for every attention head. Shape `[heads, squares*squares]`.
-fn rel_index_data(heads: usize, squares: usize) -> Vec<i32> {
+pub(crate) fn rel_index_data(heads: usize, squares: usize) -> Vec<i32> {
     assert_eq!(squares, 64, "Phase 0 probe assumes an 8x8 board");
     let mut v = Vec::with_capacity(heads * squares * squares);
     for _h in 0..heads {
@@ -152,7 +152,7 @@ impl<B: Backend> Block<B> {
 /// a broadcast batched matmul with `m = s` (64 squares), a small-GEMM shape
 /// the kernels handle poorly; flattening computes the same linear map with
 /// `m = b * s`. Parameters, checkpoints and the head version are unchanged.
-fn linear_rows<B: Backend>(linear: &Linear<B>, x: Tensor<B, 3>) -> Tensor<B, 3> {
+pub(crate) fn linear_rows<B: Backend>(linear: &Linear<B>, x: Tensor<B, 3>) -> Tensor<B, 3> {
     let [b, s, d] = x.dims();
     let y = linear.forward(x.reshape([b * s, d]));
     let out = y.dims()[1];
@@ -165,6 +165,9 @@ pub struct CandidateTensors<B: Backend> {
     pub from_idx: Tensor<B, 2, Int>,
     pub to_idx: Tensor<B, 2, Int>,
     pub promo_idx: Tensor<B, 2, Int>,
+    /// Raw promotion code per candidate (0 none, 1..4 N/B/R/Q). `promo_idx`
+    /// folds "none" into the knight column; the candidate model needs both.
+    pub promo_code: Tensor<B, 2, Int>,
     pub mask: Tensor<B, 2, Bool>,
     pub valid: Tensor<B, 1, Bool>,
     pub width: usize,
@@ -187,6 +190,13 @@ impl<B: Backend> CandidateTensors<B> {
             .map(|&p| if p == 0 { 0 } else { p as i32 - 1 })
             .collect();
         let promo_idx = Tensor::<B, 2, Int>::from_data(TensorData::new(promo_col, [b, w]), device);
+        let promo_code = Tensor::<B, 2, Int>::from_data(
+            TensorData::new(
+                cb.promo.iter().map(|&p| p as i32).collect::<Vec<_>>(),
+                [b, w],
+            ),
+            device,
+        );
         let mask =
             Tensor::<B, 2, Bool>::from_data(TensorData::new(cb.mask.clone(), [b, w]), device);
         let valid = Tensor::<B, 1, Bool>::from_data(
@@ -198,6 +208,7 @@ impl<B: Backend> CandidateTensors<B> {
             from_idx,
             to_idx,
             promo_idx,
+            promo_code,
             mask,
             valid,
             width: w,
@@ -213,8 +224,9 @@ pub struct PolicyOutput<B: Backend> {
     pub mask: Tensor<B, 2, Bool>,
     /// Positions with at least one legal candidate.
     pub valid: Tensor<B, 1, Bool>,
-    /// Full `[b, 64, 64]` base score grid (for tests / inspection).
-    pub base_all: Tensor<B, 3>,
+    /// Full `[b, 64, 64]` base score grid (for tests / inspection). Present
+    /// only for the bilinear Probe head; the candidate head has no such grid.
+    pub base_all: Option<Tensor<B, 3>>,
 }
 
 /// One supervised readout.
@@ -433,7 +445,7 @@ impl<B: Backend> ProbeModel<B> {
                 log_probs,
                 mask: cands.mask.clone(),
                 valid: cands.valid.clone(),
-                base_all,
+                base_all: Some(base_all),
             },
             wdl_logits,
         }

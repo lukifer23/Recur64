@@ -12,6 +12,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const BURN_VERSION: &str = "0.21.0";
 
 pub mod action;
+pub mod candidate;
 pub mod checkpoint;
 pub mod config;
 pub mod fixture;
