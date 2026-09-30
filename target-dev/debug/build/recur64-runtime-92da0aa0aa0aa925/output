@@ -1,8 +1,0 @@
-cargo:rustc-env=RECUR64_GIT_SHA=9be57c7456c7c9edf964103b0291498425184c9d-dirty
-cargo:rustc-env=RECUR64_GIT_BRANCH=experiment/hp-r15-h3-integration
-cargo:rerun-if-changed=build.rs
-cargo:rerun-if-changed=../../.git/HEAD
-cargo:rerun-if-changed=../../.git/refs/heads
-cargo:rerun-if-changed=../../.git/packed-refs
-cargo:rerun-if-changed=../../crates
-cargo:rerun-if-changed=../../Cargo.lock
