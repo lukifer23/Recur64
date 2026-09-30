@@ -569,3 +569,19 @@ steps), so its failure here needs a diagnosis, not a conclusion about facts.
   mates and KL, seeds agreeing). **The original E11 outcome (Q1 fail, no thought
   signal) stands and is reported alongside; E11b does not replace it.**
 - Still NOT claimed: facts are a tool, not reasoning; strength and conversion.
+
+### A4 result - gain screen on `tactics-tune` (MEASURED, rule applied as written)
+`tactics-tune` (seed 20261005, 56 fixtures, verified to share no FEN with `tactics-v1`
+or `targets-train960`). SF seed 1, 100 updates, mate top-1 over the 40 mate fixtures;
+reference S seed 1 = 0.250.
+| gain | mate top-1 | diff vs S (95% CI) | learned bias gap (correct - other) | final loss |
+|---|---|---|---|---|
+| 1 (E11) | - | - | +0.014 logits | 2.194 |
+| 8 | 0.275 | +0.025 [-0.050, +0.100] | +0.107 | 2.160 |
+| 32 | 0.450 | +0.200 [+0.075, +0.325] | +0.428 | 2.013 |
+| 128 | **0.875** | **+0.625 [+0.475, +0.775]** | +1.661 | 1.672 |
+Monotone in the gain, exactly as the diagnosis predicts. **Selected gain = 128**
+(highest; the rule's grid was {8, 32, 128}). Caveats: it is the edge of the grid, so a
+larger gain may be better still; one seed; the tuning set only. KQQvK stays hard even
+at gain 128 (0.50).
+Configs: `configs/x15_facts_g128_cuda.toml`, `configs/x15_symbolic_facts_g128_cuda.toml`.
