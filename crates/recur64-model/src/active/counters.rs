@@ -12,6 +12,7 @@ thread_local! {
     static ROOT_STAGE: Cell<usize> = const { Cell::new(0) };
     static QUERY_ENCODER: Cell<usize> = const { Cell::new(0) };
     static PLANNER_UPDATE: Cell<usize> = const { Cell::new(0) };
+    static ROOT_FACTS: Cell<usize> = const { Cell::new(0) };
 }
 
 /// Executions since the thread started (take a snapshot before and after a run).
@@ -20,6 +21,8 @@ pub struct Counts {
     pub root_stage: usize,
     pub query_encoder: usize,
     pub planner_update: usize,
+    /// Positions whose root CandidateFacts were computed.
+    pub root_facts: usize,
 }
 
 impl Counts {
@@ -28,6 +31,7 @@ impl Counts {
             root_stage: self.root_stage - earlier.root_stage,
             query_encoder: self.query_encoder - earlier.query_encoder,
             planner_update: self.planner_update - earlier.planner_update,
+            root_facts: self.root_facts - earlier.root_facts,
         }
     }
 }
@@ -37,6 +41,7 @@ pub fn snapshot() -> Counts {
         root_stage: ROOT_STAGE.with(Cell::get),
         query_encoder: QUERY_ENCODER.with(Cell::get),
         planner_update: PLANNER_UPDATE.with(Cell::get),
+        root_facts: ROOT_FACTS.with(Cell::get),
     }
 }
 
@@ -50,4 +55,8 @@ pub(crate) fn note_query_encoder() {
 
 pub(crate) fn note_planner_update() {
     PLANNER_UPDATE.with(|c| c.set(c.get() + 1));
+}
+
+pub(crate) fn note_root_facts(positions: usize) {
+    ROOT_FACTS.with(|c| c.set(c.get() + positions));
 }

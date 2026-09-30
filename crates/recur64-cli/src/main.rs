@@ -23,6 +23,7 @@ mod phase3;
 mod proof_cli;
 mod search_gain;
 mod v25_qual;
+mod v3_qual;
 mod value_diag;
 
 #[derive(Parser)]
@@ -50,6 +51,8 @@ enum Commands {
     },
     /// V2.5 P0.5/P0.6 qualification: facts cost, forward latency, learner layouts, VRAM.
     V25Qual(v25_qual::V25QualArgs),
+    /// V3 active_search_v3 engineering qualification: budgets, compute split, backward, VRAM.
+    V3Qual(v3_qual::V3QualArgs),
     /// Exact proof-position tooling (ProofTargetsV1): bench, gen, audit.
     #[command(subcommand)]
     Proof(proof_cli::ProofCmd),
@@ -113,6 +116,7 @@ fn main() -> anyhow::Result<()> {
             model_info::run_model_info(&config, json.as_deref())
         }
         Commands::V25Qual(a) => v25_qual::run(a),
+        Commands::V3Qual(a) => v3_qual::run(a),
         Commands::Proof(c) => proof_cli::run(c),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),

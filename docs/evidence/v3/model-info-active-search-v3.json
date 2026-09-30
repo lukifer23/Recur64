@@ -1,0 +1,169 @@
+{
+  "architecture": "active_search_v3",
+  "config": "active-search-v3-cpu",
+  "groups": [
+    {
+      "group": "root.input_projection",
+      "params": 76800
+    },
+    {
+      "group": "root.square_embeddings",
+      "params": 40960
+    },
+    {
+      "group": "root.board_blocks",
+      "params": 26278480
+    },
+    {
+      "group": "root.final_norm",
+      "params": 640
+    },
+    {
+      "group": "root.from_to_projection",
+      "params": 327936
+    },
+    {
+      "group": "root.global_projection",
+      "params": 164096
+    },
+    {
+      "group": "root.promotion_embedding",
+      "params": 1280
+    },
+    {
+      "group": "root.facts_encoder",
+      "params": 17216
+    },
+    {
+      "group": "root.token_norm",
+      "params": 256
+    },
+    {
+      "group": "root.candidate_blocks",
+      "params": 526592
+    },
+    {
+      "group": "root.node_projection",
+      "params": 164096
+    },
+    {
+      "group": "root.wdl_head",
+      "params": 1923
+    },
+    {
+      "group": "query.input_projection",
+      "params": 30720
+    },
+    {
+      "group": "query.square_embeddings",
+      "params": 16384
+    },
+    {
+      "group": "query.blocks",
+      "params": 1054984
+    },
+    {
+      "group": "query.final_norm",
+      "params": 256
+    },
+    {
+      "group": "query.action_head",
+      "params": 132864
+    },
+    {
+      "group": "planner.initial_memory",
+      "params": 68096
+    },
+    {
+      "group": "planner.event",
+      "params": 333056
+    },
+    {
+      "group": "planner.workspace_update",
+      "params": 657920
+    },
+    {
+      "group": "planner.branch_update",
+      "params": 394240
+    },
+    {
+      "group": "selector.edge_scorer",
+      "params": 332545
+    },
+    {
+      "group": "selector.stop_head",
+      "params": 68097
+    },
+    {
+      "group": "readout",
+      "params": 164353
+    }
+  ],
+  "model": {
+    "active": {
+      "candidate": {
+        "blocks": 1,
+        "dim": 256,
+        "facts_enabled": true,
+        "facts_hidden": 64,
+        "ffn": 512,
+        "heads": 4,
+        "policy_hidden": 128
+      },
+      "contracts": {
+        "budget_training": "budget_0_2_4_8_v1",
+        "frontier": "frontier_v1",
+        "planner": "active_planner_v1",
+        "proof_trace": "proof_trace_v1",
+        "query_state_encoder": "query_state_encoder_v1",
+        "root_candidate_tokens": "candidate_token_v3_root_v1",
+        "root_encoder": "v25_root_encoder_v1",
+        "root_policy": "root_policy_v3_v1",
+        "search_memory": "branch_workspace_v1",
+        "selector": "active_selector_v1",
+        "state_query": "state_query_v1"
+      },
+      "planner_ffn": 512,
+      "planner_heads": 4,
+      "query_blocks": 2,
+      "query_dim": 256,
+      "query_ffn": 512,
+      "query_heads": 4,
+      "readout_hidden": 128,
+      "rms_ceiling": 16.0,
+      "selector_hidden": 256,
+      "workspace_tokens": 8
+    },
+    "architecture": "active_search_v3",
+    "core_blocks": 8,
+    "ffn": 1280,
+    "heads": 10,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 640
+  },
+  "param_bytes_fp32": 123415160,
+  "recurrence": 1,
+  "scientific_budgets": [
+    0,
+    2,
+    4,
+    8,
+    16
+  ],
+  "stop_head_params": 68097,
+  "test_time_compute_dimension": "exact state-query budget",
+  "total_params": 30853790,
+  "training_budgets": [
+    0,
+    2,
+    4,
+    8
+  ]
+}

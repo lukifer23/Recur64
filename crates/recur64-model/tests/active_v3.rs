@@ -4,12 +4,13 @@
 //! exact accounting, root-once, strict identity, gradient coverage on the first
 //! update, deterministic traces, and the frozen FIXED comparator.
 
-use burn::module::{AutodiffModule, Module, ModuleVisitor, Param};
 use burn::optim::{GradientsParams, Optimizer};
 use burn::prelude::*;
-use burn::tensor::backend::AutodiffBackend;
 
 use recur64_core::{ActionId, GameState};
+use recur64_model::active::coverage::{
+    INERT_NOISE_BOUND, gradient_coverage, is_inherited_inert_key_bias, is_stop_head,
+};
 use recur64_model::active::loss::selector_loss;
 use recur64_model::active::{
     ActiveSearchModel, EdgeRef, QueryScript, RunOptions, ScriptStep, Selection, Tree,
@@ -368,18 +369,193 @@ fn an_exhausted_frontier_is_reported_not_hidden() {
     // root's legal moves and a larger budget cannot be spent.
     let device = Default::default();
     let m = ActiveSearchModel::<B>::new(tiny(), &device);
-    let states = vec![GameState::startpos().with_max_plies(1)];
+    let states = vec![
+        GameState::from_fen("8/8/8/8/8/k7/P7/K7 w - - 0 1")
+            .unwrap()
+            .with_max_plies(1),
+    ];
     let n_root = states[0].legal_actions().len();
-    assert_eq!(n_root, 20);
-    let out = m
-        .run(&states, &opts(24), Selection::Fixed, &device)
-        .unwrap();
+    assert_eq!(n_root, 1, "a single legal move: Kb1");
+    let out = m.run(&states, &opts(8), Selection::Fixed, &device).unwrap();
     let a = &out.accounting;
     assert_eq!(a.successful_queries, vec![n_root]);
+    assert_eq!(a.final_frontier_empty, vec![true]);
     assert_eq!(a.exhausted_examples, 1);
     assert_eq!(a.steps_executed, n_root);
     assert_eq!(a.terminal_nodes, n_root);
     assert!(log_probs(&out).iter().all(|v| v.is_finite()));
+}
+
+#[test]
+fn a_mixed_batch_executes_exactly_the_rows_that_queried() {
+    // Example 0 exhausts after 1 query; example 1 keeps going for all 8. The
+    // query encoder and planner must process 1 + 8 = 9 rows, not 2 x 8 = 16.
+    let device = Default::default();
+    let m = ActiveSearchModel::<B>::new(tiny(), &device);
+    let states = vec![
+        GameState::from_fen("8/8/8/8/8/k7/P7/K7 w - - 0 1")
+            .unwrap()
+            .with_max_plies(1),
+        GameState::startpos().with_max_plies(1),
+    ];
+    let out = m.run(&states, &opts(8), Selection::Fixed, &device).unwrap();
+    let a = &out.accounting;
+    assert_eq!(a.successful_queries, vec![1, 8]);
+    assert_eq!(a.final_frontier_empty, vec![true, false]);
+    assert_eq!(a.exhausted_examples, 1);
+    assert_eq!(a.steps_executed, 8);
+    assert_eq!(a.total_successful_queries, 9);
+    assert_eq!(a.query_encoder_rows_executed, 9, "no dummy rows executed");
+    assert_eq!(a.planner_rows_executed, 9, "no dummy rows executed");
+    assert_eq!(a.inactive_rows_executed, 0);
+    // The selector scored the whole batch each round; its padding is reported.
+    assert_eq!(
+        a.selector_rows_executed,
+        2 * 8,
+        "the selector scores the whole batch every round, including the exhausted example"
+    );
+    assert!(a.selector_edge_slots_executed > a.selector_valid_edges);
+    assert_eq!(a.query_action_widths.len(), 8);
+    assert!(a.query_action_slots_executed >= a.query_legal_actions_valid);
+    // Exhausted examples keep a finite, well-defined policy.
+    assert!(log_probs(&out).iter().all(|v| v.is_finite()));
+}
+
+#[test]
+fn a_tampered_accounting_is_rejected_by_the_invariant_check() {
+    let device = Default::default();
+    let m = ActiveSearchModel::<B>::new(tiny(), &device);
+    let out = m
+        .run(&roots(), &opts(3), Selection::Fixed, &device)
+        .unwrap();
+    let good = out.accounting;
+    good.check_invariants().unwrap();
+    type Edit = Box<dyn Fn(&mut recur64_model::active::Accounting)>;
+    let edits: Vec<(&str, Edit)> = vec![
+        (
+            "vector length",
+            Box::new(|a| a.query_depths.pop().map(drop).unwrap_or(())),
+        ),
+        ("total", Box::new(|a| a.total_successful_queries += 1)),
+        ("depth count", Box::new(|a| a.query_depths[0].push(9))),
+        ("transitions", Box::new(|a| a.state_transitions += 1)),
+        ("unique nodes", Box::new(|a| a.unique_nodes += 1)),
+        ("root encoder", Box::new(|a| a.root_encoder_runs = 2)),
+        (
+            "encoder rows",
+            Box::new(|a| a.query_encoder_rows_executed += 1),
+        ),
+        ("planner rows", Box::new(|a| a.planner_rows_executed += 1)),
+        ("inactive rows", Box::new(|a| a.inactive_rows_executed = 1)),
+        ("stop", Box::new(|a| a.stop_calls = 1)),
+        (
+            "short budget without empty frontier",
+            Box::new(|a| {
+                a.successful_queries[0] -= 1;
+                a.query_depths[0].pop();
+                a.total_successful_queries -= 1;
+                a.state_transitions -= 1;
+                a.unique_nodes -= 1;
+                a.query_encoder_examples -= 1;
+                a.query_encoder_rows_executed -= 1;
+                a.planner_update_examples -= 1;
+                a.planner_rows_executed -= 1;
+                a.exhausted_examples += 1;
+            }),
+        ),
+        ("rounds", Box::new(|a| a.steps_executed -= 1)),
+    ];
+    for (name, edit) in edits {
+        let mut bad = good.clone();
+        edit(&mut bad);
+        assert!(
+            bad.check_invariants().is_err(),
+            "invariant check accepted a tampered accounting: {name}"
+        );
+    }
+}
+
+#[test]
+fn terminal_roots_are_refused_before_any_facts_or_neural_work() {
+    use recur64_model::active::counters::snapshot;
+    let device = Default::default();
+    let m = ActiveSearchModel::<B>::new(tiny(), &device);
+    let mate = {
+        let mut g = GameState::startpos();
+        g.apply_uci_seq(&["f2f3", "e7e5", "g2g4", "d8h4"]).unwrap();
+        g
+    };
+    let stalemate = GameState::from_fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1").unwrap();
+    let threefold = {
+        let mut g = GameState::startpos();
+        g.apply_uci_seq(&[
+            "g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8",
+        ])
+        .unwrap();
+        g
+    };
+    let fifty = {
+        let mut g = GameState::from_fen("8/8/4k3/8/8/4K2R/8/8 w - - 99 80").unwrap();
+        g.apply_uci("h3h4").unwrap();
+        g
+    };
+    // Threefold and fifty-move still have legal moves on the board: a test that
+    // only looked at the move list would wrongly accept them.
+    assert!(!threefold.legal_actions().is_empty() && threefold.is_terminal());
+    assert!(!fifty.legal_actions().is_empty() && fifty.is_terminal());
+    for (name, terminal) in [
+        ("checkmate", mate),
+        ("stalemate", stalemate),
+        ("threefold repetition", threefold),
+        ("fifty-move rule", fifty),
+    ] {
+        for batch in [
+            vec![terminal.clone()],
+            vec![roots().remove(0), terminal.clone()],
+        ] {
+            let before = snapshot();
+            let err = m
+                .run(&batch, &opts(2), Selection::Active, &device)
+                .err()
+                .unwrap_or_else(|| panic!("{name}: a terminal root must be refused"));
+            assert!(err.to_string().contains("terminal"), "{name}: {err}");
+            let ran = snapshot().since(before);
+            assert_eq!(
+                ran.root_facts, 0,
+                "{name}: CandidateFacts must not be computed"
+            );
+            assert_eq!(ran.root_stage, 0, "{name}: no neural work");
+            assert_eq!((ran.query_encoder, ran.planner_update), (0, 0), "{name}");
+        }
+    }
+}
+
+#[test]
+fn the_budget_ceiling_separates_science_from_engineering_stress() {
+    let device = Default::default();
+    let m = ActiveSearchModel::<B>::new(tiny(), &device);
+    let states = vec![roots().remove(0)];
+    // B16 is the largest scientific budget.
+    let ok = m
+        .run(&states, &opts(16), Selection::Fixed, &device)
+        .unwrap();
+    assert!(!ok.accounting.engineering_only);
+    // B17 is refused as science...
+    let e = m
+        .run(&states, &opts(17), Selection::Fixed, &device)
+        .err()
+        .unwrap();
+    assert!(e.to_string().contains("engineering_stress"), "{e}");
+    // ...and only runs through the explicit stress mode, flagged engineering only.
+    let mut stress = opts(17);
+    stress.engineering_stress = true;
+    let out = m.run(&states, &stress, Selection::Fixed, &device).unwrap();
+    assert!(out.accounting.engineering_only);
+    assert_eq!(out.accounting.total_successful_queries, 17);
+    // Even stress has a ceiling.
+    let mut too_far = opts(65);
+    too_far.engineering_stress = true;
+    assert!(m.run(&states, &too_far, Selection::Fixed, &device).is_err());
 }
 
 #[test]
@@ -411,43 +587,6 @@ fn unsupported_requests_refuse_visibly() {
 // Gradient coverage
 // ---------------------------------------------------------------------------
 
-struct Coverage<'a, Bk: AutodiffBackend> {
-    grads: &'a GradientsParams,
-    path: Vec<String>,
-    rows: Vec<(String, bool, bool, bool)>, // name, has grad, finite, nonzero
-    _p: std::marker::PhantomData<Bk>,
-}
-
-impl<Bk: AutodiffBackend> Coverage<'_, Bk> {
-    fn record<const D: usize>(&mut self, id: burn::module::ParamId) {
-        let name = self.path.join(".");
-        match self.grads.get::<Bk::InnerBackend, D>(id) {
-            None => self.rows.push((name, false, true, false)),
-            Some(g) => {
-                let v = g.into_data().to_vec::<f32>().unwrap();
-                self.rows.push((
-                    name,
-                    true,
-                    v.iter().all(|x| x.is_finite()),
-                    v.iter().any(|x| x.abs() > 1e-12),
-                ));
-            }
-        }
-    }
-}
-
-impl<Bk: AutodiffBackend> ModuleVisitor<Bk> for Coverage<'_, Bk> {
-    fn enter_module(&mut self, name: &str, _c: &str) {
-        self.path.push(name.to_string());
-    }
-    fn exit_module(&mut self, _name: &str, _c: &str) {
-        self.path.pop();
-    }
-    fn visit_float<const D: usize>(&mut self, p: &Param<Tensor<Bk, D>>) {
-        self.record::<D>(p.id);
-    }
-}
-
 fn targets_first_two<Bk: Backend>(
     out: &recur64_model::active::ActiveOutput<Bk>,
     device: &Bk::Device,
@@ -478,36 +617,42 @@ fn every_subsystem_gets_a_finite_nonzero_gradient_on_update_one() {
     let sel = selector_loss(&out.selector_steps).expect("selector loss");
     let loss = policy_ce(&out.readout.policy, &pt) + wdl_ce(&out.readout.wdl_logits, &wt) + sel;
     let grads = GradientsParams::from_grads(loss.backward(), &m);
-    let mut cov = Coverage::<TB> {
-        grads: &grads,
-        path: Vec::new(),
-        rows: Vec::new(),
-        _p: std::marker::PhantomData,
-    };
-    m.visit(&mut cov);
+    let rows = gradient_coverage::<TB, _>(&m, &grads);
     assert!(
-        cov.rows.len() > 50,
+        rows.len() > 50,
         "visitor saw only {} parameters",
-        cov.rows.len()
+        rows.len()
     );
     let mut bad = Vec::new();
     let mut stop_rows = 0;
-    for (name, has, finite, nonzero) in &cov.rows {
-        let is_stop = name.contains("stop_hidden") || name.contains("stop_out");
-        if is_stop {
+    let mut inert_rows = 0;
+    for r in &rows {
+        let name = &r.name;
+        if is_stop_head(name) {
             stop_rows += 1;
-            assert!(finite, "{name}: non-finite");
+            assert!(r.finite, "{name}: non-finite");
             assert!(
-                !nonzero,
+                !r.nonzero,
                 "{name}: STOP is masked, its gradient must be exactly zero"
             );
-        } else if !(*has && *finite && *nonzero) {
+        } else if is_inherited_inert_key_bias(name) {
+            inert_rows += 1;
+            assert!(r.finite, "{name}: non-finite");
+            assert!(
+                r.max_abs < INERT_NOISE_BOUND,
+                "{name}: an inert key bias must stay at noise level, found {}",
+                r.max_abs
+            );
+        } else if !(r.has_grad && r.finite && r.nonzero) {
             bad.push(format!(
-                "{name} has={has} finite={finite} nonzero={nonzero}"
+                "{name} has={} finite={} nonzero={}",
+                r.has_grad, r.finite, r.nonzero
             ));
         }
     }
     assert_eq!(stop_rows, 4, "stop head = two linears (weight+bias)");
+    // Tiny geometry: 2 root board blocks + 1 root candidate block + 2 query blocks.
+    assert_eq!(inert_rows, 5, "inherited inert key biases");
     assert!(
         bad.is_empty(),
         "parameters without a finite non-zero gradient:\n{}",
@@ -656,8 +801,29 @@ fn historical_identities_do_not_grow_an_active_key() {
     );
 }
 
+struct ParamVec(Vec<f32>);
+impl<Bk: Backend> burn::module::ModuleVisitor<Bk> for ParamVec {
+    fn visit_float<const D: usize>(&mut self, p: &burn::module::Param<Tensor<Bk, D>>) {
+        self.0.extend(p.val().into_data().to_vec::<f32>().unwrap());
+    }
+}
+
+fn param_vector<Bk: Backend, M: Module<Bk>>(m: &M) -> Vec<f32> {
+    let mut v = ParamVec(Vec::new());
+    m.visit(&mut v);
+    v.0
+}
+
+fn max_abs_diff(a: &[f32], b: &[f32]) -> f32 {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .map(|(x, y)| (x - y).abs())
+        .fold(0.0f32, f32::max)
+}
+
 #[test]
-fn save_load_round_trip_and_resume_match_an_uninterrupted_run() {
+fn save_load_round_trip_and_resume_are_bit_exact_on_cpu() {
     let device = Default::default();
     let states = roots();
     let cfg = tiny();
@@ -673,27 +839,18 @@ fn save_load_round_trip_and_resume_match_an_uninterrupted_run() {
         let grads = GradientsParams::from_grads(loss.backward(), &model);
         Optimizer::step(optim, 3e-3, model, grads)
     };
-    let probe = |m: &ActiveSearchModel<TB>| -> Vec<f32> {
-        let out = m
-            .valid()
-            .run(&states, &opts(2), Selection::Active, &device)
-            .unwrap();
-        out.readout
-            .policy
-            .log_probs
-            .into_data()
-            .to_vec::<f32>()
-            .unwrap()
-    };
     let model0 = ActiveSearchModel::<TB>::new(cfg.clone(), &device);
     let optim0 = adamw::<TB, _>();
 
-    // Uninterrupted: two steps.
+    // Uninterrupted: three steps, keeping the parameters after each.
     let (mut ma, mut oa) = (model0.clone(), optim0.clone());
-    ma = step(ma, &mut oa);
-    ma = step(ma, &mut oa);
+    let mut uninterrupted = Vec::new();
+    for _ in 0..3 {
+        ma = step(ma, &mut oa);
+        uninterrupted.push(param_vector::<TB, _>(&ma));
+    }
 
-    // Interrupted: one step, save, load, one step.
+    // Interrupted: one step, save, load, two more steps.
     let (mut mb, mut ob) = (model0.clone(), optim0.clone());
     mb = step(mb, &mut ob);
     let dir = std::env::temp_dir().join("recur64_v3_active_ckpt");
@@ -702,18 +859,28 @@ fn save_load_round_trip_and_resume_match_an_uninterrupted_run() {
     let (mut mb2, mut ob2, loaded) =
         load_training::<TB, _, _>(&dir, model0.clone(), optim0.clone(), &device).expect("load");
     assert_eq!(loaded.architecture, "active_search_v3");
-    assert_eq!(probe(&mb), probe(&mb2), "weights must be restored exactly");
-    mb2 = step(mb2, &mut ob2);
 
-    let (pa, pb) = (probe(&ma), probe(&mb2));
-    let max_diff = pa
-        .iter()
-        .zip(&pb)
-        .map(|(x, y)| (x - y).abs())
-        .fold(0.0f32, f32::max);
-    assert!(
-        max_diff < 1e-4,
-        "resumed run diverged from uninterrupted by {max_diff}"
+    // The loaded weights equal the saved ones exactly.
+    let d_restore = max_abs_diff(&param_vector::<TB, _>(&mb), &param_vector::<TB, _>(&mb2));
+    eprintln!("restore: max |saved - loaded| over all parameters = {d_restore:e}");
+    assert_eq!(d_restore, 0.0, "weights must be restored exactly");
+
+    // Optimizer continuation: the next two steps depend on the restored AdamW
+    // moments and step count, so exact parameter equality proves them too.
+    let mut diffs = Vec::new();
+    for (i, reference) in uninterrupted.iter().enumerate().skip(1) {
+        mb2 = step(mb2, &mut ob2);
+        let d = max_abs_diff(reference, &param_vector::<TB, _>(&mb2));
+        diffs.push(d);
+        eprintln!(
+            "after resumed step {}: max |uninterrupted - resumed| over all parameters = {d:e}",
+            i + 1
+        );
+    }
+    assert_eq!(
+        diffs,
+        vec![0.0, 0.0],
+        "CPU resume must be bit-exact (params + optimizer)"
     );
 
     // A checkpoint refuses to load into a different architecture's template.

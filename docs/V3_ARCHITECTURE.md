@@ -150,11 +150,18 @@ contract, not to StateQueryV1.
 
 ## 6. QueryStateEncoder (`query_state_encoder_v1`)
 
-Input: the child `ObservationV1`. Width 256, 2 blocks, FFN 512 (heads 4 — measure 4 vs 8 at
-qualification), parameters shared across every queried node and query step. Outputs: square
+Input: the child `ObservationV1`. Width 256, **4 heads (frozen for V3.0 /
+`query_state_encoder_v1`; it is not revisited after CUDA measurements)**, 2 blocks, FFN 512,
+parameters shared across every queried node and query step. Outputs: square
 features; one pooled node vector; raw legal-action embeddings from (from-square feature,
 to-square feature, promotion embedding) — built from the node's own squares only, never from a
 successor. Parameter count is independent of budget.
+
+Status of the head count: P3 is an engineering qualification of this exact graph, not an
+architecture-selection sweep. Throughput alone never changes the architecture. A genuine
+correctness failure or severe implementation pathology with 4 heads would stop the work and be
+reported; any switch to 8 heads needs a separately recorded contract/config decision before
+science.
 
 Ceiling: total model ≈ low 30M, ≤ ~35M unique parameters unless measured evidence forces change.
 V2.5 CF is 27.47M; the active components add the query encoder, planner, selector and readout.
@@ -204,6 +211,30 @@ stays neutral/compatible; V3.0 is policy-primary.
 ## 11. Budget semantics and accounting
 
 B0 = 0 queries; B2/B4/B8/B16 = exactly that many successful queries in forced mode.
+
+**Budget ceilings.** The V3.0 scientific experiment is B0/2/4/8/16 (trained through B8, B16 the
+extrapolation point); `ACTIVE_MAX_BUDGET = 16` and `run()` and the qualification CLI refuse more.
+A larger budget is a different experiment and needs its own preregistration. An internal
+implementation ceiling `ACTIVE_ENGINEERING_MAX_BUDGET = 64` exists only behind an explicit
+`RunOptions::engineering_stress` / `--engineering-stress`; such a run is marked
+`engineering_only` in its accounting and report and is never science. This is separate from the
+depth range (`ACTIVE_MAX_DEPTH`, a model-representability limit, refused not clipped).
+
+**Terminal roots.** `run()` refuses any terminal root (checkmate, stalemate, threefold,
+fifty-move, insufficient material, ply cap) before any CandidateFacts or neural work. The refusal
+cannot use the legal-move list: `GameState::legal_actions()` still lists moves at threefold and
+fifty-move terminals.
+
+**Honest physical accounting.** The query encoder and the planner run only on examples that
+actually received a new state (compacted rows), so rows physically executed equal successful
+queries and `inactive_rows_executed` is 0. The selector runs on the whole batch every round; its
+rows, scored edge slots and valid edges are reported separately so its padding is visible. The
+padded legal-action width of every round, and the action slots built against the legal actions
+present, are recorded. `Accounting::check_invariants()` (vector lengths, sums, per-example depth
+counts, transitions, `unique_nodes == batch + queries`, root-once, rows executed, round counts,
+STOP, B0 idleness, and "budget spent or frontier genuinely empty" per example) runs before every
+successful `run()` returns.
+
 Reported per inference: requested budget, successful queries, STOP calls, transitions, legal moves
 generated, query depths, unique nodes, terminals, root encoder runs, query-encoder runs, planner
 updates, CPU query wall, GPU root wall, GPU query-state wall, planner/selector wall, end-to-end wall,
@@ -211,14 +242,22 @@ peak VRAM, FLOP estimates only where reliable. No "16x compute" claims without m
 All latency/compute-frontier numbers use LIVE StateQuery; cached training packets are digest- and
 version-checked and must be field-equivalent to live packets.
 
-## 12. Parameter breakdown *(measure)*
+## 12. Parameter breakdown (measured, P2; `recur64 model-info`)
 
-| Part | Expected |
-|---|---|
-| Root encoder + candidate path + heads (V2.5 CF) | ~27.5M |
-| QueryStateEncoder (256w, 2 blocks) | ~2M |
-| Planner + branch/workspace init | ~1–3M |
-| Selector + readout | <1M |
+| Part | Parameters |
+|---|---:|
+| root board encoder (input projection, square embeddings, 8 blocks, norm) | 26,396,880 |
+| root candidate path (from/to, global, promotion, facts, token norm, 1 candidate block) | 1,037,376 |
+| root node projection + neutral WDL head | 166,019 |
+| query-state encoder (256 wide, 4 heads, 2 blocks) incl. action head | 1,235,208 |
+| planner (initial memory, event, workspace update, branch update) | 1,453,312 |
+| selector edge scorer | 332,545 |
+| selector STOP head (zero gradient while masked) | 68,097 |
+| root readout | 164,353 |
+| **total unique** | **30,853,790** (123,415,160 bytes in FP32) |
+
+The count is independent of the query budget. The earlier estimates in this section are superseded
+by these measured values.
 
 ## 13. Precision
 

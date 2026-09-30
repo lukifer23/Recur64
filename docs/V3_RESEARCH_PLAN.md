@@ -232,8 +232,8 @@ checkpoint given more states.
 |---|---|---|
 | P0 | branch, lineage, architecture, plan (+ review addendum) | committed |
 | P1 | StateQueryV1 + audit + whitelist + semantic identity | implemented |
-| P2 | model skeleton, identity, CPU correctness | in progress |
-| P3 | CUDA/system qualification, compute/VRAM envelope | planned |
+| P2 | model skeleton, identity, CPU correctness | done (P2.1 hardened) |
+| P3 | CUDA/system qualification, compute/VRAM envelope | done |
 | P4 | data/process layer, ProofTraceV1, **feasibility rule**, V3 TUNE, seal HOLDOUT_C | needs approval |
 | P5 | bounded TUNE screen, freeze recipe | needs approval; blocked unless P4 qualifies |
 | P6 | information-sufficiency control (all-info vs B0) | needs approval |

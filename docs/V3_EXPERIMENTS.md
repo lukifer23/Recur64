@@ -107,3 +107,52 @@ corrections as new entries.
   biases in the V2.5 `Block`/`CandidateBlock` recorded and deliberately not changed (see build results).
 - **Gate:** P2 CPU correctness gate PASSED for the tested surface.
 - **NOT RUN:** CUDA, compute and VRAM measurement (P3); all science.
+
+
+## V3-E5 - P2.1 hardening after the P2 review
+
+- **Date:** 2026-09-30
+- **Status:** MEASURED (engineering). Decision V3-D9; detail in `docs/V3_BUILD_RESULTS.md`.
+- **Commands:**
+  - `cargo test -p recur64-model --release --test active_v3` (21 tests)
+  - `cargo test -p recur64-cli --release --test active_boundary` (5 tests)
+  - `cargo test --workspace --release`; `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets`
+- **Result:** full workspace release suite exit 0, 372 passed, 0 failed; fmt clean; clippy 0 warnings.
+  The real `recur64` binary refuses `active_search_v3` for 18 historical commands (before any output)
+  and `model-info` reports the real active graph (30,853,790 parameters, 123,415,160 fp32 bytes, 11
+  contracts, budgets B0/2/4/8/16, recurrence 1). CPU resume is bit-exact (0e0 over every parameter,
+  restore and two further optimizer steps). Mixed-batch compaction executes exactly the rows that
+  queried (9, not 16). A tamper test rejects 12 accounting corruptions; invariants run before every
+  `run()` returns. Terminal roots (checkmate, stalemate, threefold, fifty-move) are refused with zero
+  CandidateFacts and zero neural work. `ACTIVE_MAX_BUDGET = 16`; an engineering-stress mode is marked
+  engineering only. `query_heads = 4` frozen. Tree depth consistency is enforced.
+- **Deviations / incidents:** the gradient-coverage test was flaky because of the inherited inert
+  key biases; fixed by exempting them by name with a noise bound (10 consecutive clean loops). A
+  stale test FEN (adjacent kings) revealed that `from_fen` accepts illegal positions; recorded, not
+  changed.
+- **Gate:** P2.1 hardening gate PASSED for the tested surface.
+
+## V3-E6 - P3 CUDA and system qualification (real FP32 CUDA)
+
+- **Date:** 2026-09-30
+- **Status:** MEASURED (engineering). Evidence `docs/evidence/v3/v3-qual-cuda-fp32.json`,
+  `docs/evidence/v3/model-info-active-search-v3.json`. No science.
+- **Command:** `recur64 v3-qual --config configs/v3/active-search-v3-cuda.toml --output runs/v3/cuda-qual
+  --positions 64 --budgets 0,2,4,8,16 --batches 1,8,16 --reps 5 --train-budgets 2,4,8 --train-batch 8
+  --train-updates 3 --lifecycle-reps 12 --sustained-seconds 10` (binary built with `--features cuda`,
+  CUDA 12.9.1 user-space runtime, RTX 2000 Ada; seed 20250930; positions generated in the tool).
+- **Result:** `all_sections_ok = true`. Device known-answer guard passed. Finite forward and backward at
+  B0/2/4/8/16 (ACTIVE and FIXED); root encoder once at every budget (in-function counters equal the
+  accountant); forced budget exact; gradient coverage 234 tensors, all covered except the masked STOP
+  head; teacher-forced AdamW updates 0.18 to 0.27 s each at batch 8; checkpoint save/load max abs policy
+  difference 0.0; resident-model VRAM plateau (150 inference calls flat at 2001 MB, 40 training updates
+  flat at 1489 MB). Measured wall B16 over B0: 16.1x at batch 1, 5.6x at batch 8, 7.8x at batch 16; exact
+  CPU query at most 2.4% of wall; planner + selector 62 to 67% of wall at B16, about 6 to 7 ms per round
+  regardless of batch; sustained utilization mean 39%, max 47% (structural, see results).
+- **Findings:** first-seen dynamic widths cost a one-off stall up to about 0.4 s (first pass 1.22x the
+  second); repeated model build/drop grows VRAM about 13 to 16 MB per cycle, reproduced on the V2.5 model
+  (pre-existing; not fixed; not present inside a single-model run). Suggestions for the contract are in
+  `docs/V3_BUILD_RESULTS.md` (none changes a frozen rule).
+- **Gate:** P3 CUDA/system qualification gate PASSED for the tested surface.
+- **NOT RUN:** HOLDOUT_C, P4 feasibility measurement, ProofTraceV1, TUNE generation or training, P5 to P11,
+  BF16/TF32, fusion/graph capture/shape bucketing.

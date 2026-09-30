@@ -373,7 +373,12 @@ fn default_score_floor() -> f64 {
 
 impl RunConfig {
     pub fn from_toml_str(s: &str) -> anyhow::Result<Self> {
-        Ok(toml::from_str(s)?)
+        let cfg: Self = toml::from_str(s)?;
+        // The mainline self-play/training/evaluation runtime is Probe-typed. Refuse
+        // before any command builds a model from this configuration.
+        cfg.model
+            .refuse_active_v3("the mainline self-play / training / evaluation runtime")?;
+        Ok(cfg)
     }
 
     /// Effective training batch = physical batch * accumulation steps.

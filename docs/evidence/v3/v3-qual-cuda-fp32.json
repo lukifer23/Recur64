@@ -1,0 +1,3387 @@
+{
+  "all_sections_ok": true,
+  "architecture": "active_search_v3",
+  "checkpoint": {
+    "loaded_architecture": "active_search_v3",
+    "loaded_model_id_present": true,
+    "max_abs_policy_diff_saved_vs_loaded": 0.0,
+    "note": "same device, same kernels; CUDA bit-exactness is reported, not required.",
+    "ok": true,
+    "policy_outputs_compared": 160,
+    "update_loss": 7.285935401916504
+  },
+  "claims": {
+    "not_claimed": "no science result; B16 is not described as 16x compute (see wall_ratio_vs_b0_measured)",
+    "tested": "the real graph with the live state-query tool ran on the requested device in every section above"
+  },
+  "config": "active-search-v3-cuda",
+  "device": "Cuda",
+  "device_known_answer_guard": "passed",
+  "dynamic_query_widths": {
+    "distinct_query_action_widths": 27,
+    "distinct_width_sequences": 47,
+    "first_max_over_second_p50": 5.643297018322574,
+    "first_over_second_mean": 1.2169766979369117,
+    "first_pass_s": {
+      "max": 0.4968607,
+      "mean": 0.10758703541666668,
+      "min": 0.0688499,
+      "n": 48,
+      "p50": 0.0896402,
+      "p95": 0.1556316
+    },
+    "interpretation": "a first-pass mean near the second-pass mean and a modest max/p50 ratio mean dynamic widths do not cause pathological JIT or scheduling; large ratios would be reported as a measured problem before any bucketing change",
+    "positions": 48,
+    "query_action_widths_seen": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48
+    ],
+    "second_pass_s": {
+      "max": 0.0931529,
+      "mean": 0.08840517291666666,
+      "min": 0.0853773,
+      "n": 48,
+      "p50": 0.0880444,
+      "p95": 0.092732
+    }
+  },
+  "engineering_only": false,
+  "inference": {
+    "param_groups": [
+      [
+        "root.input_projection",
+        76800
+      ],
+      [
+        "root.square_embeddings",
+        40960
+      ],
+      [
+        "root.board_blocks",
+        26278480
+      ],
+      [
+        "root.final_norm",
+        640
+      ],
+      [
+        "root.from_to_projection",
+        327936
+      ],
+      [
+        "root.global_projection",
+        164096
+      ],
+      [
+        "root.promotion_embedding",
+        1280
+      ],
+      [
+        "root.facts_encoder",
+        17216
+      ],
+      [
+        "root.token_norm",
+        256
+      ],
+      [
+        "root.candidate_blocks",
+        526592
+      ],
+      [
+        "root.node_projection",
+        164096
+      ],
+      [
+        "root.wdl_head",
+        1923
+      ],
+      [
+        "query.input_projection",
+        30720
+      ],
+      [
+        "query.square_embeddings",
+        16384
+      ],
+      [
+        "query.blocks",
+        1054984
+      ],
+      [
+        "query.final_norm",
+        256
+      ],
+      [
+        "query.action_head",
+        132864
+      ],
+      [
+        "planner.initial_memory",
+        68096
+      ],
+      [
+        "planner.event",
+        333056
+      ],
+      [
+        "planner.workspace_update",
+        657920
+      ],
+      [
+        "planner.branch_update",
+        394240
+      ],
+      [
+        "selector.edge_scorer",
+        332545
+      ],
+      [
+        "selector.stop_head",
+        68097
+      ],
+      [
+        "readout",
+        164353
+      ]
+    ],
+    "params": 30853790,
+    "rows": [
+      {
+        "accounting_last_rep": {
+          "batch": 1,
+          "cpu_query_s": 0.0,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 0,
+          "planner_rows_executed": 0,
+          "planner_selector_s": 0.0008925,
+          "planner_update_calls": 0,
+          "planner_update_examples": 0,
+          "query_action_slots_executed": 0,
+          "query_action_widths": [],
+          "query_depths": [
+            []
+          ],
+          "query_encoder_calls": 0,
+          "query_encoder_examples": 0,
+          "query_encoder_rows_executed": 0,
+          "query_encoder_s": 0.0,
+          "query_legal_actions_valid": 0,
+          "requested_budget": 0,
+          "root_encoder_examples": 1,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0089578,
+          "root_facts_positions": 1,
+          "root_facts_s": 0.000011,
+          "selector_edge_slots_executed": 0,
+          "selector_rows_executed": 0,
+          "selector_valid_edges": 0,
+          "state_transitions": 0,
+          "steps_executed": 0,
+          "stop_calls": 0,
+          "successful_queries": [
+            0
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0099475,
+          "total_successful_queries": 0,
+          "transpositions_detected": 0,
+          "unique_nodes": 1
+        },
+        "batch": 1,
+        "budget": 0,
+        "cold_first_call_s": 1.5207863000000001,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0101294,
+            "mean": 0.008965480000000001,
+            "min": 0.0083903,
+            "n": 5,
+            "p50": 0.0087484,
+            "p95": 0.0101294
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 591,
+          "min_vram_mb": 591,
+          "peak_vram_mb": 591,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": null,
+          "util_max": 0
+        },
+        "invariants": "pass",
+        "mean_query_depth": 0.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.0010463199999999999,
+        "root_candidate_facts_cpu_s": 0.000011,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.8899530458036633,
+          "planner_selector": 0.10117376345108772
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.009730800000000001,
+          "planner_selector": 0.00110624
+        },
+        "steady_total_s": {
+          "max": 0.0140972,
+          "mean": 0.01093406,
+          "min": 0.0099475,
+          "n": 5,
+          "p50": 0.0101636,
+          "p95": 0.0140972
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0097621,
+          "mean": 0.00901516,
+          "min": 0.0086767,
+          "n": 5,
+          "p50": 0.0089163,
+          "p95": 0.0097621
+        },
+        "wall_per_example_s": 0.010934059999999999,
+        "wall_ratio_vs_b0_measured": 1.0
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 1,
+          "cpu_query_s": 0.0000386,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 12,
+          "planner_rows_executed": 2,
+          "planner_selector_s": 0.0139547,
+          "planner_update_calls": 2,
+          "planner_update_examples": 2,
+          "query_action_slots_executed": 12,
+          "query_action_widths": [
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 2,
+          "query_encoder_examples": 2,
+          "query_encoder_rows_executed": 2,
+          "query_encoder_s": 0.0068394,
+          "query_legal_actions_valid": 12,
+          "requested_budget": 2,
+          "root_encoder_examples": 1,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0092352,
+          "root_facts_positions": 1,
+          "root_facts_s": 0.0000135,
+          "selector_edge_slots_executed": 85,
+          "selector_rows_executed": 2,
+          "selector_valid_edges": 85,
+          "state_transitions": 2,
+          "steps_executed": 2,
+          "stop_calls": 0,
+          "successful_queries": [
+            2
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0302149,
+          "total_successful_queries": 2,
+          "transpositions_detected": 0,
+          "unique_nodes": 3
+        },
+        "batch": 1,
+        "budget": 2,
+        "cold_first_call_s": 0.6841841,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0441107,
+            "mean": 0.030040499999999998,
+            "min": 0.0251296,
+            "n": 5,
+            "p50": 0.0277283,
+            "p95": 0.0441107
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 591,
+          "min_vram_mb": 591,
+          "peak_vram_mb": 591,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": null,
+          "util_max": 0
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.012007180000000001,
+        "root_candidate_facts_cpu_s": 0.0000135,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0020467985666652515,
+          "gpu_query_state_encoder": 0.21008688818247312,
+          "gpu_root_encoder": 0.30562574532903153,
+          "planner_selector": 0.4766924771516396
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.000056880000000000004,
+          "gpu_query_state_encoder": 0.00583826,
+          "gpu_root_encoder": 0.008493259999999999,
+          "planner_selector": 0.013247160000000003
+        },
+        "steady_total_s": {
+          "max": 0.0302149,
+          "mean": 0.027789739999999997,
+          "min": 0.0235698,
+          "n": 5,
+          "p50": 0.0283333,
+          "p95": 0.0302149
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0284907,
+          "mean": 0.02715884,
+          "min": 0.0252706,
+          "n": 5,
+          "p50": 0.0271518,
+          "p95": 0.0284907
+        },
+        "wall_per_example_s": 0.027789739999999997,
+        "wall_ratio_vs_b0_measured": 2.5415755904028328
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 1,
+          "cpu_query_s": 0.00011559999999999999,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 21,
+          "planner_rows_executed": 4,
+          "planner_selector_s": 0.0217493,
+          "planner_update_calls": 4,
+          "planner_update_examples": 4,
+          "query_action_slots_executed": 21,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            3
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 4,
+          "query_encoder_examples": 4,
+          "query_encoder_rows_executed": 4,
+          "query_encoder_s": 0.0091587,
+          "query_legal_actions_valid": 21,
+          "requested_budget": 4,
+          "root_encoder_examples": 1,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0074211,
+          "root_facts_positions": 1,
+          "root_facts_s": 0.0000174,
+          "selector_edge_slots_executed": 190,
+          "selector_rows_executed": 4,
+          "selector_valid_edges": 190,
+          "state_transitions": 4,
+          "steps_executed": 4,
+          "stop_calls": 0,
+          "successful_queries": [
+            4
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0385607,
+          "total_successful_queries": 4,
+          "transpositions_detected": 0,
+          "unique_nodes": 5
+        },
+        "batch": 1,
+        "budget": 4,
+        "cold_first_call_s": 0.094192,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0393093,
+            "mean": 0.03780592,
+            "min": 0.0350561,
+            "n": 5,
+            "p50": 0.0380398,
+            "p95": 0.0393093
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 591,
+          "min_vram_mb": 591,
+          "peak_vram_mb": 591,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": 18.0,
+          "util_max": 18
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.02174924,
+        "root_candidate_facts_cpu_s": 0.0000174,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0024150400624479936,
+          "gpu_query_state_encoder": 0.24819580772482058,
+          "gpu_root_encoder": 0.1964768104649531,
+          "planner_selector": 0.5494525641431522
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00010222000000000001,
+          "gpu_query_state_encoder": 0.010505239999999999,
+          "gpu_root_encoder": 0.00831616,
+          "planner_selector": 0.02325636
+        },
+        "steady_total_s": {
+          "max": 0.0459086,
+          "mean": 0.04232642,
+          "min": 0.0385607,
+          "n": 5,
+          "p50": 0.0430255,
+          "p95": 0.0459086
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0443626,
+          "mean": 0.04240066,
+          "min": 0.0401453,
+          "n": 5,
+          "p50": 0.0424355,
+          "p95": 0.0443626
+        },
+        "wall_per_example_s": 0.04232642,
+        "wall_ratio_vs_b0_measured": 3.871061618465602
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 1,
+          "cpu_query_s": 0.0001947,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 34,
+          "planner_rows_executed": 8,
+          "planner_selector_s": 0.045178399999999994,
+          "planner_update_calls": 8,
+          "planner_update_examples": 8,
+          "query_action_slots_executed": 34,
+          "query_action_widths": [
+            6,
+            6,
+            3,
+            3,
+            6,
+            4,
+            3,
+            3
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 8,
+          "query_encoder_examples": 8,
+          "query_encoder_rows_executed": 8,
+          "query_encoder_s": 0.0195265,
+          "query_legal_actions_valid": 34,
+          "requested_budget": 8,
+          "root_encoder_examples": 1,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.007834,
+          "root_facts_positions": 1,
+          "root_facts_s": 0.0000163,
+          "selector_edge_slots_executed": 426,
+          "selector_rows_executed": 8,
+          "selector_valid_edges": 426,
+          "state_transitions": 8,
+          "steps_executed": 8,
+          "stop_calls": 0,
+          "successful_queries": [
+            8
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0728658,
+          "total_successful_queries": 8,
+          "transpositions_detected": 0,
+          "unique_nodes": 9
+        },
+        "batch": 1,
+        "budget": 8,
+        "cold_first_call_s": 0.2590167,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0672594,
+            "mean": 0.06648589999999999,
+            "min": 0.0655359,
+            "n": 5,
+            "p50": 0.0666565,
+            "p95": 0.0672594
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 591,
+          "min_vram_mb": 591,
+          "peak_vram_mb": 591,
+          "samples": 2,
+          "temp_max_c": 36,
+          "util_busy_mean": 19.0,
+          "util_max": 27
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.0415651,
+        "root_candidate_facts_cpu_s": 0.0000163,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0025790847136301746,
+          "gpu_query_state_encoder": 0.27704764302986856,
+          "gpu_root_encoder": 0.10669947193988981,
+          "planner_selector": 0.6115192166939064
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00019296000000000002,
+          "gpu_query_state_encoder": 0.02072794,
+          "gpu_root_encoder": 0.00798296,
+          "planner_selector": 0.045752179999999996
+        },
+        "steady_total_s": {
+          "max": 0.0791387,
+          "mean": 0.07481724,
+          "min": 0.0710366,
+          "n": 5,
+          "p50": 0.0729432,
+          "p95": 0.0791387
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0734197,
+          "mean": 0.07024791999999999,
+          "min": 0.0688254,
+          "n": 5,
+          "p50": 0.069707,
+          "p95": 0.0734197
+        },
+        "wall_per_example_s": 0.07481724,
+        "wall_ratio_vs_b0_measured": 6.842585462307688
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 1,
+          "cpu_query_s": 0.0004361,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 56,
+          "planner_rows_executed": 16,
+          "planner_selector_s": 0.13639069999999998,
+          "planner_update_calls": 16,
+          "planner_update_examples": 16,
+          "query_action_slots_executed": 56,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            3,
+            3,
+            4,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            1,
+            3,
+            3,
+            3
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 16,
+          "query_encoder_examples": 16,
+          "query_encoder_rows_executed": 16,
+          "query_encoder_s": 0.05146,
+          "query_legal_actions_valid": 56,
+          "requested_budget": 16,
+          "root_encoder_examples": 1,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0130238,
+          "root_facts_positions": 1,
+          "root_facts_s": 0.0000178,
+          "selector_edge_slots_executed": 1010,
+          "selector_rows_executed": 16,
+          "selector_valid_edges": 1010,
+          "state_transitions": 16,
+          "steps_executed": 16,
+          "stop_calls": 0,
+          "successful_queries": [
+            16
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.201516,
+          "total_successful_queries": 16,
+          "transpositions_detected": 0,
+          "unique_nodes": 17
+        },
+        "batch": 1,
+        "budget": 16,
+        "cold_first_call_s": 0.2236292,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.1838222,
+            "mean": 0.16788319999999998,
+            "min": 0.1569016,
+            "n": 5,
+            "p50": 0.1609588,
+            "p95": 0.1838222
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 591,
+          "min_vram_mb": 591,
+          "peak_vram_mb": 591,
+          "samples": 3,
+          "temp_max_c": 35,
+          "util_busy_mean": 25.0,
+          "util_max": 33
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.10558041999999998,
+        "root_candidate_facts_cpu_s": 0.0000178,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0025107114623201523,
+          "gpu_query_state_encoder": 0.25627840026837967,
+          "gpu_root_encoder": 0.06974345178615789,
+          "planner_selector": 0.6702280692830275
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0004412599999999999,
+          "gpu_query_state_encoder": 0.04504118,
+          "gpu_root_encoder": 0.012257480000000001,
+          "planner_selector": 0.11779324
+        },
+        "steady_total_s": {
+          "max": 0.201516,
+          "mean": 0.17575098000000003,
+          "min": 0.1650077,
+          "n": 5,
+          "p50": 0.1695111,
+          "p95": 0.201516
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.1670853,
+          "mean": 0.16521692000000002,
+          "min": 0.1636435,
+          "n": 5,
+          "p50": 0.1654953,
+          "p95": 0.1670853
+        },
+        "wall_per_example_s": 0.17575098000000003,
+        "wall_ratio_vs_b0_measured": 16.073716442016966
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 8,
+          "cpu_query_s": 0.0,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 0,
+          "planner_rows_executed": 0,
+          "planner_selector_s": 0.0018109,
+          "planner_update_calls": 0,
+          "planner_update_examples": 0,
+          "query_action_slots_executed": 0,
+          "query_action_widths": [],
+          "query_depths": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+          ],
+          "query_encoder_calls": 0,
+          "query_encoder_examples": 0,
+          "query_encoder_rows_executed": 0,
+          "query_encoder_s": 0.0,
+          "query_legal_actions_valid": 0,
+          "requested_budget": 0,
+          "root_encoder_examples": 8,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0286566,
+          "root_facts_positions": 8,
+          "root_facts_s": 0.0000886,
+          "selector_edge_slots_executed": 0,
+          "selector_rows_executed": 0,
+          "selector_valid_edges": 0,
+          "state_transitions": 0,
+          "steps_executed": 0,
+          "stop_calls": 0,
+          "successful_queries": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0308889,
+          "total_successful_queries": 0,
+          "transpositions_detected": 0,
+          "unique_nodes": 8
+        },
+        "batch": 8,
+        "budget": 0,
+        "cold_first_call_s": 1.1197622,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0293549,
+            "mean": 0.0283096,
+            "min": 0.0278017,
+            "n": 5,
+            "p50": 0.0280817,
+            "p95": 0.0293549
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 34,
+          "util_busy_mean": 1.0,
+          "util_max": 1
+        },
+        "invariants": "pass",
+        "mean_query_depth": 0.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.00145852,
+        "root_candidate_facts_cpu_s": 0.0000886,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.9242159184907366,
+          "planner_selector": 0.06287933399995349
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.027820840000000003,
+          "planner_selector": 0.0018928
+        },
+        "steady_total_s": {
+          "max": 0.0308889,
+          "mean": 0.0301021,
+          "min": 0.0289573,
+          "n": 5,
+          "p50": 0.0301852,
+          "p95": 0.0308889
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0312562,
+          "mean": 0.03072564,
+          "min": 0.0299372,
+          "n": 5,
+          "p50": 0.0309033,
+          "p95": 0.0312562
+        },
+        "wall_per_example_s": 0.0037627625,
+        "wall_ratio_vs_b0_measured": 1.0
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 8,
+          "cpu_query_s": 0.0001634,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 52,
+          "planner_rows_executed": 16,
+          "planner_selector_s": 0.016506899999999998,
+          "planner_update_calls": 2,
+          "planner_update_examples": 16,
+          "query_action_slots_executed": 96,
+          "query_action_widths": [
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 2,
+          "query_encoder_examples": 16,
+          "query_encoder_rows_executed": 16,
+          "query_encoder_s": 0.008324100000000001,
+          "query_legal_actions_valid": 52,
+          "requested_budget": 2,
+          "root_encoder_examples": 8,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0227272,
+          "root_facts_positions": 8,
+          "root_facts_s": 0.0000904,
+          "selector_edge_slots_executed": 736,
+          "selector_rows_executed": 16,
+          "selector_valid_edges": 643,
+          "state_transitions": 16,
+          "steps_executed": 2,
+          "stop_calls": 0,
+          "successful_queries": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "terminal_nodes": 1,
+          "timing_synchronised": true,
+          "total_s": 0.0481116,
+          "total_successful_queries": 16,
+          "transpositions_detected": 0,
+          "unique_nodes": 24
+        },
+        "batch": 8,
+        "budget": 2,
+        "cold_first_call_s": 0.2583948,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0464252,
+            "mean": 0.04418134,
+            "min": 0.0402095,
+            "n": 5,
+            "p50": 0.0453233,
+            "p95": 0.0464252
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": 54.0,
+          "util_max": 57
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.015429019999999998,
+        "root_candidate_facts_cpu_s": 0.0000904,
+        "share_of_total": {
+          "cpu_exact_queries": 0.004912533096994909,
+          "gpu_query_state_encoder": 0.16335952450804087,
+          "gpu_root_encoder": 0.4492095388086432,
+          "planner_selector": 0.3742719274879672
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00024012,
+          "gpu_query_state_encoder": 0.00798486,
+          "gpu_root_encoder": 0.02195694,
+          "planner_selector": 0.01829406
+        },
+        "steady_total_s": {
+          "max": 0.052278,
+          "mean": 0.04887906,
+          "min": 0.0471239,
+          "n": 5,
+          "p50": 0.0481116,
+          "p95": 0.052278
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0485877,
+          "mean": 0.04712614,
+          "min": 0.0461795,
+          "n": 5,
+          "p50": 0.0470041,
+          "p95": 0.0485877
+        },
+        "wall_per_example_s": 0.0061098825,
+        "wall_ratio_vs_b0_measured": 1.6237757498646275
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 8,
+          "cpu_query_s": 0.0004009,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 103,
+          "planner_rows_executed": 32,
+          "planner_selector_s": 0.0267778,
+          "planner_update_calls": 4,
+          "planner_update_examples": 32,
+          "query_action_slots_executed": 192,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 4,
+          "query_encoder_examples": 32,
+          "query_encoder_rows_executed": 32,
+          "query_encoder_s": 0.0143392,
+          "query_legal_actions_valid": 103,
+          "requested_budget": 4,
+          "root_encoder_examples": 8,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0192422,
+          "root_facts_positions": 8,
+          "root_facts_s": 0.0000573,
+          "selector_edge_slots_executed": 1576,
+          "selector_rows_executed": 32,
+          "selector_valid_edges": 1355,
+          "state_transitions": 32,
+          "steps_executed": 4,
+          "stop_calls": 0,
+          "successful_queries": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ],
+          "terminal_nodes": 1,
+          "timing_synchronised": true,
+          "total_s": 0.061027,
+          "total_successful_queries": 32,
+          "transpositions_detected": 0,
+          "unique_nodes": 40
+        },
+        "batch": 8,
+        "budget": 4,
+        "cold_first_call_s": 0.0896591,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0507131,
+            "mean": 0.047964019999999996,
+            "min": 0.0470548,
+            "n": 5,
+            "p50": 0.0473143,
+            "p95": 0.0507131
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": 39.0,
+          "util_max": 61
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.02217866,
+        "root_candidate_facts_cpu_s": 0.0000573,
+        "share_of_total": {
+          "cpu_exact_queries": 0.006389748124655092,
+          "gpu_query_state_encoder": 0.22778115851627664,
+          "gpu_root_encoder": 0.29043536767791206,
+          "planner_selector": 0.4704105814643369
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00041938,
+          "gpu_query_state_encoder": 0.01495002,
+          "gpu_root_encoder": 0.019062219999999998,
+          "planner_selector": 0.030874580000000002
+        },
+        "steady_total_s": {
+          "max": 0.0683001,
+          "mean": 0.06563326,
+          "min": 0.061027,
+          "n": 5,
+          "p50": 0.0657836,
+          "p95": 0.0683001
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0494788,
+          "mean": 0.048225260000000006,
+          "min": 0.0468617,
+          "n": 5,
+          "p50": 0.0479568,
+          "p95": 0.0494788
+        },
+        "wall_per_example_s": 0.0082041575,
+        "wall_ratio_vs_b0_measured": 2.180354858963328
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 8,
+          "cpu_query_s": 0.0008284,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 202,
+          "planner_rows_executed": 64,
+          "planner_selector_s": 0.046706399999999995,
+          "planner_update_calls": 8,
+          "planner_update_examples": 64,
+          "query_action_slots_executed": 368,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            5,
+            5
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 8,
+          "query_encoder_examples": 64,
+          "query_encoder_rows_executed": 64,
+          "query_encoder_s": 0.0210241,
+          "query_legal_actions_valid": 202,
+          "requested_budget": 8,
+          "root_encoder_examples": 8,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0132526,
+          "root_facts_positions": 8,
+          "root_facts_s": 0.0000727,
+          "selector_edge_slots_executed": 3544,
+          "selector_rows_executed": 64,
+          "selector_valid_edges": 2985,
+          "state_transitions": 64,
+          "steps_executed": 8,
+          "stop_calls": 0,
+          "successful_queries": [
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8
+          ],
+          "terminal_nodes": 1,
+          "timing_synchronised": true,
+          "total_s": 0.0821288,
+          "total_successful_queries": 64,
+          "transpositions_detected": 0,
+          "unique_nodes": 72
+        },
+        "batch": 8,
+        "budget": 8,
+        "cold_first_call_s": 0.2986304,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.1229236,
+            "mean": 0.09223158000000001,
+            "min": 0.0771612,
+            "n": 5,
+            "p50": 0.0895768,
+            "p95": 0.1229236
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 36,
+          "util_busy_mean": 38.0,
+          "util_max": 41
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.04440596000000001,
+        "root_candidate_facts_cpu_s": 0.0000727,
+        "share_of_total": {
+          "cpu_exact_queries": 0.009907264245108426,
+          "gpu_query_state_encoder": 0.2557023634323161,
+          "gpu_root_encoder": 0.15762476746844803,
+          "planner_selector": 0.57283792795472
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00083018,
+          "gpu_query_state_encoder": 0.0214266,
+          "gpu_root_encoder": 0.01320818,
+          "planner_selector": 0.048000999999999995
+        },
+        "steady_total_s": {
+          "max": 0.0863771,
+          "mean": 0.08379508,
+          "min": 0.0815153,
+          "n": 5,
+          "p50": 0.0831676,
+          "p95": 0.0863771
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0836804,
+          "mean": 0.08148965999999999,
+          "min": 0.0796273,
+          "n": 5,
+          "p50": 0.0813166,
+          "p95": 0.0836804
+        },
+        "wall_per_example_s": 0.010474385,
+        "wall_ratio_vs_b0_measured": 2.783695489683444
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 8,
+          "cpu_query_s": 0.0012675,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 397,
+          "planner_rows_executed": 128,
+          "planner_selector_s": 0.0994421,
+          "planner_update_calls": 16,
+          "planner_update_examples": 128,
+          "query_action_slots_executed": 792,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            5,
+            5,
+            6,
+            6,
+            6,
+            6,
+            5,
+            8,
+            8,
+            8
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 16,
+          "query_encoder_examples": 128,
+          "query_encoder_rows_executed": 128,
+          "query_encoder_s": 0.045728,
+          "query_legal_actions_valid": 397,
+          "requested_budget": 16,
+          "root_encoder_examples": 8,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0130255,
+          "root_facts_positions": 8,
+          "root_facts_s": 0.0000743,
+          "selector_edge_slots_executed": 9400,
+          "selector_rows_executed": 128,
+          "selector_valid_edges": 7048,
+          "state_transitions": 128,
+          "steps_executed": 16,
+          "stop_calls": 0,
+          "successful_queries": [
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16
+          ],
+          "terminal_nodes": 7,
+          "timing_synchronised": true,
+          "total_s": 0.1599019,
+          "total_successful_queries": 128,
+          "transpositions_detected": 0,
+          "unique_nodes": 136
+        },
+        "batch": 8,
+        "budget": 16,
+        "cold_first_call_s": 0.3835215,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.1802222,
+            "mean": 0.1707775,
+            "min": 0.1497074,
+            "n": 5,
+            "p50": 0.1769026,
+            "p95": 0.1802222
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 3,
+          "temp_max_c": 36,
+          "util_busy_mean": 28.666666666666668,
+          "util_max": 34
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.10772042,
+        "root_candidate_facts_cpu_s": 0.0000743,
+        "share_of_total": {
+          "cpu_exact_queries": 0.00944777123551053,
+          "gpu_query_state_encoder": 0.27372321927891097,
+          "gpu_root_encoder": 0.07979428532445644,
+          "planner_selector": 0.634543974129785
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0015843200000000002,
+          "gpu_query_state_encoder": 0.04590132,
+          "gpu_root_encoder": 0.013380899999999998,
+          "planner_selector": 0.10640824
+        },
+        "steady_total_s": {
+          "max": 0.1715167,
+          "mean": 0.16769246,
+          "min": 0.1599019,
+          "n": 5,
+          "p50": 0.1692326,
+          "p95": 0.1715167
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.1853803,
+          "mean": 0.17750256000000003,
+          "min": 0.1557734,
+          "n": 5,
+          "p50": 0.1819659,
+          "p95": 0.1853803
+        },
+        "wall_per_example_s": 0.0209615575,
+        "wall_ratio_vs_b0_measured": 5.570789413363187
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 16,
+          "cpu_query_s": 0.0,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 0,
+          "planner_rows_executed": 0,
+          "planner_selector_s": 0.001593,
+          "planner_update_calls": 0,
+          "planner_update_examples": 0,
+          "query_action_slots_executed": 0,
+          "query_action_widths": [],
+          "query_depths": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+          ],
+          "query_encoder_calls": 0,
+          "query_encoder_examples": 0,
+          "query_encoder_rows_executed": 0,
+          "query_encoder_s": 0.0,
+          "query_legal_actions_valid": 0,
+          "requested_budget": 0,
+          "root_encoder_examples": 16,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0201129,
+          "root_facts_positions": 16,
+          "root_facts_s": 0.0001468,
+          "selector_edge_slots_executed": 0,
+          "selector_rows_executed": 0,
+          "selector_valid_edges": 0,
+          "state_transitions": 0,
+          "steps_executed": 0,
+          "stop_calls": 0,
+          "successful_queries": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "terminal_nodes": 0,
+          "timing_synchronised": true,
+          "total_s": 0.0222445,
+          "total_successful_queries": 0,
+          "transpositions_detected": 0,
+          "unique_nodes": 16
+        },
+        "batch": 16,
+        "budget": 0,
+        "cold_first_call_s": 0.240234,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.020844,
+            "mean": 0.01899582,
+            "min": 0.0172577,
+            "n": 5,
+            "p50": 0.0183825,
+            "p95": 0.020844
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 35,
+          "util_busy_mean": 45.0,
+          "util_max": 45
+        },
+        "invariants": "pass",
+        "mean_query_depth": 0.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.0008612799999999999,
+        "root_candidate_facts_cpu_s": 0.0001468,
+        "share_of_total": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.9105364444240615,
+          "planner_selector": 0.06747007503730698
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0,
+          "gpu_query_state_encoder": 0.0,
+          "gpu_root_encoder": 0.020647980000000003,
+          "planner_selector": 0.00153
+        },
+        "steady_total_s": {
+          "max": 0.0232539,
+          "mean": 0.02267672,
+          "min": 0.0222445,
+          "n": 5,
+          "p50": 0.0226612,
+          "p95": 0.0232539
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.021043,
+          "mean": 0.0208127,
+          "min": 0.0206018,
+          "n": 5,
+          "p50": 0.0208215,
+          "p95": 0.021043
+        },
+        "wall_per_example_s": 0.001417295,
+        "wall_ratio_vs_b0_measured": 1.0
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 16,
+          "cpu_query_s": 0.00047829999999999997,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 109,
+          "planner_rows_executed": 32,
+          "planner_selector_s": 0.012070699999999998,
+          "planner_update_calls": 2,
+          "planner_update_examples": 32,
+          "query_action_slots_executed": 192,
+          "query_action_widths": [
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 2,
+          "query_encoder_examples": 32,
+          "query_encoder_rows_executed": 32,
+          "query_encoder_s": 0.005095199999999999,
+          "query_legal_actions_valid": 109,
+          "requested_budget": 2,
+          "root_encoder_examples": 16,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0152266,
+          "root_facts_positions": 16,
+          "root_facts_s": 0.000128,
+          "selector_edge_slots_executed": 1520,
+          "selector_rows_executed": 32,
+          "selector_valid_edges": 1291,
+          "state_transitions": 32,
+          "steps_executed": 2,
+          "stop_calls": 0,
+          "successful_queries": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "terminal_nodes": 1,
+          "timing_synchronised": true,
+          "total_s": 0.0333274,
+          "total_successful_queries": 32,
+          "transpositions_detected": 0,
+          "unique_nodes": 48
+        },
+        "batch": 16,
+        "budget": 2,
+        "cold_first_call_s": 0.3697957,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0976308,
+            "mean": 0.04557566,
+            "min": 0.0317628,
+            "n": 5,
+            "p50": 0.0327458,
+            "p95": 0.0976308
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 37,
+          "util_busy_mean": null,
+          "util_max": 0
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.010734939999999998,
+        "root_candidate_facts_cpu_s": 0.000128,
+        "share_of_total": {
+          "cpu_exact_queries": 0.010961333685632216,
+          "gpu_query_state_encoder": 0.16297811248691638,
+          "gpu_root_encoder": 0.4332641209670378,
+          "planner_selector": 0.37806281730997127
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00038664,
+          "gpu_query_state_encoder": 0.0057487400000000004,
+          "gpu_root_encoder": 0.01528256,
+          "planner_selector": 0.01333544
+        },
+        "steady_total_s": {
+          "max": 0.0380388,
+          "mean": 0.03527308,
+          "min": 0.0333274,
+          "n": 5,
+          "p50": 0.0346869,
+          "p95": 0.0380388
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0331052,
+          "mean": 0.03225194,
+          "min": 0.0311913,
+          "n": 5,
+          "p50": 0.0325507,
+          "p95": 0.0331052
+        },
+        "wall_per_example_s": 0.0022045675,
+        "wall_ratio_vs_b0_measured": 1.5554753950306746
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 16,
+          "cpu_query_s": 0.0006677,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 221,
+          "planner_rows_executed": 64,
+          "planner_selector_s": 0.0256769,
+          "planner_update_calls": 4,
+          "planner_update_examples": 64,
+          "query_action_slots_executed": 384,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 4,
+          "query_encoder_examples": 64,
+          "query_encoder_rows_executed": 64,
+          "query_encoder_s": 0.011989699999999999,
+          "query_legal_actions_valid": 221,
+          "requested_budget": 4,
+          "root_encoder_examples": 16,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0154971,
+          "root_facts_positions": 16,
+          "root_facts_s": 0.0001134,
+          "selector_edge_slots_executed": 3328,
+          "selector_rows_executed": 64,
+          "selector_valid_edges": 2738,
+          "state_transitions": 64,
+          "steps_executed": 4,
+          "stop_calls": 0,
+          "successful_queries": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ],
+          "terminal_nodes": 1,
+          "timing_synchronised": true,
+          "total_s": 0.0542435,
+          "total_successful_queries": 64,
+          "transpositions_detected": 0,
+          "unique_nodes": 80
+        },
+        "batch": 16,
+        "budget": 4,
+        "cold_first_call_s": 0.0624625,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0523401,
+            "mean": 0.05024742,
+            "min": 0.047992,
+            "n": 5,
+            "p50": 0.0510201,
+            "p95": 0.0523401
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 39,
+          "util_busy_mean": 28.5,
+          "util_max": 38
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.02252228,
+        "root_candidate_facts_cpu_s": 0.0001134,
+        "share_of_total": {
+          "cpu_exact_queries": 0.01454822970399264,
+          "gpu_query_state_encoder": 0.21245615720222544,
+          "gpu_root_encoder": 0.2908520323397384,
+          "planner_selector": 0.47253080814826937
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0007754799999999999,
+          "gpu_query_state_encoder": 0.01132478,
+          "gpu_root_encoder": 0.015503600000000001,
+          "planner_selector": 0.02518782
+        },
+        "steady_total_s": {
+          "max": 0.0557544,
+          "mean": 0.05330408,
+          "min": 0.0515497,
+          "n": 5,
+          "p50": 0.0526173,
+          "p95": 0.0557544
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0534638,
+          "mean": 0.05193169999999999,
+          "min": 0.0505843,
+          "n": 5,
+          "p50": 0.0520667,
+          "p95": 0.0534638
+        },
+        "wall_per_example_s": 0.003331505,
+        "wall_ratio_vs_b0_measured": 2.350608024440924
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 16,
+          "cpu_query_s": 0.0012357999999999998,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 432,
+          "planner_rows_executed": 128,
+          "planner_selector_s": 0.0506396,
+          "planner_update_calls": 8,
+          "planner_update_examples": 128,
+          "query_action_slots_executed": 768,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 8,
+          "query_encoder_examples": 128,
+          "query_encoder_rows_executed": 128,
+          "query_encoder_s": 0.0226327,
+          "query_legal_actions_valid": 432,
+          "requested_budget": 8,
+          "root_encoder_examples": 16,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.0145912,
+          "root_facts_positions": 16,
+          "root_facts_s": 0.0001322,
+          "selector_edge_slots_executed": 7552,
+          "selector_rows_executed": 128,
+          "selector_valid_edges": 6096,
+          "state_transitions": 128,
+          "steps_executed": 8,
+          "stop_calls": 0,
+          "successful_queries": [
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8
+          ],
+          "terminal_nodes": 3,
+          "timing_synchronised": true,
+          "total_s": 0.0896858,
+          "total_successful_queries": 128,
+          "transpositions_detected": 0,
+          "unique_nodes": 144
+        },
+        "batch": 16,
+        "budget": 8,
+        "cold_first_call_s": 0.1048084,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.0877404,
+            "mean": 0.08421962000000001,
+            "min": 0.0801583,
+            "n": 5,
+            "p50": 0.0855373,
+            "p95": 0.0877404
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 655,
+          "min_vram_mb": 655,
+          "peak_vram_mb": 655,
+          "samples": 2,
+          "temp_max_c": 38,
+          "util_busy_mean": 31.5,
+          "util_max": 34
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.045335440000000005,
+        "root_candidate_facts_cpu_s": 0.0001322,
+        "share_of_total": {
+          "cpu_exact_queries": 0.012411547398706098,
+          "gpu_query_state_encoder": 0.25875291027306174,
+          "gpu_root_encoder": 0.16774673866083825,
+          "planner_selector": 0.5550750174622078
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.0010899599999999998,
+          "gpu_query_state_encoder": 0.02272322,
+          "gpu_root_encoder": 0.01473122,
+          "planner_selector": 0.0487457
+        },
+        "steady_total_s": {
+          "max": 0.0896858,
+          "mean": 0.08781822,
+          "min": 0.0864671,
+          "n": 5,
+          "p50": 0.0879232,
+          "p95": 0.0896858
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.0861731,
+          "mean": 0.08449352,
+          "min": 0.082433,
+          "n": 5,
+          "p50": 0.0844818,
+          "p95": 0.0861731
+        },
+        "wall_per_example_s": 0.00548863875,
+        "wall_ratio_vs_b0_measured": 3.872615616367799
+      },
+      {
+        "accounting_last_rep": {
+          "batch": 16,
+          "cpu_query_s": 0.0020996,
+          "engineering_only": false,
+          "exhausted_examples": 0,
+          "final_frontier_empty": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "inactive_rows_executed": 0,
+          "legal_moves_generated": 868,
+          "planner_rows_executed": 256,
+          "planner_selector_s": 0.10499470000000004,
+          "planner_update_calls": 16,
+          "planner_update_examples": 256,
+          "query_action_slots_executed": 1728,
+          "query_action_widths": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            8,
+            6,
+            8,
+            8,
+            8,
+            8,
+            8
+          ],
+          "query_depths": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          ],
+          "query_encoder_calls": 16,
+          "query_encoder_examples": 256,
+          "query_encoder_rows_executed": 256,
+          "query_encoder_s": 0.04692749999999999,
+          "query_legal_actions_valid": 868,
+          "requested_budget": 16,
+          "root_encoder_examples": 16,
+          "root_encoder_runs": 1,
+          "root_encoder_s": 0.017323,
+          "root_facts_positions": 16,
+          "root_facts_s": 0.000113,
+          "selector_edge_slots_executed": 19872,
+          "selector_rows_executed": 256,
+          "selector_valid_edges": 14606,
+          "state_transitions": 256,
+          "steps_executed": 16,
+          "stop_calls": 0,
+          "successful_queries": [
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16
+          ],
+          "terminal_nodes": 19,
+          "timing_synchronised": true,
+          "total_s": 0.1718427,
+          "total_successful_queries": 256,
+          "transpositions_detected": 0,
+          "unique_nodes": 272
+        },
+        "batch": 16,
+        "budget": 16,
+        "cold_first_call_s": 0.1882829,
+        "finite": true,
+        "fixed_selection": {
+          "ok": true,
+          "steady_total_without_health_checks_s": {
+            "max": 0.1760124,
+            "mean": 0.16780168,
+            "min": 0.1644213,
+            "n": 5,
+            "p50": 0.1653845,
+            "p95": 0.1760124
+          }
+        },
+        "gpu": {
+          "last_vram_mb": 911,
+          "min_vram_mb": 911,
+          "peak_vram_mb": 911,
+          "samples": 3,
+          "temp_max_c": 39,
+          "util_busy_mean": 25.0,
+          "util_max": 34
+        },
+        "invariants": "pass",
+        "mean_query_depth": 1.0,
+        "ok": true,
+        "planner_selector_without_health_checks_s": 0.09969969999999997,
+        "root_candidate_facts_cpu_s": 0.000113,
+        "share_of_total": {
+          "cpu_exact_queries": 0.015238244098688748,
+          "gpu_query_state_encoder": 0.26193225257306346,
+          "gpu_root_encoder": 0.09505038526577846,
+          "planner_selector": 0.6241313539404937
+        },
+        "steady_mean_split_s": {
+          "cpu_exact_queries": 0.00269076,
+          "gpu_query_state_encoder": 0.04625184,
+          "gpu_root_encoder": 0.01678394,
+          "planner_selector": 0.11020874
+        },
+        "steady_total_s": {
+          "max": 0.1808189,
+          "mean": 0.1765794,
+          "min": 0.1718427,
+          "n": 5,
+          "p50": 0.1778975,
+          "p95": 0.1808189
+        },
+        "steady_total_without_health_checks_s": {
+          "max": 0.1713518,
+          "mean": 0.16872386,
+          "min": 0.1669793,
+          "n": 5,
+          "p50": 0.1685254,
+          "p95": 0.1713518
+        },
+        "wall_per_example_s": 0.0110362125,
+        "wall_ratio_vs_b0_measured": 7.786813966040944
+      }
+    ]
+  },
+  "lifecycle": {
+    "baseline_vram_mb": 1489,
+    "cycles_per_mode": 12,
+    "modes": {
+      "build_b0_then_drop": {
+        "memory_cleanup_after_drop": false,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 12.8,
+        "spread_of_last_three_mb": 32,
+        "vram_after_each_cycle_mb": [
+          1267,
+          1267,
+          1267,
+          1267,
+          1299,
+          1299,
+          1331,
+          1331,
+          1363,
+          1363,
+          1395,
+          1395
+        ]
+      },
+      "build_b0_then_drop+memory_cleanup": {
+        "memory_cleanup_after_drop": true,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 13.2,
+        "spread_of_last_three_mb": 0,
+        "vram_after_each_cycle_mb": [
+          1427,
+          1459,
+          1459,
+          1491,
+          1491,
+          1523,
+          1523,
+          1555,
+          1555,
+          1591,
+          1591,
+          1591
+        ]
+      },
+      "build_b8_then_drop": {
+        "memory_cleanup_after_drop": false,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 16.0,
+        "spread_of_last_three_mb": 32,
+        "vram_after_each_cycle_mb": [
+          1623,
+          1911,
+          1911,
+          1943,
+          1975,
+          1975,
+          2007,
+          2007,
+          2007,
+          2039,
+          2039,
+          2071
+        ]
+      },
+      "build_b8_then_drop+memory_cleanup": {
+        "memory_cleanup_after_drop": true,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 12.8,
+        "spread_of_last_three_mb": 0,
+        "vram_after_each_cycle_mb": [
+          2071,
+          1847,
+          1847,
+          2135,
+          2135,
+          1911,
+          2167,
+          2199,
+          1975,
+          1975,
+          1975,
+          1975
+        ]
+      },
+      "build_then_drop": {
+        "memory_cleanup_after_drop": false,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 12.8,
+        "spread_of_last_three_mb": 32,
+        "vram_after_each_cycle_mb": [
+          1489,
+          1521,
+          1521,
+          1521,
+          1521,
+          1553,
+          1553,
+          1585,
+          1585,
+          1617,
+          1617,
+          1649
+        ]
+      },
+      "build_then_drop+memory_cleanup": {
+        "memory_cleanup_after_drop": true,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 12.8,
+        "spread_of_last_three_mb": 32,
+        "vram_after_each_cycle_mb": [
+          1649,
+          1043,
+          1043,
+          1043,
+          1075,
+          1075,
+          1107,
+          1107,
+          1139,
+          1139,
+          1171,
+          1171
+        ]
+      },
+      "control_candidate_v25_build_then_drop+memory_cleanup": {
+        "memory_cleanup_after_drop": true,
+        "plateau": false,
+        "slope_mb_per_cycle_from_second_reading": 16.2,
+        "vram_after_each_cycle_mb": [
+          1911,
+          1943,
+          1943,
+          1975,
+          1975,
+          2009,
+          2009,
+          2041,
+          2041,
+          2073,
+          2073,
+          2105
+        ]
+      }
+    },
+    "plateau_rule": "slope < 1 MiB per cycle from the second reading to the last"
+  },
+  "pool": {
+    "family": "KQRvK, white to move, >= 16 legal moves",
+    "positions": 64,
+    "seed": 20250930
+  },
+  "precision": "fp32",
+  "resident_model_vram": {
+    "inference_b8_batch16": {
+      "calls": 150,
+      "vram": {
+        "growth_from_second_sample_mb": 0,
+        "plateau": true,
+        "slope_mb_per_sample": 0.0,
+        "vram_samples_mb": [
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001,
+          2001
+        ]
+      }
+    },
+    "rule": "plateau iff VRAM grows by at most 64 MiB (two allocator pages) from the second sample to the last",
+    "sample_every_calls": 10,
+    "training_b4_batch8": {
+      "updates": 40,
+      "vram": {
+        "growth_from_second_sample_mb": 0,
+        "plateau": true,
+        "slope_mb_per_sample": 0.0,
+        "vram_samples_mb": [
+          1361,
+          1489,
+          1489,
+          1489,
+          1489
+        ]
+      }
+    }
+  },
+  "sustained_load": {
+    "batch": 16,
+    "budget": 8,
+    "calls": 140,
+    "cpu_exact_query_share": 0.024369686788103154,
+    "gpu": {
+      "last_vram_mb": 1681,
+      "min_vram_mb": 1681,
+      "peak_vram_mb": 1681,
+      "samples": 20,
+      "temp_max_c": 43,
+      "util_busy_mean": 39.36842105263158,
+      "util_max": 47
+    },
+    "note": "nvidia-smi samples every 500 ms; utilization is the fraction of the sample window in which any kernel ran, so it overstates how full the device is.",
+    "positions_per_second": 224.0,
+    "seconds": 10
+  },
+  "synchronisation_policy": "timing_sync = true: the device is synchronised (Backend::sync) before every section clock read, so GPU section times are completion times; health checks add host reads (reported separately as the without_health_checks columns); the selector result is read to the host every round because the exact query is a CPU operation",
+  "training": [
+    {
+      "batch": 8,
+      "budget": 2,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 1457,
+        "min_vram_mb": 943,
+        "peak_vram_mb": 1457,
+        "samples": 13,
+        "temp_max_c": 37,
+        "util_busy_mean": 34.285714285714285,
+        "util_max": 65
+      },
+      "gradient_coverage_update_one": {
+        "any_nonfinite_gradient": false,
+        "parameter_tensors": 234,
+        "stop_head_gradient_nonzero": false,
+        "without_finite_nonzero_gradient_excluding_stop": []
+      },
+      "losses": [
+        8.447454452514648,
+        8.36634635925293,
+        8.240835189819336,
+        8.124083518981934
+      ],
+      "ok": true,
+      "sec_per_update": {
+        "max": 0.3674977,
+        "mean": 0.2181453666666667,
+        "min": 0.130311,
+        "n": 3,
+        "p50": 0.1566274,
+        "p95": 0.3674977
+      }
+    },
+    {
+      "batch": 8,
+      "budget": 4,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 1585,
+        "min_vram_mb": 1457,
+        "peak_vram_mb": 1585,
+        "samples": 3,
+        "temp_max_c": 38,
+        "util_busy_mean": 40.333333333333336,
+        "util_max": 43
+      },
+      "gradient_coverage_update_one": {
+        "any_nonfinite_gradient": false,
+        "parameter_tensors": 234,
+        "stop_head_gradient_nonzero": false,
+        "without_finite_nonzero_gradient_excluding_stop": []
+      },
+      "losses": [
+        8.502985000610352,
+        8.400723457336426,
+        8.28451919555664,
+        8.17609691619873
+      ],
+      "ok": true,
+      "sec_per_update": {
+        "max": 0.1844367,
+        "mean": 0.18092903333333332,
+        "min": 0.1776521,
+        "n": 3,
+        "p50": 0.1806983,
+        "p95": 0.1844367
+      }
+    },
+    {
+      "batch": 8,
+      "budget": 8,
+      "finite": true,
+      "gpu": {
+        "last_vram_mb": 1649,
+        "min_vram_mb": 1585,
+        "peak_vram_mb": 1649,
+        "samples": 4,
+        "temp_max_c": 39,
+        "util_busy_mean": 34.25,
+        "util_max": 42
+      },
+      "gradient_coverage_update_one": {
+        "any_nonfinite_gradient": false,
+        "parameter_tensors": 234,
+        "stop_head_gradient_nonzero": false,
+        "without_finite_nonzero_gradient_excluding_stop": []
+      },
+      "losses": [
+        8.606805801391602,
+        8.453556060791016,
+        8.326825141906738,
+        8.215204238891602
+      ],
+      "ok": true,
+      "sec_per_update": {
+        "max": 0.2753134,
+        "mean": 0.2722678666666667,
+        "min": 0.2701793,
+        "n": 3,
+        "p50": 0.2713109,
+        "p95": 0.2753134
+      }
+    }
+  ]
+}

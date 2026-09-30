@@ -5,6 +5,7 @@
 
 pub mod accounting;
 pub mod counters;
+pub mod coverage;
 pub mod features;
 pub mod loss;
 pub mod model;

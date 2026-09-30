@@ -460,14 +460,15 @@ impl<B: Backend> Planner<B> {
     ///   root candidate token, selected branch memory) and `[b, EVENT_FEATS]`
     /// * `branch_onehot` `[b, R, 1]`: the selected branch (zero rows for examples
     ///   that are not updated)
-    /// * `active` `[b, 1, 1]`: 1 for examples that received a new state
+    ///
+    /// Every row is a real update: the caller passes only the examples that
+    /// received a new exact state (compacted), so rows executed equal queries.
     pub fn update(
         &self,
         workspace: Tensor<B, 3>,
         branch: Tensor<B, 3>,
         event_in: Tensor<B, 2>,
         branch_onehot: Tensor<B, 3>,
-        active: Tensor<B, 3>,
     ) -> PlanOut<B> {
         super::counters::note_planner_update();
         let [b, k, d] = workspace.dims();
@@ -501,10 +502,9 @@ impl<B: Backend> Planner<B> {
         let ws_new = self
             .out_norm
             .forward(workspace.clone() * (u.clone().neg() + 1.0) + u.clone() * proposal);
-        let ws_out = ws_new.clone() * active.clone() + workspace * (active.clone().neg() + 1.0);
 
         // Branch memory of the selected root candidate.
-        let ctx = ws_new.mean_dim(1).squeeze_dim::<2>(1);
+        let ctx = ws_new.clone().mean_dim(1).squeeze_dim::<2>(1);
         let br_sel = (branch.clone() * branch_onehot.clone())
             .sum_dim(1)
             .squeeze_dim::<2>(1);
@@ -519,10 +519,10 @@ impl<B: Backend> Planner<B> {
         let row = self
             .b_norm
             .forward(br_sel * (ub.clone().neg() + 1.0) + ub.clone() * bp);
-        let m = branch_onehot * active;
+        let m = branch_onehot;
         let br_out = branch.clone() * (m.clone().neg() + 1.0) + row.unsqueeze_dim::<3>(1) * m;
         PlanOut {
-            workspace: ws_out,
+            workspace: ws_new,
             branch: br_out,
             gates: PlanGates {
                 workspace: u,

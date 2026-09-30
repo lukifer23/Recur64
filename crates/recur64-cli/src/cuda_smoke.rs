@@ -39,6 +39,10 @@ fn scalar<B: Backend>(t: Tensor<B, 1>) -> f32 {
 pub fn run_cuda_smoke(args: CudaSmokeArgs) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(&args.config)?;
     let cfg = ProbeConfig::from_toml_str(&text)?;
+    // Refuse before any device activity: this smoke test exercises ProbeModel only
+    // and is no evidence for active_search_v3.
+    cfg.model
+        .refuse_active_v3("`cuda-smoke` (the historical Probe GPU proof)")?;
     anyhow::ensure!(
         matches!(cfg.precision, Precision::Fp32),
         "cuda-smoke is FP32 only; requested {}",

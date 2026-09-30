@@ -1033,3 +1033,32 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Decision (frozen gates):** the owner-adjustment sentence for the `C_8 >= 0.25` threshold is
   removed; a changed threshold needs a new versioned preregistration. Gate I's `0.75` is a
   reported diagnostic, not a pass condition. No approximate number remains as a success condition.
+
+## V3-D9 - P2.1/P3 hardening: CLI boundaries, frozen query heads, budget ceilings, honest accounting
+
+- **Status:** IMPLEMENTED (2026-09-30).
+- **Decision (CLI boundaries):** no historical command may interpret `active_search_v3` as another
+  architecture. `model-info` has an exhaustive architecture dispatch and a real active report
+  (geometry, 11 contracts, breakdown, exactly 30,853,790 parameters, fp32 bytes 123,415,160,
+  budgets B0/2/4/8/16, recurrence 1, exact-state-query budget as the test-time-compute
+  dimension). `bench` and `cuda-smoke` refuse before any device work; `RunConfig::from_toml_str`
+  refuses for the whole mainline runtime; `model_io::build_as` refuses before the device check;
+  `ProbeModel::new` asserts its architecture. An integration test runs the real binary against 18
+  historical commands and proves each refuses, creating no output.
+- **Decision (query heads):** `query_heads = 4` is frozen for V3.0 / `query_state_encoder_v1`. P3 is
+  not an architecture sweep; throughput alone never changes it.
+- **Decision (budgets):** V3.0 science accepts at most B16. A larger budget is a new experiment; an
+  explicit engineering-stress mode (ceiling 64) exists and is marked engineering only.
+- **Decision (terminal roots):** refused at the top of `run()`, before CandidateFacts.
+- **Decision (accounting):** query-encoder and planner rows are compacted to examples that
+  queried; selector padding is reported; all structural invariants are checked before `run()`
+  returns.
+- **Decision (depth consistency):** `Tree` requires root `ply_from_root == 0` and each child
+  `ply_from_root == parent depth + 1`.
+- **Found:** CPU training resume is bit-exact (0e0 over every parameter after restore and two
+  further optimizer steps); the loose 1e-4 tolerance was replaced by exact equality.
+- **Found:** a gradient-coverage test was flaky because V2.5 `Block`/`CandidateBlock` key biases are
+  mathematically inert; they are now exempted by name and required to stay at noise level.
+- **Found:** `GameState::from_fen` accepts adjacent kings and an attacked opponent king, and
+  `candidate_facts` then panics. Not reachable from legal play or solver-verified data; the
+  qualification position generator excludes such positions. No core change was made.

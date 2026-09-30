@@ -264,6 +264,12 @@ pub struct ProbeModel<B: Backend> {
 
 impl<B: Backend> ProbeModel<B> {
     pub fn new(cfg: ModelConfig, device: &B::Device) -> Self {
+        assert_eq!(
+            cfg.architecture,
+            crate::config::Architecture::ProbeV1,
+            "ProbeModel requires architecture probe_v1, not {}",
+            cfg.architecture.id()
+        );
         let d = cfg.width;
         let mk_blocks = |n: usize, dev: &B::Device| -> Vec<Block<B>> {
             (0..n).map(|_| Block::new(&cfg, dev)).collect()

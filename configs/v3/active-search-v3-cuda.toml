@@ -1,0 +1,20 @@
+# Recur64 V3 active_search_v3: V2.5 CF root geometry + budgeted exact state queries.
+# Geometry and contracts per docs/V3_ARCHITECTURE.md. FP32 only.
+name = "active-search-v3-cuda"
+device = "cuda"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+architecture = "active_search_v3"
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+
+[model.active]

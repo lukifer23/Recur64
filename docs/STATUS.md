@@ -509,3 +509,70 @@ mainline result.
 ## Next gate
 Owner decision after reviewing `docs/WORKSTATION_V25_SUMMARY.md`. P3 is not authorized by the
 pre-registered rules.
+
+
+---
+
+# V3 - Active learned search (branch `experiment/workstation-v3-active-search`)
+
+Separate research line from `experiment/workstation-v25@feb86236`. Main and V2.5 are unchanged.
+No science has been run: no HOLDOUT_C access, no P4 feasibility measurement, no TUNE training.
+See `docs/V3_RESEARCH_PLAN.md` (pre-registered gates), `docs/V3_ARCHITECTURE.md`,
+`docs/V3_BUILD_RESULTS.md`, `docs/V3_EXPERIMENTS.md` (ledger) and `docs/evidence/v3/`.
+
+## COMPLETED (P0 to P3)
+
+- V3-P0: lineage, architecture, research plan, pre-registered gates, decisions V3-D1 to V3-D9.
+- V3-P1 / P1.1: `recur64-statequery`, an exact one-edge query tool that depends only on
+  `recur64-core`, with an answer-free packet, semantic state identity, and a separate persistent
+  query identity.
+- V3-P2 / P2.1: the `active_search_v3` model (30,853,790 parameters): V2.5 CF root executed once,
+  shared query-state encoder (4 heads, frozen), gated RMS-normalised planner with per-root-branch
+  memory and a K=8 workspace, selector with a masked STOP logit, sparse root readout; strict identity
+  with 11 versioned contracts and 4x4 architecture cross-refusal.
+- V3-P3: real FP32 CUDA qualification (`recur64 v3-qual`).
+- `recur64 model-info` reports the real active graph; every historical command refuses
+  `active_search_v3` before any work.
+
+## VERIFIED (test and measurement evidence)
+
+- Full workspace release suite: 372 tests passed, 0 failed; fmt clean; clippy 0 warnings (default features). Historical V2.5 and mainline tests and pinned hashes are unchanged.
+- StateQueryV1 against the authoritative `GameState` transition: 203,426 random-descent edges,
+  105,670 fixture edges and a depth-3 BFS, all exact.
+- Root encoder runs exactly once at every budget (measured by in-function counters); query-encoder
+  and planner rows executed equal successful queries (compacted); forced budget spent exactly or the
+  frontier is genuinely empty; invariants are checked before every `run()` returns.
+- Every non-STOP parameter gets a finite non-zero gradient on update one; the masked STOP head gets
+  exactly zero.
+- CPU checkpoint resume is bit-exact (0e0 over every parameter and two further optimizer steps).
+- Real FP32 CUDA: B0/2/4/8/16 with ACTIVE and FIXED, teacher-forced training updates, backward,
+  AdamW, checkpoint save/load (difference 0.0), device known-answer guard, VRAM plateau for a
+  resident model (150 inference calls flat at 2001 MB; 40 training updates flat at 1489 MB).
+- Measured compute: the exact CPU query is at most 2.4% of wall; planner + selector are launch-bound
+  at about 6 to 7 ms per round regardless of batch; B16/B0 wall is 5.6x to 16.1x depending on batch.
+
+## FAILED / FOUND
+
+- Found and fixed: inert planner key bias; CLI fall-through of `model-info` to the Probe graph;
+  `v3-qual` accepting out-of-range budgets; a flaky gradient test (inherited inert key biases).
+- Found, not fixed: repeated model build/drop grows VRAM by about 13 to 16 MB per cycle on this
+  stack (reproduced on the V2.5 model; does not occur inside a run that builds its model once).
+- Found, not fixed: `GameState::from_fen` accepts adjacent kings, after which `candidate_facts`
+  panics (unreachable from legal play or solver-verified data).
+
+## NOT RUN
+
+- HOLDOUT_C: not loaded, hashed or evaluated.
+- P4: ProofTraceV1, the P4 feasibility measurement `C_8(KQRvK M3)`, V3 TUNE generation.
+- P5 to P11: LR screen, information-sufficiency control, primary training, confirmation, adaptive
+  STOP, conversion transfer, self-play.
+- BF16/TF32; fusion, graph capture or shape bucketing (separate execution-only experiments).
+
+## BLOCKED
+
+- Nothing blocks P4 technically. P4 and later need owner approval.
+
+## Next gate
+
+P3 engineering qualification is complete. Next is V3-P4 (data and process layer, including the
+frozen feasibility rule) on owner approval.

@@ -509,7 +509,7 @@ pub fn run(args: V25QualArgs) -> anyhow::Result<()> {
     );
     let report = match (cfg.device, cfg.model.architecture) {
         (_, Architecture::ActiveSearchV3) => anyhow::bail!(
-            "active_search_v3 is not supported by `v25-qual`: it has no fixed-data batched path,              because every budget above 0 needs the live query tool (use the v3 commands)"
+            "active_search_v3 is not supported by `v25-qual`: it has no fixed-data batched path, because every budget above 0 needs the live query tool (use the v3 commands)"
         ),
         (DeviceKind::Cpu, Architecture::CandidateV25) => run_arch::<
             recur64_model::train::CpuTrainBackend,

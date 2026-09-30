@@ -32,6 +32,19 @@ without raising held-out accuracy; the pre-registered M2 gate (0.75) was not met
 `docs/WORKSTATION_V25_EXPERIMENTS.md` and `docs/WORKSTATION_V25_P25_PLAN.md`, and the
 machine-readable evidence is in `docs/evidence/v25/`.
 
+**Branch `experiment/workstation-v3-active-search` (Recur64 V3, current state).** A new research line
+from `experiment/workstation-v25`, asking one narrow question: does the SAME set of weights improve as
+its exact state-query budget grows (B0, 2, 4, 8, 16), because it learns which unresolved future states
+to inspect and integrates what comes back? V2.5 showed that one more pass over the same information
+does not help; V3 therefore never re-reads the same state. The model runs the V2.5 root encoder once,
+then spends a budget of exact single-edge state queries chosen by a learned selector and integrated by
+a shared gated planner. Status: the engineering build (P0 to P3) is complete and qualified on CPU and
+real FP32 CUDA, and **no science has been run**: HOLDOUT_C is untouched and the P4 feasibility
+measurement has not been taken. Main and V2.5 are unchanged. Start at `docs/V3_RESEARCH_PLAN.md` (every
+gate is pre-registered before any data exists), then `docs/V3_ARCHITECTURE.md`,
+`docs/V3_BUILD_RESULTS.md` (measured engineering results and suggestions) and `docs/V3_EXPERIMENTS.md`
+(append-only ledger). Machine-readable evidence is in `docs/evidence/v3/`.
+
 Phase 4 so far:
 
 - The main-workstation hardware schedule is **measured**.
@@ -264,6 +277,24 @@ recur64 proof interaction --c0 ... --cf ... --l ... --lf ... --output interactio
 recur64 v25-qual --config configs/v25/candidate-v25-cf-cuda.toml --output runs/v25/qual
 recur64 model-info --config configs/v25/legacy-facts.toml
 ```
+
+### Recur64 V3 (branch `experiment/workstation-v3-active-search`)
+
+```sh
+# Describe the active-search graph: geometry, 11 contracts, exact parameters, budgets.
+recur64 model-info --config configs/v3/active-search-v3-cuda.toml
+# Engineering qualification on the real graph with the live state-query tool (FP32).
+# Budgets above 16 are refused unless --engineering-stress (then the report is engineering only).
+recur64 v3-qual --config configs/v3/active-search-v3-cuda.toml --output runs/v3/cuda-qual \
+    --budgets 0,2,4,8,16 --batches 1,8,16 --train-budgets 2,4,8
+# Exact state-query tool tests (differential against GameState, packet whitelist, digests).
+cargo test -p recur64-statequery --release
+cargo test -p recur64-model --release --test active_v3
+cargo test -p recur64-cli --release --test active_boundary
+```
+
+Every historical command (`bench`, `cuda-smoke`, `v25-qual`, `proof ...`, the self-play and
+training runtime) refuses `active_search_v3` with a visible error before any work.
 
 ## Layout
 

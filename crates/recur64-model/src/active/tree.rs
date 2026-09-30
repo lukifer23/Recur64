@@ -76,7 +76,12 @@ impl Tree {
     pub fn new(root: &StatePacketV1) -> anyhow::Result<Self> {
         anyhow::ensure!(
             root.parent_id.is_none() && root.incoming_action.is_none(),
-            "the root packet must have no parent"
+            "the root packet must have no parent and no incoming action"
+        );
+        anyhow::ensure!(
+            root.ply_from_root == 0,
+            "the root packet must have ply_from_root 0, found {}",
+            root.ply_from_root
         );
         let mut seen = HashMap::new();
         seen.insert(root.semantic_id.clone(), 0);
@@ -165,6 +170,11 @@ impl Tree {
             edge.action
         );
         let depth = parent.depth + 1;
+        anyhow::ensure!(
+            packet.ply_from_root == depth,
+            "packet ply_from_root {} is not its parent's depth + 1 = {depth}",
+            packet.ply_from_root
+        );
         anyhow::ensure!(
             depth as usize <= ACTIVE_MAX_DEPTH,
             "depth {depth} exceeds the supported range {ACTIVE_MAX_DEPTH}; refusing to clip"
@@ -259,6 +269,25 @@ mod tests {
             t.add_child(&f[3], &p2).is_err(),
             "packet belongs to another edge"
         );
+    }
+
+    #[test]
+    fn depth_consistency_is_enforced_explicitly() {
+        let (mut m, mut t) = setup("4k3/8/8/8/8/8/3Q4/4K3 w - - 0 1");
+        // A root packet must carry ply 0.
+        let mut bad_root = m.packet(0).unwrap();
+        bad_root.ply_from_root = 3;
+        assert!(Tree::new(&bad_root).is_err());
+        // A child packet must carry exactly parent depth + 1.
+        let e = t.frontier()[0].clone();
+        let p = m.query(0, e.action).unwrap();
+        for wrong in [0u32, 2, 7] {
+            let mut q = p.clone();
+            q.ply_from_root = wrong;
+            assert!(t.add_child(&e, &q).is_err(), "ply {wrong} must be refused");
+        }
+        assert_eq!(t.len(), 1, "a refused packet must not be stored");
+        assert_eq!(t.add_child(&e, &p).unwrap(), 1);
     }
 
     #[test]

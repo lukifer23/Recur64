@@ -63,6 +63,13 @@ pub fn build_as<B: Backend, M: NeuralModel<B>>(
     cfg: &ModelConfig,
     device: &B::Device,
 ) -> anyhow::Result<M> {
+    // Refuse a config of another architecture before touching the device.
+    anyhow::ensure!(
+        cfg.architecture == M::ARCHITECTURE,
+        "cannot build a {} model from a {} configuration",
+        M::ARCHITECTURE.id(),
+        cfg.architecture.id()
+    );
     verify_device::<B>(device)?;
     M::build(cfg, device)
 }

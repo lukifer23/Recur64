@@ -6,7 +6,7 @@
 //! term, a log term and Fourier terms. Values beyond the supported range are
 //! refused, never clipped.
 
-use crate::config::{ACTIVE_MAX_BUDGET, ACTIVE_MAX_DEPTH};
+use crate::config::{ACTIVE_ENGINEERING_MAX_BUDGET, ACTIVE_MAX_DEPTH};
 
 /// Fixed features per scalar.
 pub const SCALAR_FEATS: usize = 8;
@@ -45,8 +45,8 @@ pub fn edge_features(
         "query depth {child_depth} exceeds the supported range {ACTIVE_MAX_DEPTH}; refusing to clip"
     );
     anyhow::ensure!(
-        remaining <= ACTIVE_MAX_BUDGET,
-        "remaining budget {remaining} exceeds the supported range {ACTIVE_MAX_BUDGET}"
+        remaining <= ACTIVE_ENGINEERING_MAX_BUDGET,
+        "remaining budget {remaining} exceeds the representable range {ACTIVE_ENGINEERING_MAX_BUDGET}"
     );
     let mut out = [0.0f32; EDGE_FEATS];
     out[..SCALAR_FEATS].copy_from_slice(&scalar(child_depth as f32));
@@ -90,7 +90,7 @@ mod tests {
     fn out_of_range_inputs_refuse_instead_of_clipping() {
         assert!(edge_features(ACTIVE_MAX_DEPTH as u32, 0, 0).is_ok());
         assert!(edge_features(ACTIVE_MAX_DEPTH as u32 + 1, 0, 0).is_err());
-        assert!(edge_features(1, ACTIVE_MAX_BUDGET + 1, 0).is_err());
+        assert!(edge_features(1, ACTIVE_ENGINEERING_MAX_BUDGET + 1, 0).is_err());
     }
 
     #[test]

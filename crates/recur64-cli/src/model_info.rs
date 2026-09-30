@@ -42,11 +42,13 @@ pub fn run_model_info(path: &Path, json: Option<&Path>) -> anyhow::Result<()> {
     for r in &cfg.recurrence {
         cfg.model.check_recurrence(*r)?;
     }
-    if cfg.model.architecture == Architecture::CandidateV25 {
-        return run_candidate_info(&cfg, json);
-    }
-    if cfg.model.architecture == Architecture::LegacyFactsV25 {
-        return run_legacy_facts_info(&cfg, json);
+    // Exhaustive on purpose: a new architecture must pick its own report; it can
+    // never fall through to the Probe report below.
+    match cfg.model.architecture {
+        Architecture::CandidateV25 => return run_candidate_info(&cfg, json),
+        Architecture::LegacyFactsV25 => return run_legacy_facts_info(&cfg, json),
+        Architecture::ActiveSearchV3 => return run_active_info(&cfg, json),
+        Architecture::ProbeV1 => {}
     }
     let device = Default::default();
     let model = ProbeModel::<Flex>::new(cfg.model.clone(), &device);
@@ -100,6 +102,135 @@ pub fn run_model_info(path: &Path, json: Option<&Path>) -> anyhow::Result<()> {
         "\nnote: 'mult vs R=1' = executed_blocks / {:.0} (the 8-block R=1 control).",
         CONTROL_R1_BLOCKS
     );
+    Ok(())
+}
+
+/// `model-info` for `active_search_v3`: geometry, contracts, exact parameters and the
+/// budget semantics.
+fn run_active_info(cfg: &ProbeConfig, json: Option<&Path>) -> anyhow::Result<()> {
+    use recur64_model::active::ActiveSearchModel;
+    use recur64_model::config::ACTIVE_MAX_BUDGET;
+    let a = cfg.model.active.clone().expect("validated active geometry");
+    let device = Default::default();
+    let model = ActiveSearchModel::<Flex>::new(cfg.model.clone(), &device);
+    let scientific_budgets = [0usize, 2, 4, 8, 16];
+    let training_budgets = [0usize, 2, 4, 8];
+    println!("config          : {}", cfg.name);
+    println!("architecture    : {}", cfg.model.architecture.id());
+    println!("device          : {:?}", cfg.device);
+    println!("precision       : {}", cfg.precision.label());
+    println!(
+        "root board      : width={} heads={} ffn={} head_dim={} unique blocks={} (executed exactly once per decision)",
+        cfg.model.width,
+        cfg.model.heads,
+        cfg.model.ffn,
+        cfg.model.head_dim(),
+        cfg.model.core_blocks
+    );
+    println!(
+        "root candidates : dim={} heads={} ffn={} blocks={} facts_hidden={} policy_hidden={} facts_enabled={} (CandidateFactsV1 at the root only)",
+        a.candidate.dim,
+        a.candidate.heads,
+        a.candidate.ffn,
+        a.candidate.blocks,
+        a.candidate.facts_hidden,
+        a.candidate.policy_hidden,
+        a.candidate.facts_enabled
+    );
+    println!(
+        "query encoder   : width={} heads={} ffn={} blocks={} (shared by every queried node and step)",
+        a.query_dim, a.query_heads, a.query_ffn, a.query_blocks
+    );
+    println!(
+        "workspace       : K={} tokens x {}; branch memory: one {}-wide token per root candidate",
+        a.workspace_tokens, a.query_dim, a.query_dim
+    );
+    println!(
+        "planner         : heads={} ffn={} (one shared gated RMS-normalised update per exact state)",
+        a.planner_heads, a.planner_ffn
+    );
+    println!(
+        "selector        : hidden={} (STOP logit present and masked in the primary experiment)",
+        a.selector_hidden
+    );
+    println!(
+        "readout         : hidden={} (sparse legal-candidate softmax)",
+        a.readout_hidden
+    );
+    println!(
+        "rms ceiling     : {} (health guard on workspace / branch RMS)",
+        a.rms_ceiling
+    );
+    println!("\ncontracts:");
+    let c = &a.contracts;
+    for (k, v) in [
+        ("root_encoder", &c.root_encoder),
+        ("root_candidate_tokens", &c.root_candidate_tokens),
+        ("state_query", &c.state_query),
+        ("query_state_encoder", &c.query_state_encoder),
+        ("frontier", &c.frontier),
+        ("search_memory", &c.search_memory),
+        ("selector", &c.selector),
+        ("planner", &c.planner),
+        ("proof_trace", &c.proof_trace),
+        ("budget_training", &c.budget_training),
+        ("root_policy", &c.root_policy),
+    ] {
+        println!("  {k:<24} {v}");
+    }
+    println!("\nparameter breakdown (unique; independent of the query budget):");
+    let mut total = 0usize;
+    let mut groups = Vec::new();
+    for (name, n) in model.param_breakdown() {
+        println!("  {:<28} {:>12}", name, n);
+        total += n;
+        groups.push(serde_json::json!({ "group": name, "params": n }));
+    }
+    println!("  {:<28} {:>12}", "TOTAL UNIQUE", total);
+    anyhow::ensure!(
+        total == model.num_params(),
+        "breakdown {total} does not sum to num_params {}",
+        model.num_params()
+    );
+    let bytes = total * 4;
+    println!(
+        "parameter bytes : {} ({:.1} MiB, fp32)",
+        bytes,
+        bytes as f64 / (1024.0 * 1024.0)
+    );
+    println!(
+        "STOP head       : {} parameters receive zero gradient while STOP is masked",
+        model.stop_head_params()
+    );
+    println!(
+        "\nsupported scientific query budgets : {scientific_budgets:?} (maximum {ACTIVE_MAX_BUDGET})"
+    );
+    println!(
+        "primary training budgets           : {training_budgets:?} (budget_0_2_4_8_v1; B16 is the extrapolation diagnostic)"
+    );
+    println!(
+        "recurrence                         : 1 (there is no recurrent re-reading of the board; the test-time-compute dimension is the exact state-query budget)"
+    );
+    if let Some(out) = json {
+        let doc = serde_json::json!({
+            "config": cfg.name,
+            "architecture": cfg.model.architecture.id(),
+            "model": cfg.model,
+            "groups": groups,
+            "total_params": total,
+            "param_bytes_fp32": bytes,
+            "stop_head_params": model.stop_head_params(),
+            "scientific_budgets": scientific_budgets,
+            "training_budgets": training_budgets,
+            "recurrence": 1,
+            "test_time_compute_dimension": "exact state-query budget",
+        });
+        if let Some(dir) = out.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(out, serde_json::to_vec_pretty(&doc)?)?;
+        println!("wrote {}", out.display());
+    }
     Ok(())
 }
 

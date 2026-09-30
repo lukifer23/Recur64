@@ -12,7 +12,7 @@ use burn::tensor::{Bool, Int, TensorData};
 use recur64_core::{ActionId, GameState};
 use recur64_statequery::{QueryManager, StatePacketV1};
 
-use crate::config::ACTIVE_MAX_BUDGET;
+use crate::config::{ACTIVE_ENGINEERING_MAX_BUDGET, ACTIVE_MAX_BUDGET};
 use crate::model::{CandidateTensors, ModelOutput, Readout};
 
 use super::accounting::{Accounting, QueryRecord, StepDiag};
@@ -70,6 +70,9 @@ pub struct RunOptions {
     /// Must be true: the primary experiment forces the full budget and learned
     /// STOP is not implemented until `adaptive_stop_v1`.
     pub stop_masked: bool,
+    /// Allow a budget above the V3.0 scientific maximum (up to the engineering
+    /// ceiling). Such a run is recorded as engineering only and is never science.
+    pub engineering_stress: bool,
 }
 
 impl RunOptions {
@@ -80,6 +83,7 @@ impl RunOptions {
             diagnostics: false,
             timing_sync: false,
             stop_masked: true,
+            engineering_stress: false,
         }
     }
 }
@@ -194,11 +198,28 @@ impl<B: Backend> ActiveSearchModel<B> {
         device: &B::Device,
     ) -> anyhow::Result<ActiveOutput<B>> {
         anyhow::ensure!(!roots.is_empty(), "empty batch");
+        let ceiling = if opts.engineering_stress {
+            ACTIVE_ENGINEERING_MAX_BUDGET
+        } else {
+            ACTIVE_MAX_BUDGET
+        };
         anyhow::ensure!(
-            opts.budget <= ACTIVE_MAX_BUDGET,
-            "budget {} exceeds the supported range {ACTIVE_MAX_BUDGET}",
+            opts.budget <= ceiling,
+            "budget {} exceeds the maximum {ceiling} (V3.0 science is B0..B{ACTIVE_MAX_BUDGET}; \
+             a larger budget is a different experiment, and engineering stress runs need \
+             RunOptions::engineering_stress)",
             opts.budget
         );
+        // Terminal roots are refused before any CandidateFacts or neural work.
+        // `GameState::legal_actions` still lists moves at some rule-terminal
+        // states (threefold, fifty-move), so legality of moves is not a test.
+        for (i, r) in roots.iter().enumerate() {
+            anyhow::ensure!(
+                !r.is_terminal(),
+                "root {i} is terminal ({}); terminal roots bypass neural evaluation",
+                r.termination().map_or("?", |t| t.label())
+            );
+        }
         anyhow::ensure!(
             opts.stop_masked,
             "learned STOP is not implemented: the primary experiment forces the full budget \
@@ -210,6 +231,7 @@ impl<B: Backend> ActiveSearchModel<B> {
         let t_total = Instant::now();
         let mut acct = Accounting {
             requested_budget: opts.budget,
+            engineering_only: opts.engineering_stress,
             batch: b,
             successful_queries: vec![0; b],
             query_depths: vec![Vec::new(); b],
@@ -221,6 +243,7 @@ impl<B: Backend> ActiveSearchModel<B> {
         let mut clock = Instant::now();
         let facts: Vec<Vec<recur64_core::CandidateFactsV1>> =
             roots.iter().map(recur64_core::candidate_facts).collect();
+        super::counters::note_root_facts(b);
         acct.root_facts_positions = b;
         acct.root_facts_s = lap::<B>(&mut clock, false, device);
         let obs: Vec<recur64_core::ObservationV1> = roots
@@ -352,6 +375,9 @@ impl<B: Backend> ActiveSearchModel<B> {
             let stop = self.selector.stop_logit(Tensor::cat(vec![zp, stop_t], 1));
             let logits = Tensor::cat(vec![edge_logits, stop], 1)
                 .mask_fill(mask_t.clone().bool_not(), MASKED_LOGIT);
+            acct.selector_rows_executed += b;
+            acct.selector_edge_slots_executed += b * fmax;
+            acct.selector_valid_edges += fronts.iter().map(Vec::len).sum::<usize>();
 
             // ---- choose ----
             let need_host = matches!(selection, Selection::Active) || opts.diagnostics;
@@ -462,98 +488,126 @@ impl<B: Backend> ActiveSearchModel<B> {
                 });
                 children[e] = Some((slot, pkt));
             }
-            let n_done = children.iter().filter(|c| c.is_some()).count();
+            let active_idx: Vec<usize> = (0..b).filter(|&e| children[e].is_some()).collect();
+            let n_done = active_idx.len();
             acct.cpu_query_s += lap::<B>(&mut clock, false, device);
 
-            // ---- encode the new states ----
-            let a_w = children
+            // ---- encode the new states (only examples that received one) ----
+            let a_w = active_idx
                 .iter()
-                .flatten()
-                .map(|(_, p)| p.legal_actions.len())
+                .map(|&e| {
+                    children[e]
+                        .as_ref()
+                        .map_or(0, |(_, p)| p.legal_actions.len())
+                })
                 .max()
                 .unwrap_or(0)
                 .max(1);
-            let mut obs_buf = vec![0.0f32; b * 64 * 119];
+            let mut obs_buf = vec![0.0f32; n_done * 64 * 119];
             let (mut from_v, mut to_v, mut promo_v) = (
-                vec![0i32; b * a_w],
-                vec![0i32; b * a_w],
-                vec![0i32; b * a_w],
+                vec![0i32; n_done * a_w],
+                vec![0i32; n_done * a_w],
+                vec![0i32; n_done * a_w],
             );
-            for (e, c) in children.iter().enumerate() {
-                if let Some((_, p)) = c {
-                    obs_buf[e * 64 * 119..(e + 1) * 64 * 119]
-                        .copy_from_slice(p.observation.as_slice());
-                    for (i, &act) in p.legal_actions.iter().enumerate() {
-                        let (f, t, pr) = ActionId::from_index(u32::from(act))?.decode();
-                        from_v[e * a_w + i] = f as i32;
-                        to_v[e * a_w + i] = t as i32;
-                        promo_v[e * a_w + i] = i32::from(pr.code());
-                    }
+            let mut legal_valid = 0usize;
+            for (row, &e) in active_idx.iter().enumerate() {
+                let (_, p) = children[e].as_ref().expect("active example has a child");
+                obs_buf[row * 64 * 119..(row + 1) * 64 * 119]
+                    .copy_from_slice(p.observation.as_slice());
+                legal_valid += p.legal_actions.len();
+                for (i, &act) in p.legal_actions.iter().enumerate() {
+                    let (f, t, pr) = ActionId::from_index(u32::from(act))?.decode();
+                    from_v[row * a_w + i] = f as i32;
+                    to_v[row * a_w + i] = t as i32;
+                    promo_v[row * a_w + i] = i32::from(pr.code());
                 }
             }
-            let obs_t = Tensor::<B, 3>::from_data(TensorData::new(obs_buf, [b, 64, 119]), device);
-            let (sq, child_pool) = self.query.forward(obs_t);
-            let child_emb = self.query.action_embeddings(
+            let obs_t =
+                Tensor::<B, 3>::from_data(TensorData::new(obs_buf, [n_done, 64, 119]), device);
+            let (sq, child_pool_c) = self.query.forward(obs_t);
+            let child_emb_c = self.query.action_embeddings(
                 &sq,
-                int2::<B>(from_v, [b, a_w], device),
-                int2::<B>(to_v, [b, a_w], device),
-                int2::<B>(promo_v, [b, a_w], device),
+                int2::<B>(from_v, [n_done, a_w], device),
+                int2::<B>(to_v, [n_done, a_w], device),
+                int2::<B>(promo_v, [n_done, a_w], device),
             );
             acct.query_encoder_calls += 1;
             acct.query_encoder_examples += n_done;
+            acct.query_encoder_rows_executed += n_done;
+            acct.query_action_slots_executed += n_done * a_w;
+            acct.query_legal_actions_valid += legal_valid;
+            acct.query_action_widths.push(a_w);
             acct.query_encoder_s += lap::<B>(&mut clock, opts.timing_sync, device);
 
-            // ---- planner update ----
-            let mut ch_flat = vec![0i32; b];
-            let mut ch_node = vec![0i32; b];
-            let mut ch_branch = vec![0i32; b];
-            let mut ev = vec![0.0f32; b * EVENT_FEATS];
-            let mut onehot = vec![0.0f32; b * w];
-            let mut active = vec![0.0f32; b];
-            for e in 0..b {
-                if let Some((_, pkt)) = &children[e] {
-                    let edge = &fronts[e][chosen[e]];
-                    ch_flat[e] = (offsets[edge.node_slot] + edge.pos) as i32;
-                    ch_node[e] = edge.node_slot as i32;
-                    ch_branch[e] = edge.branch as i32;
-                    let f = event_features(
-                        pkt.ply_from_root,
-                        remaining - 1,
-                        edge.parent_depth % 2,
-                        pkt.terminal,
-                        pkt.in_check,
-                    )?;
-                    ev[e * EVENT_FEATS..(e + 1) * EVENT_FEATS].copy_from_slice(&f);
-                    onehot[e * w + edge.branch] = 1.0;
-                    active[e] = 1.0;
-                }
+            // ---- planner update (only examples that received a new state) ----
+            let act_t = int1::<B>(active_idx.iter().map(|&e| e as i32).collect(), device);
+            let mut ch_flat = vec![0i32; n_done];
+            let mut ch_node = vec![0i32; n_done];
+            let mut ch_branch = vec![0i32; n_done];
+            let mut ev = vec![0.0f32; n_done * EVENT_FEATS];
+            let mut onehot = vec![0.0f32; n_done * w];
+            // Map a full-batch row to its compact row (or to the appended row).
+            let mut zero_map = vec![n_done as i32; b];
+            let mut merge_map: Vec<i32> = (0..b).map(|e| (n_done + e) as i32).collect();
+            for (row, &e) in active_idx.iter().enumerate() {
+                let (_, pkt) = children[e].as_ref().expect("active example has a child");
+                let edge = &fronts[e][chosen[e]];
+                ch_flat[row] = (offsets[edge.node_slot] + edge.pos) as i32;
+                ch_node[row] = edge.node_slot as i32;
+                ch_branch[row] = edge.branch as i32;
+                let f = event_features(
+                    pkt.ply_from_root,
+                    remaining - 1,
+                    edge.parent_depth % 2,
+                    pkt.terminal,
+                    pkt.in_check,
+                )?;
+                ev[row * EVENT_FEATS..(row + 1) * EVENT_FEATS].copy_from_slice(&f);
+                onehot[row * w + edge.branch] = 1.0;
+                zero_map[e] = row as i32;
+                merge_map[e] = row as i32;
             }
+            let ws_a = ws.clone().select(0, act_t.clone());
+            let branch_a = branch.clone().select(0, act_t.clone());
             let ch_branch_t = int1::<B>(ch_branch, device);
             let event_in = Tensor::cat(
                 vec![
-                    gather_one(e_cat, int1::<B>(ch_flat, device)),
-                    gather_one(p_cat, int1::<B>(ch_node, device)),
-                    child_pool.clone(),
-                    gather_one(tokens.clone(), ch_branch_t.clone()),
-                    gather_one(branch.clone(), ch_branch_t),
-                    Tensor::<B, 2>::from_data(TensorData::new(ev, [b, EVENT_FEATS]), device),
+                    gather_one(e_cat.select(0, act_t.clone()), int1::<B>(ch_flat, device)),
+                    gather_one(p_cat.select(0, act_t.clone()), int1::<B>(ch_node, device)),
+                    child_pool_c.clone(),
+                    gather_one(tokens.clone().select(0, act_t), ch_branch_t.clone()),
+                    gather_one(branch_a.clone(), ch_branch_t),
+                    Tensor::<B, 2>::from_data(TensorData::new(ev, [n_done, EVENT_FEATS]), device),
                 ],
                 1,
             );
-            let onehot_t = Tensor::<B, 3>::from_data(TensorData::new(onehot, [b, w, 1]), device);
-            let active_t = Tensor::<B, 3>::from_data(TensorData::new(active, [b, 1, 1]), device);
+            let onehot_t =
+                Tensor::<B, 3>::from_data(TensorData::new(onehot, [n_done, w, 1]), device);
+            let out = self.planner.update(ws_a, branch_a, event_in, onehot_t);
+            // Write the updated rows back; untouched examples keep their state.
+            let merge_t = int1::<B>(merge_map, device);
             let prev_ws = ws.clone();
             let prev_br = branch.clone();
-            let out = self
-                .planner
-                .update(ws, branch, event_in, onehot_t, active_t);
-            ws = out.workspace;
-            branch = out.branch;
+            ws = Tensor::cat(vec![out.workspace.clone(), ws], 0).select(0, merge_t.clone());
+            branch = Tensor::cat(vec![out.branch.clone(), branch], 0).select(0, merge_t);
             acct.planner_update_calls += 1;
             acct.planner_update_examples += n_done;
+            acct.planner_rows_executed += n_done;
 
-            node_pool.push(child_pool.unsqueeze_dim::<3>(1));
-            edge_embs.push(child_emb);
+            // Node stores keep full-batch rows; inactive rows are zero and never indexed.
+            let zero_t = int1::<B>(zero_map, device);
+            let pool_full = Tensor::cat(
+                vec![child_pool_c, Tensor::<B, 2>::zeros([1, qd], device)],
+                0,
+            )
+            .select(0, zero_t.clone());
+            let emb_full = Tensor::cat(
+                vec![child_emb_c, Tensor::<B, 3>::zeros([1, a_w, qd], device)],
+                0,
+            )
+            .select(0, zero_t);
+            node_pool.push(pool_full.unsqueeze_dim::<3>(1));
+            edge_embs.push(emb_full);
             widths.push(a_w);
 
             if opts.health_checks || opts.diagnostics {
@@ -617,7 +671,12 @@ impl<B: Backend> ActiveSearchModel<B> {
         acct.exhausted_examples = (0..b)
             .filter(|&e| acct.successful_queries[e] < opts.budget)
             .count();
+        acct.final_frontier_empty = trees.iter().map(|t| t.frontier().is_empty()).collect();
         acct.total_s = t_total.elapsed().as_secs_f64();
+        // The structural invariants are checked here, before any successful return,
+        // so no caller can forget them.
+        acct.check_invariants()
+            .map_err(|e| anyhow::anyhow!("accounting invariant violated: {e}"))?;
 
         Ok(ActiveOutput {
             readout: Readout {

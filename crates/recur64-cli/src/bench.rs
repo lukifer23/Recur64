@@ -96,6 +96,8 @@ fn all_finite<B: Backend>(out: &recur64_model::model::ModelOutput<B>) -> bool {
 pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
     let text = std::fs::read_to_string(&args.config)?;
     let cfg = ProbeConfig::from_toml_str(&text)?;
+    cfg.model
+        .refuse_active_v3("`bench` (the historical Probe benchmark)")?;
     recur64_model::precision::ensure_supported(cfg.precision, cfg.device)?;
 
     let recurrences: Vec<usize> = if args.recurrences.is_empty() {

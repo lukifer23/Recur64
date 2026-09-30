@@ -219,8 +219,13 @@ pub const ACTIVE_HEAD_VERSION: u32 = 1;
 /// Largest ply depth the planner depth features accept. Deeper nodes are
 /// refused, never clipped.
 pub const ACTIVE_MAX_DEPTH: usize = 64;
-/// Largest query budget the model accepts (B16 is the extrapolation point).
-pub const ACTIVE_MAX_BUDGET: usize = 64;
+/// Largest query budget of the V3.0 scientific experiment: B0/2/4/8/16, trained
+/// through B8, with B16 the extrapolation point. A larger budget is a different
+/// experiment and needs its own preregistration.
+pub const ACTIVE_MAX_BUDGET: usize = 16;
+/// Implementation ceiling for explicit, non-scientific stress runs
+/// (`RunOptions::engineering_stress`). Such runs are recorded as engineering only.
+pub const ACTIVE_ENGINEERING_MAX_BUDGET: usize = 64;
 
 /// Versioned identities of every V3 scientific contract.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -433,6 +438,20 @@ impl ModelConfig {
         m.candidate = None;
         m.active = Some(ActiveConfig::default());
         m
+    }
+
+    /// Visible refusal for every historical command that has no `active_search_v3`
+    /// path. Call it before any model construction or device work: a historical
+    /// tool must never interpret an active-search config as another architecture.
+    pub fn refuse_active_v3(&self, command: &str) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.architecture != Architecture::ActiveSearchV3,
+            "active_search_v3 is not supported by {command}: that tool builds a different \
+             graph and would measure the wrong model. Use `recur64 model-info` to describe \
+             active_search_v3 and `recur64 v3-qual` to qualify it (every budget above 0 \
+             needs the live state-query tool)"
+        );
+        Ok(())
     }
 
     /// Refuse an architecture/geometry combination that is not a real model.
