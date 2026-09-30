@@ -21,6 +21,7 @@ mod perft;
 mod phase2;
 mod phase3;
 mod search_gain;
+mod value_diag;
 
 #[derive(Parser)]
 #[command(
@@ -78,6 +79,9 @@ enum Commands {
     DrawReport(draw_report::DrawReportArgs),
     /// Raw network outputs (parity) and forward latency vs batch size.
     ForwardProbe(forward_probe::ForwardProbeArgs),
+    /// Training-only value-head diagnostic: train through phases, evaluate
+    /// held-out WDL CE and value by material along the way.
+    ValueDiag(value_diag::ValueDiagArgs),
     /// Generate the frozen evaluation opening suite.
     GenOpenings(phase3::GenOpeningsArgs),
     /// Evaluate a checkpoint's raw policy (no search) vs random legal play.
@@ -114,6 +118,7 @@ fn main() -> anyhow::Result<()> {
         Commands::EvalArena(args) => eval_arena::run(args),
         Commands::DrawReport(args) => draw_report::run(args),
         Commands::ForwardProbe(args) => forward_probe::run(args),
+        Commands::ValueDiag(args) => value_diag::run(args),
         Commands::GenOpenings(args) => phase3::run_gen_openings(args),
         Commands::EvalPolicy(args) => phase3::run_eval_policy(args),
         Commands::Pilot(args) => phase3::run_pilot_cmd(args),

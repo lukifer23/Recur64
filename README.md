@@ -58,6 +58,14 @@ Phase 4 so far:
   - The trained network converted endgames *worse* than the untrained one.
   - Next steps (a reverse curriculum from near-mate positions,
     endgame-appropriate exploration, an LR A/B) await an owner decision.
+- **Value-head diagnostics (partial):**
+  - The value head is *calibrated* to its data and learns and unlearns
+    within about 50 updates.
+  - The real bottleneck is that self-play almost never converts a lead, so
+    the next fixes target the data: a reverse curriculum of mostly won
+    positions, and conversion technique.
+  - See `docs/STATUS.md`, "CURRENT STATE AND NEXT STEPS". Work is paused
+    pending an owner decision.
 - **Arena fix (D54, from the HP branch):** players now search their own
   trees. Earlier arenas mixed both networks.
 - **Throughput pass (D53):** 1.38x self-play throughput and 1.20x training,

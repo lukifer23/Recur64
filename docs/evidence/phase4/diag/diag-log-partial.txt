@@ -1,0 +1,39 @@
+=== DA
+update    0 [start] heavy          ce 1.0986 | win|lead 5-8 0.333 9+ 0.333 | draw 5-8 0.333
+update    0 [start] std            ce 1.0986 | win|lead 5-8 0.333 9+ 0.333 | draw 5-8 0.333
+update   25 [runs/diag-heavy-train/replay] heavy          ce 0.5178 | win|lead 5-8 0.101 9+ 0.112 | draw 5-8 0.797
+update   25 [runs/diag-heavy-train/replay] std            ce 0.5392 | win|lead 5-8 0.103 9+ 0.103 | draw 5-8 0.793
+update   50 [runs/diag-heavy-train/replay] heavy          ce 0.5155 | win|lead 5-8 0.105 9+ 0.125 | draw 5-8 0.789
+update   50 [runs/diag-heavy-train/replay] std            ce 0.5419 | win|lead 5-8 0.110 9+ 0.109 | draw 5-8 0.781
+update   75 [runs/diag-heavy-train/replay] heavy          ce 0.5029 | win|lead 5-8 0.096 9+ 0.135 | draw 5-8 0.808
+update   75 [runs/diag-heavy-train/replay] std            ce 0.5467 | win|lead 5-8 0.120 9+ 0.124 | draw 5-8 0.758
+update  100 [runs/diag-heavy-train/replay] heavy          ce 0.5160 | win|lead 5-8 0.068 9+ 0.202 | draw 5-8 0.866
+update  100 [runs/diag-heavy-train/replay] std            ce 0.6919 | win|lead 5-8 0.199 9+ 0.227 | draw 5-8 0.607
+update  125 [runs/diag-heavy-train/replay] heavy          ce 0.4608 | win|lead 5-8 0.036 9+ 0.185 | draw 5-8 0.931
+update  125 [runs/diag-heavy-train/replay] std            ce 0.6379 | win|lead 5-8 0.174 9+ 0.217 | draw 5-8 0.660
+update  150 [runs/diag-heavy-train/replay] heavy          ce 0.4728 | win|lead 5-8 0.078 9+ 0.356 | draw 5-8 0.903
+update  150 [runs/diag-heavy-train/replay] std            ce 0.7360 | win|lead 5-8 0.252 9+ 0.401 | draw 5-8 0.621
+update  175 [runs/diag-heavy-train/replay] heavy          ce 0.4105 | win|lead 5-8 0.059 9+ 0.319 | draw 5-8 0.930
+update  175 [runs/diag-heavy-train/replay] std            ce 0.6849 | win|lead 5-8 0.197 9+ 0.334 | draw 5-8 0.710
+update  200 [runs/diag-heavy-train/replay] heavy          ce 0.3916 | win|lead 5-8 0.047 9+ 0.293 | draw 5-8 0.943
+update  200 [runs/diag-heavy-train/replay] std            ce 0.6458 | win|lead 5-8 0.169 9+ 0.308 | draw 5-8 0.756
+wrote runs/diag-DA\value-diag.json
+=== DB
+update    0 [start] heavy          ce 1.0986 | win|lead 5-8 0.333 9+ 0.333 | draw 5-8 0.333
+update    0 [start] std            ce 1.0986 | win|lead 5-8 0.333 9+ 0.333 | draw 5-8 0.333
+update   50 [runs/diag-heavy-train/replay] heavy          ce 0.5140 | win|lead 5-8 0.105 9+ 0.133 | draw 5-8 0.791
+update   50 [runs/diag-heavy-train/replay] std            ce 0.5428 | win|lead 5-8 0.109 9+ 0.109 | draw 5-8 0.781
+update  100 [runs/diag-heavy-train/replay] heavy          ce 0.5225 | win|lead 5-8 0.107 9+ 0.227 | draw 5-8 0.834
+update  100 [runs/diag-heavy-train/replay] std            ce 0.6592 | win|lead 5-8 0.192 9+ 0.233 | draw 5-8 0.663
+update  150 [runs/diag-heavy-train/replay] heavy          ce 0.3857 | win|lead 5-8 0.071 9+ 0.368 | draw 5-8 0.925
+update  150 [runs/diag-heavy-train/replay] std            ce 0.6951 | win|lead 5-8 0.144 9+ 0.261 | draw 5-8 0.797
+update  200 [runs/diag-heavy-train/replay] heavy          ce 0.4323 | win|lead 5-8 0.053 9+ 0.438 | draw 5-8 0.945
+update  200 [runs/diag-heavy-train/replay] std            ce 0.8580 | win|lead 5-8 0.182 9+ 0.386 | draw 5-8 0.756
+update  250 [runs/phase4-f10-qual/replay] heavy          ce 0.4041 | win|lead 5-8 0.030 9+ 0.101 | draw 5-8 0.950
+update  250 [runs/phase4-f10-qual/replay] std            ce 0.5088 | win|lead 5-8 0.099 9+ 0.117 | draw 5-8 0.813
+update  300 [runs/phase4-f10-qual/replay] heavy          ce 0.3762 | win|lead 5-8 0.029 9+ 0.120 | draw 5-8 0.960
+update  300 [runs/phase4-f10-qual/replay] std            ce 0.5187 | win|lead 5-8 0.112 9+ 0.150 | draw 5-8 0.798
+update  350 [runs/phase4-f10-qual/replay] heavy          ce 0.3784 | win|lead 5-8 0.018 9+ 0.094 | draw 5-8 0.978
+update  350 [runs/phase4-f10-qual/replay] std            ce 0.5159 | win|lead 5-8 0.089 9+ 0.124 | draw 5-8 0.846
+update  400 [runs/phase4-f10-qual/replay] heavy          ce 0.3597 | win|lead 5-8 0.021 9+ 0.117 | draw 5-8 0.975
+update  400 [runs/phase4-f10-qual/replay] std            ce 0.5259 | win|lead 5-8 0.114 9+ 0.161 | draw 5-8 0.809

@@ -407,6 +407,63 @@ is recorded in **`docs/PHASE4_RESULTS.md`**.
      pre-registered A/B.
   4. **`root_player_v1` arenas** (D54) for all new runs.
 
+## CURRENT STATE AND NEXT STEPS (2026-09-30)
+
+**Where we are (MEASURED).**
+
+- **The learning loop works mechanically but does not learn to convert.**
+  Across P4.6 and the D51 stage 2 pilot:
+  - self-play drifts to 70-80% draws, 60-90% of them failed conversions;
+  - the value head scores leads of a rook or more as about 83% draw;
+  - neither the trained nor the untrained network converts K+Q or K+R vs K
+    (1-2 of 64).
+  - Training makes conversion worse: two-majors-vs-K goes from 36 / 64
+    untrained to 18 / 64 after the curriculum pilot.
+- **Tried and not adopted:**
+  - 128 sims (the drift persists)
+  - the D50 MCTS-solver (no conversion gain)
+  - the D51 endgame curriculum (NO-GO: too small a dose, mostly drawn, so
+    it taught "lead = draw")
+- **Throughput (D53):** self-play 1.38x and training 1.20x over the day's
+  start, execution-only or bit-exact.
+  - Not adopted: fusion, autotune, TF32, candidate buckets (T1, T5, T6).
+  - Run-to-run variance is about 9%, so the smaller gains are
+    uncertain.
+- **Correctness imported from the HP branch (D54):**
+  - arenas now let each player search its own tree (earlier arenas were
+    mixed-tree)
+  - non-finite model output is refused
+  - the metrics race is fixed
+
+**Value-head diagnostics** (`recur64 value-diag`). Stopped by the owner:
+DA complete, DB partial, DC and DD NOT RUN.
+
+- **The value head is calibrated:** it predicts close to the
+  position-weighted outcome rate. Even in heavy endgames only 23% of
+  big-lead positions are in won games.
+- **It learns fast:** held-out cross-entropy goes 1.10 -> 0.39.
+- **It unlearns fast:** about 50 standard updates undo it.
+- **So the bottleneck is conversion in the games** (search and policy),
+  not value learning. Next steps should change the data, not the value
+  head.
+
+**Candidate next steps.** Each is a new identity needing an owner
+decision. The diagnostics favour 1 and 2 over 3:
+
+1. **Reverse curriculum from near-mate positions.** Starts are filtered by
+   our own search proving a short forced mate; the distance to mate grows
+   as conversion succeeds; games play argmax from ply 0. The goal is mostly
+   *won* labels at a meaningful position share.
+2. **Dose and exploration fixes** for any curriculum: heavy families only,
+   a larger position share, argmax from ply 0.
+3. **LR A/B** (the HP finding: 7.5e-5 was best at 15M). This is lower
+   priority now: the value head tracks its data at any tested LR.
+4. **Evaluation contract:** new runs use `root_player_v1` arenas (D54).
+   Consider the HP paired-RNG arenas for less noisy promotions.
+5. **Deferred:** the R10 recurrence study. The HP branch found no
+   value-learning benefit from recurrence at 15M, and a baseline that
+   learns is needed first.
+
 ## NOT RUN
 
 - P4.6 bounded qualification and the P4.7 R10 entry decision.

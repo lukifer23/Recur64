@@ -2238,3 +2238,92 @@ all-standard draw share; the arenas are mixed-tree, pre-D54):
 
 Proposed next changes: see `docs/STATUS.md`. Each is a new identity and
 needs an owner decision.
+
+### T6 result (MEASURED): candidate buckets not adopted
+
+- **Run:** binary `94b2a47`, `snapshot-005`, standard start, 48 / 96, 2
+  owners, 128 games, 0 errors in every cell.
+- **Trainable pos/s:**
+  - B0 FP32, exact widths: 34.3
+  - B1 buckets: 33.6 (0.98x)
+  - B2 autotune + buckets: 35.8 (1.04x)
+  - B3 fusion + autotune + buckets: 27.2 (0.79x)
+- **Forward p50 at batch 64:** B0 22.9 ms, B1 23.1, B2 20.7, B3 25.1.
+- **Verdict:** no cell reaches 1.10x, so nothing is adopted. On this GPU,
+  buckets do not rescue fusion.
+- **Variance disclosure:** B0 is the identical T4 cell. It measured 34.3
+  here against 31.5 yesterday, a 9% run-to-run difference. The T2 / T3 gains
+  (1.10x each) are within that range. They are kept because they are
+  execution-only and consistent, but their size is uncertain.
+
+## Value-head diagnostics (owner choice "Diagnose further"; exploratory, not gating)
+
+**Tool.** `recur64 value-diag` trains from a checkpoint through phases and
+evaluates held-out sets every 25 updates:
+
+- WDL cross-entropy against outcomes (uniform = 1.0986)
+- P(win | lead) by material bucket, next to the outcome rate itself
+
+**Data** (reference v2, the stage 1 probe contract):
+
+- `diag-heavy-train`: two majors vs K, 128 games, seed 1. 70 / 128 won.
+- `diag-heavy-eval`: seed 2, held out. 32 / 64 won.
+- Standard evaluation: `runs/depth-A/replay`, snapshot-005 standard-start
+  self-play.
+
+**Questions, written before the runs:**
+
+- **DA:** can the value head learn P(win | big lead) from won endgames
+  (held-out CE below uniform, win|9+ rising toward the outcome rate), and
+  does it transfer to standard positions?
+- **DB:** after DA, how fast do 400 updates of P4.6 standard self-play
+  undo it?
+- **DC:** can the draw-biased snapshot-005 relearn it?
+- **DD:** at about 20% heavy updates interleaved with standard self-play,
+  does the lesson hold?
+
+### Value-head diagnostics: partial result (MEASURED; stopped by the owner, 2026-09-30)
+
+- **Status:** DA complete. DB ran 400 of 600 updates. DC and DD **NOT RUN**.
+- **Evidence** (`docs/evidence/phase4/diag/`): `DA-value-diag.json` and
+  `diag-log-partial.txt`.
+- **Setup:** reference v2, the f10-qual learner (lr 3e-4, effective batch
+  256).
+
+**DA** (reference -> 200 updates on heavy endgames):
+
+- Held-out heavy WDL cross-entropy falls from 1.099 (uniform) to 0.392.
+- On the standard set, win|lead 9+ rises from 0.10 to 0.31.
+
+| set / lead | predicted win | predicted draw | outcome win (position-weighted) | outcome draw |
+|---|---:|---:|---:|---:|
+| heavy held-out, 9+ | 0.293 | 0.660 | 0.228 | 0.772 |
+| heavy held-out, 5-8 | 0.047 | 0.943 | 0.011 | 0.989 |
+| standard, 9+ | 0.308 | 0.639 | 0.178 | 0.814 |
+| standard, 5-8 | 0.169 | 0.756 | 0.083 | 0.848 |
+
+**DB** (DA's 200 updates, then P4.6 standard self-play):
+
+- At update 200, standard win|9+ was 0.386.
+- After 50 standard updates it was 0.117, and it stayed at 0.12-0.16
+  through update 400.
+- Held-out heavy win|9+ fell from 0.438 to 0.10-0.12.
+
+**Reading (INFERRED).**
+
+1. **The value head is calibrated, not broken.** It predicts close to the
+   *position-weighted* outcome rate.
+   - Even where about half the heavy *games* convert, only 23% of big-lead
+     *positions* belong to won games. Drawn games are long and contribute
+     most positions.
+   - In the 5-8 bucket (one major left) outcomes are 99% draws: the target
+     families almost never convert.
+2. **It learns and unlearns fast.** It fits the current data distribution
+   within about 50 updates, in either direction.
+3. **So the bottleneck is conversion in the games themselves** (search plus
+   policy technique), not value learning.
+   - More or better value-head training cannot fix it. The self-play data
+     must contain converted leads.
+   - This favours changing the data, such as a reverse curriculum of mostly
+     *won* positions or better conversion technique in search, over value
+     or LR changes.
