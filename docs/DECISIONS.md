@@ -939,3 +939,34 @@ Architecture decision records. Status values: **ACCEPTED**, **PENDING**,
 - **tch-rs**, **Candle**: deferred fallbacks (see `ARCHITECTURE.md`).
 - **0.22.0-pre.x Burn**: deferred until a stable release or a demonstrated need.
 - **Docker, Python trainer, custom CUDA kernels**: rejected.
+
+---
+
+# V3 decisions (`experiment/workstation-v3-active-search`)
+
+V3 uses its own `V3-D<n>` numbering because HP D50-D63 collide with mainline D50-D54 and V2.5
+D55-D59. HP decisions are cited as `HP D<n>`.
+
+## V3-D1 - V3 lineage and scope
+
+- **Status:** RECORDED (2026-09-30).
+- **Decision:** branch `experiment/workstation-v3-active-search` from exactly
+  `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de`; HP branches are donors/reference only and are not
+  merged; V2.5 is closed and gets no P3 or one-pass rescue. See `docs/V3_LINEAGE.md`.
+
+## V3-D2 - Architecture identity `active_search_v3` and query accounting
+
+- **Status:** RECORDED (2026-09-30). Implementation pending (P1-P2).
+- **Decision:** one exact transition per query unit; CandidateFacts are root-only and never
+  computed on queried descendants; the state-query crate depends only on `recur64-core`; tool
+  outputs carry no solver-derived fields; STOP is masked in the primary experiment. See
+  `docs/V3_ARCHITECTURE.md`.
+
+## V3-D3 - Pre-registered gates, with a flagged feasibility dependency
+
+- **Status:** RECORDED (2026-09-30).
+- **Decision:** gates I-VI and outcome classes are frozen in `docs/V3_RESEARCH_PLAN.md`. The
+  Gate II/III magnitudes depend on the P4-measured fraction of ideal proof certificates that fit
+  in 8 queries; any restatement must happen before CONFIRM and be reported to the owner.
+- **Decision:** at the end of P3 the report and any suggested contract changes are committed and
+  pushed to the V3 branch so the record exists off the workstation.
