@@ -51,7 +51,7 @@ pub struct Metrics {
     pub chance_top1: f64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExampleResult {
     pub top1: f64,
     pub mass: f64,
@@ -228,6 +228,162 @@ pub fn classify_queries(
     d
 }
 
+/// P5.2 (derived, evaluation-only): the selector diagnostic with the proof-completion
+/// boundary made explicit. Once the proof residual is zero, STOP is masked and the
+/// forced remaining queries are filler; counting them in the same denominator as
+/// pre-completion queries makes the off-target share hard to read. This splits them.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct RefinedDiag {
+    pub examples: usize,
+    pub queries: usize,
+    pub pre_completion_queries: usize,
+    pub pre_completion_proof_admissible: usize,
+    pub pre_completion_refute_admissible: usize,
+    pub pre_completion_off_target: usize,
+    /// Residual decrease summed over pre-completion queries.
+    pub pre_completion_residual_decrease_sum: u64,
+    pub pre_completion_depth_histogram: BTreeMap<u32, u64>,
+    /// Selector entropy / margin summed over pre-completion queries that recorded them.
+    pub pre_completion_selector_entropy_sum: f64,
+    pub pre_completion_selector_margin_sum: f64,
+    pub pre_completion_selector_stat_count: usize,
+    pub post_completion_queries: usize,
+    /// Always zero: a proof-admissible edge cannot exist once the residual is zero
+    /// (asserted; kept so the evidence shows the invariant held).
+    pub post_completion_proof_admissible: usize,
+    pub post_completion_refute_admissible: usize,
+    pub post_completion_off_target: usize,
+    pub post_completion_depth_histogram: BTreeMap<u32, u64>,
+    pub positions_with_post_completion_queries: usize,
+    /// Number of queries after which the residual first reached zero -> positions.
+    pub first_completion_step: BTreeMap<u32, u64>,
+    pub never_complete: usize,
+    /// For k in {1,2,4,8} <= budget: positions whose proof was complete after k queries.
+    pub complete_after_query: BTreeMap<u32, u64>,
+}
+
+impl RefinedDiag {
+    fn merge(&mut self, o: &RefinedDiag) {
+        self.examples += o.examples;
+        self.queries += o.queries;
+        self.pre_completion_queries += o.pre_completion_queries;
+        self.pre_completion_proof_admissible += o.pre_completion_proof_admissible;
+        self.pre_completion_refute_admissible += o.pre_completion_refute_admissible;
+        self.pre_completion_off_target += o.pre_completion_off_target;
+        self.pre_completion_residual_decrease_sum += o.pre_completion_residual_decrease_sum;
+        self.pre_completion_selector_entropy_sum += o.pre_completion_selector_entropy_sum;
+        self.pre_completion_selector_margin_sum += o.pre_completion_selector_margin_sum;
+        self.pre_completion_selector_stat_count += o.pre_completion_selector_stat_count;
+        self.post_completion_queries += o.post_completion_queries;
+        self.post_completion_proof_admissible += o.post_completion_proof_admissible;
+        self.post_completion_refute_admissible += o.post_completion_refute_admissible;
+        self.post_completion_off_target += o.post_completion_off_target;
+        self.positions_with_post_completion_queries += o.positions_with_post_completion_queries;
+        self.never_complete += o.never_complete;
+        for (dst, src) in [
+            (
+                &mut self.pre_completion_depth_histogram,
+                &o.pre_completion_depth_histogram,
+            ),
+            (
+                &mut self.post_completion_depth_histogram,
+                &o.post_completion_depth_histogram,
+            ),
+        ] {
+            for (k, v) in src {
+                *dst.entry(*k).or_default() += v;
+            }
+        }
+        for (dst, src) in [
+            (&mut self.first_completion_step, &o.first_completion_step),
+            (&mut self.complete_after_query, &o.complete_after_query),
+        ] {
+            for (k, v) in src {
+                *dst.entry(*k).or_default() += v;
+            }
+        }
+    }
+}
+
+/// Offline classification of one example's queries with the completion boundary explicit.
+pub fn classify_queries_refined(
+    trace: &PositionTrace,
+    queries: &[QueryRecord],
+    budget: usize,
+) -> anyhow::Result<RefinedDiag> {
+    let mut d = RefinedDiag {
+        examples: 1,
+        ..Default::default()
+    };
+    let mut paths: Vec<Path> = vec![Vec::new()];
+    let mut s: HashSet<Path> = HashSet::new();
+    let mut completed_at: Option<u32> = None;
+    let mut residual_after: Vec<u64> = Vec::with_capacity(queries.len());
+    for (i, q) in queries.iter().enumerate() {
+        let mut e = paths[q.parent_slot].clone();
+        e.push(q.action);
+        let before = trace.residual(&s);
+        let adm = trace.admissible(&s);
+        d.queries += 1;
+        let (proof, refute) = (adm.proof.contains(&e), adm.refute.contains(&e));
+        if before == 0 {
+            anyhow::ensure!(
+                !proof,
+                "a proof-admissible edge exists after the proof completed (query {i})"
+            );
+            d.post_completion_queries += 1;
+            if refute {
+                d.post_completion_refute_admissible += 1;
+            } else {
+                d.post_completion_off_target += 1;
+            }
+            *d.post_completion_depth_histogram
+                .entry(q.depth)
+                .or_default() += 1;
+        } else {
+            d.pre_completion_queries += 1;
+            if proof {
+                d.pre_completion_proof_admissible += 1;
+            } else if refute {
+                d.pre_completion_refute_admissible += 1;
+            } else {
+                d.pre_completion_off_target += 1;
+            }
+            *d.pre_completion_depth_histogram.entry(q.depth).or_default() += 1;
+            if let (Some(ent), Some(mar)) = (q.selector_entropy, q.selector_margin) {
+                d.pre_completion_selector_entropy_sum += f64::from(ent);
+                d.pre_completion_selector_margin_sum += f64::from(mar);
+                d.pre_completion_selector_stat_count += 1;
+            }
+        }
+        s.insert(e.clone());
+        let after = trace.residual(&s);
+        anyhow::ensure!(
+            after <= before,
+            "the proof residual increased ({before} -> {after}) at query {i}"
+        );
+        if before > 0 {
+            d.pre_completion_residual_decrease_sum += before - after;
+        }
+        if after == 0 && completed_at.is_none() {
+            completed_at = Some(i as u32 + 1);
+        }
+        residual_after.push(after);
+        paths.push(e);
+    }
+    d.positions_with_post_completion_queries = usize::from(d.post_completion_queries > 0);
+    match completed_at {
+        Some(step) => *d.first_completion_step.entry(step).or_default() += 1,
+        None => d.never_complete = 1,
+    }
+    for k in [1u32, 2, 4, 8] {
+        if k as usize <= budget && completed_at.is_some_and(|c| c <= k) {
+            *d.complete_after_query.entry(k).or_default() += 1;
+        }
+    }
+    Ok(d)
+}
+
 /// Everything one evaluation pass produces.
 pub struct EvalOutput {
     pub summary: EvalSummary,
@@ -235,6 +391,10 @@ pub struct EvalOutput {
     pub selector_nll: Option<(f64, usize)>,
     /// Offline selector diagnostics per cell and pooled (budget > 0 only).
     pub selector_diag: Option<(SelectorDiag, BTreeMap<String, SelectorDiag>)>,
+    /// P5.2 refined diagnostic (pre/post completion), same conditions as `selector_diag`.
+    pub refined_diag: Option<(RefinedDiag, BTreeMap<String, RefinedDiag>)>,
+    /// Per-position policy results in dataset order (for paired bootstraps).
+    pub per_position: Vec<ExampleResult>,
 }
 
 /// Evaluate `model` on every position of `data` at `budget`.
@@ -254,6 +414,8 @@ pub fn evaluate<B: Backend>(
     let mut nll = (0.0f64, 0usize);
     let mut diag_all = SelectorDiag::default();
     let mut diag_cells: BTreeMap<String, SelectorDiag> = BTreeMap::new();
+    let mut refined_all = RefinedDiag::default();
+    let mut refined_cells: BTreeMap<String, RefinedDiag> = BTreeMap::new();
     let base = teacher_key_base(EVAL_TEACHER_SEED);
     let n = data.positions().len();
     let mut start = 0usize;
@@ -339,6 +501,10 @@ pub fn evaluate<B: Backend>(
                 let d = classify_queries(&data.traces[start + i], &out.traces[i], budget);
                 diag_all.merge(&d);
                 diag_cells.entry(cell_key(p)).or_default().merge(&d);
+                let r = classify_queries_refined(&data.traces[start + i], &out.traces[i], budget)
+                    .map_err(|e| anyhow::anyhow!("{}: {e}", p.id))?;
+                refined_all.merge(&r);
+                refined_cells.entry(cell_key(p)).or_default().merge(&r);
             }
         }
         start = end;
@@ -346,10 +512,14 @@ pub fn evaluate<B: Backend>(
     let selector_nll = (matches!(selection, EvalSelection::Teacher) && nll.1 > 0).then_some(nll);
     let selector_diag = (matches!(selection, EvalSelection::Active) && budget > 0)
         .then_some((diag_all, diag_cells));
+    let refined_diag = (matches!(selection, EvalSelection::Active) && budget > 0)
+        .then_some((refined_all, refined_cells));
     Ok(EvalOutput {
         summary: summarise(data, &results, budget, selection),
         selector_nll,
         selector_diag,
+        refined_diag,
+        per_position: results,
     })
 }
 

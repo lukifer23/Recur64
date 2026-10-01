@@ -45,6 +45,32 @@ pub enum P5Cmd {
     Train(TrainArgs),
     /// Apply the frozen selection rule to the six run summaries.
     Select(SelectArgs),
+    /// P5.2: re-evaluate the selected final checkpoints with the refined selector
+    /// diagnostic (evaluation only; TUNE only; never alters P5).
+    Rediagnose(RediagArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct RediagArgs {
+    #[command(flatten)]
+    pub data: DataArgs,
+    #[arg(long)]
+    pub tune: PathBuf,
+    #[arg(long)]
+    pub tune_trace: PathBuf,
+    /// The committed screen contract (`v3-p5-recipe.json`).
+    #[arg(long)]
+    pub recipe: PathBuf,
+    #[arg(long, value_enum)]
+    pub device: Dev,
+    /// Directory holding `v3-p5-run-lr3e-4-seed*/final` (default `runs/v3/p5`).
+    #[arg(long)]
+    pub runs_root: PathBuf,
+    /// Directory holding the committed run summaries (`docs/evidence/v3`).
+    #[arg(long)]
+    pub evidence: PathBuf,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -190,6 +216,14 @@ pub fn run(cmd: P5Cmd) -> anyhow::Result<()> {
             })
         }
         P5Cmd::Select(a) => run_select(&a),
+        P5Cmd::Rediagnose(a) => {
+            let dev = a.device;
+            dispatch(dev, move |d| match d {
+                Dispatch::Cpu => rediagnose::<recur64_model::train::CpuTrainBackend>(&a),
+                #[cfg(feature = "cuda")]
+                Dispatch::Cuda => rediagnose::<burn::backend::Autodiff<burn::backend::Cuda>>(&a),
+            })
+        }
     }
 }
 
@@ -581,6 +615,122 @@ pub fn check_exposure(v: &serde_json::Value, expected: u64) -> anyhow::Result<()
             "B{b}: family/depth fractions missing"
         );
     }
+    Ok(())
+}
+
+/// Largest absolute difference between a re-evaluated `EvalSummary` and the committed one
+/// (pooled and every cell; top-1, correct mass, CE, entropy).
+fn summary_max_diff(
+    fresh: &serde_json::Value,
+    committed: &serde_json::Value,
+) -> anyhow::Result<f64> {
+    let mut worst = 0.0f64;
+    let mut groups: Vec<(&serde_json::Value, &serde_json::Value)> =
+        vec![(&fresh["pooled"], &committed["pooled"])];
+    for (k, c) in committed["cells"]
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("committed summary has no cells"))?
+    {
+        groups.push((&fresh["cells"][k], c));
+    }
+    for (f, c) in groups {
+        for key in ["top1", "correct_mass", "ce", "entropy"] {
+            let (a, b) = (
+                f[key]
+                    .as_f64()
+                    .ok_or_else(|| anyhow::anyhow!("fresh {key} missing"))?,
+                c[key]
+                    .as_f64()
+                    .ok_or_else(|| anyhow::anyhow!("committed {key} missing"))?,
+            );
+            worst = worst.max((a - b).abs());
+        }
+    }
+    Ok(worst)
+}
+
+/// Policy values must reproduce the committed P5 evidence to this absolute tolerance.
+const REDIAG_POLICY_TOL: f64 = 1e-4;
+
+fn rediagnose<TB: AutodiffBackend>(a: &RediagArgs) -> anyhow::Result<()> {
+    let device: TB::Device = Default::default();
+    let inner = Default::default();
+    model_io::verify_device::<TB::InnerBackend>(&inner)?;
+    let contract = load_contract(&a.recipe)?;
+    let train_ds = load_dataset(&a.data.train, &a.data.train_trace, &Expected::train())?;
+    let tune = load_dataset(&a.tune, &a.tune_trace, &Expected::tune())?;
+    let mut runs = Vec::new();
+    let mut worst = 0.0f64;
+    for seed in SCREEN_SEEDS {
+        let lr = P5_SELECTED_LR;
+        let recipe = contract.clone().for_run(lr, seed);
+        let digest = recipe.digest();
+        let stem = run_stem(lr, seed);
+        let committed: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(a.evidence.join(format!("{stem}.json")))?)?;
+        anyhow::ensure!(
+            committed["recipe_digest"] == digest.as_str(),
+            "{stem}: committed summary was run under a different recipe"
+        );
+        let final_dir = a.runs_root.join(&stem).join("final");
+        // Trainer::load verifies the sidecar digest, the checkpoint metadata and every
+        // consistency invariant before any weight is used.
+        let tr = Trainer::<TB>::load(&final_dir, recipe.clone(), &train_ds, &device)?;
+        anyhow::ensure!(
+            tr.updates_done == recipe.updates,
+            "{stem}: final checkpoint is at update {}, expected {}",
+            tr.updates_done,
+            recipe.updates
+        );
+        let model = tr.inference_model();
+        let mut budgets = Vec::new();
+        for (bi, b) in BUDGETS.iter().copied().enumerate() {
+            if b == 0 {
+                continue;
+            }
+            let out = evaluate(&model, &tune, b, EvalSelection::Active, EVAL_BATCH, &inner)?;
+            let fresh = serde_json::to_value(&out.summary)?;
+            let diff = summary_max_diff(
+                &fresh,
+                &committed["evaluations"]["800"]["active"][bi]["summary"],
+            )?;
+            worst = worst.max(diff);
+            let (refined, refined_cells) = out
+                .refined_diag
+                .ok_or_else(|| anyhow::anyhow!("no refined diagnostic at B{b}"))?;
+            let (_, _) = out.selector_diag.as_ref().expect("same condition");
+            eprintln!("{stem} B{b}: policy max |diff| vs committed P5 = {diff:e}");
+            budgets.push(serde_json::json!({
+                "budget": b,
+                "policy_summary": fresh,
+                "policy_max_abs_diff_vs_committed_p5": diff,
+                "refined_selector_diag": {"pooled": refined, "cells": refined_cells},
+            }));
+        }
+        runs.push(serde_json::json!({
+            "lr": lr, "seed": seed, "recipe_digest": digest, "final_updates_done": tr.updates_done,
+            "budgets": budgets,
+        }));
+    }
+    let ok = worst <= REDIAG_POLICY_TOL;
+    write_json(
+        &a.output,
+        &serde_json::json!({
+            "schema": "v3_p5.2_selector_diagnostics_v1",
+            "label": "DERIVED / RE-EVALUATED DIAGNOSTIC - does not alter P5 selection",
+            "dataset": "V3_TUNE_V1 only",
+            "contract_digest": contract.contract_digest(),
+            "policy_tolerance": REDIAG_POLICY_TOL,
+            "policy_max_abs_diff_all": worst,
+            "policy_reproduces_committed_p5": ok,
+            "runs": runs,
+        }),
+    )?;
+    anyhow::ensure!(
+        ok,
+        "re-evaluated policy values differ from the committed P5 evidence by {worst:e} (> {REDIAG_POLICY_TOL:e}): STOP and investigate before P6"
+    );
+    println!("P5.2 policy reproduction max |diff| = {worst:e}");
     Ok(())
 }
 

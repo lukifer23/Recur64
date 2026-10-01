@@ -972,6 +972,99 @@ fn the_diagnostic_classifies_queries_against_the_proof_structure() {
 }
 
 #[test]
+fn the_refined_diagnostic_separates_pre_and_post_completion_queries() {
+    use super::eval::classify_queries_refined;
+    let (p, t) = find(KQR, "KQRvK", 2, 111, |t| {
+        t.refutations.iter().any(|r| r.replies.len() >= 2)
+    });
+    let build = |script: &dyn Fn(usize, &Tree) -> Option<Vec<u16>>, steps: usize| {
+        let mut mgr = QueryManager::new(GameState::from_fen(&p.fen).unwrap()).unwrap();
+        let mut tree = Tree::new(&mgr.packet(0).unwrap()).unwrap();
+        let mut teacher = SeededProofTeacher::new(vec![&t], vec![5]);
+        let mut recs = Vec::new();
+        for step in 0..steps {
+            let frontier = tree.frontier();
+            let e = match script(step, &tree) {
+                Some(want) => {
+                    let paths = node_paths(&tree);
+                    frontier
+                        .iter()
+                        .find(|e| edge_path(&paths, e) == want)
+                        .expect("edge on the frontier")
+                        .clone()
+                }
+                None => {
+                    let st = teacher.next(0, step, &frontier, &tree).unwrap();
+                    frontier[st.follow].clone()
+                }
+            };
+            let pkt = mgr.query(tree.node(e.node_slot).id, e.action).unwrap();
+            let slot = tree.add_child(&e, &pkt).unwrap();
+            recs.push(recur64_model::active::QueryRecord {
+                step,
+                parent_slot: e.node_slot,
+                action: e.action,
+                branch: e.branch,
+                depth: tree.node(slot).depth,
+                terminal: pkt.terminal,
+                frontier_size: frontier.len(),
+                selector_entropy: Some(1.0),
+                selector_margin: Some(0.5),
+            });
+        }
+        recs
+    };
+    // Q* proof queries from the teacher, then two filler queries after completion.
+    let q = t.q_star as usize;
+    let recs = build(&|_, _| None, q);
+    let d = classify_queries_refined(&t, &recs, q).unwrap();
+    assert_eq!(d.pre_completion_queries, q);
+    assert_eq!(d.pre_completion_proof_admissible, q);
+    assert_eq!(d.post_completion_queries, 0);
+    assert_eq!(d.first_completion_step.get(&(q as u32)), Some(&1));
+    assert_eq!(d.never_complete, 0);
+    assert_eq!(d.pre_completion_residual_decrease_sum as usize, q);
+    assert_eq!(d.pre_completion_selector_stat_count, q);
+
+    // The teacher latches after completion and spends the rest in fixed BFS order.
+    let recs = build(&|_, _| None, q + 2);
+    let d = classify_queries_refined(&t, &recs, q + 2).unwrap();
+    assert_eq!(
+        (d.pre_completion_queries, d.post_completion_queries),
+        (q, 2)
+    );
+    assert_eq!(d.post_completion_proof_admissible, 0);
+    assert_eq!(
+        d.post_completion_refute_admissible + d.post_completion_off_target,
+        2
+    );
+    assert_eq!(d.positions_with_post_completion_queries, 1);
+    assert_eq!(d.queries, q + 2);
+    for k in [1u32, 2, 4, 8] {
+        let want = u64::from(q as u32 <= k && k as usize <= q + 2);
+        assert_eq!(d.complete_after_query.get(&k).copied().unwrap_or(0), want);
+    }
+
+    // An incomplete trajectory never completes and has no post-completion queries.
+    let r = t.refutations.iter().find(|r| r.replies.len() >= 2).unwrap();
+    let want = [vec![r.root_action], vec![r.root_action, r.replies[0]]];
+    let recs = build(&|step, _| Some(want[step].clone()), 2);
+    let d = classify_queries_refined(&t, &recs, 2).unwrap();
+    assert_eq!(d.never_complete, 1);
+    assert!(d.first_completion_step.is_empty());
+    assert_eq!(d.post_completion_queries, 0);
+    assert_eq!(d.pre_completion_queries, 2);
+    assert_eq!(
+        (
+            d.pre_completion_proof_admissible,
+            d.pre_completion_refute_admissible,
+            d.pre_completion_off_target
+        ),
+        (0, 1, 1)
+    );
+}
+
+#[test]
 fn evaluation_is_complete_finite_and_the_screen_score_follows_the_frozen_formula() {
     let (ds, _d) = dataset(18, 121);
     let device = Default::default();
