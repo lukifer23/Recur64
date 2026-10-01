@@ -279,3 +279,20 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   completion latch, whole-update loss normalisation, the resumable trainer with a strict sidecar, the TUNE
   evaluator and offline selector diagnostics) and `recur64 v3-p5 {recipe,preflight,train,select}`.
 - **NOT RUN:** the CUDA preflight, any screening run, any TUNE evaluation of a trained model, P6.
+
+
+## V3-E12 - P5 resolved layout (TRAIN-only CUDA preflight, before any screen result)
+
+- **Date:** 2026-10-01
+- **Status:** MEASURED (engineering only). Commit B; no `v3_tune_v1` result on a trained model exists.
+- **Command:** `v3-p5 preflight --train runs/v25/p25/data/proof-train.json --train-trace runs/v3/p4/trace-train --device cuda --layout 16x8 --updates 3 --output ...` (binary built with `--features cuda`, CUDA runtime 12.9.1 on `PATH`).
+- **Result:** the full-geometry graph (30,853,790 parameters, micro16 x accum8, sequence [0,2,4,8,0,2,4,8], health checks on) ran on CUDA without OOM:
+  peak VRAM 3,133 MB; update wall 20.8 s cold, then 2.2 s and 1.2 s (steady mean over the two warm updates 1.71 s);
+  losses finite (total 7.28 to 7.33, grad norm about 2.9, TRAIN only). Projected single-run wall time 0.47 h
+  (train 0.38 h, TUNE evaluation 0.07 h, checkpoints 0.02 h assumed); limit 2 h: within.
+- **Resolved layout:** **micro16 x accum8** (the 8x16 fallback was not needed and is not used).
+  Contract digest `105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2` (`docs/evidence/v3/v3-p5-recipe.json`).
+- **Not claimed:** nothing about learning. The three updates were at warmup learning rates and show no trend.
+- **Incident:** the first attempt failed visibly because the CUDA runtime was not on `PATH` (the device known-answer
+  guard refused to run); no substitution happened.
+- **NOT RUN:** the six screening runs, TUNE evaluation of trained models, P6.

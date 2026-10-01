@@ -1,0 +1,182 @@
+{
+  "cold_update_wall_s": 20.7749863,
+  "device": "Cuda",
+  "eval_timing": {
+    "active_B0_s_per_position": 0.00128633515625,
+    "active_B2_s_per_position": 0.0030200828125,
+    "active_B4_s_per_position": 0.00161520546875,
+    "active_B8_s_per_position": 0.0029407015625
+  },
+  "eval_timing_subset_positions": 128,
+  "gpu": {
+    "last_vram_mb": 3133,
+    "min_vram_mb": 345,
+    "peak_vram_mb": 3133,
+    "samples": 51,
+    "temp_max_c": 47,
+    "util_busy_mean": 18.7,
+    "util_max": 95
+  },
+  "health_checks": true,
+  "layout": {
+    "accum": 8,
+    "micro": 16
+  },
+  "ok": true,
+  "projection": {
+    "basis": "steady-state mean update wall x 800 + 5 ACTIVE evaluations (B0/2/4/8) x 4500 + one update-800 diagnostic pass, per-position costs measured on the TRAIN subset; checkpoint cost assumed 5 s x 16",
+    "checkpoint_s_assumed": 80.0,
+    "evaluation_s": 252.70358203125002,
+    "limit_h": 2.0,
+    "single_run_total_h": 0.4719595838975695,
+    "single_run_total_s": 1699.0545020312502,
+    "train_s": 1366.35092,
+    "within_limit": true
+  },
+  "recipe_contract_digest": "105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2",
+  "steady_update_wall_s_mean": 1.70793865,
+  "tested": "real TRAIN updates at full geometry with live StateQuery on the requested device",
+  "updates": [
+    {
+      "lr": 1.8749999999999998e-6,
+      "report": {
+        "examples": 128,
+        "grad_norm": 2.8714635372161865,
+        "per_budget": [
+          {
+            "budget": 0,
+            "examples": 32,
+            "filler_queries": 0,
+            "policy_loss": 3.444203734397888,
+            "proofs_completed": 0,
+            "supervised_decisions": 0
+          },
+          {
+            "budget": 2,
+            "examples": 32,
+            "filler_queries": 11,
+            "policy_loss": 3.4227365255355835,
+            "proofs_completed": 11,
+            "supervised_decisions": 53
+          },
+          {
+            "budget": 4,
+            "examples": 32,
+            "filler_queries": 43,
+            "policy_loss": 3.4521759748458862,
+            "proofs_completed": 21,
+            "supervised_decisions": 85
+          },
+          {
+            "budget": 8,
+            "examples": 32,
+            "filler_queries": 131,
+            "policy_loss": 3.453538179397583,
+            "proofs_completed": 25,
+            "supervised_decisions": 125
+          }
+        ],
+        "policy_loss": 3.4431636035442352,
+        "selector_loss": 3.840438088536716,
+        "supervised_decisions": 263,
+        "total_loss": 7.283601692080952
+      },
+      "update": 0,
+      "wall_s": 20.7749863
+    },
+    {
+      "lr": 3.7499999999999997e-6,
+      "report": {
+        "examples": 128,
+        "grad_norm": 2.891019821166992,
+        "per_budget": [
+          {
+            "budget": 0,
+            "examples": 32,
+            "filler_queries": 0,
+            "policy_loss": 3.4445247650146484,
+            "proofs_completed": 0,
+            "supervised_decisions": 0
+          },
+          {
+            "budget": 2,
+            "examples": 32,
+            "filler_queries": 11,
+            "policy_loss": 3.4343018531799316,
+            "proofs_completed": 11,
+            "supervised_decisions": 53
+          },
+          {
+            "budget": 4,
+            "examples": 32,
+            "filler_queries": 42,
+            "policy_loss": 3.4564660787582397,
+            "proofs_completed": 20,
+            "supervised_decisions": 86
+          },
+          {
+            "budget": 8,
+            "examples": 32,
+            "filler_queries": 134,
+            "policy_loss": 3.462778091430664,
+            "proofs_completed": 26,
+            "supervised_decisions": 122
+          }
+        ],
+        "policy_loss": 3.449517697095871,
+        "selector_loss": 3.8585693242449413,
+        "supervised_decisions": 261,
+        "total_loss": 7.308087021340812
+      },
+      "update": 1,
+      "wall_s": 2.1661467
+    },
+    {
+      "lr": 5.6249999999999995e-6,
+      "report": {
+        "examples": 128,
+        "grad_norm": 2.907928943634033,
+        "per_budget": [
+          {
+            "budget": 0,
+            "examples": 32,
+            "filler_queries": 0,
+            "policy_loss": 3.449952244758606,
+            "proofs_completed": 0,
+            "supervised_decisions": 0
+          },
+          {
+            "budget": 2,
+            "examples": 32,
+            "filler_queries": 10,
+            "policy_loss": 3.4286959171295166,
+            "proofs_completed": 10,
+            "supervised_decisions": 54
+          },
+          {
+            "budget": 4,
+            "examples": 32,
+            "filler_queries": 39,
+            "policy_loss": 3.4402031898498535,
+            "proofs_completed": 19,
+            "supervised_decisions": 89
+          },
+          {
+            "budget": 8,
+            "examples": 32,
+            "filler_queries": 120,
+            "policy_loss": 3.4811590909957886,
+            "proofs_completed": 24,
+            "supervised_decisions": 136
+          }
+        ],
+        "policy_loss": 3.450002610683441,
+        "selector_loss": 3.880460185389365,
+        "supervised_decisions": 279,
+        "total_loss": 7.330462796072807
+      },
+      "update": 2,
+      "wall_s": 1.2497306
+    }
+  ]
+}
