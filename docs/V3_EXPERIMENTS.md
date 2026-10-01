@@ -234,3 +234,36 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   HOLDOUT_C guards, answer-free packet).
 - **NOT RUN:** TRAIN trace generation, the audit of TRAIN traces, `C_k`, the feasibility classification,
   `v3_tune_v1` generation, TUNE traces. P5 is not authorized.
+
+
+## V3-E10 - P4 data, ProofTraceV1 and the frozen feasibility measurement
+
+- **Date:** 2026-10-01
+- **Status:** MEASURED (results) under rules PRE-REGISTERED in V3-E9 and `docs/V3_P4_PLAN.md` (commit `156cc0f`).
+  Detail: `docs/V3_P4_RESULTS.md`; evidence: `docs/evidence/v3/v3-p4-*.json`, `v3-tune-v1-manifest.json`,
+  `v3-confirm-seal.json`.
+- **Commands (binary `target/release/recur64`):**
+  - `v3-p4 custody --train runs/v25/p25/data/proof-train.json --holdout-c runs/v25/p25/holdouts/proof-holdout_c.json --inventory-dirs runs/v25/proof,runs/v25/proof-v2,runs/v25/p25/data,runs/v25/p25/holdouts --threads 20`
+  - `v3-p4 tune-gen --inventory-dirs <same> --data-dir runs/v3/data --manifest runs/v3/p4/v3-tune-v1-manifest.json --threads 20`
+  - `v3-p4 trace-gen --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train --threads 20`
+  - `v3-p4 trace-audit --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train --threads 20`
+  - `v3-p4 determinism --data <train> --dir <trace dir> --shards 0,30,60,88 --threads 20`
+  - `v3-p4 feasibility --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train --role primary`
+  - the same trace, audit, determinism and (diagnostic role) feasibility commands for `v3_tune_v1`.
+- **Data digests:** P25_DATA_V1 TRAIN `3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6` (44,332
+  positions); `v3_tune_v1` `c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53` (4,500); HOLDOUT_C
+  `4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5` (verified, `evaluated = false`); exclusion
+  manifest `b3d5a7eeab183be9b501aea503ef2511857ffe2e39d5d407c2f1092743314cb7` (70,624 canonical classes).
+- **Trace digests:** TRAIN trace manifest `8160734ed5e3a145c12dd72d8e9dc49cc893984fc1cf714ea93eba904f58c488`, audit
+  manifest `895636669bbc149a89c0de7e1512606f5c674c5d626309f7260c9144401003b0` (0 failures of 44,332).
+- **Result:** `C_8(KQRvK M3) = 2168 / 5000 = 0.4336 >= 0.25`. Classification:
+  **SCIENTIFICALLY QUALIFIED FOR THE B8 PRIMARY EXPERIMENT** (V3-D15). Full table in the results document.
+- **Seeds:** `v3_tune_v1` `0x7A130004` (2048065540); no other randomness in the measurement (the traces are exact
+  and deterministic).
+- **Incidents:** the first `trace-gen` was cut short by a `| head` pipe after five shards; resumed with the five
+  shards re-validated and reused. A mate-in-three audit-corruption test was added after the measurement
+  (test-only). The measurement was taken once.
+- **Gate:** P4 gate: data custody, `v3_tune_v1`, `proof_trace_v1` implemented and audited, frozen feasibility
+  measurement taken and classified. PASSED as specified.
+- **NOT RUN:** P5 and everything after it; any model evaluation; HOLDOUT_C evaluation, tracing or analysis.
+  **P5 NOT RUN - awaiting owner review and approval.**

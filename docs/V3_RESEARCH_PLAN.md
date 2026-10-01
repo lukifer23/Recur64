@@ -234,8 +234,8 @@ checkpoint given more states.
 | P1 | StateQueryV1 + audit + whitelist + semantic identity | implemented |
 | P2 | model skeleton, identity, CPU correctness | done (P2.1 hardened) |
 | P3 | CUDA/system qualification, compute/VRAM envelope | done |
-| P4 | data/process layer, ProofTraceV1, **feasibility rule**, V3 TUNE, seal HOLDOUT_C | needs approval |
-| P5 | bounded TUNE screen, freeze recipe | needs approval; blocked unless P4 qualifies |
+| P4 | data/process layer, ProofTraceV1, **feasibility rule**, V3 TUNE, seal HOLDOUT_C | done: C_8(KQRvK M3) = 0.4336, QUALIFIED (V3-D15); P5 awaits owner approval |
+| P5 | bounded TUNE screen, freeze recipe | NOT RUN; P4 qualified; needs owner approval |
 | P6 | information-sufficiency control (all-info vs B0) | needs approval |
 | P7 | primary active training, final seeds | needs approval |
 | P8 | ONE CONFIRM on sealed HOLDOUT_C | needs approval |

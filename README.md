@@ -39,11 +39,13 @@ to inspect and integrates what comes back? V2.5 showed that one more pass over t
 does not help; V3 therefore never re-reads the same state. The model runs the V2.5 root encoder once,
 then spends a budget of exact single-edge state queries chosen by a learned selector and integrated by
 a shared gated planner. Status: the engineering build (P0 to P3) is complete and qualified on CPU and
-real FP32 CUDA, and **no science has been run**: HOLDOUT_C is untouched and the P4 feasibility
-measurement has not been taken. Main and V2.5 are unchanged. Start at `docs/V3_RESEARCH_PLAN.md` (every
+real FP32 CUDA. P4 has since built the exact proof-trace data layer (`proof_trace_v1`, `v3_tune_v1`) and taken the
+frozen feasibility measurement: `C_8(KQRvK M3) = 0.4336` against the pre-registered threshold 0.25, so the primary
+B8 experiment is **scientifically qualified** (this says nothing yet about learning). **No model has been trained or
+evaluated**, HOLDOUT_C is sealed and unevaluated, and P5 awaits owner approval. Main and V2.5 are unchanged. Start at `docs/V3_RESEARCH_PLAN.md` (every
 gate is pre-registered before any data exists), then `docs/V3_ARCHITECTURE.md`,
-`docs/V3_BUILD_RESULTS.md` (measured engineering results and suggestions) and `docs/V3_EXPERIMENTS.md`
-(append-only ledger). Machine-readable evidence is in `docs/evidence/v3/`.
+`docs/V3_BUILD_RESULTS.md` (measured engineering results and suggestions), `docs/V3_P4_PLAN.md` and
+`docs/V3_P4_RESULTS.md` (P4), and `docs/V3_EXPERIMENTS.md` (append-only ledger). Machine-readable evidence is in `docs/evidence/v3/`.
 
 Phase 4 so far:
 
@@ -287,6 +289,12 @@ recur64 model-info --config configs/v3/active-search-v3-cuda.toml
 # Budgets above 16 are refused unless --engineering-stress (then the report is engineering only).
 recur64 v3-qual --config configs/v3/active-search-v3-cuda.toml --output runs/v3/cuda-qual \
     --budgets 0,2,4,8,16 --batches 1,8,16 --train-budgets 2,4,8
+# P4: verify custody, build and audit v3_tune_v1, trace and audit P25_DATA_V1 TRAIN, take the frozen measurement.
+recur64 v3-p4 custody --train runs/v25/p25/data/proof-train.json --holdout-c runs/v25/p25/holdouts/proof-holdout_c.json \
+    --inventory-dirs runs/v25/proof,runs/v25/proof-v2,runs/v25/p25/data,runs/v25/p25/holdouts --output c.json --seal-output seal.json
+recur64 v3-p4 trace-gen --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train
+recur64 v3-p4 trace-audit --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train
+recur64 v3-p4 feasibility --data runs/v25/p25/data/proof-train.json --dir runs/v3/p4/trace-train --role primary --output f.json
 # Exact state-query tool tests (differential against GameState, packet whitelist, digests).
 cargo test -p recur64-statequery --release
 cargo test -p recur64-model --release --test active_v3

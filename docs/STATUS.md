@@ -576,3 +576,17 @@ See `docs/V3_RESEARCH_PLAN.md` (pre-registered gates), `docs/V3_ARCHITECTURE.md`
 
 P3 engineering qualification is complete. Next is V3-P4 (data and process layer, including the
 frozen feasibility rule) on owner approval.
+
+
+## V3 P3.1 and P4 update (2026-10-01)
+
+- **COMPLETED:** P3.1: an explicit, gated qualification verdict (11 independent gates, non-gating diagnostics,
+  non-zero exit on failure, derived reclassification of the P3 evidence, a fresh hardened CUDA run that passes).
+  P4: custody of P25_DATA_V1 TRAIN and HOLDOUT_C (sealed, `evaluated = false`), `v3_tune_v1` (4,500 positions,
+  audited, disjoint, regenerated), `proof_trace_v1` (exact `Q*`, set-valued `A(S)`, independent audit of all
+  44,332 TRAIN traces and 4,500 TUNE traces), and the frozen feasibility measurement.
+- **VERIFIED:** `C_8(KQRvK M3) = 2168 / 5000 = 0.4336`, threshold 0.25, classification
+  SCIENTIFICALLY QUALIFIED FOR THE B8 PRIMARY EXPERIMENT. Full workspace release suite and clippy clean.
+- **NOT RUN:** P5 and later, any model evaluation, HOLDOUT_C evaluation. HP/X1/X2 disjointness is not verified
+  (datasets unavailable locally).
+- **Next gate:** P5 needs a new owner instruction.

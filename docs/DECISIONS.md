@@ -1137,3 +1137,18 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   `SCIENTIFICALLY QUALIFIED FOR THE B8 PRIMARY EXPERIMENT` or
   `NOT SCIENTIFICALLY QUALIFIED / BUDGET MIS-SPECIFIED`. P4 stops after reporting; the experiment is
   not adjusted after the result. No StatePacket cache is added.
+
+
+## V3-D15 - P4 outcome: scientifically qualified for the B8 primary experiment
+
+- **Status:** RECORDED (2026-10-01). A measured outcome under the rule frozen in V3-D3 and V3-D14; no code or
+  threshold changed.
+- **Measured:** `C_8(KQRvK M3) = 2168 / 5000 = 0.4336` on every P25_DATA_V1 TRAIN position of the cell, from
+  complete traces with a failure-free independent audit of all 44,332 traces. The frozen threshold is 0.25.
+- **Classification (exact):** SCIENTIFICALLY QUALIFIED FOR THE B8 PRIMARY EXPERIMENT. This means only that
+  B8 can contain a complete ideal certificate often enough for the later neural experiment to be
+  interpretable. It is not evidence about learning, about B8 versus B0, or about ACTIVE versus FIXED.
+- **Consequence:** `budget_0_2_4_8_v1` stands; Gates II and III are unchanged. P4 stops here. P5 requires a
+  new owner instruction and is not authorized by this record.
+- **Recorded, not acted on:** `v3_tune_v1` (digest `c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53`)
+  exists with audited traces; its `C_k` values are diagnostics and did not enter the rule.

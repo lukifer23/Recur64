@@ -1,0 +1,13 @@
+{
+  "actual_digest": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+  "evaluated": false,
+  "expected_digest": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+  "file": "runs/v25/p25/holdouts/proof-holdout_c.json",
+  "future_access": "only through proof::custody::load_sealed_confirmation with a ConfirmAuthorization for phase V3-P8",
+  "permitted_p4_use": "custody and disjointness only: integrity check, canonical-class and exact-FEN exclusion",
+  "positions": 4500,
+  "schema": "v3_confirm_seal_v1",
+  "sealed": true,
+  "split": "holdout_c",
+  "verified": true
+}

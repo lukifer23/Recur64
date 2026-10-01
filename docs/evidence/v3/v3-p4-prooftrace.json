@@ -1,0 +1,157 @@
+{
+  "contract": "proof_trace_v1",
+  "schema": "v3_p4_prooftrace_evidence_v1",
+  "tests": {
+    "audit_corruptions_rejected": "ten corruptions on a KQRvK M2 trace and on a KQRvK M3 trace (omitted reply, extra alternative, flipped mate flag, wrong Q*, wrong node cost, dropped refutation, shortened refutation, orphan node, wrong id, wrong depth)",
+    "completion": "following any admissible edge (first or last) completes the proof in exactly Q* queries (KQvK M2, KQRvK M2, KRvK M3, KQRvK M3)",
+    "custody_guards": "working loader and tracer refuse holdout_c and the frozen digest; confirmation access needs a V3-P8 authorization and a valid un-evaluated seal and is logged only on success",
+    "dp_vs_definition": "DP target equals a brute-force enumeration of every certificate on random prefix-closed queried sets (asserted lower bound: 500 sets, 250 non-empty targets) over M1/M2 fixtures",
+    "fixtures": [
+      "M1 with several correct root moves",
+      "M2 with tied attacker alternatives",
+      "M3 with defender nodes having interchangeable replies",
+      "incorrect root move with several refutations",
+      "stalemating root move is neither a win nor a refutation",
+      "terminal mate leaf",
+      "node reached by two different paths stays two distinct trace edges"
+    ],
+    "location": "crates/recur64-runtime/src/proof/trace_tests.rs",
+    "note": "the mate-in-three audit-corruption test was added after the feasibility measurement as a test-only strengthening; no production code changed after the measurement",
+    "order_invariance": "live QueryManager + Tree replay in random topological orders; A(S) identical in every order and equal to the direct computation (asserted lower bound: 100 permutations; KQRvK M2, KRvK M3, KQRvK M3)",
+    "q_star_vs_enumeration": "Q* equals the smallest explicitly enumerated certificate on 12 fixtures (KQvK M1, KRvK M2, KQvK M2, KQRvK M2)",
+    "statequery_packet": "15 frozen fields; none suggests proof information",
+    "store": "deterministic across 1 and 4 threads, resume reuses only validated shards, corrupted/mismatched shards refuse, audit gates the feasibility table",
+    "tests_passed": 19,
+    "threshold_rule": "exact-integer C_8 >= 1/4 boundary tests"
+  },
+  "train": {
+    "determinism_1_vs_20_threads": {
+      "all_identical": true,
+      "shards": [
+        {
+          "digest_1_thread": "b7ff77125a87e26870e488062be9447111e86e52df593886c82c394cc53046a9",
+          "digest_n_threads": "b7ff77125a87e26870e488062be9447111e86e52df593886c82c394cc53046a9",
+          "identical": true,
+          "positions": 500,
+          "shard": 0,
+          "stored_digest": "b7ff77125a87e26870e488062be9447111e86e52df593886c82c394cc53046a9"
+        },
+        {
+          "digest_1_thread": "71bdbe59c371142a8393e7458cd092d277767dee38b222ca5357d4c99894f4f7",
+          "digest_n_threads": "71bdbe59c371142a8393e7458cd092d277767dee38b222ca5357d4c99894f4f7",
+          "identical": true,
+          "positions": 500,
+          "shard": 30,
+          "stored_digest": "71bdbe59c371142a8393e7458cd092d277767dee38b222ca5357d4c99894f4f7"
+        },
+        {
+          "digest_1_thread": "d49c7f2e459b80380c67b9753f09753650bd460315459ff6f59783ba5b7e9861",
+          "digest_n_threads": "d49c7f2e459b80380c67b9753f09753650bd460315459ff6f59783ba5b7e9861",
+          "identical": true,
+          "positions": 500,
+          "shard": 60,
+          "stored_digest": "d49c7f2e459b80380c67b9753f09753650bd460315459ff6f59783ba5b7e9861"
+        },
+        {
+          "digest_1_thread": "09f6e7c1aadea2424f035b69335427880985f0b6957ad4814ea47a6b84823eaa",
+          "digest_n_threads": "09f6e7c1aadea2424f035b69335427880985f0b6957ad4814ea47a6b84823eaa",
+          "identical": true,
+          "positions": 332,
+          "shard": 88,
+          "stored_digest": "09f6e7c1aadea2424f035b69335427880985f0b6957ad4814ea47a6b84823eaa"
+        }
+      ],
+      "threads_compared": [
+        1,
+        20
+      ]
+    },
+    "generation": {
+      "contract": "proof_trace_v1",
+      "generator_version": "proof_trace_v1/gen1",
+      "shard_size": 500,
+      "shards": 89,
+      "source_dataset_digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+      "source_split": "train",
+      "trace_definition": "OR(b,n)=min over winning attacker moves of 1+(0 if mate else AND(after,n-1)); AND(a,k)=sum over EVERY defender reply of 1+OR(next,k); Q*=OR(root,D); A(S)=A_proof(S) union A_refute(S) over root-relative action paths; selector target uniform over A(S)",
+      "trace_manifest_digest": "8160734ed5e3a145c12dd72d8e9dc49cc893984fc1cf714ea93eba904f58c488",
+      "traces": 44332,
+      "wall_s_last_invocation": 4.0816338
+    },
+    "independent_audit": {
+      "contract": "proof_trace_v1",
+      "independent_audit": {
+        "audit_manifest_digest": "895636669bbc149a89c0de7e1512606f5c674c5d626309f7260c9144401003b0",
+        "checked": 44332,
+        "failures": 0,
+        "first_failures": []
+      },
+      "shards": 89,
+      "source_dataset_digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+      "trace_manifest_digest": "8160734ed5e3a145c12dd72d8e9dc49cc893984fc1cf714ea93eba904f58c488",
+      "traces": 44332
+    },
+    "source": "P25_DATA_V1 TRAIN"
+  },
+  "v3_tune_v1_diagnostic": {
+    "determinism_1_vs_20_threads": {
+      "all_identical": true,
+      "shards": [
+        {
+          "digest_1_thread": "cbe56ac28d01c3e224a1ad72f3edcb15f5f2a328c4fd09928700378a40e382c9",
+          "digest_n_threads": "cbe56ac28d01c3e224a1ad72f3edcb15f5f2a328c4fd09928700378a40e382c9",
+          "identical": true,
+          "positions": 500,
+          "shard": 0,
+          "stored_digest": "cbe56ac28d01c3e224a1ad72f3edcb15f5f2a328c4fd09928700378a40e382c9"
+        },
+        {
+          "digest_1_thread": "7ab45a20961dbb7159f1fe2b50076929620198551cd6ed490a74d9dd51c04326",
+          "digest_n_threads": "7ab45a20961dbb7159f1fe2b50076929620198551cd6ed490a74d9dd51c04326",
+          "identical": true,
+          "positions": 500,
+          "shard": 4,
+          "stored_digest": "7ab45a20961dbb7159f1fe2b50076929620198551cd6ed490a74d9dd51c04326"
+        },
+        {
+          "digest_1_thread": "874bf0b2498911143ae2a41000e6460731e2d12121999a35bb7c18efcdc0a585",
+          "digest_n_threads": "874bf0b2498911143ae2a41000e6460731e2d12121999a35bb7c18efcdc0a585",
+          "identical": true,
+          "positions": 500,
+          "shard": 8,
+          "stored_digest": "874bf0b2498911143ae2a41000e6460731e2d12121999a35bb7c18efcdc0a585"
+        }
+      ],
+      "threads_compared": [
+        1,
+        20
+      ]
+    },
+    "generation": {
+      "contract": "proof_trace_v1",
+      "generator_version": "proof_trace_v1/gen1",
+      "shard_size": 500,
+      "shards": 9,
+      "source_dataset_digest": "c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53",
+      "source_split": "tune",
+      "trace_definition": "OR(b,n)=min over winning attacker moves of 1+(0 if mate else AND(after,n-1)); AND(a,k)=sum over EVERY defender reply of 1+OR(next,k); Q*=OR(root,D); A(S)=A_proof(S) union A_refute(S) over root-relative action paths; selector target uniform over A(S)",
+      "trace_manifest_digest": "acb786fad82573c9b4427652e5e1b060f7b312c5f5e9121e02980c21cfaa6d25",
+      "traces": 4500,
+      "wall_s_last_invocation": 0.4850572
+    },
+    "independent_audit": {
+      "contract": "proof_trace_v1",
+      "independent_audit": {
+        "audit_manifest_digest": "c6eb413e7690a48bdb819135c731913ec866e30343c2434f4feeb2f021b78793",
+        "checked": 4500,
+        "failures": 0,
+        "first_failures": []
+      },
+      "shards": 9,
+      "source_dataset_digest": "c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53",
+      "trace_manifest_digest": "acb786fad82573c9b4427652e5e1b060f7b312c5f5e9121e02980c21cfaa6d25",
+      "traces": 4500
+    },
+    "source": "v3_tune_v1"
+  }
+}

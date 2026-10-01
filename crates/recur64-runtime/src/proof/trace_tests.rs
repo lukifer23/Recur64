@@ -613,6 +613,22 @@ fn the_audit_accepts_generated_traces_and_rejects_every_corruption() {
     let (p, t) = find(KQR, "KQRvK", 2, 101, 20_000, |t| {
         !t.refutations.is_empty() && and_nodes(t).count() >= 1
     });
+    audit_corruption_suite(&p, &t);
+}
+
+/// The cell that decides the frozen gate is mate-in-3: the same ten corruptions
+/// must be rejected on a real KQRvK M3 trace.
+#[test]
+fn the_audit_rejects_every_corruption_of_a_mate_in_three_trace() {
+    let (p, t) = find(KQR, "KQRvK", 3, 102, 40_000, |t| {
+        t.refutations.iter().any(|r| r.replies.len() >= 2) && and_nodes(t).count() >= 2
+    });
+    assert_eq!(t.mate_depth, 3);
+    audit_corruption_suite(&p, &t);
+}
+
+fn audit_corruption_suite(p: &ProofPosition, t: &PositionTrace) {
+    let (p, t) = (p.clone(), t.clone());
     let mut memo = TraceAuditMemo::default();
     audit_trace(&t, &p, &mut memo).expect("a generated trace passes the independent audit");
 
