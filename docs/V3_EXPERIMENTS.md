@@ -296,3 +296,12 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **Incident:** the first attempt failed visibly because the CUDA runtime was not on `PATH` (the device known-answer
   guard refused to run); no substitution happened.
 - **NOT RUN:** the six screening runs, TUNE evaluation of trained models, P6.
+
+
+## V3-E13 - P5 screen interrupted (workstation move); resume instructions
+
+- **Date:** 2026-10-01
+- **Status:** INTERRUPTED, no screen result. The six-run screen was launched from the committed contract; run 1
+  (LR 7.5e-5, seed 5101) reached update 150 (checkpoint saved) before being stopped by the owner. Runs 2 to 6 not started.
+- **Resume:** `docs/V3_P5_RESUME.md` and `scripts/v3_p5_run_screen.sh`. Nothing pre-registered changed.
+- **NOT RUN:** five of six runs, the update-800 evaluation of all six, the selection rule, P6.
