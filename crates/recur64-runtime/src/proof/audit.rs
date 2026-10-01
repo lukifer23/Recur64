@@ -14,7 +14,7 @@ use recur64_core::{GameState, StandardMove, Termination, candidate_facts};
 use super::generator::MAX_CORRECT_FRACTION;
 use super::targets::{ProofPosition, ProofTargets};
 
-fn apply(state: &GameState, id: recur64_core::ActionId) -> GameState {
+pub(super) fn apply(state: &GameState, id: recur64_core::ActionId) -> GameState {
     let (f, t, p) = id.to_physical(state.perspective());
     let mut next = state.clone();
     next.apply(StandardMove::new(f, t, (!p.is_none()).then_some(p)))
@@ -23,21 +23,21 @@ fn apply(state: &GameState, id: recur64_core::ActionId) -> GameState {
 }
 
 /// Position identity for the audit memo: placement + side (fresh-history contract).
-fn key(state: &GameState) -> String {
+pub(super) fn key(state: &GameState) -> String {
     let fen = state.to_fen();
     let mut it = fen.split(' ');
     format!("{} {}", it.next().unwrap_or(""), it.next().unwrap_or(""))
 }
 
 #[derive(Default)]
-struct Auditor {
+pub(super) struct Auditor {
     memo_attacker: HashMap<(String, u8), bool>,
     memo_defender: HashMap<(String, u8), bool>,
 }
 
 impl Auditor {
     /// The side to move forces checkmate within `n` of its own moves.
-    fn attacker_wins(&mut self, s: &GameState, n: u8) -> bool {
+    pub(super) fn attacker_wins(&mut self, s: &GameState, n: u8) -> bool {
         if n == 0 || s.is_terminal() {
             return false;
         }
@@ -61,7 +61,7 @@ impl Auditor {
 
     /// `after` has the defender to move; every reply leaves the attacker able to
     /// force mate within `n` more moves.
-    fn defender_all(&mut self, after: &GameState, n: u8) -> bool {
+    pub(super) fn defender_all(&mut self, after: &GameState, n: u8) -> bool {
         if n == 0 || after.is_terminal() {
             return false;
         }
@@ -156,7 +156,7 @@ pub fn audit_position(p: &ProofPosition, auditor_memo: &mut AuditMemo) -> Result
 
 /// Memo reused across positions of one audit thread.
 #[derive(Default)]
-pub struct AuditMemo(Auditor);
+pub struct AuditMemo(pub(super) Auditor);
 
 /// Outcome of auditing a whole dataset.
 #[derive(Debug, Default, serde::Serialize)]

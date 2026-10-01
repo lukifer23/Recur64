@@ -212,3 +212,25 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **Gate:** P3.1 hardened qualification gate PASSED. Tests: fmt clean, clippy 0 warnings, active-boundary,
   v3-verdict, v3-qual CLI, StateQuery and active V3 model tests all pass.
 - **NOT RUN:** P4 and later.
+
+
+## V3-E9 - P4 pre-registration and custody
+
+- **Date:** 2026-10-01
+- **Status:** PRE-REGISTERED (rules, committed before any TRAIN trace exists) / MEASURED (custody reads).
+  Decisions V3-D11 to V3-D14; specification `docs/V3_P4_PLAN.md`.
+- **Custody (read-only, `recur64 v3-p4 custody`):** P25_DATA_V1 TRAIN loaded through
+  `ProofTargets::load`: 44,332 positions, digest `3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6`
+  read from the file, every position passes the existing independent label audit, 44,332 unique FENs
+  and canonical classes, zero overlap with HOLDOUT_C. HOLDOUT_C digest equals the frozen
+  `4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5`; `evaluated = false`; no exposure
+  is recorded for the integrity check. Exclusion inventory: 11 datasets, 70,624 canonical classes.
+  HP/X1/X2 datasets are not available locally; cross-line disjointness is not claimed.
+- **Code committed with this entry, before any TRAIN trace:** ProofTraceV1 generator, `Q*` and `A(S)`,
+  independent trace audit, sharded resumable store with strict validation, the feasibility table and its
+  exact-integer rule, the V3_TUNE_V1 generator, the custody guards, and 18 tests (DP versus brute-force
+  enumeration on random queried sets, live order-invariance through `QueryManager` and `Tree`, ten audit
+  corruptions, thread-count determinism, resume and corruption refusal, threshold boundaries,
+  HOLDOUT_C guards, answer-free packet).
+- **NOT RUN:** TRAIN trace generation, the audit of TRAIN traces, `C_k`, the feasibility classification,
+  `v3_tune_v1` generation, TUNE traces. P5 is not authorized.

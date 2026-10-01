@@ -1093,3 +1093,47 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   training step once the sections ran inside closures (the autodiff graph is deep and dropping it
   recurses). The qualification now runs on a 512 MiB-stack thread. Any V3 training harness must do
   the same.
+
+
+## V3-D11 - ProofTraceV1 implementation contract
+
+- **Status:** PRE-REGISTERED (2026-10-01), implemented in `recur64-runtime::proof::trace*`. Full text
+  in `docs/V3_P4_PLAN.md`.
+- **Decision:** the proof structure is an AND/OR graph: OR nodes list every winning attacker move,
+  AND nodes list every legal defender reply. `Q*(p) = OR(root, D)` with
+  `OR = min(1 + (0 or AND))` and `AND = sum(1 + OR)`, in exact query edges. Incorrect root moves carry
+  their exact refuting-reply sets, which never enter `Q*`.
+- **Decision:** trace edges are root-relative action paths, not semantic states and not NodeIds.
+  `A(S) = A_proof(S) union A_refute(S)` is a function of the queried SET, computed by dynamic
+  programming that keeps every tie; the selector target is uniform over it. `StatePacketV1` is
+  unchanged and pinned by a test.
+- **Decision:** every trace is audited through a path that calls nothing from the generator.
+
+## V3-D12 - `v3_tune_v1` frozen before generation
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** KQRvK and KRRvK, M1 to M3, 750 unique positions per cell (4,500), seed `0x7A130004`,
+  `fresh_no_history_v1`, the unchanged proof filters, hard-disjoint by exact FEN and canonical class
+  from every `proof-*.json` dataset in `runs/v25` (P25_DATA_V1 TRAIN, replacement and retired splits,
+  HOLDOUT_A/B/C). A cell that cannot supply 750 stops generation; 750 is never lowered. HP/X1/X2
+  datasets are unavailable locally, so disjointness from them is NOT claimed.
+
+## V3-D13 - HOLDOUT_C custody is not an exposure
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** verifying HOLDOUT_C's digest and reading its canonical classes for exclusion is
+  custody. It is recorded in a seal (`evaluated = false`) and is not an evaluation exposure.
+  Evaluation access exists only through `load_sealed_confirmation` with a `ConfirmAuthorization` for
+  phase `V3-P8`; working loaders and the tracer refuse the set and its digest. A digest mismatch is a
+  hard stop.
+
+## V3-D14 - P4 feasibility measurement protocol and classification
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** the gating measurement uses every position of the P25_DATA_V1 TRAIN split, after a
+  complete failure-free independent audit of every trace; `C_k` per (family, depth) cell for
+  k = 2, 4, 8, 16, with nearest-rank quantiles of `Q*`; the rule `C_8(KQRvK M3) >= 0.25` is evaluated
+  exactly as `count_le_8 * 4 >= n`. Exact classification texts:
+  `SCIENTIFICALLY QUALIFIED FOR THE B8 PRIMARY EXPERIMENT` or
+  `NOT SCIENTIFICALLY QUALIFIED / BUDGET MIS-SPECIFIED`. P4 stops after reporting; the experiment is
+  not adjusted after the result. No StatePacket cache is added.

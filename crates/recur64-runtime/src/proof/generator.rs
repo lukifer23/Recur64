@@ -551,6 +551,112 @@ pub fn generate_holdouts(spec: &HoldoutSpec) -> anyhow::Result<HoldoutOutput> {
     })
 }
 
+/// `v3_tune_v1` request (frozen before generation: docs/V3_P4_PLAN.md).
+#[derive(Debug, Clone)]
+pub struct V3TuneSpec {
+    /// Unique positions per (family, depth) cell.
+    pub per_cell: usize,
+    pub seed: u64,
+    pub threads: usize,
+    /// Canonical classes the set must avoid (every earlier dataset, holdouts included).
+    pub exclude_canon: HashSet<String>,
+    /// Exact FENs the set must avoid (implied by the canonical exclusion; checked
+    /// separately so the guarantee is stated twice).
+    pub exclude_fen: HashSet<String>,
+}
+
+/// Pool accounting of one `v3_tune_v1` cell.
+#[derive(Debug, Clone, Serialize)]
+pub struct V3TuneCell {
+    pub family: String,
+    pub depth: u8,
+    pub eligible_pool: usize,
+    pub excluded: usize,
+    pub available: usize,
+    pub taken: usize,
+}
+
+pub struct V3TuneOutput {
+    pub set: ProofTargets,
+    pub cells: Vec<V3TuneCell>,
+    pub pools: Vec<PoolReport>,
+}
+
+/// The families of `v3_tune_v1`: KQRvK and KRRvK.
+pub const V3_TUNE_FAMILIES: [usize; 2] = [3, 4];
+
+/// Generate `v3_tune_v1`: KQRvK and KRRvK x M1..M3, `per_cell` unique positions per
+/// cell, from the exact eligible pools (the same legality, ambiguity and fraction
+/// filters as every other proof set), canonical-class and exact-FEN exclusion, and a
+/// seeded shuffle. A cell that cannot supply `per_cell` eligible, disjoint positions
+/// is an error carrying the accounting: nothing is relaxed and nothing is partial.
+pub fn generate_v3_tune(spec: &V3TuneSpec) -> anyhow::Result<V3TuneOutput> {
+    let mut positions = Vec::new();
+    let mut cells = Vec::new();
+    let mut pools = Vec::new();
+    let mut counter = 0usize;
+    for &fi in &V3_TUNE_FAMILIES {
+        let (family, _) = FAMILIES[fi];
+        let (report, cands) = enumerate_pool(fi, 3, spec.threads)?;
+        pools.push(report);
+        for d in 1..=3u8 {
+            let cell: Vec<Candidate> = cands.iter().filter(|c| c.depth == d).cloned().collect();
+            let available: Vec<Candidate> = cell
+                .iter()
+                .filter(|c| {
+                    !spec.exclude_canon.contains(&c.canon) && !spec.exclude_fen.contains(&c.fen)
+                })
+                .cloned()
+                .collect();
+            anyhow::ensure!(
+                available.len() >= spec.per_cell,
+                "STOP: {family} M{d} has only {} eligible disjoint classes (pool {}, excluded {});                  v3_tune_v1 needs {} and is not accepted partially",
+                available.len(),
+                cell.len(),
+                cell.len() - available.len(),
+                spec.per_cell
+            );
+            let tag = mix(0x3A71_0000 + fi as u64 * 16 + d as u64);
+            let chosen: Vec<Candidate> = shuffled(&available, mix(spec.seed ^ tag))
+                .into_iter()
+                .take(spec.per_cell)
+                .collect();
+            let mut labelled =
+                label_positions(&chosen, family, Split::Tune, spec.seed, &mut counter)?;
+            for p in &mut labelled {
+                // Distinct from every earlier tune set's ids.
+                p.id = p.id.replacen("tune-", "v3tune-", 1);
+            }
+            positions.extend(labelled);
+            cells.push(V3TuneCell {
+                family: family.to_string(),
+                depth: d,
+                eligible_pool: cell.len(),
+                excluded: cell.len() - available.len(),
+                available: available.len(),
+                taken: spec.per_cell,
+            });
+        }
+    }
+    let filters = serde_json::json!({
+        "identity": "v3_tune_v1",
+        "purpose": "V3 P5/P6 model selection and information-sufficiency work only",
+        "families": V3_TUNE_FAMILIES.iter().map(|i| FAMILIES[*i].0).collect::<Vec<_>>(),
+        "depths": [1, 2, 3],
+        "per_cell": spec.per_cell,
+        "source": "exhaustive exact heavy pools, canonical-class and exact-FEN exclusion, seeded shuffle",
+        "shuffle_tag": "mix(0x3A710000 + family_index*16 + depth)",
+        "max_correct_fraction": MAX_CORRECT_FRACTION,
+        "fact_ambiguity_required_for_depth_at_least": 2,
+        "split": "tune",
+    });
+    Ok(V3TuneOutput {
+        set: ProofTargets::new(Split::Tune, spec.seed, filters, positions),
+        cells,
+        pools,
+    })
+}
+
 /// P25_DATA_V1 training-extension request.
 #[derive(Debug, Clone)]
 pub struct ExtensionSpec {

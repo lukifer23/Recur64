@@ -4519,6 +4519,7 @@ dependencies = [
  "recur64-eval",
  "recur64-model",
  "recur64-search",
+ "recur64-statequery",
  "serde",
  "serde_json",
  "sha2",
