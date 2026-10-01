@@ -15,5 +15,8 @@ pub mod tree;
 
 pub use accounting::{Accounting, QueryRecord, StepDiag};
 pub use model::ActiveSearchModel;
-pub use run::{ActiveOutput, QueryScript, RunOptions, ScriptStep, Selection, SelectorStep};
+pub use run::{
+    ActiveOutput, QueryContentAblation, QueryScript, RunOptions, ScriptStep, Selection,
+    SelectorStep,
+};
 pub use tree::{EdgeRef, NodeMeta, Tree};

@@ -56,6 +56,26 @@ pub enum Selection<'a> {
     Script(&'a mut dyn QueryScript),
 }
 
+/// `query_content_ablation_v1`: an EVALUATION-ONLY diagnostic that removes the
+/// state-derived neural content of every queried state before planner integration while
+/// the queried path is replayed unchanged.
+///
+/// Removed: the queried child's pooled state representation (also from the node store),
+/// the state-derived descendant action embeddings, and the terminal / in-check status
+/// bits of the event. Preserved: which edges were queried (the replay script), the parent
+/// slot and root branch (the branch memory row and root candidate token the planner
+/// updates), the node depth, parity and remaining budget. Because a reply edge is
+/// identified inside the model only through state-derived action embeddings, the identity
+/// of replies deeper than the first move is NOT preserved by this diagnostic.
+///
+/// It can only be built by [`RunOptions::query_content_ablation_v1`] and `run` refuses it
+/// unless the selection is an external replay script with no supervision targets, so it
+/// can never run in training or in ordinary inference.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryContentAblation {
+    V1,
+}
+
 /// Run options.
 #[derive(Debug, Clone)]
 pub struct RunOptions {
@@ -73,6 +93,8 @@ pub struct RunOptions {
     /// Allow a budget above the V3.0 scientific maximum (up to the engineering
     /// ceiling). Such a run is recorded as engineering only and is never science.
     pub engineering_stress: bool,
+    /// Evaluation-only query-content ablation; `None` for every scientific run.
+    pub ablation: Option<QueryContentAblation>,
 }
 
 impl RunOptions {
@@ -84,6 +106,15 @@ impl RunOptions {
             timing_sync: false,
             stop_masked: true,
             engineering_stress: false,
+            ablation: None,
+        }
+    }
+
+    /// The only way to request the query-content ablation (see [`QueryContentAblation`]).
+    pub fn query_content_ablation_v1(budget: usize) -> Self {
+        Self {
+            ablation: Some(QueryContentAblation::V1),
+            ..Self::forced(budget)
         }
     }
 }
@@ -220,6 +251,12 @@ impl<B: Backend> ActiveSearchModel<B> {
                 r.termination().map_or("?", |t| t.label())
             );
         }
+        anyhow::ensure!(
+            opts.ablation.is_none() || matches!(selection, Selection::Script(_)),
+            "query_content_ablation_v1 is an evaluation-only diagnostic and needs an external \
+             replay script (it is refused for learned, fixed or random selection)"
+        );
+        let ablate = opts.ablation.is_some();
         anyhow::ensure!(
             opts.stop_masked,
             "learned STOP is not implemented: the primary experiment forces the full budget \
@@ -433,6 +470,10 @@ impl<B: Backend> ActiveSearchModel<B> {
                             s.targets.iter().all(|&t| t < front.len()),
                             "script target outside the frontier"
                         );
+                        anyhow::ensure!(
+                            !ablate || s.targets.is_empty(),
+                            "query_content_ablation_v1 never supervises: it is evaluation-only"
+                        );
                         targets[e] = s.targets;
                         s.follow
                     }
@@ -531,6 +572,13 @@ impl<B: Backend> ActiveSearchModel<B> {
                 int2::<B>(to_v, [n_done, a_w], device),
                 int2::<B>(promo_v, [n_done, a_w], device),
             );
+            // Evaluation-only ablation: remove the state-derived neural content (see
+            // `QueryContentAblation`). A no-op for every scientific run.
+            let (child_pool_c, child_emb_c) = if ablate {
+                (child_pool_c.zeros_like(), child_emb_c.zeros_like())
+            } else {
+                (child_pool_c, child_emb_c)
+            };
             acct.query_encoder_calls += 1;
             acct.query_encoder_examples += n_done;
             acct.query_encoder_rows_executed += n_done;
@@ -559,8 +607,8 @@ impl<B: Backend> ActiveSearchModel<B> {
                     pkt.ply_from_root,
                     remaining - 1,
                     edge.parent_depth % 2,
-                    pkt.terminal,
-                    pkt.in_check,
+                    pkt.terminal && !ablate,
+                    pkt.in_check && !ablate,
                 )?;
                 ev[row * EVENT_FEATS..(row + 1) * EVENT_FEATS].copy_from_slice(&f);
                 onehot[row * w + edge.branch] = 1.0;

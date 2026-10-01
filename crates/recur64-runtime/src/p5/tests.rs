@@ -901,6 +901,103 @@ fn resume_refuses_every_inconsistent_sidecar_and_checkpoint() {
     }
 }
 
+#[test]
+fn the_query_content_ablation_replays_the_path_and_changes_only_the_content() {
+    use super::ablation::evaluate_query_content_ablation;
+    let _g = rng_lock();
+    let (ds, _d) = dataset(15, 321);
+    let device = Default::default();
+    let mut t = Trainer::<TB>::new(tiny_recipe(2, 4, 6, 5101), &ds, &device).unwrap();
+    // A few updates so the planner actually reads the queried content.
+    for _ in 0..4 {
+        t.step(&ds, &device).unwrap();
+    }
+    let model = t.inference_model();
+    for source in [EvalSelection::Teacher, EvalSelection::Active] {
+        for budget in [2usize, 4] {
+            let r = evaluate_query_content_ablation(
+                &model,
+                &ds,
+                budget,
+                source,
+                4,
+                &Default::default(),
+            )
+            .unwrap();
+            // Replaying the recorded path with normal content reproduces the source run.
+            assert!(
+                r.replay_vs_source_max_abs_ce_diff < 1e-5,
+                "{source:?} B{budget}: replay differs from the source by {}",
+                r.replay_vs_source_max_abs_ce_diff
+            );
+            assert_eq!(r.source.pooled.n, 15);
+            eprintln!(
+                "{source:?} B{budget}: normal ce {:.9} ablated ce {:.9} changed {}",
+                r.normal_state_content.pooled.ce,
+                r.ablated_query_state_content.pooled.ce,
+                r.positions_top1_changed_by_ablation
+            );
+            // Removing the state content changes what the planner sees, hence the policy.
+            assert!(
+                r.ablated_query_state_content.pooled.ce != r.normal_state_content.pooled.ce,
+                "{source:?} B{budget}: ablation had no effect on a model that reads the content"
+            );
+            assert!(r.ablated_query_state_content.pooled.ce.is_finite());
+        }
+    }
+}
+
+#[test]
+fn the_ablation_is_evaluation_only_and_refused_outside_an_external_replay() {
+    let _g = rng_lock();
+    let device = Default::default();
+    let (ds, _d) = dataset(6, 322);
+    let t = Trainer::<TB>::new(tiny_recipe(2, 4, 2, 5101), &ds, &device).unwrap();
+    let model = t.inference_model();
+    // No scientific constructor requests it.
+    assert!(RunOptions::forced(4).ablation.is_none());
+    let roots: Vec<GameState> = ds
+        .positions()
+        .iter()
+        .take(2)
+        .map(|p| GameState::from_fen(&p.fen).unwrap())
+        .collect();
+    let opts = RunOptions::query_content_ablation_v1(2);
+    for sel in [Selection::Active, Selection::Fixed, Selection::Random(1)] {
+        let e = model.run(&roots, &opts, sel, &Default::default()).err();
+        assert!(
+            e.is_some_and(|e| e.to_string().contains("evaluation-only")),
+            "the ablation must be refused for learned, fixed and random selection"
+        );
+    }
+    // A script that supervises (a training script) is refused too.
+    struct Supervising;
+    impl QueryScript for Supervising {
+        fn next(
+            &mut self,
+            _e: usize,
+            _s: usize,
+            _f: &[EdgeRef],
+            _t: &Tree,
+        ) -> anyhow::Result<recur64_model::active::ScriptStep> {
+            Ok(recur64_model::active::ScriptStep {
+                follow: 0,
+                targets: vec![0],
+            })
+        }
+    }
+    let e = model
+        .run(
+            &roots,
+            &opts,
+            Selection::Script(&mut Supervising),
+            &Default::default(),
+        )
+        .err()
+        .expect("must refuse");
+    assert!(e.to_string().contains("never supervises"), "{e}");
+}
+
 // ---------------------------------------------------------------------------
 // Evaluation and selector diagnostics
 // ---------------------------------------------------------------------------

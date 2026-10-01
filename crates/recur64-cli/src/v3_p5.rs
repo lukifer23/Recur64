@@ -48,6 +48,9 @@ pub enum P5Cmd {
     /// P5.2: re-evaluate the selected final checkpoints with the refined selector
     /// diagnostic (evaluation only; TUNE only; never alters P5).
     Rediagnose(RediagArgs),
+    /// P5.2 (optional, evaluation-only): `query_content_ablation_v1` on the selected final
+    /// checkpoints. Never part of any gate.
+    Ablate(RediagArgs),
 }
 
 #[derive(Args, Debug)]
@@ -216,6 +219,14 @@ pub fn run(cmd: P5Cmd) -> anyhow::Result<()> {
             })
         }
         P5Cmd::Select(a) => run_select(&a),
+        P5Cmd::Ablate(a) => {
+            let dev = a.device;
+            dispatch(dev, move |d| match d {
+                Dispatch::Cpu => ablate::<recur64_model::train::CpuTrainBackend>(&a),
+                #[cfg(feature = "cuda")]
+                Dispatch::Cuda => ablate::<burn::backend::Autodiff<burn::backend::Cuda>>(&a),
+            })
+        }
         P5Cmd::Rediagnose(a) => {
             let dev = a.device;
             dispatch(dev, move |d| match d {
@@ -731,6 +742,74 @@ fn rediagnose<TB: AutodiffBackend>(a: &RediagArgs) -> anyhow::Result<()> {
         "re-evaluated policy values differ from the committed P5 evidence by {worst:e} (> {REDIAG_POLICY_TOL:e}): STOP and investigate before P6"
     );
     println!("P5.2 policy reproduction max |diff| = {worst:e}");
+    Ok(())
+}
+
+fn ablate<TB: AutodiffBackend>(a: &RediagArgs) -> anyhow::Result<()> {
+    use recur64_runtime::p5::ablation::evaluate_query_content_ablation;
+    let device: TB::Device = Default::default();
+    let inner = Default::default();
+    model_io::verify_device::<TB::InnerBackend>(&inner)?;
+    let contract = load_contract(&a.recipe)?;
+    let train_ds = load_dataset(&a.data.train, &a.data.train_trace, &Expected::train())?;
+    let tune = load_dataset(&a.tune, &a.tune_trace, &Expected::tune())?;
+    let mut runs = Vec::new();
+    for seed in SCREEN_SEEDS {
+        let lr = P5_SELECTED_LR;
+        let recipe = contract.clone().for_run(lr, seed);
+        let digest = recipe.digest();
+        let stem = run_stem(lr, seed);
+        let committed: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(a.evidence.join(format!("{stem}.json")))?)?;
+        anyhow::ensure!(
+            committed["recipe_digest"] == digest.as_str(),
+            "{stem}: committed summary was run under a different recipe"
+        );
+        let tr = Trainer::<TB>::load(
+            &a.runs_root.join(&stem).join("final"),
+            recipe.clone(),
+            &train_ds,
+            &device,
+        )?;
+        anyhow::ensure!(tr.updates_done == recipe.updates, "{stem}: not update 800");
+        let model = tr.inference_model();
+        let mut cases = Vec::new();
+        for source in [EvalSelection::Active, EvalSelection::Teacher] {
+            for b in [2usize, 4, 8] {
+                let r =
+                    evaluate_query_content_ablation(&model, &tune, b, source, EVAL_BATCH, &inner)?;
+                anyhow::ensure!(
+                    r.replay_vs_source_max_abs_ce_diff < 1e-4,
+                    "{stem} {source:?} B{b}: the replay does not reproduce the source path"
+                );
+                eprintln!(
+                    "{stem} {} B{b}: KQRvK M3 top-1 normal {:.3} ablated {:.3}; pooled CE normal {:.3} ablated {:.3}",
+                    r.path_source,
+                    r.normal_state_content.cells["KQRvK M3"].top1,
+                    r.ablated_query_state_content.cells["KQRvK M3"].top1,
+                    r.normal_state_content.pooled.ce,
+                    r.ablated_query_state_content.pooled.ce
+                );
+                cases.push(serde_json::to_value(&r)?);
+            }
+        }
+        runs.push(
+            serde_json::json!({"lr": lr, "seed": seed, "recipe_digest": digest, "cases": cases}),
+        );
+    }
+    write_json(
+        &a.output,
+        &serde_json::json!({
+            "schema": "v3_p5.2_query_content_ablation_v1",
+            "label": "DERIVED / EVALUATION-ONLY DIAGNOSTIC - query_content_ablation_v1; never enters a gate; does not alter P5 selection",
+            "dataset": "V3_TUNE_V1 only",
+            "removed": "queried child pooled state representation (also from the node store), state-derived descendant action embeddings, terminal and in-check status bits of the event",
+            "preserved": "the replayed queried edges, parent slot and root branch (branch memory row, root candidate token), node depth, parity, remaining budget, query count",
+            "not_preserved": "the identity of replies deeper than the first move (a reply is identified inside the model only through state-derived action embeddings)",
+            "runs": runs,
+        }),
+    )?;
+    println!("wrote {}", a.output.display());
     Ok(())
 }
 

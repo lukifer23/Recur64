@@ -8,6 +8,7 @@
 //!
 //! Nothing here changes the model, `StateQueryV1` or `proof_trace_v1`.
 
+pub mod ablation;
 pub mod data;
 pub mod eval;
 pub mod recipe;
