@@ -270,3 +270,13 @@ None of these changes a frozen rule. They are recorded so the owner can decide b
    path). No core change was made.
 8. **Open for P4, unchanged:** the ideal-certificate budget coverage `C_8(KQRvK M3)` and the frozen
    feasibility rule. Nothing measured in P3 bears on that number.
+
+
+## P3.1 - qualification-verdict hardening  [MEASURED / DERIVED]
+
+See V3-D10 and V3-E8. `v3-qual` now reports `qualification_gates_ok` (11 independent gates),
+`qualification_gate_details`, `diagnostics_complete` and `diagnostic_findings`, and exits non-zero when
+the gates fail. `all_sections_ok` is a deprecated alias. The committed P3 evidence passes the hardened
+verdict (derived summary), and a fresh hardened CUDA run passes all 11 gates with FIXED finiteness
+recorded. The repeated model build/drop allocator slope, first-seen shape timing, utilization and
+throughput are non-gating diagnostics. The original evidence file is unchanged.

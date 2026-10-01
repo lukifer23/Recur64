@@ -174,3 +174,41 @@ corrections as new entries.
 
 Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). Main
 (`fef1ffcf9c38381d4adc671e5e2c5ead9f141e33`) and the V2.5 branch are unchanged.
+
+
+## V3-E8 - P3.1 qualification-harness hardening
+
+- **Date:** 2026-10-01
+- **Status:** MEASURED (new run) / DERIVED (reclassification of existing evidence). Decision V3-D10.
+- **What was wrong (found in review):** the original `all_sections_ok` did not aggregate every
+  condition the prose called a qualification condition (FIXED rows, the gradient-coverage list, STOP
+  gradient, non-finite gradient). The original P3 evidence itself shows those conditions held.
+- **Code, before any new measurement:** `v3_verdict::evaluate` (pure function), 15 unit tests proving
+  that each of ACTIVE row, FIXED row, accounting invariant, non-finite loss, missing non-STOP
+  gradient, non-finite gradient, non-zero STOP gradient, checkpoint, resident inference VRAM and
+  resident training VRAM independently flips the qualification to failure (and that nothing else
+  flips with it), and that a repeated-build `plateau = false`, a huge dynamic-shape outlier and very
+  low utilization do NOT fail it; an empty report fails closed. 3 CLI tests prove the verdict
+  command exits non-zero on a failing report while still writing its summary, and leaves the source
+  report byte-identical.
+- **DERIVED (existing evidence):** `docs/evidence/v3/p3-qualification-summary-v2.json` applies the
+  hardened verdict to the unmodified `v3-qual-cuda-fp32.json`: `qualification_gates_ok = true`, all 11
+  gates pass (ACTIVE and FIXED 15 cells each, training coverage 234 tensors with none missing, STOP
+  gradient exactly zero, no non-finite gradient, checkpoint exact, resident inference and training
+  plateaus). One limitation is recorded rather than hidden: the original report did not record
+  FIXED-output finiteness, only structural success of the FIXED runs. The repeated build/drop slope is
+  recorded as a non-gating finding. The original run did not use this logic; it is not claimed to have.
+- **MEASURED (new run):** `recur64 v3-qual ... --lifecycle-reps 12 --sustained-seconds 10` with the
+  hardened harness (same command shape as V3-E6), exit status 0, 2 m 20 s:
+  `docs/evidence/v3/v3-qual-cuda-fp32-p31-hardened.json` and
+  `docs/evidence/v3/p31-qualification-summary-hardened-run.json`. All 11 gates pass, FIXED finiteness
+  is now recorded (no limitations), `diagnostics_complete = true`. Diagnostics: build/drop slope
+  12.8 to 41 MiB per cycle in some modes (non-gating, as in V3-E6), first-seen shape worst case 5.4x
+  the second-pass median, 205 positions/s sustained at 40% mean utilization (non-gating). These are
+  new measurements of the same envelope; V3-E6's numbers are unchanged and not superseded.
+- **Incident:** the first hardened run overflowed the main-thread stack (exit 127 from the shell,
+  "thread main has overflowed its stack"); it produced no report and is not used. Cause and fix in
+  V3-D10.
+- **Gate:** P3.1 hardened qualification gate PASSED. Tests: fmt clean, clippy 0 warnings, active-boundary,
+  v3-verdict, v3-qual CLI, StateQuery and active V3 model tests all pass.
+- **NOT RUN:** P4 and later.

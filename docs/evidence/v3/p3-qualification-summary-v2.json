@@ -1,0 +1,92 @@
+{
+  "diagnostic_findings": [
+    {
+      "detail": "build_b0_then_drop: 12.8 MiB/cycle; build_b0_then_drop+memory_cleanup: 13.2 MiB/cycle; build_b8_then_drop: 16.0 MiB/cycle; build_b8_then_drop+memory_cleanup: 12.8 MiB/cycle; build_then_drop: 12.8 MiB/cycle; build_then_drop+memory_cleanup: 12.8 MiB/cycle; control_candidate_v25_build_then_drop+memory_cleanup: 16.2 MiB/cycle (reproduced on the V2.5 model; absent for a resident model; non-gating)",
+      "gating": false,
+      "name": "repeated_model_build_drop_vram_slope"
+    },
+    {
+      "detail": "first/second pass mean 1.2169766979369117, worst first-pass over second-pass median 5.643297018322574 (one-off JIT or autotune cost; non-gating)",
+      "gating": false,
+      "name": "first_seen_dynamic_shape_timing"
+    },
+    {
+      "detail": "positions/s 224.0, utilization busy mean 39.36842105263158 max 47 (non-gating)",
+      "gating": false,
+      "name": "gpu_utilization_and_throughput"
+    }
+  ],
+  "diagnostics_complete": true,
+  "provenance": "DERIVED FROM EXISTING MEASURED EVIDENCE: the hardened verdict logic applied to a report produced before that logic existed",
+  "qualification_gate_details": [
+    {
+      "detail": "passed",
+      "name": "device_known_answer_guard",
+      "ok": true
+    },
+    {
+      "detail": "engineering_only = false",
+      "name": "scientific_budget_range",
+      "ok": true
+    },
+    {
+      "detail": "15 cells ok",
+      "name": "active_inference",
+      "ok": true
+    },
+    {
+      "detail": "15 cells ok",
+      "name": "fixed_inference",
+      "ok": true
+    },
+    {
+      "detail": "3 budgets ok",
+      "name": "training_forward_loss_backward_update",
+      "ok": true
+    },
+    {
+      "detail": "every non-STOP parameter tensor has a finite non-zero gradient",
+      "name": "gradient_coverage_non_stop",
+      "ok": true
+    },
+    {
+      "detail": "no non-finite gradient",
+      "name": "no_nonfinite_gradient",
+      "ok": true
+    },
+    {
+      "detail": "STOP head gradient exactly zero while masked",
+      "name": "stop_head_gradient_exactly_zero",
+      "ok": true
+    },
+    {
+      "detail": "ok=true architecture=\"active_search_v3\" max_abs_diff=0.0",
+      "name": "checkpoint_round_trip",
+      "ok": true
+    },
+    {
+      "detail": "growth_from_second_sample_mb = 0",
+      "name": "resident_inference_vram_plateau",
+      "ok": true
+    },
+    {
+      "detail": "growth_from_second_sample_mb = 0",
+      "name": "resident_training_vram_plateau",
+      "ok": true
+    }
+  ],
+  "qualification_gates_ok": true,
+  "recorded_limitations": [
+    "FIXED-selection output finiteness was not recorded by the original report; only structural success (the run completed with its accounting invariants) is evidenced"
+  ],
+  "source_report": {
+    "config": "active-search-v3-cuda",
+    "device": "Cuda",
+    "file": "v3-qual-cuda-fp32.json",
+    "original_all_sections_ok": true,
+    "precision": "fp32",
+    "report_schema": null,
+    "sha256": "5245dfb36ce3a37b04d6f34f2efd8be347705a2d0b40cc7cbda2d7a62093611b"
+  },
+  "summary_schema": "p3_qualification_summary_v2"
+}

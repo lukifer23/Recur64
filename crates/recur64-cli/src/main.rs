@@ -24,6 +24,7 @@ mod proof_cli;
 mod search_gain;
 mod v25_qual;
 mod v3_qual;
+mod v3_verdict;
 mod value_diag;
 
 #[derive(Parser)]
@@ -53,6 +54,8 @@ enum Commands {
     V25Qual(v25_qual::V25QualArgs),
     /// V3 active_search_v3 engineering qualification: budgets, compute split, backward, VRAM.
     V3Qual(v3_qual::V3QualArgs),
+    /// Apply the hardened qualification verdict to an existing v3-qual report.
+    V3QualVerdict(v3_qual::V3QualVerdictArgs),
     /// Exact proof-position tooling (ProofTargetsV1): bench, gen, audit.
     #[command(subcommand)]
     Proof(proof_cli::ProofCmd),
@@ -117,6 +120,7 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::V25Qual(a) => v25_qual::run(a),
         Commands::V3Qual(a) => v3_qual::run(a),
+        Commands::V3QualVerdict(a) => v3_qual::run_verdict(a),
         Commands::Proof(c) => proof_cli::run(c),
         Commands::Bench(args) => bench::run_bench(args),
         Commands::Perft(args) => perft::run_perft(args),

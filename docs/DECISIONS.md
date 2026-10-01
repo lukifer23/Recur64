@@ -1062,3 +1062,34 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Found:** `GameState::from_fen` accepts adjacent kings and an attacked opponent king, and
   `candidate_facts` then panics. Not reachable from legal play or solver-verified data; the
   qualification position generator excludes such positions. No core change was made.
+
+
+## V3-D10 - P3.1: the qualification verdict is explicit, gated and testable
+
+- **Status:** IMPLEMENTED (2026-10-01), `recur64-cli` (`v3_verdict.rs`, `v3_qual.rs`).
+- **Found:** the original `all_sections_ok` of `v3-qual` aggregated only the checkpoint, the two
+  resident-VRAM plateaus, the ACTIVE rows and the training rows' own `ok` flag. It did not include
+  the FIXED rows, the empty "parameters without a finite non-zero gradient" list, the STOP-gradient
+  check or the non-finite-gradient check, although the prose called them qualification conditions.
+  The committed P3 data satisfies every one of them, so this was a harness and reporting defect,
+  not a P3 result failure.
+- **Decision:** `qualification_gates_ok` is the conjunction of 11 independent gates: device
+  known-answer guard; scientific budget range (an engineering-stress run does not qualify the V3.0
+  envelope); ACTIVE inference; FIXED inference (including finiteness); training
+  forward/loss/backward/update; non-STOP gradient coverage; no non-finite gradient; STOP gradient
+  exactly zero; checkpoint round trip; resident inference VRAM plateau; resident training VRAM
+  plateau. The verdict is a pure function of the report JSON.
+- **Decision:** utilization, first-seen shape timing, throughput and the repeated build/drop
+  allocator slope are reported as `diagnostic_findings` with `gating = false`; a diagnostic that did
+  not run sets `diagnostics_complete = false` and fails nothing.
+- **Decision:** `all_sections_ok` is kept as a documented, deprecated alias of
+  `qualification_gates_ok`. `recur64 v3-qual` writes the report, then exits non-zero if the gates
+  fail. Each section is guarded so an infrastructure error becomes a recorded `section_error`
+  instead of losing the report.
+- **Decision:** the original evidence file is untouched. `recur64 v3-qual-verdict` applies the
+  hardened logic to it and writes a deterministic derived summary labelled DERIVED FROM EXISTING
+  MEASURED EVIDENCE.
+- **Found (engineering):** the default 1 MiB Windows main-thread stack overflowed during a B8
+  training step once the sections ran inside closures (the autodiff graph is deep and dropping it
+  recurses). The qualification now runs on a 512 MiB-stack thread. Any V3 training harness must do
+  the same.

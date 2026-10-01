@@ -41,7 +41,12 @@ use recur64_model::train::adamw;
 use recur64_runtime::gpu_telemetry::{monitor, sample_gpu};
 use recur64_runtime::model_io;
 
-#[derive(Args, Debug)]
+use crate::v3_verdict;
+
+/// Stack of the qualification thread (see `run`).
+const QUAL_STACK_BYTES: usize = 512 * 1024 * 1024;
+
+#[derive(Args, Debug, Clone)]
 pub struct V3QualArgs {
     /// ProbeConfig TOML (active_search_v3 geometry + device).
     #[arg(long)]
@@ -303,9 +308,21 @@ fn inference_section<B: Backend>(
                     // The frozen non-learned comparator on the same checkpoint and budget.
                     let mut fixed_walls = Vec::new();
                     let mut fixed_ok = true;
+                    let mut fixed_finite = true;
                     for _ in 0..args.reps {
                         match model.run(states, &lean, Selection::Fixed, device) {
-                            Ok(o) => fixed_walls.push(o.accounting.total_s),
+                            Ok(o) => {
+                                let lp: Vec<f32> = o
+                                    .readout
+                                    .policy
+                                    .log_probs
+                                    .clone()
+                                    .into_data()
+                                    .to_vec()
+                                    .unwrap_or_default();
+                                fixed_finite &= !lp.is_empty() && lp.iter().all(|v| v.is_finite());
+                                fixed_walls.push(o.accounting.total_s);
+                            }
                             Err(_) => fixed_ok = false,
                         }
                     }
@@ -343,7 +360,7 @@ fn inference_section<B: Backend>(
                             "gpu_query_state_encoder": mean(&qenc) / total_mean.max(1e-12),
                             "planner_selector": mean(&plan) / total_mean.max(1e-12),
                         },
-                        "fixed_selection": {"ok": fixed_ok, "steady_total_without_health_checks_s": stats(&fixed_walls)},
+                        "fixed_selection": {"ok": fixed_ok, "finite": fixed_ok && fixed_finite, "steady_total_without_health_checks_s": stats(&fixed_walls)},
                         "root_candidate_facts_cpu_s": facts_s,
                         "steady_total_without_health_checks_s": stats(&lean_walls),
                         "planner_selector_without_health_checks_s": mean(&lean_plan),
@@ -494,7 +511,7 @@ fn training_section<B: AutodiffBackend>(
                     }
                 });
                 Ok(serde_json::json!({
-                    "budget": budget, "batch": states.len(), "ok": finite,
+                    "budget": budget, "batch": states.len(), "ok": finite, "update_ok": finite,
                     "finite": finite,
                     "losses": losses,
                     "gradient_coverage_update_one": coverage_json,
@@ -832,6 +849,16 @@ fn lifecycle_section<B: Backend>(
     }))
 }
 
+/// Run one section; an infrastructure error or panic becomes a recorded
+/// `section_error` instead of aborting the report.
+fn guarded(name: &str, f: impl FnOnce() -> anyhow::Result<serde_json::Value>) -> serde_json::Value {
+    match std::panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => serde_json::json!({"section_error": format!("{name}: {e:#}")}),
+        Err(_) => serde_json::json!({"section_error": format!("{name}: panicked")}),
+    }
+}
+
 fn run_device<TB: AutodiffBackend>(
     cfg: &ProbeConfig,
     args: &V3QualArgs,
@@ -839,45 +866,110 @@ fn run_device<TB: AutodiffBackend>(
 ) -> anyhow::Result<serde_json::Value> {
     let device: TB::Device = Default::default();
     let inner = Default::default();
-    // Known-answer guard first; errors visibly if the device cannot run kernels.
-    model_io::verify_device::<TB::InnerBackend>(&inner)?;
+    // Known-answer guard first. A failure is recorded in the report (and fails the
+    // qualification) instead of aborting before anything is written.
+    let guard = model_io::verify_device::<TB::InnerBackend>(&inner);
     let pool = heavy_pool(args.positions, args.seed);
-    let inference = inference_section::<TB::InnerBackend>(cfg, args, &pool, &inner, gpu)?;
-    let training = training_section::<TB>(cfg, args, &pool, &device, gpu)?;
-    let sustained = sustained_section::<TB::InnerBackend>(cfg, args, &pool, &inner, gpu)?;
-    let dynamic_widths = dynamic_width_section::<TB::InnerBackend>(cfg, &pool, &inner)?;
-    let checkpoint = checkpoint_section::<TB, TB::InnerBackend>(cfg, args, &pool, &device, &inner)?;
-    let resident = resident_section::<TB, TB::InnerBackend>(cfg, args, &pool, &device, &inner)?;
-    let lifecycle = lifecycle_section::<TB::InnerBackend>(cfg, args, &pool, &inner)?;
-    let all_ok = checkpoint["ok"] == true
-        && resident["inference_b8_batch16"]["vram"]["plateau"] == true
-        && resident["training_b4_batch8"]["vram"]["plateau"] == true
-        && inference["rows"]
-            .as_array()
-            .is_some_and(|r| r.iter().all(|x| x["ok"] == true))
-        && training.iter().all(|x| x["ok"] == true);
-    Ok(serde_json::json!({
-        "config": cfg.name,
-        "architecture": cfg.model.architecture.id(),
-        "device": format!("{:?}", cfg.device),
-        "precision": cfg.precision.label(),
-        "pool": {"positions": pool.len(), "family": "KQRvK, white to move, >= 16 legal moves", "seed": args.seed},
-        "device_known_answer_guard": "passed",
-        "inference": inference,
-        "training": training,
-        "sustained_load": sustained,
-        "dynamic_query_widths": dynamic_widths,
-        "checkpoint": checkpoint,
-        "resident_model_vram": resident,
-        "lifecycle": lifecycle,
-        "synchronisation_policy": "timing_sync = true: the device is synchronised (Backend::sync) before every section clock read, so GPU section times are completion times; health checks add host reads (reported separately as the without_health_checks columns); the selector result is read to the host every round because the exact query is a CPU operation",
-        "all_sections_ok": all_ok,
-        "engineering_only": args.engineering_stress,
-        "claims": {
-            "tested": "the real graph with the live state-query tool ran on the requested device in every section above",
+    let head = |guard_text: String| {
+        serde_json::json!({
+            "report_schema": v3_verdict::REPORT_SCHEMA_V2,
+            "config": cfg.name,
+            "architecture": cfg.model.architecture.id(),
+            "device": format!("{:?}", cfg.device),
+            "precision": cfg.precision.label(),
+            "pool": {"positions": pool.len(), "family": "KQRvK, white to move, >= 16 legal moves", "seed": args.seed},
+            "device_known_answer_guard": guard_text,
+            "engineering_only": args.engineering_stress,
+        })
+    };
+    let mut report = match guard {
+        Ok(()) => {
+            let mut r = head("passed".to_string());
+            let inference = guarded("inference", || {
+                inference_section::<TB::InnerBackend>(cfg, args, &pool, &inner, gpu)
+            });
+            let training = guarded("training", || {
+                Ok(serde_json::Value::Array(training_section::<TB>(
+                    cfg, args, &pool, &device, gpu,
+                )?))
+            });
+            let checkpoint = guarded("checkpoint", || {
+                checkpoint_section::<TB, TB::InnerBackend>(cfg, args, &pool, &device, &inner)
+            });
+            let resident = guarded("resident_model_vram", || {
+                resident_section::<TB, TB::InnerBackend>(cfg, args, &pool, &device, &inner)
+            });
+            // Diagnostics: recorded, never gating.
+            let sustained = guarded("sustained", || {
+                sustained_section::<TB::InnerBackend>(cfg, args, &pool, &inner, gpu)
+            });
+            let dynamic_widths = guarded("dynamic_query_widths", || {
+                dynamic_width_section::<TB::InnerBackend>(cfg, &pool, &inner)
+            });
+            let lifecycle = guarded("lifecycle", || {
+                lifecycle_section::<TB::InnerBackend>(cfg, args, &pool, &inner)
+            });
+            let o = r.as_object_mut().expect("object");
+            o.insert("inference".into(), inference);
+            o.insert("training".into(), training);
+            o.insert("checkpoint".into(), checkpoint);
+            o.insert("resident_model_vram".into(), resident);
+            o.insert("sustained_load".into(), sustained);
+            o.insert("dynamic_query_widths".into(), dynamic_widths);
+            o.insert("lifecycle".into(), lifecycle);
+            r
+        }
+        Err(e) => head(format!("failed: {e:#}")),
+    };
+    let verdict = v3_verdict::evaluate(&report);
+    let o = report.as_object_mut().expect("object");
+    o.insert(
+        "synchronisation_policy".into(),
+        "timing_sync = true: the device is synchronised (Backend::sync) before every section clock read, so GPU section times are completion times; health checks add host reads (reported separately as the without_health_checks columns); the selector result is read to the host every round because the exact query is a CPU operation".into(),
+    );
+    o.insert(
+        "qualification_gates_ok".into(),
+        verdict.qualification_gates_ok.into(),
+    );
+    o.insert(
+        "qualification_gate_details".into(),
+        serde_json::to_value(&verdict.qualification_gate_details)?,
+    );
+    o.insert(
+        "diagnostics_complete".into(),
+        verdict.diagnostics_complete.into(),
+    );
+    o.insert(
+        "diagnostic_findings".into(),
+        serde_json::to_value(&verdict.diagnostic_findings)?,
+    );
+    o.insert(
+        "recorded_limitations".into(),
+        serde_json::to_value(&verdict.recorded_limitations)?,
+    );
+    // Deprecated alias, kept so older consumers still parse the report. It has
+    // exactly the meaning of `qualification_gates_ok` (the original P3 field did
+    // not include every gate; see docs/V3_EXPERIMENTS.md V3-E8).
+    o.insert(
+        "all_sections_ok".into(),
+        verdict.qualification_gates_ok.into(),
+    );
+    o.insert(
+        "all_sections_ok_note".into(),
+        "DEPRECATED alias of qualification_gates_ok".into(),
+    );
+    o.insert(
+        "claims".into(),
+        serde_json::json!({
+            "tested": "the real graph with the live state-query tool ran on the requested device in every gating section",
             "not_claimed": "no science result; B16 is not described as 16x compute (see wall_ratio_vs_b0_measured)",
-        },
-    }))
+        }),
+    );
+    Ok(report)
+}
+
+fn args_for_thread(a: &V3QualArgs) -> V3QualArgs {
+    a.clone()
 }
 
 pub fn run(args: V3QualArgs) -> anyhow::Result<()> {
@@ -910,21 +1002,106 @@ pub fn run(args: V3QualArgs) -> anyhow::Result<()> {
         cfg.precision == Precision::Fp32,
         "v3-qual is an FP32 qualification (V3.0 science is FP32)"
     );
-    let report = match cfg.device {
-        DeviceKind::Cpu => run_device::<recur64_model::train::CpuTrainBackend>(&cfg, &args, false)?,
-        #[cfg(feature = "cuda")]
-        DeviceKind::Cuda => {
-            run_device::<burn::backend::Autodiff<burn::backend::Cuda>>(&cfg, &args, true)?
-        }
-        #[cfg(not(feature = "cuda"))]
-        DeviceKind::Cuda => {
-            anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
-        }
-    };
+    // The autodiff graph of a multi-round training step is deep, and dropping it
+    // recurses. The default 1 MiB Windows main-thread stack overflowed at B8, so
+    // the whole qualification runs on a thread with an explicit large stack.
+    let report = std::thread::Builder::new()
+        .name("v3-qual".into())
+        .stack_size(QUAL_STACK_BYTES)
+        .spawn({
+            let (cfg, args) = (cfg.clone(), args_for_thread(&args));
+            move || -> anyhow::Result<serde_json::Value> {
+                match cfg.device {
+                    DeviceKind::Cpu => {
+                        run_device::<recur64_model::train::CpuTrainBackend>(&cfg, &args, false)
+                    }
+                    #[cfg(feature = "cuda")]
+                    DeviceKind::Cuda => run_device::<burn::backend::Autodiff<burn::backend::Cuda>>(
+                        &cfg, &args, true,
+                    ),
+                    #[cfg(not(feature = "cuda"))]
+                    DeviceKind::Cuda => {
+                        anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda")
+                    }
+                }
+            }
+        })?
+        .join()
+        .map_err(|_| anyhow::anyhow!("v3-qual thread panicked"))??;
     std::fs::create_dir_all(&args.output)?;
     let path = args.output.join(format!("v3-qual-{}.json", cfg.name));
     std::fs::write(&path, serde_json::to_vec_pretty(&report)?)?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     eprintln!("wrote {}", path.display());
+    // The process status carries the verdict: a script never has to parse JSON.
+    if report["qualification_gates_ok"] != true {
+        let failed: Vec<String> = report["qualification_gate_details"]
+            .as_array()
+            .map(|g| {
+                g.iter()
+                    .filter(|x| x["ok"] == false)
+                    .map(|x| format!("{} ({})", x["name"], x["detail"]))
+                    .collect()
+            })
+            .unwrap_or_default();
+        anyhow::bail!(
+            "v3-qual: qualification gates FAILED (report written to {}): {}",
+            path.display(),
+            failed.join("; ")
+        );
+    }
+    Ok(())
+}
+
+#[derive(Args, Debug)]
+pub struct V3QualVerdictArgs {
+    /// An existing v3-qual JSON report.
+    #[arg(long)]
+    pub report: PathBuf,
+    /// Where to write the derived summary.
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Apply the hardened verdict to an existing report and write a deterministic
+/// summary. The source report is never modified.
+pub fn run_verdict(args: V3QualVerdictArgs) -> anyhow::Result<()> {
+    use sha2::{Digest, Sha256};
+    let bytes = std::fs::read(&args.report)?;
+    let report: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let v = v3_verdict::evaluate(&report);
+    let legacy = report["report_schema"] != v3_verdict::REPORT_SCHEMA_V2;
+    let summary = serde_json::json!({
+        "summary_schema": "p3_qualification_summary_v2",
+        "provenance": if legacy {
+            "DERIVED FROM EXISTING MEASURED EVIDENCE: the hardened verdict logic applied to a report produced before that logic existed"
+        } else {
+            "MEASURED: report produced by the hardened harness"
+        },
+        "source_report": {
+            "file": args.report.file_name().map(|n| n.to_string_lossy().into_owned()),
+            "sha256": format!("{:x}", Sha256::digest(&bytes)),
+            "report_schema": report["report_schema"],
+            "original_all_sections_ok": report["all_sections_ok"],
+            "config": report["config"],
+            "device": report["device"],
+            "precision": report["precision"],
+        },
+        "qualification_gates_ok": v.qualification_gates_ok,
+        "qualification_gate_details": v.qualification_gate_details,
+        "diagnostics_complete": v.diagnostics_complete,
+        "diagnostic_findings": v.diagnostic_findings,
+        "recorded_limitations": v.recorded_limitations,
+    });
+    if let Some(dir) = args.output.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    std::fs::write(&args.output, serde_json::to_vec_pretty(&summary)?)?;
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    anyhow::ensure!(
+        v.qualification_gates_ok,
+        "hardened verdict: qualification gates FAILED: {:?}",
+        v.failed()
+    );
     Ok(())
 }
