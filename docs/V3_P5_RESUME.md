@@ -20,6 +20,7 @@ contract digest `105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d
 cd /c/Users/LukeScaggs/Documents/Recur64
 git pull --ff-only origin experiment/workstation-v3-active-search   # if working from another checkout
 cargo build --release --features cuda -p recur64-cli                # the binary must be the CUDA build
+sed -i 's/$//' scripts/v3_p5_run_screen.sh                          # git may have turned LF into CRLF
 nohup bash scripts/v3_p5_run_screen.sh > /dev/null 2>&1 &
 ```
 
