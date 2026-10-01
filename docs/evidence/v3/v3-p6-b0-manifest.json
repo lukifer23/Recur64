@@ -1,0 +1,59 @@
+{
+  "contract_digest": "105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2",
+  "runs": [
+    {
+      "checkpoint": "final (update 800)",
+      "committed_reproduction_max_abs_diff": 0.0,
+      "kqrvk_m3_top1": 0.4493333333333333,
+      "peak_lr": 0.0003,
+      "pooled_b0": {
+        "ce": 1.3569169493069821,
+        "chance_top1": 0.05108223047107458,
+        "correct_mass": 0.6528649763005103,
+        "entropy": 1.2570629859024212,
+        "n": 4500,
+        "top1": 0.7564444444444445
+      },
+      "recipe_digest": "c9d90281f82f813925a6ef373eab77a98b84eaa96ed6b2111f4d6c60c6d961a1",
+      "run": "v3-p5-run-lr3e-4-seed5101",
+      "seed": 5101
+    },
+    {
+      "checkpoint": "final (update 800)",
+      "committed_reproduction_max_abs_diff": 0.0,
+      "kqrvk_m3_top1": 0.48933333333333334,
+      "peak_lr": 0.0003,
+      "pooled_b0": {
+        "ce": 1.329600860226596,
+        "chance_top1": 0.05108223047107458,
+        "correct_mass": 0.6712945534649458,
+        "entropy": 1.2161915533063656,
+        "n": 4500,
+        "top1": 0.7677777777777778
+      },
+      "recipe_digest": "20b30924b86afb50b4f828861c8a271b44eabc1dcf83645145d37c5a20120802",
+      "run": "v3-p5-run-lr3e-4-seed5102",
+      "seed": 5102
+    },
+    {
+      "checkpoint": "final (update 800)",
+      "committed_reproduction_max_abs_diff": 0.0,
+      "kqrvk_m3_top1": 0.432,
+      "peak_lr": 0.0003,
+      "pooled_b0": {
+        "ce": 1.383226593354134,
+        "chance_top1": 0.05108223047107458,
+        "correct_mass": 0.6393294650003407,
+        "entropy": 1.3142068791527854,
+        "n": 4500,
+        "top1": 0.7457777777777778
+      },
+      "recipe_digest": "9238476339a90801067b9ebee0f52310eca982d8d8ef827a4d2a42a569eab0f4",
+      "run": "v3-p5-run-lr3e-4-seed5103",
+      "seed": 5103
+    }
+  ],
+  "schema": "v3_p6_b0_manifest_v1",
+  "selected_recipe_digest_without_seed": "a069ba9d18befed65f970aca253b47780365fd7019be38283f270d79d6c1db33",
+  "tolerance": 0.0001
+}
