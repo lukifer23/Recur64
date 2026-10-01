@@ -109,7 +109,23 @@ pub struct TrainArgs {
     /// Where to write the run summary.
     #[arg(long)]
     pub summary: PathBuf,
+    /// P6 baseline replication (`p6_baseline_replication_v1`): train the exact SELECTED P5
+    /// recipe (peak LR 3e-4) at the one additional paired seed 5103. Not a screen run;
+    /// needs `--selected-recipe` to prove the recipe is the selected one.
+    #[arg(long, default_value_t = false)]
+    pub p6_baseline_replication: bool,
+    /// `v3-p5-selected-recipe.json` (required with `--p6-baseline-replication`).
+    #[arg(long)]
+    pub selected_recipe: Option<PathBuf>,
 }
+
+/// The only seed the P6 baseline replication may use.
+pub const P6_REPLICATION_SEED: u64 = 5103;
+/// The LR selected by the P5 screen (V3-D21).
+pub const P5_SELECTED_LR: f64 = 3.0e-4;
+/// Digest (without seed) of the selected P5 recipe.
+pub const P5_SELECTED_DIGEST: &str =
+    "a069ba9d18befed65f970aca253b47780365fd7019be38283f270d79d6c1db33";
 
 #[derive(Args, Debug)]
 pub struct SelectArgs {
@@ -572,10 +588,36 @@ fn train<TB: AutodiffBackend>(a: &TrainArgs, gpu: bool) -> anyhow::Result<()> {
     let device: TB::Device = Default::default();
     let inner = Default::default();
     model_io::verify_device::<TB::InnerBackend>(&inner)?;
-    anyhow::ensure!(
-        CANDIDATE_LRS.contains(&a.lr) && SCREEN_SEEDS.contains(&a.seed),
-        "the screen runs only the preregistered LRs {CANDIDATE_LRS:?} and seeds {SCREEN_SEEDS:?}"
-    );
+    if a.p6_baseline_replication {
+        anyhow::ensure!(
+            a.lr == P5_SELECTED_LR && a.seed == P6_REPLICATION_SEED,
+            "the P6 baseline replication is the selected LR {P5_SELECTED_LR:e} at seed {P6_REPLICATION_SEED} only"
+        );
+        let path = a
+            .selected_recipe
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("--p6-baseline-replication needs --selected-recipe"))?;
+        let v: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+        anyhow::ensure!(
+            v["schema"] == "v3_p5_selected_recipe_v1"
+                && v["selected_lr"].as_f64() == Some(P5_SELECTED_LR)
+                && v["digest_without_seed"] == P5_SELECTED_DIGEST,
+            "{} is not the accepted selected P5 recipe",
+            path.display()
+        );
+        let mut sel = load_contract(&a.recipe)?.for_run(a.lr, 0);
+        sel.seed = None;
+        anyhow::ensure!(
+            sel.digest() == P5_SELECTED_DIGEST,
+            "the contract with LR {:e} does not reproduce the selected recipe digest",
+            a.lr
+        );
+    } else {
+        anyhow::ensure!(
+            CANDIDATE_LRS.contains(&a.lr) && SCREEN_SEEDS.contains(&a.seed),
+            "the screen runs only the preregistered LRs {CANDIDATE_LRS:?} and seeds {SCREEN_SEEDS:?}"
+        );
+    }
     let recipe = load_contract(&a.recipe)?.for_run(a.lr, a.seed);
     let digest = recipe.digest();
     let train_ds = load_dataset(&a.data.train, &a.data.train_trace, &Expected::train())?;
@@ -663,6 +705,7 @@ fn train<TB: AutodiffBackend>(a: &TrainArgs, gpu: bool) -> anyhow::Result<()> {
 
     let mut summary = serde_json::json!({
         "schema": "v3_p5_run_summary_v1",
+        "identity": if a.p6_baseline_replication { "p6_baseline_replication_v1" } else { "p5_screen_run" },
         "lr": a.lr,
         "seed": a.seed,
         "recipe_digest": digest,

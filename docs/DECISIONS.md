@@ -1209,3 +1209,15 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   recipe digest without seed `a069ba9d18befed65f970aca253b47780365fd7019be38283f270d79d6c1db33`). It is the largest candidate
   in the preregistered grid; the grid was not extended. This selects a recipe on TUNE only and does not authorise P6; a
   DAgger-style rescue and any throughput/profiling work each need separate owner approval.
+
+## V3-D22 - P6 baseline replication (B0 reference seed 5103)
+
+- **Status:** PRE-REGISTERED (2026-10-01), before any P6 model exists.
+- **Decision:** the P6 control uses three paired seeds {5101, 5102, 5103}. Seeds 5101 and 5102 reuse the accepted P5
+  final checkpoints at the selected LR 3.0e-4. Seed 5103 is ONE additional ACTIVE run under the exact selected P5
+  recipe (LR 3.0e-4, 800 updates, warmup 80, micro16 x accum8, same P25 TRAIN, teacher, sampler, loss and contract
+  `105ac313...009d2`; recipe digest without seed `a069ba9d...db33`). Identity `p6_baseline_replication_v1`. It exists only
+  to provide the third paired B0 reference; it is not a screen run, not an LR selection, and not a Gate II/III or P7
+  result. `recur64 v3-p5 train --p6-baseline-replication --selected-recipe ...` accepts only LR 3e-4 and seed 5103 and
+  refuses unless the contract reproduces the selected recipe digest. The run evaluates TUNE at its scheduled updates
+  as every P5 run does; those B0/ACTIVE numbers play no role in the ALL-INFO architecture or recipe.
