@@ -305,3 +305,32 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   (LR 7.5e-5, seed 5101) reached update 150 (checkpoint saved) before being stopped by the owner. Runs 2 to 6 not started.
 - **Resume:** `docs/V3_P5_RESUME.md` and `scripts/v3_p5_run_screen.sh`. Nothing pre-registered changed.
 - **NOT RUN:** five of six runs, the update-800 evaluation of all six, the selection rule, P6.
+
+## V3-E14 - P5 interrupted attempt voided; P5.1 integrity patch; screen restarts from update 0
+
+- **Date:** 2026-10-01
+- **Review:** the local artifacts of the interrupted run were inspected before anything changed. Highest valid state:
+  update 150 (`state-1`, sampler draws 4,800 per budget, history length 150, recipe digest
+  `adc844428c65486c0b0a37604ec99a7a8b761c229a01443b3ee7925bdd171b01`, checkpoint metadata step/update_counter/
+  lr_schedule_step 150, seed 5101, lr 7.5e-5, structurally complete); `state-0` update 100. Update-0 TUNE
+  `S_run = 3.5532696635894676`. Train-side losses stayed finite; a transient gradient-norm spike (about 121 and 145 at
+  updates 110 and 120) recovered by update 130. These are TRAIN-side mechanism observations, not held-out evidence.
+  Compact record: `docs/evidence/v3/v3-p5-interrupted-attempt1.json` (no weights).
+- **Disposition:** VOID for LR selection. Reason: external operational interruption before the first trained TUNE
+  evaluation; restarted from update 0 to preserve uninterrupted symmetry across all six P5 screen runs. This is not a
+  failed learning run. Artifacts were moved (not deleted) to the git-ignored
+  `runs/v3/p5/quarantine/interrupted-lr7.5e-5-seed5101-u150/`.
+- **P5.1 integrity patch (reporting/resume only; the training function and the Recipe are untouched):**
+  strict `Trainer::load` invariants (history length and labels, finite values, lr per the schedule, sampler draws equal
+  to `updates_done x draws-per-update` derived from the layout, checkpoint metadata step/update_counter/lr_schedule_step/
+  seed/peak lr/precision/backend/recurrence/deep supervision/architecture); a fresh model is refused in a non-empty run
+  directory; the completed summary persists the final per-budget sampler exposure and run provenance (fresh vs resumed,
+  start update, prior resumptions); evaluation files carry the run digest; `v3-p5 select` validates every summary
+  (schema, lr, seed, digests, update counts, evaluation set, ACTIVE budgets, recomputed `S_run`, exposure, no
+  HOLDOUT/CONFIRM reference, preregistered ineligibility class), refuses if either output exists, and performs the
+  same-seed update-0 pairing integrity check before the rule (never used to choose an LR); the launcher stops on any
+  non-zero exit; `.gitattributes` pins `*.sh` to LF.
+- **Unchanged:** contract digest `105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2`, layout micro 16 x accum 8.
+- **TESTED:** the new corruption, refusal, validation and pairing tests; the full workspace release suite; clippy and
+  fmt clean; the CUDA release binary builds. CUDA resume is still not claimed bit-identical (CPU resume only).
+- **NOT RUN:** the clean six-run screen, any trained TUNE evaluation, the selection rule, P6.

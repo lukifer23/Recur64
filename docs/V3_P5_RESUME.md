@@ -1,5 +1,9 @@
 # V3 P5 LR screen: where we stopped, and how to resume
 
+> **SUPERSEDED (2026-10-01, V3-D20):** the update-150 state described below is voided and quarantined; the screen
+> restarts from update 0 with the P5.1-hardened launcher. Kept for the record; do not resume from it.
+
+
 **Stopped deliberately on 2026-10-01 (workstation move).** No screen result exists. The pre-registered plan
 (`docs/V3_P5_PLAN.md`), decisions V3-D16 to V3-D19, the screen contract (`docs/evidence/v3/v3-p5-recipe.json`,
 contract digest `105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2`) and the resolved layout

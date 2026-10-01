@@ -1,0 +1,78 @@
+{
+  "schema": "v3_p5_interrupted_attempt_v1",
+  "attempt": 1,
+  "lr": 7.5e-05,
+  "seed": 5101,
+  "recipe_digest": "adc844428c65486c0b0a37604ec99a7a8b761c229a01443b3ee7925bdd171b01",
+  "contract_digest": "105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2",
+  "disposition": "VOID for LR selection",
+  "reason": "external operational interruption before the first trained TUNE evaluation; restarted from update 0 to preserve uninterrupted symmetry across all six P5 screen runs.",
+  "not_a_failed_learning_run": true,
+  "highest_valid_updates_done": 150,
+  "update0_S_run": 3.5532696635894676,
+  "trained_tune_evaluation_exists": false,
+  "completed_run_result_exists": false,
+  "states": {
+    "state-0": {
+      "updates_done": 100,
+      "sampler_draws": [
+        3200,
+        3200,
+        3200,
+        3200
+      ],
+      "history_len": 100,
+      "recipe_digest": "adc844428c65486c0b0a37604ec99a7a8b761c229a01443b3ee7925bdd171b01",
+      "meta_step": 100,
+      "meta_update_counter": 100,
+      "meta_seed": 5101,
+      "meta_lr": 7.5e-05,
+      "model_id": "1f2852092d852baef309007572eb64d96e8d38cd8028c3c5de88a2f3d17bc238",
+      "structurally_complete": true
+    },
+    "state-1": {
+      "updates_done": 150,
+      "sampler_draws": [
+        4800,
+        4800,
+        4800,
+        4800
+      ],
+      "history_len": 150,
+      "recipe_digest": "adc844428c65486c0b0a37604ec99a7a8b761c229a01443b3ee7925bdd171b01",
+      "meta_step": 150,
+      "meta_update_counter": 150,
+      "meta_seed": 5101,
+      "meta_lr": 7.5e-05,
+      "model_id": "cf08de92f2ad50a27bd41fc56fbb435bb9480d3af59f4c6b03c37986f2153f38",
+      "structurally_complete": true
+    }
+  },
+  "train_side_observations_not_performance_evidence": {
+    "update_110": {
+      "total": 3.8652,
+      "policy": 1.7161,
+      "selector": 2.1491,
+      "grad_norm": 120.923
+    },
+    "update_120": {
+      "total": 4.0982,
+      "policy": 1.8803,
+      "selector": 2.2179,
+      "grad_norm": 145.286
+    },
+    "update_130": {
+      "total": 3.6369,
+      "policy": 1.5229,
+      "selector": 2.114,
+      "grad_norm": 4.425
+    },
+    "update_150": {
+      "total": 3.5291,
+      "policy": 1.5306,
+      "selector": 1.9985,
+      "grad_norm": 5.148
+    },
+    "note": "transient grad-norm spike at 110-120 recovered by 130; all values finite; TRAIN-side only"
+  }
+}

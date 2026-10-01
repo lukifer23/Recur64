@@ -1190,3 +1190,14 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   over the 6 TUNE cells of the ACTIVE policy CE at update 800 (24 equal values); `S_lr` = mean over seeds; lowest wins;
   exact tie to the lower LR; no tolerance, no override. A run is ineligible only for non-finite loss or gradient,
   health refusal, query correctness error, or checkpoint/resume error. No performance threshold is introduced.
+
+## V3-D20 - P5 interrupted attempt is voided; screen restarts from update 0
+
+- **Status:** DECIDED by the owner (2026-10-01).
+- **Decision:** the externally interrupted P5 attempt (LR 7.5e-5, seed 5101, stopped at update 150, only the update-0
+  TUNE baseline evaluated) is voided and excluded from LR selection; it was quarantined, not deleted. The screen restarts
+  from update 0 so that all six runs are uninterrupted and paired. The frozen P5 contract (digest
+  `105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2`) and the selection rule are unchanged. The P5.1
+  patch (resume/summary/selection integrity, exposure and provenance reporting, a fail-stop launcher) changes no
+  model, teacher, sampler, loss, optimizer, schedule, dataset, trace or evaluation formula. Any further external
+  interruption uses the existing exact-recipe resume and is recorded in the run provenance.

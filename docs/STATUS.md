@@ -595,3 +595,15 @@ frozen feasibility rule) on owner approval.
 
 P5 infrastructure (`recur64_runtime::p5`, `recur64 v3-p5`) and the pre-registered plan
 (`docs/V3_P5_PLAN.md`, V3-D16 to V3-D19) are in place. No LR-screen result exists. P6 is not authorised.
+
+### V3 P5.1 (2026-10-01)
+
+- **State:** one P5 screen attempt (LR 7.5e-5, seed 5101) trained to update 150 and was externally interrupted. Only its
+  update-0 TUNE baseline (`S_run` 3.5533) was evaluated; no trained TUNE checkpoint was evaluated. That attempt is
+  voided operationally, excluded from selection, and quarantined (V3-D20, V3-E14). The clean six-run screen has not
+  produced results.
+- **COMPLETED:** P5.1 integrity patch (strict resume/sidecar consistency, fail-closed run directories, persisted sampler
+  exposure and run provenance, strengthened summary validation, same-seed update-0 pairing check, fail-stop launcher).
+- **VERIFIED:** contract digest unchanged (`105ac313...009d2`, micro 16 x accum 8); corruption/validation tests, the
+  full workspace release suite, fmt and clippy pass; the CUDA release binary builds.
+- **NOT RUN:** the six clean screen runs, selection, P6, HOLDOUT_C (sealed, unevaluated).

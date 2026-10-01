@@ -279,6 +279,20 @@ pub struct P5State {
     pub updates_done: u64,
     pub sampler_draws: Vec<u64>,
     pub history: Vec<UpdateRecord>,
+    /// How many times this run has been resumed from a checkpoint (provenance only).
+    #[serde(default)]
+    pub resumptions: u32,
+}
+
+/// Examples one optimizer update draws from budget `budget`'s sampler, derived from
+/// the frozen layout (16 x 8 and 8 x 16 both give 32).
+pub fn draws_per_update(recipe: &Recipe, budget: usize) -> u64 {
+    (recipe
+        .budget_sequence
+        .iter()
+        .filter(|&&b| b == budget)
+        .count()
+        * recipe.micro) as u64
 }
 
 pub const STATE_SCHEMA: &str = "v3_p5_state_v1";
@@ -290,6 +304,8 @@ pub struct Trainer<B: AutodiffBackend> {
     pub samplers: BudgetSamplers,
     pub updates_done: u64,
     pub history: Vec<UpdateRecord>,
+    /// Number of resumptions before this invocation (0 for a fresh run).
+    pub resumptions: u32,
 }
 
 impl<B: AutodiffBackend> Trainer<B> {
@@ -313,6 +329,7 @@ impl<B: AutodiffBackend> Trainer<B> {
             recipe,
             updates_done: 0,
             history: Vec::new(),
+            resumptions: 0,
         })
     }
 
@@ -391,6 +408,7 @@ impl<B: AutodiffBackend> Trainer<B> {
             updates_done: self.updates_done,
             sampler_draws: self.samplers.draws(),
             history: self.history.clone(),
+            resumptions: self.resumptions,
         };
         let tmp = dir.join("p5-state.json.tmp");
         std::fs::write(&tmp, serde_json::to_vec(&state)?)?;
@@ -418,6 +436,10 @@ impl<B: AutodiffBackend> Trainer<B> {
         let seed = recipe
             .seed
             .ok_or_else(|| anyhow::anyhow!("a training recipe needs a seed"))?;
+        let peak_lr = recipe
+            .peak_lr
+            .ok_or_else(|| anyhow::anyhow!("a training recipe needs a peak learning rate"))?;
+        Self::check_state(&state, &recipe, peak_lr)?;
         B::seed(device, seed);
         let template = ActiveSearchModel::<B>::new(recipe.model.clone(), device);
         let (model, optim, meta) = load_training::<B, _, _>(
@@ -427,10 +449,31 @@ impl<B: AutodiffBackend> Trainer<B> {
             device,
         )?;
         anyhow::ensure!(
-            meta.step == state.updates_done && meta.architecture == "active_search_v3",
-            "checkpoint metadata disagrees with the sidecar (step {} vs {})",
+            meta.architecture == "active_search_v3"
+                && meta.backend == "v3-p5"
+                && meta.precision == "fp32"
+                && meta.recurrence == 1
+                && !meta.deep_supervision,
+            "checkpoint is not a P5 fp32 active_search_v3 checkpoint ({} / {} / {})",
+            meta.architecture,
+            meta.backend,
+            meta.precision
+        );
+        anyhow::ensure!(
+            meta.step == state.updates_done
+                && meta.update_counter == state.updates_done
+                && meta.lr_schedule_step == state.updates_done,
+            "checkpoint metadata disagrees with the sidecar (step {} / update_counter {} / lr_schedule_step {} vs {})",
             meta.step,
+            meta.update_counter,
+            meta.lr_schedule_step,
             state.updates_done
+        );
+        anyhow::ensure!(
+            meta.seed == seed && meta.lr == peak_lr,
+            "checkpoint was written for seed {} / peak lr {} but this run is seed {seed} / peak lr {peak_lr}",
+            meta.seed,
+            meta.lr
         );
         let mut samplers = BudgetSamplers::new(&train.cells(), seed);
         samplers.fast_forward(&state.sampler_draws)?;
@@ -441,7 +484,62 @@ impl<B: AutodiffBackend> Trainer<B> {
             samplers,
             updates_done: state.updates_done,
             history: state.history,
+            resumptions: state.resumptions + 1,
         })
+    }
+
+    /// Structural invariants of a sidecar, checked before any draw count is trusted.
+    fn check_state(state: &P5State, recipe: &Recipe, peak_lr: f64) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            state.updates_done <= recipe.updates,
+            "sidecar records {} updates but the recipe has {}",
+            state.updates_done,
+            recipe.updates
+        );
+        anyhow::ensure!(
+            state.history.len() as u64 == state.updates_done,
+            "sidecar history has {} records for {} updates",
+            state.history.len(),
+            state.updates_done
+        );
+        for (i, h) in state.history.iter().enumerate() {
+            let r = &h.report;
+            anyhow::ensure!(
+                h.update == i as u64,
+                "sidecar history record {i} is labelled update {}",
+                h.update
+            );
+            anyhow::ensure!(
+                h.lr.is_finite()
+                    && h.wall_s.is_finite()
+                    && r.policy_loss.is_finite()
+                    && r.selector_loss.is_finite()
+                    && r.total_loss.is_finite()
+                    && r.grad_norm.is_finite(),
+                "sidecar history record {i} holds a non-finite value"
+            );
+            let want = lr_at(i as u64, peak_lr, recipe.warmup, recipe.updates);
+            anyhow::ensure!(
+                (h.lr - want).abs() <= 1e-12 * want.abs().max(1e-12),
+                "sidecar history record {i} has lr {} but the schedule gives {want}",
+                h.lr
+            );
+        }
+        anyhow::ensure!(
+            state.sampler_draws.len() == BUDGETS.len(),
+            "sampler state has {} entries for {} budgets",
+            state.sampler_draws.len(),
+            BUDGETS.len()
+        );
+        for (&b, &n) in BUDGETS.iter().zip(&state.sampler_draws) {
+            let want = state.updates_done * draws_per_update(recipe, b);
+            anyhow::ensure!(
+                n == want,
+                "budget {b} sampler recorded {n} draws but {} updates imply {want}",
+                state.updates_done
+            );
+        }
+        Ok(())
     }
 
     /// The inference-side copy of the current weights.

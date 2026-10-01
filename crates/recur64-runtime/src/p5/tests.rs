@@ -772,6 +772,114 @@ fn a_checkpoint_refuses_any_other_recipe() {
     assert!(Trainer::<TB>::load(&dir, recipe, &ds, &device).is_err());
 }
 
+type Case<T> = (&'static str, fn(&mut T));
+
+#[test]
+fn resume_refuses_every_inconsistent_sidecar_and_checkpoint() {
+    use super::train::P5State;
+    let (ds, _d) = dataset(15, 103);
+    let device = Default::default();
+    let recipe = tiny_recipe(2, 4, 4, 5101);
+    let mut a = Trainer::<TB>::new(recipe.clone(), &ds, &device).unwrap();
+    for _ in 0..2 {
+        a.step(&ds, &device).unwrap();
+    }
+    let dir = tmp("consistency");
+    a.save(&dir).unwrap();
+    let b = Trainer::<TB>::load(&dir, recipe.clone(), &ds, &device).unwrap();
+    assert_eq!((b.updates_done, b.resumptions), (2, 1));
+
+    let side = dir.join("p5-state.json");
+    let good = std::fs::read(&side).unwrap();
+    let state: P5State = serde_json::from_slice(&good).unwrap();
+    let cases: Vec<Case<P5State>> = vec![
+        ("updates beyond the recipe", |s| s.updates_done = 99),
+        ("short history", |s| {
+            s.history.pop();
+        }),
+        ("long history", |s| {
+            let l = s.history[0].clone();
+            s.history.push(l);
+        }),
+        ("mislabelled history", |s| s.history[1].update = 7),
+        ("non-finite loss", |s| {
+            s.history[0].report.total_loss = f64::NAN
+        }),
+        ("non-finite grad", |s| {
+            s.history[0].report.grad_norm = f32::INFINITY
+        }),
+        ("wrong history lr", |s| s.history[1].lr *= 2.0),
+        ("sampler vector too short", |s| {
+            s.sampler_draws.pop();
+        }),
+        ("sampler draws too high", |s| s.sampler_draws[2] += 1),
+        ("sampler draws too low", |s| s.sampler_draws[0] -= 1),
+    ];
+    for (name, mutate) in cases {
+        let mut st = state.clone();
+        mutate(&mut st);
+        std::fs::write(&side, serde_json::to_vec(&st).unwrap()).unwrap();
+        assert!(
+            Trainer::<TB>::load(&dir, recipe.clone(), &ds, &device).is_err(),
+            "sidecar corruption not refused: {name}"
+        );
+    }
+    std::fs::write(&side, &good).unwrap();
+
+    // Checkpoint metadata must agree with the sidecar and recipe.
+    let meta_path = dir.join("checkpoint").join("meta.json");
+    let meta_good = std::fs::read(&meta_path).unwrap();
+    let meta_cases: Vec<Case<serde_json::Value>> = vec![
+        ("step", |m| m["step"] = 1.into()),
+        ("update_counter", |m| m["update_counter"] = 1.into()),
+        ("lr_schedule_step", |m| m["lr_schedule_step"] = 1.into()),
+        ("seed", |m| m["seed"] = 5102.into()),
+        ("peak lr", |m| m["lr"] = 1.5e-4.into()),
+        ("precision", |m| m["precision"] = "bf16".into()),
+        ("backend", |m| m["backend"] = "other".into()),
+        ("recurrence", |m| m["recurrence"] = 4.into()),
+        ("deep supervision", |m| m["deep_supervision"] = true.into()),
+        ("architecture", |m| m["architecture"] = "probe_v1".into()),
+    ];
+    for (name, mutate) in meta_cases {
+        let mut m: serde_json::Value = serde_json::from_slice(&meta_good).unwrap();
+        mutate(&mut m);
+        std::fs::write(&meta_path, serde_json::to_vec(&m).unwrap()).unwrap();
+        assert!(
+            Trainer::<TB>::load(&dir, recipe.clone(), &ds, &device).is_err(),
+            "checkpoint metadata corruption not refused: {name}"
+        );
+    }
+    std::fs::write(&meta_path, &meta_good).unwrap();
+    Trainer::<TB>::load(&dir, recipe.clone(), &ds, &device).unwrap();
+
+    // A checkpoint carried into another LR/seed's sidecar refuses even though every
+    // tensor shape matches: the sidecar is rewritten to the other recipe, the
+    // checkpoint metadata still names the original.
+    for mutate in [
+        (|r: &mut Recipe| r.peak_lr = Some(1.5e-4)) as fn(&mut Recipe),
+        |r| r.seed = Some(5102),
+    ] {
+        let mut other = recipe.clone();
+        mutate(&mut other);
+        let mut st = state.clone();
+        st.recipe_digest = other.digest();
+        st.recipe = other.clone();
+        // The history lr values belong to the original schedule; rebuild them so
+        // only the checkpoint metadata can reveal the swap.
+        if let Some(lr) = other.peak_lr {
+            for h in &mut st.history {
+                h.lr = crate::learner::lr_at(h.update, lr, other.warmup, other.updates);
+            }
+        }
+        std::fs::write(&side, serde_json::to_vec(&st).unwrap()).unwrap();
+        assert!(
+            Trainer::<TB>::load(&dir, other, &ds, &device).is_err(),
+            "a checkpoint copied from another lr/seed must refuse"
+        );
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Evaluation and selector diagnostics
 // ---------------------------------------------------------------------------
