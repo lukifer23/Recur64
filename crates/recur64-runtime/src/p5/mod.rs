@@ -15,4 +15,4 @@ pub mod teacher;
 pub mod train;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

@@ -1,0 +1,143 @@
+{
+  "active_search_v3_params": 30853790,
+  "architecture": "all_info_v1",
+  "config": "all-info-v1-cuda",
+  "difference_vs_active": -11266,
+  "groups": [
+    {
+      "group": "root.input_projection",
+      "params": 76800
+    },
+    {
+      "group": "root.square_embeddings",
+      "params": 40960
+    },
+    {
+      "group": "root.board_blocks",
+      "params": 26278480
+    },
+    {
+      "group": "root.final_norm",
+      "params": 640
+    },
+    {
+      "group": "root.from_to_projection",
+      "params": 327936
+    },
+    {
+      "group": "root.global_projection",
+      "params": 164096
+    },
+    {
+      "group": "root.promotion_embedding",
+      "params": 1280
+    },
+    {
+      "group": "root.facts_encoder",
+      "params": 17216
+    },
+    {
+      "group": "root.token_norm",
+      "params": 256
+    },
+    {
+      "group": "root.candidate_blocks",
+      "params": 526592
+    },
+    {
+      "group": "root.node_projection",
+      "params": 164096
+    },
+    {
+      "group": "root.wdl_head",
+      "params": 1923
+    },
+    {
+      "group": "query.input_projection",
+      "params": 30720
+    },
+    {
+      "group": "query.square_embeddings",
+      "params": 16384
+    },
+    {
+      "group": "query.blocks",
+      "params": 1054984
+    },
+    {
+      "group": "query.final_norm",
+      "params": 256
+    },
+    {
+      "group": "query.action_head",
+      "params": 132864
+    },
+    {
+      "group": "integrator.state_projection",
+      "params": 263680
+    },
+    {
+      "group": "integrator.state_block",
+      "params": 657920
+    },
+    {
+      "group": "integrator.branch_pool",
+      "params": 263168
+    },
+    {
+      "group": "integrator.global_block",
+      "params": 657920
+    },
+    {
+      "group": "readout",
+      "params": 164353
+    }
+  ],
+  "model": {
+    "all_info": {
+      "candidate": {
+        "blocks": 1,
+        "dim": 256,
+        "facts_enabled": true,
+        "facts_hidden": 64,
+        "ffn": 512,
+        "heads": 4,
+        "policy_hidden": 128
+      },
+      "contracts": {
+        "input": "all_info_depth2_v1",
+        "integrator": "all_info_tree_integrator_v1",
+        "query_state_encoder": "query_state_encoder_v1",
+        "root_candidate_tokens": "candidate_token_v3_root_v1",
+        "root_encoder": "v25_root_encoder_v1",
+        "root_policy": "root_policy_v3_v1",
+        "state_query": "state_query_v1"
+      },
+      "query_blocks": 2,
+      "query_dim": 256,
+      "query_ffn": 512,
+      "query_heads": 4,
+      "readout_hidden": 128,
+      "set_ffn": 768,
+      "set_heads": 4
+    },
+    "architecture": "all_info_v1",
+    "core_blocks": 8,
+    "ffn": 1280,
+    "heads": 10,
+    "in_features": 119,
+    "input_blocks": 0,
+    "output_blocks": 0,
+    "policy_dim": 128,
+    "promo_codes": 5,
+    "rms_eps": 0.00001,
+    "squares": 64,
+    "wdl_classes": 3,
+    "width": 640
+  },
+  "param_bytes_fp32": 123370096,
+  "recurrence": 1,
+  "relative_difference_vs_active": 0.0003651415271835324,
+  "total_params": 30842524,
+  "within_half_percent": true
+}

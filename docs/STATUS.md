@@ -616,3 +616,10 @@ P5 infrastructure (`recur64_runtime::p5`, `recur64 v3-p5`) and the pre-registere
   completion lags the ideal ceiling at larger budgets. Details: `docs/V3_P5_RESULTS.md`.
 - **NOT RUN:** P6, Gate I/II/III, B16, DAgger, HOLDOUT_C (sealed, unevaluated).
 - **Next gate:** owner review. Open items for approval: P6, a DAgger-style rescue, and profiling/optimisation before long runs.
+
+### V3 P6 pre-registered (2026-10-01)
+
+- **COMPLETED:** P5.2 diagnostic code; `all_info_v1` implementation and tests; baseline replication seed 5103; TRAIN-only state
+  census and CUDA preflight (micro16 x accum8); `docs/V3_P6_PLAN.md` and V3-D22 to V3-D25 committed before any ALL-INFO TUNE
+  evaluation.
+- **NOT RUN:** ALL-INFO training and evaluation, Gate I, DAgger, P7, HOLDOUT_C (sealed, unevaluated).

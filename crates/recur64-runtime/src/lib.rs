@@ -19,6 +19,7 @@ pub mod inference;
 pub mod learner;
 pub mod model_io;
 pub mod p5;
+pub mod p6;
 pub mod pilot;
 pub mod proof;
 pub mod replay;

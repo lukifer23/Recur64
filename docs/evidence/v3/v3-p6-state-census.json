@@ -1,0 +1,206 @@
+{
+  "census": {
+    "by_cell": {
+      "KQQvK M1": {
+        "max": 243,
+        "mean": 126.014,
+        "median": 125,
+        "min": 45,
+        "n": 5000,
+        "p90": 164,
+        "p95": 175,
+        "p99": 200
+      },
+      "KQQvK M2": {
+        "max": 353,
+        "mean": 195.2918,
+        "median": 192,
+        "min": 89,
+        "n": 5000,
+        "p90": 247,
+        "p95": 265,
+        "p99": 301
+      },
+      "KQQvK M3": {
+        "max": 337,
+        "mean": 224.2823593664664,
+        "median": 224,
+        "min": 100,
+        "n": 1831,
+        "p90": 274,
+        "p95": 287,
+        "p99": 316
+      },
+      "KQRvK M1": {
+        "max": 179,
+        "mean": 103.4146,
+        "median": 102,
+        "min": 35,
+        "n": 5000,
+        "p90": 140,
+        "p95": 148,
+        "p99": 159
+      },
+      "KQRvK M2": {
+        "max": 327,
+        "mean": 161.2096,
+        "median": 158,
+        "min": 52,
+        "n": 5000,
+        "p90": 210,
+        "p95": 222,
+        "p99": 247
+      },
+      "KQRvK M3": {
+        "max": 340,
+        "mean": 198.1424,
+        "median": 193,
+        "min": 71,
+        "n": 5000,
+        "p90": 265,
+        "p95": 285,
+        "p99": 315
+      },
+      "KQvK M1": {
+        "max": 115,
+        "mean": 70.8089430894309,
+        "median": 72,
+        "min": 35,
+        "n": 246,
+        "p90": 93,
+        "p95": 101,
+        "p99": 111
+      },
+      "KQvK M2": {
+        "max": 157,
+        "mean": 104.1103896103896,
+        "median": 101,
+        "min": 63,
+        "n": 462,
+        "p90": 132,
+        "p95": 141,
+        "p99": 151
+      },
+      "KQvK M3": {
+        "max": 186,
+        "mean": 122.20417633410673,
+        "median": 125,
+        "min": 53,
+        "n": 862,
+        "p90": 152,
+        "p95": 160,
+        "p99": 176
+      },
+      "KRRvK M1": {
+        "max": 133,
+        "mean": 92.6988,
+        "median": 88,
+        "min": 21,
+        "n": 5000,
+        "p90": 124,
+        "p95": 124,
+        "p99": 126
+      },
+      "KRRvK M2": {
+        "max": 225,
+        "mean": 132.0302,
+        "median": 131,
+        "min": 36,
+        "n": 5000,
+        "p90": 178,
+        "p95": 196,
+        "p99": 220
+      },
+      "KRRvK M3": {
+        "max": 295,
+        "mean": 164.9508,
+        "median": 166,
+        "min": 33,
+        "n": 5000,
+        "p90": 210,
+        "p95": 222,
+        "p99": 283
+      },
+      "KRvK M1": {
+        "max": 64,
+        "mean": 51.56209150326797,
+        "median": 53,
+        "min": 32,
+        "n": 153,
+        "p90": 64,
+        "p95": 64,
+        "p99": 64
+      },
+      "KRvK M2": {
+        "max": 99,
+        "mean": 73.01173708920187,
+        "median": 78,
+        "min": 28,
+        "n": 426,
+        "p90": 95,
+        "p95": 95,
+        "p99": 99
+      },
+      "KRvK M3": {
+        "max": 119,
+        "mean": 97.88352272727273,
+        "median": 100,
+        "min": 27,
+        "n": 352,
+        "p90": 118,
+        "p95": 118,
+        "p99": 119
+      }
+    },
+    "depth1_states": {
+      "max": 60,
+      "mean": 37.81180637011639,
+      "median": 37,
+      "min": 11,
+      "n": 44332,
+      "p90": 49,
+      "p95": 51,
+      "p99": 54
+    },
+    "depth2_states": {
+      "max": 303,
+      "mean": 109.34435622123974,
+      "median": 103,
+      "min": 0,
+      "n": 44332,
+      "p90": 178,
+      "p95": 201,
+      "p99": 245
+    },
+    "max_child_legal": 8,
+    "positions": 44332,
+    "root_legal": {
+      "max": 60,
+      "mean": 37.81180637011639,
+      "median": 37,
+      "min": 11,
+      "n": 44332,
+      "p90": 49,
+      "p95": 51,
+      "p99": 54
+    },
+    "terminal_depth1_fraction": 0.04460192343371277,
+    "total_future_states": {
+      "max": 353,
+      "mean": 147.15616259135612,
+      "median": 140,
+      "min": 21,
+      "n": 44332,
+      "p90": 220,
+      "p95": 244,
+      "p99": 288
+    },
+    "total_state_transitions": 6523727
+  },
+  "census_wall_s": 0.0422953,
+  "count_method": "authoritative move generator (GameState); equals the exhaustive tree builder (tested)",
+  "dataset_digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+  "input_contract": "all_info_depth2_v1",
+  "label": "TRAIN only (P25_DATA_V1); no TUNE or HOLDOUT_C position was read",
+  "schema": "v3_p6_state_census_v1"
+}

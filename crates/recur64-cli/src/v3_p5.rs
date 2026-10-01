@@ -25,8 +25,8 @@ use recur64_runtime::p5::recipe::{BUDGETS, CANDIDATE_LRS, Layout, Recipe, SCREEN
 use recur64_runtime::p5::train::{P5State, Trainer, draws_per_update};
 
 const STACK_BYTES: usize = 512 * 1024 * 1024;
-const EVAL_BATCH: usize = 64;
-const CHECKPOINT_EVERY: u64 = 50;
+pub(crate) const EVAL_BATCH: usize = 64;
+pub(crate) const CHECKPOINT_EVERY: u64 = 50;
 const WALL_LIMIT_S: f64 = 2.0 * 3600.0;
 
 #[derive(Clone, Copy, Debug, ValueEnum, PartialEq, Eq)]
@@ -227,13 +227,13 @@ pub fn run(cmd: P5Cmd) -> anyhow::Result<()> {
     }
 }
 
-enum Dispatch {
+pub(crate) enum Dispatch {
     Cpu,
     #[cfg(feature = "cuda")]
     Cuda,
 }
 
-fn dispatch(
+pub(crate) fn dispatch(
     dev: Dev,
     f: impl FnOnce(Dispatch) -> anyhow::Result<()> + Send + 'static,
 ) -> anyhow::Result<()> {
@@ -247,7 +247,7 @@ fn dispatch(
     on_big_stack("v3-p5", move || f(d))
 }
 
-fn write_json(path: &Path, v: &serde_json::Value) -> anyhow::Result<()> {
+pub(crate) fn write_json(path: &Path, v: &serde_json::Value) -> anyhow::Result<()> {
     if let Some(p) = path.parent() {
         std::fs::create_dir_all(p)?;
     }
@@ -273,7 +273,7 @@ fn run_recipe(a: &RecipeArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn load_contract(path: &Path) -> anyhow::Result<Recipe> {
+pub(crate) fn load_contract(path: &Path) -> anyhow::Result<Recipe> {
     let v: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
     let r: Recipe = serde_json::from_value(v["recipe"].clone())?;
     anyhow::ensure!(
@@ -437,7 +437,7 @@ fn eval_path(dir: &Path, update: u64) -> PathBuf {
     dir.join(format!("eval-u{update:04}.json"))
 }
 
-fn state_dirs(dir: &Path) -> [PathBuf; 2] {
+pub(crate) fn state_dirs(dir: &Path) -> [PathBuf; 2] {
     [dir.join("state-0"), dir.join("state-1")]
 }
 
@@ -515,7 +515,7 @@ fn run_eval_at<B: burn::tensor::backend::Backend>(
 
 /// Operator guard: a fresh model starts only in an empty run directory, so it can
 /// never inherit another run's evaluations or partial artifacts.
-fn require_empty_run_dir(dir: &Path) -> anyhow::Result<()> {
+pub(crate) fn require_empty_run_dir(dir: &Path) -> anyhow::Result<()> {
     let mut found: Vec<String> = Vec::new();
     for e in std::fs::read_dir(dir)? {
         found.push(e?.file_name().to_string_lossy().into_owned());
@@ -538,7 +538,7 @@ pub const INELIGIBLE_CLASSES: [&str; 4] = [
     "checkpoint_resume",
 ];
 
-fn ineligibility_class(msg: &str) -> Option<&'static str> {
+pub(crate) fn ineligibility_class(msg: &str) -> Option<&'static str> {
     if msg.contains("non-finite") {
         Some("non_finite")
     } else if msg.contains("health") {

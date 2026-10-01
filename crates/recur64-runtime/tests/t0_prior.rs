@@ -35,6 +35,7 @@ fn f10() -> ModelConfig {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
     }
 }
 

@@ -34,6 +34,14 @@ use super::train::{Item, Micro, Trainer, UpdatePlan, compute_update};
 
 type TB = CpuTrainBackend;
 
+/// The backend RNG is process-global: tests that seed it or build models must not interleave
+/// (P5 and P6 tests share this lock).
+static RNG: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+pub(crate) fn rng_lock() -> std::sync::MutexGuard<'static, ()> {
+    RNG.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 const KQ: &[char] = &['K', 'Q'];
 const KR: &[char] = &['K', 'R'];
 const KQR: &[char] = &['K', 'Q', 'R'];
@@ -140,7 +148,7 @@ fn find(
     panic!("no {family} M{depth} fixture");
 }
 
-fn tmp(name: &str) -> PathBuf {
+pub(crate) fn tmp(name: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("recur64_p5_{name}"));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
@@ -148,7 +156,7 @@ fn tmp(name: &str) -> PathBuf {
 }
 
 /// A small mixed dataset (several cells, all depths) with verified traces on disk.
-fn mini_dataset(
+pub(crate) fn mini_dataset(
     split: Split,
     dir: &std::path::Path,
     count: usize,
@@ -227,6 +235,7 @@ fn apply_edge(mgr: &mut QueryManager, tree: &mut Tree, e: &EdgeRef) {
 
 #[test]
 fn the_completion_latch_stops_all_process_targets_even_when_filler_opens_an_incorrect_branch() {
+    let _g = rng_lock();
     // M1 with several correct root moves AND incorrect moves that have refutations.
     let (p, t) = find(KQ, "KQvK", 1, 31, |t| {
         t.nodes[t.root as usize].alts.len() >= 2 && !t.refutations.is_empty()
@@ -288,6 +297,7 @@ fn the_completion_latch_stops_all_process_targets_even_when_filler_opens_an_inco
 
 #[test]
 fn after_completion_the_remaining_budget_is_spent_in_fixed_bfs_order() {
+    let _g = rng_lock();
     let (p, t) = find(KQ, "KQvK", 1, 41, |_| true);
     let root = GameState::from_fen(&p.fen).unwrap();
     let mut mgr = QueryManager::new(root).unwrap();
@@ -311,6 +321,7 @@ fn after_completion_the_remaining_budget_is_spent_in_fixed_bfs_order() {
 
 #[test]
 fn the_follow_choice_is_deterministic_seeded_and_model_independent() {
+    let _g = rng_lock();
     let (p, t) = find(KQR, "KQRvK", 2, 51, |t| {
         t.nodes[t.root as usize].alts.len() >= 2
     });
@@ -356,6 +367,7 @@ fn the_follow_choice_is_deterministic_seeded_and_model_independent() {
 
 #[test]
 fn the_key_does_not_use_a_process_randomised_hasher() {
+    let _g = rng_lock();
     // Pinned values: a std DefaultHasher would change between processes.
     assert_eq!(super::teacher::fnv1a(b"abc"), 0xE71F_A219_0541_574B);
     assert_eq!(follow_key(0, "x", 0, 0), follow_key(0, "x", 0, 0));
@@ -365,6 +377,7 @@ fn the_key_does_not_use_a_process_randomised_hasher() {
 
 #[test]
 fn while_incomplete_the_teacher_never_enters_an_incorrect_branch_and_completes_in_q_star() {
+    let _g = rng_lock();
     for (white, fam, depth, seed) in [
         (KQR, "KQRvK", 2u8, 61u64),
         (KQR, "KQRvK", 3, 62),
@@ -396,6 +409,7 @@ fn while_incomplete_the_teacher_never_enters_an_incorrect_branch_and_completes_i
 
 #[test]
 fn dataset_loading_refuses_every_identity_mismatch() {
+    let _g = rng_lock();
     let d = tmp("refuse");
     let (p, tdir) = mini_dataset(Split::Train, &d, 6, 71);
     let good = expected_for(&p, &tdir, Split::Train);
@@ -470,6 +484,7 @@ fn dataset_loading_refuses_every_identity_mismatch() {
 
 #[test]
 fn per_budget_samplers_are_independent_balanced_and_identical_across_learning_rates() {
+    let _g = rng_lock();
     // 15 cells like P25 TRAIN, of very different sizes.
     let mut cells = Vec::new();
     for (fam, sizes) in [
@@ -534,6 +549,7 @@ fn per_budget_samplers_are_independent_balanced_and_identical_across_learning_ra
 
 #[test]
 fn every_optimizer_update_has_equal_budget_exposure() {
+    let _g = rng_lock();
     let (ds, _d) = dataset(12, 81);
     let recipe = tiny_recipe(2, 8, 2, 5101);
     let mut tr = Trainer::<TB>::new(recipe, &ds, &Default::default()).unwrap();
@@ -604,6 +620,7 @@ fn plan_of(items: &[(usize, usize, u64)], micro: usize) -> UpdatePlan {
 
 #[test]
 fn the_accumulated_update_equals_the_monolithic_objective_and_ignores_microbatching() {
+    let _g = rng_lock();
     let (ds, _d) = dataset(15, 91);
     let device = Default::default();
     let recipe = tiny_recipe(2, 8, 2, 5101);
@@ -650,6 +667,7 @@ fn the_accumulated_update_equals_the_monolithic_objective_and_ignores_microbatch
 
 #[test]
 fn the_selector_weight_does_not_depend_on_how_many_b0_examples_exist() {
+    let _g = rng_lock();
     // The selector term is a mean over supervised decisions only: adding B0 examples
     // (which have none) must change the policy mean but not the selector mean.
     let (ds, _d) = dataset(15, 92);
@@ -698,6 +716,7 @@ fn params(m: &ActiveSearchModel<TB>) -> Vec<f32> {
 
 #[test]
 fn cpu_resume_is_bit_exact_under_the_p5_recipe() {
+    let _g = rng_lock();
     let (ds, _d) = dataset(15, 101);
     let device = Default::default();
     let recipe = tiny_recipe(2, 4, 4, 5101);
@@ -742,6 +761,7 @@ fn cpu_resume_is_bit_exact_under_the_p5_recipe() {
 
 #[test]
 fn a_checkpoint_refuses_any_other_recipe() {
+    let _g = rng_lock();
     let (ds, _d) = dataset(15, 102);
     let device = Default::default();
     let recipe = tiny_recipe(2, 4, 4, 5101);
@@ -776,6 +796,7 @@ type Case<T> = (&'static str, fn(&mut T));
 
 #[test]
 fn resume_refuses_every_inconsistent_sidecar_and_checkpoint() {
+    let _g = rng_lock();
     use super::train::P5State;
     let (ds, _d) = dataset(15, 103);
     let device = Default::default();
@@ -886,6 +907,7 @@ fn resume_refuses_every_inconsistent_sidecar_and_checkpoint() {
 
 #[test]
 fn the_diagnostic_classifies_queries_against_the_proof_structure() {
+    let _g = rng_lock();
     let (p, t) = find(KQR, "KQRvK", 2, 111, |t| {
         t.refutations.iter().any(|r| r.replies.len() >= 2)
     });
@@ -973,6 +995,7 @@ fn the_diagnostic_classifies_queries_against_the_proof_structure() {
 
 #[test]
 fn the_refined_diagnostic_separates_pre_and_post_completion_queries() {
+    let _g = rng_lock();
     use super::eval::classify_queries_refined;
     let (p, t) = find(KQR, "KQRvK", 2, 111, |t| {
         t.refutations.iter().any(|r| r.replies.len() >= 2)
@@ -1066,6 +1089,7 @@ fn the_refined_diagnostic_separates_pre_and_post_completion_queries() {
 
 #[test]
 fn evaluation_is_complete_finite_and_the_screen_score_follows_the_frozen_formula() {
+    let _g = rng_lock();
     let (ds, _d) = dataset(18, 121);
     let device = Default::default();
     <CpuTrainBackend as Backend>::seed(&device, 7);
@@ -1123,6 +1147,7 @@ fn evaluation_is_complete_finite_and_the_screen_score_follows_the_frozen_formula
 
 #[test]
 fn p5_never_trains_b16_or_uses_holdout_c() {
+    let _g = rng_lock();
     let mut r = tiny_recipe(2, 8, 2, 1);
     assert!(!r.budgets.contains(&16) && !r.budget_sequence.contains(&16));
     r.budgets.push(16);
@@ -1137,6 +1162,7 @@ fn p5_never_trains_b16_or_uses_holdout_c() {
 
 #[test]
 fn a_training_update_runs_end_to_end_and_reduces_nothing_it_should_not() {
+    let _g = rng_lock();
     // One real update: finite losses, per-budget exposure, B0 has no supervised steps,
     // completed proofs are counted, and the optimizer moves the weights.
     let (ds, _d) = dataset(15, 131);
@@ -1170,6 +1196,7 @@ fn a_training_update_runs_end_to_end_and_reduces_nothing_it_should_not() {
 
 #[test]
 fn model_free_simulation_matches_the_real_run_tree_semantics() {
+    let _g = rng_lock();
     // simulate_episode must reproduce exactly what ActiveSearchModel::run does with
     // the same teacher: the supervised count of every example equals the model's.
     let (ds, _d) = dataset(9, 141);

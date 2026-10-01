@@ -31,6 +31,7 @@ fn f10_params() -> usize {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
     };
     ProbeModel::<Flex>::new(cfg, &Default::default()).num_params()
 }
@@ -48,6 +49,7 @@ pub fn run_model_info(path: &Path, json: Option<&Path>) -> anyhow::Result<()> {
         Architecture::CandidateV25 => return run_candidate_info(&cfg, json),
         Architecture::LegacyFactsV25 => return run_legacy_facts_info(&cfg, json),
         Architecture::ActiveSearchV3 => return run_active_info(&cfg, json),
+        Architecture::AllInfoV1 => return run_all_info_info(&cfg, json),
         Architecture::ProbeV1 => {}
     }
     let device = Default::default();
@@ -224,6 +226,119 @@ fn run_active_info(cfg: &ProbeConfig, json: Option<&Path>) -> anyhow::Result<()>
             "training_budgets": training_budgets,
             "recurrence": 1,
             "test_time_compute_dimension": "exact state-query budget",
+        });
+        if let Some(dir) = out.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(out, serde_json::to_vec_pretty(&doc)?)?;
+        println!("wrote {}", out.display());
+    }
+    Ok(())
+}
+
+/// `model-info` for `all_info_v1`: exact subsystem accounting and the parameter match to
+/// `active_search_v3` required by the P6 plan (within 0.5%).
+fn run_all_info_info(cfg: &ProbeConfig, json: Option<&Path>) -> anyhow::Result<()> {
+    use recur64_model::all_info::AllInfoModel;
+    use recur64_model::config::ACTIVE_MAX_DEPTH;
+    /// `active_search_v3` parameter count (V3-D9).
+    const ACTIVE_PARAMS: usize = 30_853_790;
+    let a = cfg
+        .model
+        .all_info
+        .clone()
+        .expect("validated all_info geometry");
+    let device = Default::default();
+    let model = AllInfoModel::<Flex>::new(cfg.model.clone(), &device);
+    println!("config          : {}", cfg.name);
+    println!("architecture    : {}", cfg.model.architecture.id());
+    println!("device          : {:?}", cfg.device);
+    println!("precision       : {}", cfg.precision.label());
+    println!(
+        "root board      : width={} heads={} ffn={} head_dim={} unique blocks={} (executed exactly once per decision)",
+        cfg.model.width,
+        cfg.model.heads,
+        cfg.model.ffn,
+        cfg.model.head_dim(),
+        cfg.model.core_blocks
+    );
+    println!(
+        "root candidates : dim={} heads={} ffn={} blocks={} facts_hidden={} facts_enabled={} (CandidateFactsV1 at the root only)",
+        a.candidate.dim,
+        a.candidate.heads,
+        a.candidate.ffn,
+        a.candidate.blocks,
+        a.candidate.facts_hidden,
+        a.candidate.facts_enabled
+    );
+    println!(
+        "query encoder   : width={} heads={} ffn={} blocks={} (ONE shared instance encodes every supplied future state)",
+        a.query_dim, a.query_heads, a.query_ffn, a.query_blocks
+    );
+    println!(
+        "set integrator  : heads={} ffn={} (per-branch set block, root-token attention pool, cross-branch set block; no positional encoding)",
+        a.set_heads, a.set_ffn
+    );
+    println!(
+        "readout         : hidden={} (sparse legal-candidate softmax; the same function as active_search_v3)",
+        a.readout_hidden
+    );
+    println!(
+        "input           : the exhaustive raw depth-2 tree (all root successors, all opponent replies); no pruning, no truncation; maximum depth {ACTIVE_MAX_DEPTH} is not used"
+    );
+    println!("\ncontracts:");
+    let c = &a.contracts;
+    for (k, v) in [
+        ("root_encoder", &c.root_encoder),
+        ("root_candidate_tokens", &c.root_candidate_tokens),
+        ("state_query", &c.state_query),
+        ("query_state_encoder", &c.query_state_encoder),
+        ("input", &c.input),
+        ("integrator", &c.integrator),
+        ("root_policy", &c.root_policy),
+    ] {
+        println!("  {k:<24} {v}");
+    }
+    println!("\nparameter breakdown (unique):");
+    let mut total = 0usize;
+    let mut groups = Vec::new();
+    for (name, n) in model.param_breakdown() {
+        println!("  {:<28} {:>12}", name, n);
+        total += n;
+        groups.push(serde_json::json!({ "group": name, "params": n }));
+    }
+    println!("  {:<28} {:>12}", "TOTAL UNIQUE", total);
+    anyhow::ensure!(
+        total == model.num_params(),
+        "breakdown {total} does not sum to num_params {}",
+        model.num_params()
+    );
+    let diff = total as i64 - ACTIVE_PARAMS as i64;
+    let rel = diff.unsigned_abs() as f64 / ACTIVE_PARAMS as f64;
+    println!(
+        "vs active_search_v3 : {ACTIVE_PARAMS} -> difference {diff} ({:.4}%); within 0.5%: {}",
+        rel * 100.0,
+        rel <= 0.005
+    );
+    let bytes = total * 4;
+    println!(
+        "parameter bytes : {} ({:.1} MiB, fp32)",
+        bytes,
+        bytes as f64 / (1024.0 * 1024.0)
+    );
+    if let Some(out) = json {
+        let doc = serde_json::json!({
+            "config": cfg.name,
+            "architecture": cfg.model.architecture.id(),
+            "model": cfg.model,
+            "groups": groups,
+            "total_params": total,
+            "param_bytes_fp32": bytes,
+            "active_search_v3_params": ACTIVE_PARAMS,
+            "difference_vs_active": diff,
+            "relative_difference_vs_active": rel,
+            "within_half_percent": rel <= 0.005,
+            "recurrence": 1,
         });
         if let Some(dir) = out.parent() {
             std::fs::create_dir_all(dir)?;

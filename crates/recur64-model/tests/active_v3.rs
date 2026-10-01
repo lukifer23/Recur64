@@ -705,11 +705,12 @@ fn configs() -> Vec<(&'static str, ModelConfig)> {
         ("candidate_v25", ModelConfig::candidate_v25(true)),
         ("legacy_facts_v25", ModelConfig::legacy_facts_v25()),
         ("active_search_v3", ModelConfig::active_search_v3()),
+        ("all_info_v1", ModelConfig::all_info_v1()),
     ]
 }
 
 #[test]
-fn every_ordered_pair_of_four_architectures_is_refused_explicitly() {
+fn every_ordered_pair_of_five_architectures_is_refused_explicitly() {
     let cfgs = configs();
     for (na, ca) in &cfgs {
         let m = meta(ca.clone());

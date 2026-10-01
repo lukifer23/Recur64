@@ -353,3 +353,19 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **Evidence:** `docs/V3_P5_RESULTS.md`, `docs/evidence/v3/v3-p5-run-*.json`, `v3-p5-pairing-check.json`,
   `v3-p5-lr-selection.json`, `v3-p5-selected-recipe.json`.
 - **NOT RUN:** P6, Gate I/II/III, B16, DAgger, HOLDOUT_C evaluation.
+
+## V3-E16 - P5.2 diagnostic code and P6 ALL-INFO pre-registration
+
+- **Date:** 2026-10-01
+- **P5.2 code (committed before any new diagnostic value):** refined selector diagnostic splitting queries at proof
+  completion (asserting no proof-admissible edge exists after completion), first-completion-step and completion-after-k
+  distributions, per-position results, and `v3-p5 rediagnose` (re-evaluates the two selected final checkpoints and refuses
+  unless the policy reproduces the committed P5 evidence). Values: see the P5.2 evidence once taken.
+- **P6 pre-registration:** `docs/V3_P6_PLAN.md`, V3-D22 to V3-D25. Baseline replication seed 5103 trained (exact selected
+  recipe, fresh, uninterrupted; update-800 S_run 1.5707). `all_info_v1` implemented and tested (30,842,524 parameters,
+  0.0365% from ACTIVE; permutation invariance, exhaustive no-truncation trees, gradient coverage, strict identity and
+  five-architecture refusals, exact CPU resume). TRAIN-only census (median 140 future states/position, max 353) and CUDA
+  preflight (micro16 x accum8, 1.76 h projected, 11.1 GiB peak). No ALL-INFO model had been trained or evaluated on TUNE.
+- **Finding recorded:** same-seed ACTIVE and ALL-INFO shared modules do not start with identical weights (lazy,
+  order-dependent initialisation); not claimed.
+- **NOT RUN:** ALL-INFO training, B0 reference evaluation, Gate I, DAgger, P7.

@@ -13,6 +13,7 @@ pub const BURN_VERSION: &str = "0.21.0";
 
 pub mod action;
 pub mod active;
+pub mod all_info;
 pub mod candidate;
 pub mod checkpoint;
 pub mod config;

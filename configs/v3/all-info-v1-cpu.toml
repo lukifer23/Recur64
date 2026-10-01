@@ -1,0 +1,20 @@
+# Recur64 V3 P6 all_info_v1: the information-sufficiency control (exhaustive raw depth-2 tree).
+# Geometry and contracts per docs/V3_P6_PLAN.md. FP32 only.
+name = "all-info-v1-cpu"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+architecture = "all_info_v1"
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+
+[model.all_info]

@@ -1,0 +1,117 @@
+{
+  "cold_update_wall_s": 20.9384279,
+  "device": "Cuda",
+  "eval_s_per_position": 0.032028409375,
+  "gpu": {
+    "last_vram_mb": 11089,
+    "min_vram_mb": 109,
+    "peak_vram_mb": 11089,
+    "samples": 95,
+    "temp_max_c": 60,
+    "util_busy_mean": 76.8082191780822,
+    "util_max": 99
+  },
+  "gpu_total_mb": 16380,
+  "gradient_coverage": {
+    "parameter_tensors": 236,
+    "uncovered": []
+  },
+  "layout": {
+    "accum": 8,
+    "micro": 16
+  },
+  "max_states_in_one_microbatch": 2276,
+  "model_s_mean": 9.82230645,
+  "ok": true,
+  "parameters": 30842524,
+  "projection": {
+    "basis": "steady-state mean update wall x 800 + one TUNE evaluation (per-position cost measured on a TRAIN subset x 4500) + 16 checkpoints assumed 15 s each",
+    "checkpoint_s_assumed": 240.0,
+    "evaluation_s": 144.1278421875,
+    "limit_h": 2.0,
+    "single_run_total_h": 1.7588391932002314,
+    "single_run_total_s": 6331.821095520833,
+    "train_s": 5947.693253333333,
+    "within_limit": true
+  },
+  "qualification_rule": {
+    "fits_vram": true,
+    "peak_vram_within_fraction_of_device": 0.95,
+    "projected_run_limit_h": 2.0,
+    "runs_correctly": true,
+    "vram_plateau_fraction": 0.05,
+    "vram_plateau_stable": true,
+    "within_time_limit": true
+  },
+  "qualifies": true,
+  "recipe_contract_digest": "4d95dda0e87d067b25659166fbfe6d1e0c6f246c80aace92b056b2af62f6b110",
+  "states_per_update_mean": 16218.0,
+  "steady_update_wall_s_mean": 7.434616566666667,
+  "tested": "real TRAIN updates at full geometry with live exhaustive StateQuery trees on the requested device",
+  "tree_build_s_mean": 0.037427675,
+  "updates": [
+    {
+      "lr": 3.7499999999999997e-6,
+      "report": {
+        "examples": 128,
+        "grad_norm": 0.4351860582828522,
+        "max_micro_states": 2276,
+        "model_s": 18.8034477,
+        "policy_loss": 3.4467186629772186,
+        "states_supplied": 16486,
+        "tree_build_s": 0.056624
+      },
+      "update": 0,
+      "wall_s": 20.9384279
+    },
+    {
+      "lr": 7.499999999999999e-6,
+      "report": {
+        "examples": 128,
+        "grad_norm": 0.4558069407939911,
+        "max_micro_states": 2109,
+        "model_s": 6.3244488,
+        "policy_loss": 3.4314485490322113,
+        "states_supplied": 15543,
+        "tree_build_s": 0.0288633
+      },
+      "update": 1,
+      "wall_s": 6.878063
+    },
+    {
+      "lr": 0.000011249999999999999,
+      "report": {
+        "examples": 128,
+        "grad_norm": 0.4750445783138275,
+        "max_micro_states": 2276,
+        "model_s": 7.5682408,
+        "policy_loss": 3.43388095498085,
+        "states_supplied": 16201,
+        "tree_build_s": 0.030946599999999998
+      },
+      "update": 2,
+      "wall_s": 8.047118
+    },
+    {
+      "lr": 0.000014999999999999999,
+      "report": {
+        "examples": 128,
+        "grad_norm": 0.502118706703186,
+        "max_micro_states": 2189,
+        "model_s": 6.5930885,
+        "policy_loss": 3.4348802864551544,
+        "states_supplied": 16642,
+        "tree_build_s": 0.0332768
+      },
+      "update": 3,
+      "wall_s": 7.3786687
+    }
+  ],
+  "vram_mb_after_each_update": [
+    9201,
+    9425,
+    9425,
+    9425
+  ],
+  "vram_plateau_stable": true
+}

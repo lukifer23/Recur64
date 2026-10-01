@@ -28,6 +28,7 @@ fn small_cfg() -> ModelConfig {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
     }
 }
 

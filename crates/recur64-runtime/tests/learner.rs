@@ -29,6 +29,7 @@ fn micro() -> ModelConfig {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
     }
 }
 

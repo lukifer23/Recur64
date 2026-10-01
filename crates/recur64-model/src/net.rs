@@ -10,6 +10,7 @@ use burn::module::Module;
 use burn::prelude::*;
 
 use crate::active::ActiveSearchModel;
+use crate::all_info::AllInfoModel;
 use crate::candidate::CandidateV25Model;
 use crate::config::{Architecture, ModelConfig};
 use crate::legacy_facts::LegacyFactsModel;
@@ -235,6 +236,49 @@ impl<B: Backend> NeuralModel<B> for ActiveSearchModel<B> {
         let facts =
             facts.expect("active_search_v3 requires CandidateFactsV1 (facts tensor is None)");
         self.forward_b0(board, cands, facts)
+    }
+
+    fn param_count(&self) -> usize {
+        self.num_params()
+    }
+
+    fn param_groups(&self) -> Vec<(&'static str, usize)> {
+        self.param_breakdown()
+    }
+}
+
+impl<B: Backend> NeuralModel<B> for AllInfoModel<B> {
+    const ARCHITECTURE: Architecture = Architecture::AllInfoV1;
+
+    fn build(cfg: &ModelConfig, device: &B::Device) -> anyhow::Result<Self> {
+        cfg.validate()?;
+        anyhow::ensure!(
+            cfg.architecture == Architecture::AllInfoV1,
+            "cannot build an all_info_v1 model from a {} configuration",
+            cfg.architecture.id()
+        );
+        Ok(AllInfoModel::new(cfg.clone(), device))
+    }
+
+    fn model_config(&self) -> &ModelConfig {
+        self.config()
+    }
+
+    fn needs_candidate_facts(&self) -> bool {
+        true
+    }
+
+    /// The trait's batched path carries no tree, so it is explicitly refused: ALL-INFO is
+    /// defined only on the exhaustive depth-2 tree (`AllInfoModel::forward_trees`).
+    fn forward_inputs(
+        &self,
+        _board: Tensor<B, 3>,
+        _cands: &CandidateTensors<B>,
+        _facts: Option<Tensor<B, 3>>,
+        _recurrence: usize,
+        _deep_supervision: bool,
+    ) -> ModelOutput<B> {
+        self.no_tree_forward()
     }
 
     fn param_count(&self) -> usize {

@@ -137,6 +137,16 @@ impl<B: Backend> ActiveSearchModel<B> {
         }
     }
 
+    /// The shared root path (identity checks against `all_info_v1`).
+    pub fn root_path(&self) -> &RootPath<B> {
+        &self.root
+    }
+
+    /// The shared query-state encoder (identity checks against `all_info_v1`).
+    pub fn query_encoder(&self) -> &QueryEncoder<B> {
+        &self.query
+    }
+
     pub fn num_params(&self) -> usize {
         Module::num_params(self)
     }

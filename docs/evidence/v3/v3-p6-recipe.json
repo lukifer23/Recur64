@@ -1,0 +1,100 @@
+{
+  "contract_digest": "4d95dda0e87d067b25659166fbfe6d1e0c6f246c80aace92b056b2af62f6b110",
+  "ladder": [
+    [
+      16,
+      8
+    ],
+    [
+      8,
+      16
+    ],
+    [
+      4,
+      32
+    ],
+    [
+      2,
+      64
+    ]
+  ],
+  "layout": {
+    "accum": 8,
+    "micro": 16
+  },
+  "recipe": {
+    "accum": 8,
+    "effective_batch": 128,
+    "eval_updates": [
+      800
+    ],
+    "input_contract": "all_info_depth2_v1",
+    "loss": "root_policy_ce_only",
+    "lr_schedule": "linear_warmup_then_cosine_v1 (recur64_runtime::learner::lr_at)",
+    "micro": 16,
+    "model": {
+      "all_info": {
+        "candidate": {
+          "blocks": 1,
+          "dim": 256,
+          "facts_enabled": true,
+          "facts_hidden": 64,
+          "ffn": 512,
+          "heads": 4,
+          "policy_hidden": 128
+        },
+        "contracts": {
+          "input": "all_info_depth2_v1",
+          "integrator": "all_info_tree_integrator_v1",
+          "query_state_encoder": "query_state_encoder_v1",
+          "root_candidate_tokens": "candidate_token_v3_root_v1",
+          "root_encoder": "v25_root_encoder_v1",
+          "root_policy": "root_policy_v3_v1",
+          "state_query": "state_query_v1"
+        },
+        "query_blocks": 2,
+        "query_dim": 256,
+        "query_ffn": 512,
+        "query_heads": 4,
+        "readout_hidden": 128,
+        "set_ffn": 768,
+        "set_heads": 4
+      },
+      "architecture": "all_info_v1",
+      "core_blocks": 8,
+      "ffn": 1280,
+      "heads": 10,
+      "in_features": 119,
+      "input_blocks": 0,
+      "output_blocks": 0,
+      "policy_dim": 128,
+      "promo_codes": 5,
+      "rms_eps": 0.00001,
+      "squares": 64,
+      "wdl_classes": 3,
+      "width": 640
+    },
+    "normalisation": "L = sum(policy CE over every example of the update)/N_examples, N = 128; \\\nthe normaliser is the whole optimizer update's count, never a microbatch's. No selector loss, no WDL loss",
+    "optimizer_contract": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "p25_data_digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+    "peak_lr": 0.0003,
+    "policy_weight": 1.0,
+    "precision": "fp32",
+    "sampler": "cell_balanced_v1",
+    "sampler_seed_rule": "one cell_balanced_v1 sampler over the 15 P25 TRAIN cells, seed = mix(run_seed ^ mix(0x5A3D6000))",
+    "schema": "v3_p6_recipe_v1",
+    "seed": null,
+    "selector_weight": 0.0,
+    "updates": 800,
+    "v3_tune_digest": "c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53",
+    "warmup": 80,
+    "wdl_weight": 0.0
+  },
+  "schema": "v3_p6_recipe_file_v1",
+  "seeds": [
+    5101,
+    5102,
+    5103
+  ],
+  "selected_lr": 0.0003
+}

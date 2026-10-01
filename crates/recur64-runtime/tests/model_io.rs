@@ -29,6 +29,7 @@ fn micro() -> ModelConfig {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
     }
 }
 
@@ -52,6 +53,7 @@ fn same_shape_model_config_mismatch_is_refused_on_every_load_path() {
         candidate: None,
         legacy_facts: None,
         active: None,
+        all_info: None,
         ..cfg.clone()
     };
     let err = model_io::load::<Flex>(&dir, &other, &device)

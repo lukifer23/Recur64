@@ -100,6 +100,11 @@ pub struct ModelConfig {
     /// historical scientific hash is unchanged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active: Option<ActiveConfig>,
+    /// P6 ALL-INFO geometry and contract identities; present iff
+    /// `architecture == all_info_v1`. Skipped when absent, so every historical and
+    /// V3 scientific hash is unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub all_info: Option<AllInfoConfig>,
 }
 
 /// Which network a `ModelConfig` instantiates.
@@ -117,6 +122,9 @@ pub enum Architecture {
     /// Recur64 V3: one root encoding plus a budgeted number of exact
     /// single-edge state queries (`active_search_v3`).
     ActiveSearchV3,
+    /// Recur64 V3 P6: the separately trained information-sufficiency control that
+    /// receives an exhaustive raw depth-2 tree at once (`all_info_v1`).
+    AllInfoV1,
 }
 
 impl Architecture {
@@ -130,6 +138,7 @@ impl Architecture {
             Architecture::CandidateV25 => "candidate_v25",
             Architecture::LegacyFactsV25 => "legacy_facts_v25",
             Architecture::ActiveSearchV3 => "active_search_v3",
+            Architecture::AllInfoV1 => "all_info_v1",
         }
     }
 }
@@ -380,6 +389,112 @@ impl Default for CandidateConfig {
     }
 }
 
+// ---------------------------------------------------------------------------
+// P6 ALL-INFO (`all_info_v1`): the information-sufficiency control. Separately
+// trained; shares the V2.5 root encoder, the root candidate tokens and the
+// `query_state_encoder_v1` architecture with `active_search_v3`, and replaces the
+// selector/planner by a set integrator over the exhaustive raw depth-2 tree.
+// ---------------------------------------------------------------------------
+
+pub const ALL_INFO_INPUT: &str = "all_info_depth2_v1";
+pub const ALL_INFO_INTEGRATOR: &str = "all_info_tree_integrator_v1";
+
+/// Version of the ALL-INFO readout function.
+pub const ALL_INFO_HEAD_VERSION: u32 = 1;
+
+/// Versioned identities of every ALL-INFO scientific contract.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AllInfoContracts {
+    pub root_encoder: String,
+    pub root_candidate_tokens: String,
+    pub state_query: String,
+    pub query_state_encoder: String,
+    pub input: String,
+    pub integrator: String,
+    pub root_policy: String,
+}
+
+impl Default for AllInfoContracts {
+    fn default() -> Self {
+        Self {
+            root_encoder: ACTIVE_ROOT_ENCODER.into(),
+            root_candidate_tokens: ACTIVE_ROOT_CANDIDATE_TOKENS.into(),
+            state_query: ACTIVE_STATE_QUERY.into(),
+            query_state_encoder: ACTIVE_QUERY_STATE_ENCODER.into(),
+            input: ALL_INFO_INPUT.into(),
+            integrator: ALL_INFO_INTEGRATOR.into(),
+            root_policy: ACTIVE_ROOT_POLICY.into(),
+        }
+    }
+}
+
+fn d_set_heads() -> usize {
+    4
+}
+fn d_set_ffn() -> usize {
+    768
+}
+
+/// ALL-INFO geometry. Token width equals the root candidate dimension and the
+/// query-encoder width (shared token space).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AllInfoConfig {
+    /// Root candidate geometry (V2.5 CF: dim 256, 4 heads, FFN 512, 1 block, facts on).
+    #[serde(default)]
+    pub candidate: CandidateConfig,
+    #[serde(default = "d_q_dim")]
+    pub query_dim: usize,
+    #[serde(default = "d_q_heads")]
+    pub query_heads: usize,
+    #[serde(default = "d_q_ffn")]
+    pub query_ffn: usize,
+    #[serde(default = "d_q_blocks")]
+    pub query_blocks: usize,
+    /// Heads of the per-branch and cross-branch set blocks and of the branch pooling.
+    #[serde(default = "d_set_heads")]
+    pub set_heads: usize,
+    /// FFN width of the per-branch and cross-branch set blocks.
+    #[serde(default = "d_set_ffn")]
+    pub set_ffn: usize,
+    #[serde(default = "d_readout_hidden")]
+    pub readout_hidden: usize,
+    #[serde(default)]
+    pub contracts: AllInfoContracts,
+}
+
+impl Default for AllInfoConfig {
+    fn default() -> Self {
+        Self {
+            candidate: CandidateConfig::default(),
+            query_dim: d_q_dim(),
+            query_heads: d_q_heads(),
+            query_ffn: d_q_ffn(),
+            query_blocks: d_q_blocks(),
+            set_heads: d_set_heads(),
+            set_ffn: d_set_ffn(),
+            readout_hidden: d_readout_hidden(),
+            contracts: AllInfoContracts::default(),
+        }
+    }
+}
+
+impl AllInfoConfig {
+    /// The geometry the shared V3 modules (root path, query encoder, readout) are built
+    /// from. Fields that only the active-search planner/selector use keep their defaults
+    /// and never enter an ALL-INFO model.
+    pub fn shared_geometry(&self) -> ActiveConfig {
+        ActiveConfig {
+            candidate: self.candidate.clone(),
+            query_dim: self.query_dim,
+            query_heads: self.query_heads,
+            query_ffn: self.query_ffn,
+            query_blocks: self.query_blocks,
+            readout_hidden: self.readout_hidden,
+            ..ActiveConfig::default()
+        }
+    }
+}
+
 impl ModelConfig {
     /// The V2.5 primary geometry: width 640, 10 heads, FFN 1280, 8 unique
     /// blocks, no input/output blocks.
@@ -404,6 +519,7 @@ impl ModelConfig {
             }),
             legacy_facts: None,
             active: None,
+            all_info: None,
         }
     }
 
@@ -427,6 +543,7 @@ impl ModelConfig {
             candidate: None,
             legacy_facts: Some(LegacyFactsConfig::default()),
             active: None,
+            all_info: None,
         }
     }
 
@@ -438,6 +555,26 @@ impl ModelConfig {
         m.candidate = None;
         m.active = Some(ActiveConfig::default());
         m
+    }
+
+    /// P6 `all_info_v1`: the V2.5 CF root geometry plus the exhaustive-tree integrator.
+    pub fn all_info_v1() -> Self {
+        let mut m = Self::candidate_v25(true);
+        m.architecture = Architecture::AllInfoV1;
+        m.candidate = None;
+        m.all_info = Some(AllInfoConfig::default());
+        m
+    }
+
+    /// Visible refusal for every historical command that has no `all_info_v1` path.
+    pub fn refuse_all_info(&self, command: &str) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.architecture != Architecture::AllInfoV1,
+            "all_info_v1 is not supported by {command}: that tool builds a different graph and \
+             would measure the wrong model. Use `recur64 model-info` to describe all_info_v1 and \
+             `recur64 v3-p6` to run it"
+        );
+        Ok(())
     }
 
     /// Visible refusal for every historical command that has no `active_search_v3`
@@ -464,6 +601,46 @@ impl ModelConfig {
             self.active.is_none() || self.architecture == Architecture::ActiveSearchV3,
             "only active_search_v3 may carry an active-search geometry"
         );
+        anyhow::ensure!(
+            self.all_info.is_none() || self.architecture == Architecture::AllInfoV1,
+            "only all_info_v1 may carry an ALL-INFO geometry"
+        );
+        if self.architecture == Architecture::AllInfoV1 {
+            let a = self
+                .all_info
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("all_info_v1 requires an ALL-INFO geometry"))?;
+            anyhow::ensure!(
+                self.candidate.is_none() && self.legacy_facts.is_none() && self.active.is_none(),
+                "all_info_v1 carries its candidate geometry inside `all_info`"
+            );
+            anyhow::ensure!(
+                self.input_blocks == 0 && self.output_blocks == 0,
+                "all_info_v1 root encoder has no input or output blocks"
+            );
+            anyhow::ensure!(
+                a.candidate.dim == a.query_dim,
+                "root candidate dim {} must equal query_dim {} (shared token space)",
+                a.candidate.dim,
+                a.query_dim
+            );
+            anyhow::ensure!(
+                a.candidate.facts_enabled,
+                "all_info_v1 root CandidateFacts must be enabled"
+            );
+            anyhow::ensure!(
+                a.query_dim.is_multiple_of(a.query_heads)
+                    && a.query_dim.is_multiple_of(a.set_heads)
+                    && a.candidate.dim.is_multiple_of(a.candidate.heads),
+                "all_info_v1 dims must divide by their head counts"
+            );
+            anyhow::ensure!(
+                a.contracts == AllInfoContracts::default(),
+                "all_info_v1 contracts {:?} differ from the current contracts",
+                a.contracts
+            );
+            return Ok(());
+        }
         if self.architecture == Architecture::ActiveSearchV3 {
             let a = self
                 .active
@@ -521,7 +698,9 @@ impl ModelConfig {
             (Architecture::ProbeV1, Some(_)) => {
                 anyhow::bail!("probe_v1 must not carry a candidate geometry")
             }
-            (Architecture::LegacyFactsV25, _) | (Architecture::ActiveSearchV3, _) => {
+            (Architecture::LegacyFactsV25, _)
+            | (Architecture::ActiveSearchV3, _)
+            | (Architecture::AllInfoV1, _) => {
                 unreachable!("handled above")
             }
             (Architecture::CandidateV25, None) => {
@@ -551,6 +730,7 @@ impl ModelConfig {
             Architecture::CandidateV25
                 | Architecture::LegacyFactsV25
                 | Architecture::ActiveSearchV3
+                | Architecture::AllInfoV1
         ) {
             anyhow::ensure!(
                 recurrence == 1,
@@ -646,6 +826,7 @@ mod tests {
             candidate: None,
             legacy_facts: None,
             active: None,
+            all_info: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         assert_eq!(m.executed_blocks_final(1), 8);
@@ -670,6 +851,7 @@ mod tests {
             candidate: None,
             legacy_facts: None,
             active: None,
+            all_info: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         // 2 + 4R + 2

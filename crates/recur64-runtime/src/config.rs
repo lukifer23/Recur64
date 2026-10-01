@@ -378,6 +378,8 @@ impl RunConfig {
         // before any command builds a model from this configuration.
         cfg.model
             .refuse_active_v3("the mainline self-play / training / evaluation runtime")?;
+        cfg.model
+            .refuse_all_info("the mainline self-play / training / evaluation runtime")?;
         Ok(cfg)
     }
 

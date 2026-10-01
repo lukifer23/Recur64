@@ -1221,3 +1221,35 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   result. `recur64 v3-p5 train --p6-baseline-replication --selected-recipe ...` accepts only LR 3e-4 and seed 5103 and
   refuses unless the contract reproduces the selected recipe digest. The run evaluates TUNE at its scheduled updates
   as every P5 run does; those B0/ACTIVE numbers play no role in the ALL-INFO architecture or recipe.
+
+## V3-D23 - P6 ALL-INFO model and input contract
+
+- **Status:** PRE-REGISTERED (2026-10-01), before any trained ALL-INFO model is evaluated on TUNE.
+- **Decision:** `all_info_v1` is a separately trained, parameter-matched control that receives the exhaustive raw depth-2
+  tree (`all_info_depth2_v1`: every root successor and every opponent reply, obtained through StateQuery, no pruning or
+  truncation, no descendant CandidateFacts, no proof/solver/value field). It shares the V2.5 root encoder, root candidate
+  tokens, `query_state_encoder_v1` (one shared batched instance) and the V3 root readout with `active_search_v3`, and
+  replaces the selector/planner by a permutation-invariant set integrator (`all_info_tree_integrator_v1`). Parameters
+  30,842,524 vs ACTIVE 30,853,790 (-11,266, 0.0365%, limit 0.5%), no dummy parameters. Same-seed initial weights are not
+  identical across the two architectures and are not claimed to be. New identity, own checkpoint contracts and refusals.
+  Details: `docs/V3_P6_PLAN.md` sections 3-4.
+
+## V3-D24 - P6 training recipe, seeds and physical layout rule
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** seeds {5101, 5102, 5103}; peak LR 3.0e-4 (P5-selected; no P6 LR screen); 800 updates, warmup 80, `adamw-v1`,
+  FP32, cell-balanced sampling over the 15 TRAIN cells, effective batch 128, root-policy cross-entropy only, no early stopping
+  or best checkpoint, TUNE evaluated once after update 800. Physical layout by the frozen ladder (16x8, 8x16, 4x32, 2x64;
+  first that runs, fits 95% VRAM, has a stable plateau and projects under 2 h per run, from TRAIN-side evidence only).
+  Resolved: **micro16 x accum8** (peak VRAM 11,089 MiB of 16,380; 1.76 h projected per run). P6 contract digest
+  `4d95dda0e87d067b25659166fbfe6d1e0c6f246c80aace92b056b2af62f6b110`.
+
+## V3-D25 - Gate I operationalisation
+
+- **Status:** PRE-REGISTERED (2026-10-01). The research-plan Gate I is unchanged.
+- **Decision:** Gate I passes iff `Delta >= +0.20` on KQRvK M3 top-1 and the paired 95% bootstrap CI is wholly above zero, with
+  `Delta = mean_i mean_s (1[AllInfo_s correct] - 1[B0_s correct])`, 20,000 position resamples keeping the three seed pairs
+  together, SplitMix64 seed `0x7A160001`, percentile ranks 499/19499 of the sorted means. No other quantity enters pass/fail;
+  the absolute ALL-INFO top-1 0.75 is a non-gating reference; per-seed deltas are reported prominently. A pass is narrow
+  (raw future-state information is sufficient for this model family) and a fail stops the work; neither authorises DAgger, P7,
+  Gate II/III, CONFIRM or HOLDOUT_C.

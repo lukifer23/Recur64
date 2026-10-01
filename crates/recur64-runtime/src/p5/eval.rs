@@ -85,8 +85,40 @@ pub struct EvalSummary {
     pub depths: BTreeMap<String, Metrics>,
 }
 
-fn cell_key(p: &crate::proof::targets::ProofPosition) -> String {
+pub fn cell_key(p: &crate::proof::targets::ProofPosition) -> String {
     format!("{} M{}", p.family, p.mate_depth)
+}
+
+/// The policy metrics of one position from its log-probability row (legal candidates only).
+/// Shared by every evaluator so ACTIVE and ALL-INFO are scored by the same function.
+pub fn example_result(row: &[f32], p: &crate::proof::targets::ProofPosition) -> ExampleResult {
+    let correct = &p.correct;
+    let mass: f64 = correct
+        .iter()
+        .map(|&c| f64::from(row[c as usize]).exp())
+        .sum();
+    let ce: f64 = -correct
+        .iter()
+        .map(|&c| f64::from(row[c as usize]))
+        .sum::<f64>()
+        / correct.len() as f64;
+    let entropy: f64 = -row
+        .iter()
+        .map(|&v| f64::from(v).exp() * f64::from(v))
+        .sum::<f64>();
+    let mut best = 0usize;
+    for (j, &v) in row.iter().enumerate() {
+        if v > row[best] {
+            best = j;
+        }
+    }
+    ExampleResult {
+        top1: f64::from(u8::from(correct.contains(&(best as u32)))),
+        mass,
+        ce,
+        entropy,
+        chance: f64::from(p.chance_top1),
+    }
 }
 
 fn summarise(
@@ -95,10 +127,25 @@ fn summarise(
     budget: usize,
     selection: EvalSelection,
 ) -> EvalSummary {
+    summarise_positions(
+        data.positions(),
+        results,
+        budget,
+        selection.label().to_string(),
+    )
+}
+
+/// Pooled, per-cell, per-family and per-depth metrics of per-position results.
+pub fn summarise_positions(
+    positions: &[crate::proof::targets::ProofPosition],
+    results: &[ExampleResult],
+    budget: usize,
+    selection_label: String,
+) -> EvalSummary {
     let mut cells: BTreeMap<String, Vec<&ExampleResult>> = BTreeMap::new();
     let mut fams: BTreeMap<String, Vec<&ExampleResult>> = BTreeMap::new();
     let mut deps: BTreeMap<String, Vec<&ExampleResult>> = BTreeMap::new();
-    for (p, r) in data.positions().iter().zip(results) {
+    for (p, r) in positions.iter().zip(results) {
         cells.entry(cell_key(p)).or_default().push(r);
         fams.entry(p.family.clone()).or_default().push(r);
         deps.entry(format!("M{}", p.mate_depth))
@@ -112,7 +159,7 @@ fn summarise(
     let mac = |g: fn(&Metrics) -> f64| cell_metrics.values().map(g).sum::<f64>() / k;
     EvalSummary {
         budget,
-        selection: selection.label().to_string(),
+        selection: selection_label,
         pooled: mean_of(&all),
         macro_cell: Metrics {
             n: results.len(),
@@ -457,33 +504,7 @@ pub fn evaluate<B: Backend>(
         );
         for (i, p) in positions.iter().enumerate() {
             let row = &lp[i * w..i * w + p.legal.len()];
-            let correct = &p.correct;
-            let mass: f64 = correct
-                .iter()
-                .map(|&c| f64::from(row[c as usize]).exp())
-                .sum();
-            let ce: f64 = -correct
-                .iter()
-                .map(|&c| f64::from(row[c as usize]))
-                .sum::<f64>()
-                / correct.len() as f64;
-            let entropy: f64 = -row
-                .iter()
-                .map(|&v| f64::from(v).exp() * f64::from(v))
-                .sum::<f64>();
-            let mut best = 0usize;
-            for (j, &v) in row.iter().enumerate() {
-                if v > row[best] {
-                    best = j;
-                }
-            }
-            results.push(ExampleResult {
-                top1: f64::from(u8::from(correct.contains(&(best as u32)))),
-                mass,
-                ce,
-                entropy,
-                chance: f64::from(p.chance_top1),
-            });
+            results.push(example_result(row, p));
         }
         if matches!(selection, EvalSelection::Teacher)
             && let Some((sum, count)) = selector_nll_sum(&out.selector_steps)
