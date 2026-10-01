@@ -1,0 +1,64 @@
+{
+  "S_lr": [
+    {
+      "S_lr": 1.6964459986007858,
+      "lr": 0.000075
+    },
+    {
+      "S_lr": 1.5570123635584063,
+      "lr": 0.00015
+    },
+    {
+      "S_lr": 1.5098092100311604,
+      "lr": 0.0003
+    }
+  ],
+  "contract_digest": "105ac3133877f954ed00e6ce9caaadabf6d5da1cf78a7ab99d44a195d03009d2",
+  "rule": "S_run = mean over budgets {0,2,4,8} of mean over 6 TUNE cells of ACTIVE policy CE at update 800 (24 equal values); S_lr = mean of the two seed S_run; lowest S_lr wins; exact tie -> lower LR; no tolerance, no override; FIXED/oracle/selector rates/B16/Gates are diagnostics only",
+  "runs": [
+    {
+      "S_run": 1.7119223179887948,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.000075,
+      "seed": 5101
+    },
+    {
+      "S_run": 1.6809696792127766,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.000075,
+      "seed": 5102
+    },
+    {
+      "S_run": 1.5662878728063316,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.00015,
+      "seed": 5101
+    },
+    {
+      "S_run": 1.5477368543104808,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.00015,
+      "seed": 5102
+    },
+    {
+      "S_run": 1.527352694158141,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.0003,
+      "seed": 5101
+    },
+    {
+      "S_run": 1.4922657259041798,
+      "eligible": true,
+      "ineligible_reason": null,
+      "lr": 0.0003,
+      "seed": 5102
+    }
+  ],
+  "schema": "v3_p5_lr_selection_v1",
+  "selected_lr": 0.0003
+}

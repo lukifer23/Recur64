@@ -607,3 +607,12 @@ P5 infrastructure (`recur64_runtime::p5`, `recur64 v3-p5`) and the pre-registere
 - **VERIFIED:** contract digest unchanged (`105ac313...009d2`, micro 16 x accum 8); corruption/validation tests, the
   full workspace release suite, fmt and clippy pass; the CUDA release binary builds.
 - **NOT RUN:** the six clean screen runs, selection, P6, HOLDOUT_C (sealed, unevaluated).
+
+### V3 P5 complete (2026-10-01)
+
+- **COMPLETED:** clean six-run P5 LR screen (all uninterrupted), validation, same-seed pairing check (bitwise identical),
+  and the frozen selection (applied once): peak LR **3.0e-4**, `S_lr` 1.5098 vs 1.5570 and 1.6964.
+- **VERIFIED (TUNE diagnostics, not gates):** ACTIVE CE is not below B0 at B2/B4/B8; teacher-forced top-1 about 0.99; ACTIVE proof
+  completion lags the ideal ceiling at larger budgets. Details: `docs/V3_P5_RESULTS.md`.
+- **NOT RUN:** P6, Gate I/II/III, B16, DAgger, HOLDOUT_C (sealed, unevaluated).
+- **Next gate:** owner review. Open items for approval: P6, a DAgger-style rescue, and profiling/optimisation before long runs.

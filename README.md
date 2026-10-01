@@ -41,12 +41,11 @@ then spends a budget of exact single-edge state queries chosen by a learned sele
 a shared gated planner. Status: the engineering build (P0 to P3) is complete and qualified on CPU and
 real FP32 CUDA. P4 has since built the exact proof-trace data layer (`proof_trace_v1`, `v3_tune_v1`) and taken the
 frozen feasibility measurement: `C_8(KQRvK M3) = 0.4336` against the pre-registered threshold 0.25, so the primary
-B8 experiment is **scientifically qualified** (this says nothing yet about learning). **No model has completed a
-training run and no trained model has been evaluated.** One P5 screen attempt (LR 7.5e-5, seed 5101) was externally
-interrupted at update 150; only its update-0 TUNE baseline was evaluated, no trained TUNE checkpoint was evaluated, and
-that attempt is **voided operationally and excluded from selection** (the screen restarts from update 0 for six
-uninterrupted runs; the frozen P5 contract is unchanged). The clean six-run screen has not yet produced results.
-HOLDOUT_C is sealed and unevaluated, the pre-registered LR-screen plan is `docs/V3_P5_PLAN.md`, and P6 awaits owner approval. Main and V2.5 are unchanged. Start at `docs/V3_RESEARCH_PLAN.md` (every
+B8 experiment is **scientifically qualified** (this says nothing yet about learning). **The P5 learning-rate screen is complete** (six uninterrupted runs; an earlier interrupted attempt is voided and
+excluded). The frozen rule selected peak LR **3.0e-4** (`S_lr` 1.510 vs 1.557 and 1.696; the largest candidate, i.e. the
+grid edge). On TUNE, ACTIVE does not yet beat B0 in policy CE at B2/B4/B8, while teacher-forced queries reach top-1 about
+0.99, so the open question is the learned selector (`docs/V3_P5_RESULTS.md`). These are TUNE recipe-selection results,
+not gate results. HOLDOUT_C is sealed and unevaluated, the pre-registered plan is `docs/V3_P5_PLAN.md`, and P6 is not run and awaits owner approval. Main and V2.5 are unchanged. Start at `docs/V3_RESEARCH_PLAN.md` (every
 gate is pre-registered before any data exists), then `docs/V3_ARCHITECTURE.md`,
 `docs/V3_BUILD_RESULTS.md` (measured engineering results and suggestions), `docs/V3_P4_PLAN.md` and
 `docs/V3_P4_RESULTS.md` (P4), and `docs/V3_EXPERIMENTS.md` (append-only ledger). Machine-readable evidence is in `docs/evidence/v3/`.

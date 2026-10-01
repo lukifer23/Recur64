@@ -1201,3 +1201,11 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   patch (resume/summary/selection integrity, exposure and provenance reporting, a fail-stop launcher) changes no
   model, teacher, sampler, loss, optimizer, schedule, dataset, trace or evaluation formula. Any further external
   interruption uses the existing exact-recipe resume and is recorded in the run provenance.
+
+## V3-D21 - P5 selected recipe
+
+- **Status:** RESULT of the pre-registered rule (V3-D19), applied once on 2026-10-01.
+- **Decision:** peak LR 3.0e-4 is the P5-selected learning rate (lowest `S_lr` = 1.5098 over seeds 5101 and 5102; selected
+  recipe digest without seed `a069ba9d18befed65f970aca253b47780365fd7019be38283f270d79d6c1db33`). It is the largest candidate
+  in the preregistered grid; the grid was not extended. This selects a recipe on TUNE only and does not authorise P6; a
+  DAgger-style rescue and any throughput/profiling work each need separate owner approval.

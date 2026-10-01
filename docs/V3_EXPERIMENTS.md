@@ -334,3 +334,22 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **TESTED:** the new corruption, refusal, validation and pairing tests; the full workspace release suite; clippy and
   fmt clean; the CUDA release binary builds. CUDA resume is still not claimed bit-identical (CPU resume only).
 - **NOT RUN:** the clean six-run screen, any trained TUNE evaluation, the selection rule, P6.
+
+## V3-E15 - P5 clean six-run screen, frozen selection and results
+
+- **Date:** 2026-10-01
+- **Status:** COMPLETE. Six fresh uninterrupted runs (LR {7.5e-5, 1.5e-4, 3e-4} x seed {5101, 5102}), `exit 0`, 800 updates,
+  TUNE evaluated at 0/200/400/600/800, exposure 25,600 examples per budget per run.
+- **Result (frozen rule, applied once):** `S_lr` = 1.6964 (7.5e-5), 1.5570 (1.5e-4), 1.5098 (3e-4). **Selected peak LR 3.0e-4**
+  (the largest candidate). Selected-recipe digest (without seed)
+  `a069ba9d18befed65f970aca253b47780365fd7019be38283f270d79d6c1db33`. Contract digest unchanged (`105ac313...009d2`).
+- **Integrity:** same-seed update-0 evaluations bitwise identical across LRs; the new seed-5101 update-0 equals the voided
+  attempt's. A validator label defect (`"ACTIVE"` vs `"active"`) was found by the first `select` call, which refused before
+  writing anything; it was fixed (reporting code only) and `select` re-run. See V3-E14 for the interruption record.
+- **Diagnostics (TUNE, not gate results):** ACTIVE policy CE is lowest at B0 and higher at B2/B4/B8; teacher-forced top-1 about
+  0.99 (confounded: the query pattern reveals the answer); ACTIVE proof completion falls below the ideal ceiling as the budget
+  grows (B8: 0.54-0.55 vs 0.80; KQRvK M3 0.04-0.05 vs 0.43). Throughput: about 1.2 s/update, CPU-bound, GPU about 52% busy
+  (not profiled; to be addressed before future long runs).
+- **Evidence:** `docs/V3_P5_RESULTS.md`, `docs/evidence/v3/v3-p5-run-*.json`, `v3-p5-pairing-check.json`,
+  `v3-p5-lr-selection.json`, `v3-p5-selected-recipe.json`.
+- **NOT RUN:** P6, Gate I/II/III, B16, DAgger, HOLDOUT_C evaluation.

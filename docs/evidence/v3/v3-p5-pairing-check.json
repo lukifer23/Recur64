@@ -1,0 +1,40 @@
+{
+  "max_abs_diff_all_seeds": 0.0,
+  "purpose": "integrity only: same-seed LRs share an initialization; update-0 performance is never used to choose an LR",
+  "schema": "v3_p5_pairing_check_v1",
+  "seeds": [
+    {
+      "S_run_update0": [
+        3.5532696635894676,
+        3.5532696635894676,
+        3.5532696635894676
+      ],
+      "bitwise_identical": true,
+      "lrs": [
+        0.000075,
+        0.00015,
+        0.0003
+      ],
+      "max_abs_diff": 0.0,
+      "seed": 5101,
+      "values_compared": 25
+    },
+    {
+      "S_run_update0": [
+        3.554673651306559,
+        3.554673651306559,
+        3.554673651306559
+      ],
+      "bitwise_identical": true,
+      "lrs": [
+        0.000075,
+        0.00015,
+        0.0003
+      ],
+      "max_abs_diff": 0.0,
+      "seed": 5102,
+      "values_compared": 25
+    }
+  ],
+  "tolerance": 1e-6
+}

@@ -793,7 +793,7 @@ fn s_run_from_eval(doc: &serde_json::Value) -> anyhow::Result<f64> {
     for (a, &b) in active.iter().zip(&BUDGETS) {
         let s = &a["summary"];
         anyhow::ensure!(
-            s["budget"] == b && s["selection"] == "ACTIVE",
+            s["budget"] == b && s["selection"] == EvalSelection::Active.label(),
             "evaluation entry is not ACTIVE B{b}"
         );
         let cells = s["cells"]
@@ -1121,7 +1121,7 @@ mod tests {
             .iter()
             .map(|&b| {
                 serde_json::json!({"update": update, "summary":
-                    {"budget": b, "selection": "ACTIVE", "cells": cells}})
+                    {"budget": b, "selection": EvalSelection::Active.label(), "cells": cells}})
             })
             .collect();
         let mut d = serde_json::json!({"update": update, "active": active});
