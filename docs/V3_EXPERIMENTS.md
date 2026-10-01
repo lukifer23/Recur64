@@ -267,3 +267,15 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   measurement taken and classified. PASSED as specified.
 - **NOT RUN:** P5 and everything after it; any model evaluation; HOLDOUT_C evaluation, tracing or analysis.
   **P5 NOT RUN - awaiting owner review and approval.**
+
+
+## V3-E11 - P4.1 and P5 plan: training interface and bounded LR screen (pre-measurement)
+
+- **Date:** 2026-10-01
+- **Status:** PRE-REGISTERED. Plan: `docs/V3_P5_PLAN.md`; decisions V3-D16 to V3-D19. No LR-screen result on
+  `v3_tune_v1` exists at this entry.
+- **Built (tested on CPU with real positions, traces and the real model graph):** `crates/recur64-runtime/src/p5/`
+  (recipe and run digest, verified data loaders and per-budget samplers, `proof_teacher_seeded_v1` with the
+  completion latch, whole-update loss normalisation, the resumable trainer with a strict sidecar, the TUNE
+  evaluator and offline selector diagnostics) and `recur64 v3-p5 {recipe,preflight,train,select}`.
+- **NOT RUN:** the CUDA preflight, any screening run, any TUNE evaluation of a trained model, P6.

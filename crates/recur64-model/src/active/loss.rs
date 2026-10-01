@@ -45,3 +45,40 @@ pub fn selector_loss<B: Backend>(steps: &[SelectorStep<B>]) -> Option<Tensor<B, 
     }
     total.map(|t| t / count.max(1.0))
 }
+
+/// Sum (not mean) of the selector NLL over every supervised `(step, example)`, and
+/// how many there are. Lets a caller normalise by a count it knows for a whole
+/// optimizer update rather than per microbatch. `None` when nothing is supervised.
+pub fn selector_nll_sum<B: Backend>(steps: &[SelectorStep<B>]) -> Option<(Tensor<B, 1>, usize)> {
+    let mut total: Option<Tensor<B, 1>> = None;
+    let mut count = 0usize;
+    for s in steps {
+        let n_targets = s.has_target.iter().filter(|&&t| t).count();
+        if n_targets == 0 {
+            continue;
+        }
+        let device = s.logits.device();
+        let logp = activation::log_softmax(s.logits.clone(), 1);
+        let nll = (s.target.clone() * logp)
+            .sum_dim(1)
+            .neg()
+            .squeeze_dim::<1>(1);
+        let weight = Tensor::<B, 1>::from_data(
+            burn::tensor::TensorData::new(
+                s.has_target
+                    .iter()
+                    .map(|&t| f32::from(u8::from(t)))
+                    .collect::<Vec<_>>(),
+                [s.has_target.len()],
+            ),
+            &device,
+        );
+        let part = (nll * weight).sum();
+        total = Some(match total {
+            Some(t) => t + part,
+            None => part,
+        });
+        count += n_targets;
+    }
+    total.map(|t| (t, count))
+}

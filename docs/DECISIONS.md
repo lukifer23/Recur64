@@ -1152,3 +1152,41 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   new owner instruction and is not authorized by this record.
 - **Recorded, not acted on:** `v3_tune_v1` (digest `c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53`)
   exists with audited traces; its `C_k` values are diagnostics and did not enter the rule.
+
+
+## V3-D16 - P4.1: "completion in Q* queries" is an on-proof statement
+
+- **Status:** RECORDED (2026-10-01). Clarification; `proof_trace_v1`, `Q*`, the P4 result (V3-D15), `StateQueryV1`
+  and the generic `A(S) = A_proof U A_refute` are unchanged.
+- **Decision:** exactly `Q*` queries complete a proof only for an on-proof trajectory from the empty queried set that
+  always follows an `A_proof` edge. Refutation and off-proof queries do not reduce the residual. The generic
+  `ProofTraceTeacher` stays the reference adapter; the P5 teacher is a separate versioned object (V3-D17).
+
+## V3-D17 - `proof_teacher_seeded_v1` and the completion latch
+
+- **Status:** PRE-REGISTERED (2026-10-01), before any LR-screen result.
+- **Decision:** selector target uniform over the full tied `A_proof` set; the followed edge is a deterministic
+  seeded-uniform draw among `A_proof` edges sorted by action path (FNV-1a key over run seed, position id, ordinal,
+  budget; step mixed in; no process-randomised hasher). At least one `A_proof` edge must exist while incomplete.
+  Once the residual is 0 the example latches complete: no selector target ever again; the remaining budget is
+  `fixed_bfs_actionid_v1` filler with policy gradient only. `A_refute` is never a primary teacher-forcing target.
+  DAgger rescue is not authorised.
+
+## V3-D18 - P5 objective, schedule and inputs
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** `L = mean policy CE (all update examples) + 1.0 * mean selector NLL (supervised decisions only)`, no WDL,
+  normalised over the whole optimizer update; `adamw-v1` unchanged. Budgets {0,2,4,8} only, micro16 x accum8
+  (sequence [0,2,4,8,0,2,4,8], 128 per update, 32 per budget; micro8 x accum16 only after a genuine CUDA OOM in
+  a TRAIN-only preflight), four independent `cell_balanced_v1` samplers, 800 updates, warmup 80, no early
+  stopping or best checkpoint. Inputs are hard-refused unless exactly TRAIN `3b25dc85...` and TUNE `c6601865...`
+  with their audited traces; HOLDOUT_C is never loaded.
+
+## V3-D19 - P5 LR screen protocol and selection rule
+
+- **Status:** PRE-REGISTERED (2026-10-01).
+- **Decision:** peak LR {7.5e-5, 1.5e-4, 3.0e-4} x seeds {5101, 5102}, paired initial weights, samples, tie choices and
+  budget sequence. TUNE evaluation at updates 0/200/400/600/800. `S_run` = mean over budgets {0,2,4,8} of the mean
+  over the 6 TUNE cells of the ACTIVE policy CE at update 800 (24 equal values); `S_lr` = mean over seeds; lowest wins;
+  exact tie to the lower LR; no tolerance, no override. A run is ineligible only for non-finite loss or gradient,
+  health refusal, query correctness error, or checkpoint/resume error. No performance threshold is introduced.

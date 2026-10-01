@@ -535,8 +535,13 @@ fn the_target_depends_on_the_queried_set_not_on_query_order() {
     assert!(permutations >= 100);
 }
 
+/// Scope of the claim (clarified in P4.1): "completion in exactly Q* queries"
+/// holds for an ON-PROOF trajectory that starts from the EMPTY queried set and
+/// follows only `A_proof` choices, each of which removes exactly one residual
+/// edge. It is not a statement about an arbitrary queried set: prior off-proof or
+/// refutation queries do not reduce the proof residual (see the next test).
 #[test]
-fn teacher_follows_admissible_edges_to_a_complete_proof_in_exactly_q_star_queries() {
+fn an_on_proof_trajectory_from_the_empty_set_completes_in_exactly_q_star_queries() {
     for (white, fam, depth, seed, take_last) in [
         (KQ, "KQvK", 2u8, 81u64, false),
         (KQR, "KQRvK", 2, 82, true),
@@ -587,6 +592,55 @@ fn teacher_follows_admissible_edges_to_a_complete_proof_in_exactly_q_star_querie
             t.id
         );
     }
+}
+
+/// The other side of the clarification: refutation queries are useful off-policy
+/// supervision but never reduce the correct proof's residual, so a trajectory with
+/// off-proof prefix queries is NOT Q* queries long.
+#[test]
+fn off_proof_queries_do_not_reduce_the_residual_and_lengthen_the_trajectory() {
+    let (_, t) = find(KQR, "KQRvK", 2, 95, 20_000, |t| {
+        t.refutations.iter().any(|r| r.replies.len() >= 2)
+    });
+    let r = t.refutations.iter().find(|r| r.replies.len() >= 2).unwrap();
+    let mut s: HashSet<Path> = HashSet::new();
+    assert_eq!(t.residual(&s), t.q_star);
+    // Query an incorrect root move, then one of its refutations.
+    s.insert(vec![r.root_action]);
+    assert_eq!(
+        t.residual(&s),
+        t.q_star,
+        "an incorrect root edge removes no proof edge"
+    );
+    let a = t.admissible(&s);
+    assert!(
+        !a.refute.is_empty(),
+        "refutation edges are admissible after that query"
+    );
+    s.insert(vec![r.root_action, r.replies[0]]);
+    assert_eq!(t.residual(&s), t.q_star, "nor does its refutation");
+    // Finish the proof from there by following A_proof only.
+    let mut proof_queries = 0u64;
+    while !t.is_complete(&s) {
+        let e = t
+            .admissible(&s)
+            .proof
+            .iter()
+            .next()
+            .cloned()
+            .expect("proof edges remain");
+        s.insert(e);
+        proof_queries += 1;
+    }
+    assert_eq!(
+        proof_queries, t.q_star,
+        "the proof itself still needs exactly Q* proof edges"
+    );
+    assert_eq!(
+        s.len() as u64,
+        t.q_star + 2,
+        "total trajectory length is Q* plus the two off-proof queries"
+    );
 }
 
 #[test]

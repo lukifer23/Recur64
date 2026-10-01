@@ -62,7 +62,7 @@ pub enum DeviceKind {
 }
 
 /// Transformer probe geometry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ModelConfig {
     pub width: usize,
     pub heads: usize,

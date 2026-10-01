@@ -45,6 +45,11 @@ pub fn edge_path(paths: &[Path], e: &EdgeRef) -> Path {
 }
 
 /// Teacher for a batch: `traces[i]` belongs to example `i`.
+///
+/// This is the REFERENCE adapter for the generic target `A(S) = A_proof(S) union
+/// A_refute(S)`, kept unchanged for diagnostics and future off-policy work. It follows
+/// the first admissible edge and does not latch completion. The versioned P5 training
+/// schedule is `p5::teacher::SeededProofTeacher`, which does both differently.
 pub struct ProofTraceTeacher<'a> {
     pub traces: &'a [PositionTrace],
 }

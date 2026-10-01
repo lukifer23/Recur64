@@ -381,6 +381,32 @@ fn load_shard(
     Ok(s)
 }
 
+/// Load and validate every trace of `src` from `dir`, in source order. Every shard
+/// is re-validated (schema, contract, source digest, range, ids, digests) against the
+/// manifest, and the manifest must belong to `src`. Used by training code, which
+/// must never run on unverified traces.
+pub fn load_all_traces(
+    src: &ProofTargets,
+    dir: &Path,
+) -> anyhow::Result<(TraceManifest, Vec<PositionTrace>)> {
+    ensure_traceable(src)?;
+    let tm = TraceManifest::load(dir)?;
+    anyhow::ensure!(
+        tm.source_dataset_digest == src.digest && tm.source_positions == src.positions.len(),
+        "the trace manifest does not belong to this source dataset"
+    );
+    anyhow::ensure!(
+        tm.shards.len() == shard_count(src.positions.len(), tm.shard_size),
+        "the trace manifest does not list every shard"
+    );
+    let mut out = Vec::with_capacity(src.positions.len());
+    for r in &tm.shards {
+        out.extend(load_shard(dir, r, src, tm.shard_size)?.positions);
+    }
+    anyhow::ensure!(out.len() == src.positions.len(), "missing traces");
+    Ok((tm, out))
+}
+
 // ---------------------------------------------------------------------------
 // Audit
 // ---------------------------------------------------------------------------

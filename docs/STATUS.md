@@ -590,3 +590,8 @@ frozen feasibility rule) on owner approval.
 - **NOT RUN:** P5 and later, any model evaluation, HOLDOUT_C evaluation. HP/X1/X2 disjointness is not verified
   (datasets unavailable locally).
 - **Next gate:** P5 needs a new owner instruction.
+
+### V3 P4.1 / P5 (pre-measurement, 2026-10-01)
+
+P5 infrastructure (`recur64_runtime::p5`, `recur64 v3-p5`) and the pre-registered plan
+(`docs/V3_P5_PLAN.md`, V3-D16 to V3-D19) are in place. No LR-screen result exists. P6 is not authorised.

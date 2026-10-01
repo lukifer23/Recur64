@@ -19,7 +19,8 @@ recur64-model = { path = "../recur64-model", default-features = false }
 burn = { workspace = true, features = ["std", "autodiff"] }
 anyhow = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
+# float_roundtrip: the P5 state sidecar must reload f64 history bit-exactly
+serde_json = { workspace = true, features = ["float_roundtrip"] }
 toml = { workspace = true }
 recur64-eval = { path = "../recur64-eval", default-features = false }
 bincode = { version = "2", features = ["serde"] }

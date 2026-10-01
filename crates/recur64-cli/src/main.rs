@@ -24,6 +24,7 @@ mod proof_cli;
 mod search_gain;
 mod v25_qual;
 mod v3_p4;
+mod v3_p5;
 mod v3_qual;
 mod v3_verdict;
 mod value_diag;
@@ -58,6 +59,9 @@ enum Commands {
     /// V3 P4 data, ProofTraceV1 and the frozen feasibility measurement.
     #[command(subcommand, name = "v3-p4")]
     V3P4(v3_p4::P4Cmd),
+    /// V3 P5 bounded LR screen: recipe, preflight, train, select.
+    #[command(subcommand, name = "v3-p5")]
+    V3P5(v3_p5::P5Cmd),
     /// Apply the hardened qualification verdict to an existing v3-qual report.
     V3QualVerdict(v3_qual::V3QualVerdictArgs),
     /// Exact proof-position tooling (ProofTargetsV1): bench, gen, audit.
@@ -125,6 +129,7 @@ fn main() -> anyhow::Result<()> {
         Commands::V25Qual(a) => v25_qual::run(a),
         Commands::V3Qual(a) => v3_qual::run(a),
         Commands::V3P4(c) => v3_p4::run(c),
+        Commands::V3P5(c) => v3_p5::run(c),
         Commands::V3QualVerdict(a) => v3_qual::run_verdict(a),
         Commands::Proof(c) => proof_cli::run(c),
         Commands::Bench(args) => bench::run_bench(args),
