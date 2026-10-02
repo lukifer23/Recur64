@@ -16,6 +16,7 @@ use recur64_model::candidate::CandidateInputs;
 use recur64_statequery::{QueryManager, StatePacketV1};
 
 use crate::accounting::Accounting;
+use crate::base::BaseStage;
 use crate::belief::BeliefOutput;
 use crate::content::ContentBatch;
 use crate::ledger::{EvidenceLedger, EvidenceMessage};
@@ -232,6 +233,13 @@ fn belief_features(z: &[f32], valid: usize, branch: usize, n_msgs: usize, delta:
     ]
 }
 
+/// Computes the base stage from host inputs (observations, legal lists, candidate facts).
+pub type BaseProvider<B> = dyn Fn(
+    &[&ObservationV1],
+    &[Vec<ActionId>],
+    &[&[CandidateFactsV1]],
+) -> anyhow::Result<BaseStage<B>>;
+
 pub struct Session<'m, B: Backend> {
     model: &'m EvidenceBeliefModel<B>,
     device: B::Device,
@@ -267,6 +275,19 @@ impl<'m, B: Backend> Session<'m, B> {
         opts: RunOptions,
         random_seed: u64,
         device: &B::Device,
+    ) -> anyhow::Result<Self> {
+        Self::new_with(model, roots, opts, random_seed, device, None)
+    }
+
+    /// As [`Session::new`], with an optional provider of the base stage. A provider lets a frozen
+    /// base be computed on a graph-free backend (see [`Session::new_frozen`]).
+    pub fn new_with(
+        model: &'m EvidenceBeliefModel<B>,
+        roots: &[GameState],
+        opts: RunOptions,
+        random_seed: u64,
+        device: &B::Device,
+        base: Option<&BaseProvider<B>>,
     ) -> anyhow::Result<Self> {
         anyhow::ensure!(!roots.is_empty(), "empty batch");
         anyhow::ensure!(
@@ -309,7 +330,10 @@ impl<'m, B: Backend> Session<'m, B> {
             managers.push(m);
         }
 
-        let stage = model.base_stage(inputs.board.clone(), &inputs.cands, inputs.facts.clone());
+        let stage = match base {
+            Some(provide) => provide(&obs_refs, &legal, &fact_refs)?,
+            None => model.base_stage(inputs.board.clone(), &inputs.cands, inputs.facts.clone()),
+        };
         let w = inputs.cands.width;
         let (tokens, z0, root_node) = if opts.freeze.base {
             (
@@ -941,5 +965,38 @@ impl<'m, B: Backend> Session<'m, B> {
     /// The hypothesis tokens `[b, w, cd]` the evidence path reads.
     pub fn tokens(&self) -> &Tensor<B, 3> {
         &self.tokens
+    }
+}
+
+impl<'m, B: burn::tensor::backend::AutodiffBackend> Session<'m, B> {
+    /// A session whose frozen base is computed on the graph-free inner backend and lifted in as
+    /// constants. Under autodiff the base forward would otherwise keep a full activation graph that
+    /// is never back-propagated (the base is detached), which exhausts VRAM; V3.5 solved the same
+    /// problem by running its forward-only pass on the inference copy. Values are identical.
+    pub fn new_frozen(
+        model: &'m EvidenceBeliefModel<B>,
+        roots: &[GameState],
+        opts: RunOptions,
+        random_seed: u64,
+        device: &B::Device,
+    ) -> anyhow::Result<Self> {
+        use burn::module::AutodiffModule;
+        anyhow::ensure!(opts.freeze.base, "new_frozen needs Freeze::base");
+        let inner = model.valid();
+        let dev = device.clone();
+        let provide = move |obs: &[&ObservationV1],
+                            legal: &[Vec<ActionId>],
+                            facts: &[&[CandidateFactsV1]]|
+              -> anyhow::Result<BaseStage<B>> {
+            let inputs = CandidateInputs::<B::InnerBackend>::from_parts(obs, legal, facts, &dev)?;
+            let s = inner.base_stage(inputs.board.clone(), &inputs.cands, inputs.facts.clone());
+            Ok(BaseStage {
+                tokens: Tensor::from_inner(s.tokens),
+                root_node: Tensor::from_inner(s.root_node),
+                z0: Tensor::from_inner(s.z0),
+                wdl_logits: Tensor::from_inner(s.wdl_logits),
+            })
+        };
+        Self::new_with(model, roots, opts, random_seed, device, Some(&provide))
     }
 }

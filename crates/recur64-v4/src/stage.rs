@@ -22,7 +22,7 @@ use sha2::{Digest, Sha256};
 use crate::data::{PartSampler, V4Data};
 use crate::model::EvidenceBeliefModel;
 use crate::session::{Freeze, RunOptions};
-use crate::train::{Sel, UtilityLoss, ce_update, chunks_min2, mix, probe_batch, utility_loss};
+use crate::train::{Sel, UtilityLoss, ce_update, chunks_min2, mix, probe_batch_ad, utility_loss};
 
 pub const RECIPE_SCHEMA: &str = "v4_stage_recipe_v1";
 pub const STATE_SCHEMA: &str = "v4_state_v1";
@@ -226,7 +226,7 @@ impl<B: AutodiffBackend> Trainer<B> {
                 let mut acc = GradientsAccumulator::<EvidenceBeliefModel<B>>::new();
                 let mut loss_sum = 0.0;
                 for (mi, chunk) in chunks_min2(&batch, r.micro).into_iter().enumerate() {
-                    let (scores, samples) = probe_batch(
+                    let (scores, samples) = probe_batch_ad(
                         &self.model,
                         data,
                         chunk,

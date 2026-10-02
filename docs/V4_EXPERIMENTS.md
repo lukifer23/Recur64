@@ -128,3 +128,31 @@ Labels: PRE-REGISTERED / MEASURED / INFERRED / NOT RUN. Never edit past entries;
   (FIXED/RANDOM) never reads it. That path is now opt-in (`RunOptions::with_state`; required for utility selection, utilities
   and probes), the belief is bit-identical with it on or off (test), and the Stage B peak fell to 10.6 GB.
 - **NOT RUN:** B16, sustained-load VRAM plateau, TF32/BF16 (not part of V4).
+
+## V4-E5 - DEVIATION from V4-E2: Stage B micro-batch 32 -> 16 (CUDA out of memory)
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED (engineering). Logged before any Stage B result exists.
+- **What happened:** the first Stage B screening run (seed 5101, LR 3e-4, micro 32, effective batch 128) crashed after
+  update 0 with `CUDA_ERROR_OUT_OF_MEMORY` on the 16 GB GPU (the V4-E4 bench had sampled a 10.6 GB peak at this shape; a
+  real run from a loaded checkpoint plus optimiser state exceeded 16 GB). The partial run directory was deleted unread.
+- **Change:** Stage B physical micro-batch 32 -> 16 (effective batch stays 128, so the optimiser contract, data and schedule
+  are unchanged). Only the physical layout and therefore the recipe digest changed. Nothing about LR, budgets, schedules,
+  freeze scope, measurements or pass rules changed.
+- **Stage A is unaffected** (micro 64, 2.4 GB peak, complete for seeds 5101-5103).
+
+## V4-E6 - ROOT CAUSE of the Stage B out-of-memory; V4-E5 deviation WITHDRAWN
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED (engineering). Still before any Stage B result.
+- **Finding:** halving the micro-batch (V4-E5) did not cure the out-of-memory: a 12-update Stage B run still grew to the full
+  16 GB (6.5 s per update vs 0.9 s) even with the budget fixed at 2. The cause was graph retention, not batch size: with the
+  base frozen the base forward was still executed under autodiff and then detached, so its full activation graph was kept and
+  never back-propagated (Stage A, which does back-propagate, stayed at 2.4 GB).
+- **Fix:** with `Freeze::base` the base stage is computed on the graph-free inner backend and lifted in as constants
+  (`Session::new_frozen`, used by `ce_update` and the Stage C probe path), the same remedy V3.5 used for its forward-only pass.
+  Values are unchanged: the same 12-update run gave identical per-update losses (0.9347 at update 0, 0.8917 at update 11)
+  before and after. Stage B peak VRAM is now **849 MB** and an update takes **0.74 s**.
+- **Protocol:** the micro-batch is restored to 32, exactly as pre-registered in V4-E2; V4-E5 is withdrawn. No parameter,
+  schedule, measurement or pass rule differs from V4-E2.
+- **Process note:** the first failure was not noticed for about half an hour because the run was not checked after launch.

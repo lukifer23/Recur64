@@ -71,14 +71,36 @@ pub enum Sel {
     Utility,
 }
 
-impl Sel {
-    fn selection(self, micro_index: usize) -> Selection<'static> {
-        match self {
-            Sel::Fixed => Selection::Fixed,
-            Sel::Random(s) => Selection::Random(mix(s, micro_index as u64)),
-            Sel::Utility => Selection::Utility,
-        }
+/// One forward pass under autodiff. A frozen base is computed on the graph-free inner backend
+/// ([`Session::new_frozen`]) so its activations are never retained.
+fn run_ad<B: AutodiffBackend>(
+    model: &EvidenceBeliefModel<B>,
+    roots: &[recur64_core::GameState],
+    opts: &RunOptions,
+    sel: Sel,
+    mi: usize,
+    device: &B::Device,
+) -> anyhow::Result<crate::session::V4Output<B>> {
+    let seed = match sel {
+        Sel::Random(s) => mix(s, mi as u64),
+        _ => mix(0xB0, mi as u64),
+    };
+    let mut o = opts.clone();
+    if matches!(sel, Sel::Utility) {
+        o.state_path = true;
     }
+    let mut s = if o.freeze.base {
+        Session::new_frozen(model, roots, o, seed, device)?
+    } else {
+        Session::new(model, roots, o, seed, device)?
+    };
+    let mut selection = match sel {
+        Sel::Fixed => Selection::Fixed,
+        Sel::Random(_) => Selection::Random(seed),
+        Sel::Utility => Selection::Utility,
+    };
+    s.run_all(&mut selection)?;
+    s.finish()
 }
 
 /// One accumulated CE update. `opts` carries the budget and the freeze scope.
@@ -96,7 +118,7 @@ pub fn ce_update<B: AutodiffBackend>(
     let mut loss_sum = 0.0;
     for (mi, chunk) in batch.chunks(micro.max(1)).enumerate() {
         let roots = data.roots(chunk)?;
-        let out = model.run(&roots, opts, sel.selection(mi), mix(0xB0, mi as u64), device)?;
+        let out = run_ad(model, &roots, opts, sel, mi, device)?;
         let w = out.log_probs.dims()[1];
         let tgt = target_tensor::<B>(data, chunk, w, device);
         let loss = (out.log_probs * tgt).sum().neg().div_scalar(n_total);
@@ -308,11 +330,45 @@ pub fn probe_batch<B: Backend>(
     seed: u64,
     device: &B::Device,
 ) -> anyhow::Result<(Tensor<B, 2>, Vec<ProbeSample>)> {
+    probe_batch_with(model, data, chunk, prefix, k, seed, &|o, r, s| {
+        Session::new(model, r, o, s, device)
+    })
+}
+
+/// [`probe_batch`] under autodiff: the frozen base is computed graph-free
+/// ([`Session::new_frozen`]), so its activations are never retained.
+pub fn probe_batch_ad<B: AutodiffBackend>(
+    model: &EvidenceBeliefModel<B>,
+    data: &V4Data,
+    chunk: &[usize],
+    prefix: usize,
+    k: usize,
+    seed: u64,
+    device: &B::Device,
+) -> anyhow::Result<(Tensor<B, 2>, Vec<ProbeSample>)> {
+    probe_batch_with(model, data, chunk, prefix, k, seed, &|o, r, s| {
+        Session::new_frozen(model, r, o, s, device)
+    })
+}
+
+type MakeSession<'a, B> =
+    dyn Fn(RunOptions, &[recur64_core::GameState], u64) -> anyhow::Result<Session<'a, B>> + 'a;
+
+fn probe_batch_with<'a, B: Backend>(
+    model: &'a EvidenceBeliefModel<B>,
+    data: &V4Data,
+    chunk: &[usize],
+    prefix: usize,
+    k: usize,
+    seed: u64,
+    mk: &MakeSession<'a, B>,
+) -> anyhow::Result<(Tensor<B, 2>, Vec<ProbeSample>)> {
+    let _ = model;
     let roots = data.roots(chunk)?;
     let opts = RunOptions::new(8)
         .with_freeze(Freeze::BASE_AND_EVIDENCE)
         .with_state();
-    let mut s = Session::new(model, &roots, opts, mix(seed, 0xAA ^ prefix as u64), device)?;
+    let mut s = mk(opts, &roots, mix(seed, 0xAA ^ prefix as u64))?;
     let mut rnd = Selection::Random(0);
     for _ in 0..prefix {
         s.advance(&mut rnd)?;
