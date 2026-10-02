@@ -408,3 +408,14 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   three seeds verified; no execution-only optimisation adopted (profile does not support one).
 - **Evidence:** `docs/evidence/v35/v35-preflight-16x8.json`.
 - **NOT RUN:** V3.5 training runs, TUNE evaluation, B16, HOLDOUT_C.
+
+## V35-E3 - V3.5 runs and gates
+
+- **Date:** 2026-10-02
+- **Runs:** three on-policy runs (seeds 5101/5102/5103), micro16 x accum8, 800 updates, LR 3e-4, init from each seed's selected P5
+  final weights, fresh `adamw-v1`; all exit 0, uninterrupted, ~21-23 min training each; TUNE evaluated at 0/200/400/600/800
+  (diagnostic) with the full evaluation at 800.
+- **Result (rules applied once):** Gate II FAIL (-0.0222), Gate III FAIL (-0.0227), Content-Use PASS (+0.0369 nats, CI wholly
+  positive, every seed), Gate VI PASS. Outcome PARTIAL - CONTENT. M3 ACTIVE B8 proof completion 2.5-4.3% vs 43.2% ceiling.
+- **Evidence:** `docs/V35_RESULTS.md`, `docs/evidence/v35/`.
+- **NOT RUN:** B16 / Gate V, HOLDOUT_C, any further training, V4 implementation.

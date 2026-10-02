@@ -1,0 +1,3086 @@
+{
+  "active": [
+    {
+      "refined_diag": null,
+      "selector_diag": null,
+      "summary": {
+        "budget": 0,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36722044798931686,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9995215447330678,
+            "entropy": 0.3701912306644929,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.7294601846340614,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.510057312132654,
+            "entropy": 1.7748393555833044,
+            "n": 750,
+            "top1": 0.7026666666666667
+          },
+          "KQRvK M3": {
+            "ce": 2.348037837652932,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.35722701845559673,
+            "entropy": 2.161548121547787,
+            "n": 750,
+            "top1": 0.54
+          },
+          "KRRvK M1": {
+            "ce": 0.09132315873651693,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998599390749797,
+            "entropy": 0.09245279717445341,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.5036298453554506,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5942791211602465,
+            "entropy": 1.3779345506502094,
+            "n": 750,
+            "top1": 0.7586666666666667
+          },
+          "KRRvK M3": {
+            "ce": 1.9280919290451533,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.5108443666967424,
+            "entropy": 1.6926791013550204,
+            "n": 750,
+            "top1": 0.6853333333333333
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292718033629169,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.999690741904023,
+            "entropy": 0.231322013919473,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6165450149947562,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5521682166464504,
+            "entropy": 1.5763869531167571,
+            "n": 1500,
+            "top1": 0.7306666666666667
+          },
+          "M3": {
+            "ce": 2.1380648833490437,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4340356925761692,
+            "entropy": 1.9271136114514014,
+            "n": 1500,
+            "top1": 0.6126666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4815728234254382,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6222686251071056,
+            "entropy": 1.4355262359318623,
+            "n": 2250,
+            "top1": 0.7475555555555555
+          },
+          "KRRvK": {
+            "ce": 1.1743483110457078,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7016611423106569,
+            "entropy": 1.0543554830598925,
+            "n": 2250,
+            "top1": 0.8146666666666667
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3279605672355719,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6619648837088812,
+          "entropy": 1.244940859495878,
+          "n": 4500,
+          "top1": 0.7811111111111111
+        },
+        "pooled": {
+          "ce": 1.327960567235572,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6619648837088793,
+          "entropy": 1.2449408594958808,
+          "n": 4500,
+          "top1": 0.7811111111111111
+        },
+        "selection": "active"
+      }
+    },
+    {
+      "refined_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 750
+            },
+            "post_completion_off_target": 750,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 750,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 276.6069149049217,
+            "pre_completion_selector_margin_sum": 4432.137823581696,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 1500
+          },
+          "KQRvK M2": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "pre_completion_off_target": 318,
+            "pre_completion_proof_admissible": 976,
+            "pre_completion_queries": 1500,
+            "pre_completion_refute_admissible": 206,
+            "pre_completion_residual_decrease_sum": 976,
+            "pre_completion_selector_entropy_sum": 1951.8060833849013,
+            "pre_completion_selector_margin_sum": 1770.595635317266,
+            "pre_completion_selector_stat_count": 1500,
+            "queries": 1500
+          },
+          "KQRvK M3": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "pre_completion_off_target": 580,
+            "pre_completion_proof_admissible": 666,
+            "pre_completion_queries": 1500,
+            "pre_completion_refute_admissible": 254,
+            "pre_completion_residual_decrease_sum": 666,
+            "pre_completion_selector_entropy_sum": 2604.678024277091,
+            "pre_completion_selector_margin_sum": 1071.810582453385,
+            "pre_completion_selector_stat_count": 1500,
+            "queries": 1500
+          },
+          "KRRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 750
+            },
+            "post_completion_off_target": 750,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 750,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 69.00459093914469,
+            "pre_completion_selector_margin_sum": 6980.79293012619,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 1500
+          },
+          "KRRvK M2": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "pre_completion_off_target": 221,
+            "pre_completion_proof_admissible": 1122,
+            "pre_completion_queries": 1500,
+            "pre_completion_refute_admissible": 157,
+            "pre_completion_residual_decrease_sum": 1122,
+            "pre_completion_selector_entropy_sum": 1469.3712382502854,
+            "pre_completion_selector_margin_sum": 2859.5961207188666,
+            "pre_completion_selector_stat_count": 1500,
+            "queries": 1500
+          },
+          "KRRvK M3": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "pre_completion_off_target": 369,
+            "pre_completion_proof_admissible": 956,
+            "pre_completion_queries": 1500,
+            "pre_completion_refute_admissible": 175,
+            "pre_completion_residual_decrease_sum": 956,
+            "pre_completion_selector_entropy_sum": 2102.38305019401,
+            "pre_completion_selector_margin_sum": 1052.908561871387,
+            "pre_completion_selector_stat_count": 1500,
+            "queries": 1500
+          }
+        },
+        "pooled": {
+          "complete_after_query": {
+            "1": 1500,
+            "2": 1500
+          },
+          "examples": 4500,
+          "first_completion_step": {
+            "1": 1500
+          },
+          "never_complete": 3000,
+          "positions_with_post_completion_queries": 1500,
+          "post_completion_depth_histogram": {
+            "1": 1500
+          },
+          "post_completion_off_target": 1500,
+          "post_completion_proof_admissible": 0,
+          "post_completion_queries": 1500,
+          "post_completion_refute_admissible": 0,
+          "pre_completion_depth_histogram": {
+            "1": 4500,
+            "2": 3000
+          },
+          "pre_completion_off_target": 1488,
+          "pre_completion_proof_admissible": 5220,
+          "pre_completion_queries": 7500,
+          "pre_completion_refute_admissible": 792,
+          "pre_completion_residual_decrease_sum": 5220,
+          "pre_completion_selector_entropy_sum": 8473.849901950354,
+          "pre_completion_selector_margin_sum": 18167.84165406879,
+          "pre_completion_selector_stat_count": 7500,
+          "queries": 9000
+        }
+      },
+      "selector_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 1500
+            },
+            "depth_sum": 1500,
+            "distinct_root_branches_sum": 1500,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 750,
+            "post_completion_queries": 750,
+            "proof_admissible": 750,
+            "queries": 1500,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 0,
+            "residual_decrease_sum": 750
+          },
+          "KQRvK M2": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "depth_sum": 2250,
+            "distinct_root_branches_sum": 750,
+            "examples": 750,
+            "final_residual_sum": 1782,
+            "first_query_correct_root": 524,
+            "ideal_ceiling": 0,
+            "off_target": 318,
+            "post_completion_queries": 0,
+            "proof_admissible": 976,
+            "queries": 1500,
+            "queries_reducing_residual": 976,
+            "refute_admissible": 206,
+            "residual_decrease_sum": 976
+          },
+          "KQRvK M3": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "depth_sum": 2250,
+            "distinct_root_branches_sum": 750,
+            "examples": 750,
+            "final_residual_sum": 7860,
+            "first_query_correct_root": 420,
+            "ideal_ceiling": 0,
+            "off_target": 580,
+            "post_completion_queries": 0,
+            "proof_admissible": 666,
+            "queries": 1500,
+            "queries_reducing_residual": 666,
+            "refute_admissible": 254,
+            "residual_decrease_sum": 666
+          },
+          "KRRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 1500
+            },
+            "depth_sum": 1500,
+            "distinct_root_branches_sum": 1500,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 750,
+            "post_completion_queries": 750,
+            "proof_admissible": 750,
+            "queries": 1500,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 0,
+            "residual_decrease_sum": 750
+          },
+          "KRRvK M2": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "depth_sum": 2250,
+            "distinct_root_branches_sum": 750,
+            "examples": 750,
+            "final_residual_sum": 1598,
+            "first_query_correct_root": 568,
+            "ideal_ceiling": 0,
+            "off_target": 221,
+            "post_completion_queries": 0,
+            "proof_admissible": 1122,
+            "queries": 1500,
+            "queries_reducing_residual": 1122,
+            "refute_admissible": 157,
+            "residual_decrease_sum": 1122
+          },
+          "KRRvK M3": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 750,
+              "2": 750
+            },
+            "depth_sum": 2250,
+            "distinct_root_branches_sum": 750,
+            "examples": 750,
+            "final_residual_sum": 7284,
+            "first_query_correct_root": 506,
+            "ideal_ceiling": 0,
+            "off_target": 369,
+            "post_completion_queries": 0,
+            "proof_admissible": 956,
+            "queries": 1500,
+            "queries_reducing_residual": 956,
+            "refute_admissible": 175,
+            "residual_decrease_sum": 956
+          }
+        },
+        "pooled": {
+          "complete_after_budget": 1500,
+          "depth_histogram": {
+            "1": 6000,
+            "2": 3000
+          },
+          "depth_sum": 12000,
+          "distinct_root_branches_sum": 6000,
+          "examples": 4500,
+          "final_residual_sum": 18524,
+          "first_query_correct_root": 3518,
+          "ideal_ceiling": 1500,
+          "off_target": 2988,
+          "post_completion_queries": 1500,
+          "proof_admissible": 5220,
+          "queries": 9000,
+          "queries_reducing_residual": 5220,
+          "refute_admissible": 792,
+          "residual_decrease_sum": 5220
+        }
+      },
+      "summary": {
+        "budget": 2,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36732497817146764,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9998094611500853,
+            "entropy": 0.36777986113346994,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.73327386072401,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.48793383323554507,
+            "entropy": 1.8894081998733803,
+            "n": 750,
+            "top1": 0.6986666666666667
+          },
+          "KQRvK M3": {
+            "ce": 2.3435204191441104,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3400275631164672,
+            "entropy": 2.2706568442064667,
+            "n": 750,
+            "top1": 0.5146666666666667
+          },
+          "KRRvK M1": {
+            "ce": 0.09124371245860372,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9999309265673497,
+            "entropy": 0.0918239382118464,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4901992380008102,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5926275501937978,
+            "entropy": 1.4159660399019118,
+            "n": 750,
+            "top1": 0.764
+          },
+          "KRRvK M3": {
+            "ce": 1.9123851462059553,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.5123253309301647,
+            "entropy": 1.7153542915214988,
+            "n": 750,
+            "top1": 0.684
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292843453150357,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998701938587164,
+            "entropy": 0.22980189967265804,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6117365493624092,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5402806917146726,
+            "entropy": 1.6526871198876416,
+            "n": 1500,
+            "top1": 0.7313333333333333
+          },
+          "M3": {
+            "ce": 2.1279527826750333,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4261764470233161,
+            "entropy": 1.9930055678639835,
+            "n": 1500,
+            "top1": 0.5993333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4813730860131955,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6092569525006997,
+            "entropy": 1.5092816350711062,
+            "n": 2250,
+            "top1": 0.7377777777777778
+          },
+          "KRRvK": {
+            "ce": 1.1646093655551228,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.701627935897104,
+            "entropy": 1.074381423211754,
+            "n": 2250,
+            "top1": 0.816
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3229912257841596,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989016,
+          "entropy": 1.2918315291414293,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "pooled": {
+          "ce": 1.3229912257841594,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989021,
+          "entropy": 1.2918315291414286,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "selection": "active"
+      }
+    },
+    {
+      "refined_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750,
+              "4": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 1192,
+              "2": 770,
+              "3": 288
+            },
+            "post_completion_off_target": 1480,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 2250,
+            "post_completion_refute_admissible": 770,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 276.5969974751424,
+            "pre_completion_selector_margin_sum": 4437.750558853149,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 3000
+          },
+          "KQRvK M2": {
+            "complete_after_query": {
+              "4": 316
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "3": 302,
+              "4": 14
+            },
+            "never_complete": 434,
+            "positions_with_post_completion_queries": 302,
+            "post_completion_depth_histogram": {
+              "1": 119,
+              "3": 183
+            },
+            "post_completion_off_target": 302,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 302,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 924,
+              "2": 1201,
+              "3": 563,
+              "4": 10
+            },
+            "pre_completion_off_target": 643,
+            "pre_completion_proof_admissible": 1625,
+            "pre_completion_queries": 2698,
+            "pre_completion_refute_admissible": 430,
+            "pre_completion_residual_decrease_sum": 1625,
+            "pre_completion_selector_entropy_sum": 4689.860962808132,
+            "pre_completion_selector_margin_sum": 2908.1774437529966,
+            "pre_completion_selector_stat_count": 2698,
+            "queries": 3000
+          },
+          "KQRvK M3": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 1088,
+              "2": 1683,
+              "3": 196,
+              "4": 33
+            },
+            "pre_completion_off_target": 1380,
+            "pre_completion_proof_admissible": 1068,
+            "pre_completion_queries": 3000,
+            "pre_completion_refute_admissible": 552,
+            "pre_completion_residual_decrease_sum": 1068,
+            "pre_completion_selector_entropy_sum": 6807.14483378455,
+            "pre_completion_selector_margin_sum": 1837.9887002287433,
+            "pre_completion_selector_stat_count": 3000,
+            "queries": 3000
+          },
+          "KRRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750,
+              "4": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 867,
+              "2": 1053,
+              "3": 330
+            },
+            "post_completion_off_target": 1197,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 2250,
+            "post_completion_refute_admissible": 1053,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 68.99805327507784,
+            "pre_completion_selector_margin_sum": 6989.29154920578,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 3000
+          },
+          "KRRvK M2": {
+            "complete_after_query": {
+              "4": 367
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "3": 357,
+              "4": 10
+            },
+            "never_complete": 383,
+            "positions_with_post_completion_queries": 357,
+            "post_completion_depth_histogram": {
+              "1": 92,
+              "3": 265
+            },
+            "post_completion_off_target": 357,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 357,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 881,
+              "2": 1147,
+              "3": 610,
+              "4": 5
+            },
+            "pre_completion_off_target": 459,
+            "pre_completion_proof_admissible": 1829,
+            "pre_completion_queries": 2643,
+            "pre_completion_refute_admissible": 355,
+            "pre_completion_residual_decrease_sum": 1829,
+            "pre_completion_selector_entropy_sum": 3737.9548929445446,
+            "pre_completion_selector_margin_sum": 4232.94257022813,
+            "pre_completion_selector_stat_count": 2643,
+            "queries": 3000
+          },
+          "KRRvK M3": {
+            "complete_after_query": {},
+            "examples": 750,
+            "first_completion_step": {},
+            "never_complete": 750,
+            "positions_with_post_completion_queries": 0,
+            "post_completion_depth_histogram": {},
+            "post_completion_off_target": 0,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 0,
+            "post_completion_refute_admissible": 0,
+            "pre_completion_depth_histogram": {
+              "1": 908,
+              "2": 1715,
+              "3": 362,
+              "4": 15
+            },
+            "pre_completion_off_target": 945,
+            "pre_completion_proof_admissible": 1621,
+            "pre_completion_queries": 3000,
+            "pre_completion_refute_admissible": 434,
+            "pre_completion_residual_decrease_sum": 1621,
+            "pre_completion_selector_entropy_sum": 5752.366398682818,
+            "pre_completion_selector_margin_sum": 2059.6726120198146,
+            "pre_completion_selector_stat_count": 3000,
+            "queries": 3000
+          }
+        },
+        "pooled": {
+          "complete_after_query": {
+            "1": 1500,
+            "2": 1500,
+            "4": 2183
+          },
+          "examples": 4500,
+          "first_completion_step": {
+            "1": 1500,
+            "3": 659,
+            "4": 24
+          },
+          "never_complete": 2317,
+          "positions_with_post_completion_queries": 2159,
+          "post_completion_depth_histogram": {
+            "1": 2270,
+            "2": 1823,
+            "3": 1066
+          },
+          "post_completion_off_target": 3336,
+          "post_completion_proof_admissible": 0,
+          "post_completion_queries": 5159,
+          "post_completion_refute_admissible": 1823,
+          "pre_completion_depth_histogram": {
+            "1": 5301,
+            "2": 5746,
+            "3": 1731,
+            "4": 63
+          },
+          "pre_completion_off_target": 3427,
+          "pre_completion_proof_admissible": 7643,
+          "pre_completion_queries": 12841,
+          "pre_completion_refute_admissible": 1771,
+          "pre_completion_residual_decrease_sum": 7643,
+          "pre_completion_selector_entropy_sum": 21332.922138970265,
+          "pre_completion_selector_margin_sum": 22465.823434288613,
+          "pre_completion_selector_stat_count": 12841,
+          "queries": 18000
+        }
+      },
+      "selector_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 1942,
+              "2": 770,
+              "3": 288
+            },
+            "depth_sum": 4346,
+            "distinct_root_branches_sum": 1942,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 1480,
+            "post_completion_queries": 2250,
+            "proof_admissible": 750,
+            "queries": 3000,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 770,
+            "residual_decrease_sum": 750
+          },
+          "KQRvK M2": {
+            "complete_after_budget": 316,
+            "depth_histogram": {
+              "1": 1043,
+              "2": 1201,
+              "3": 746,
+              "4": 10
+            },
+            "depth_sum": 5723,
+            "distinct_root_branches_sum": 1043,
+            "examples": 750,
+            "final_residual_sum": 1133,
+            "first_query_correct_root": 524,
+            "ideal_ceiling": 542,
+            "off_target": 945,
+            "post_completion_queries": 302,
+            "proof_admissible": 1625,
+            "queries": 3000,
+            "queries_reducing_residual": 1625,
+            "refute_admissible": 430,
+            "residual_decrease_sum": 1625
+          },
+          "KQRvK M3": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 1088,
+              "2": 1683,
+              "3": 196,
+              "4": 33
+            },
+            "depth_sum": 5174,
+            "distinct_root_branches_sum": 1088,
+            "examples": 750,
+            "final_residual_sum": 7458,
+            "first_query_correct_root": 420,
+            "ideal_ceiling": 0,
+            "off_target": 1380,
+            "post_completion_queries": 0,
+            "proof_admissible": 1068,
+            "queries": 3000,
+            "queries_reducing_residual": 1068,
+            "refute_admissible": 552,
+            "residual_decrease_sum": 1068
+          },
+          "KRRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 1617,
+              "2": 1053,
+              "3": 330
+            },
+            "depth_sum": 4713,
+            "distinct_root_branches_sum": 1617,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 1197,
+            "post_completion_queries": 2250,
+            "proof_admissible": 750,
+            "queries": 3000,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 1053,
+            "residual_decrease_sum": 750
+          },
+          "KRRvK M2": {
+            "complete_after_budget": 367,
+            "depth_histogram": {
+              "1": 973,
+              "2": 1147,
+              "3": 875,
+              "4": 5
+            },
+            "depth_sum": 5912,
+            "distinct_root_branches_sum": 973,
+            "examples": 750,
+            "final_residual_sum": 891,
+            "first_query_correct_root": 568,
+            "ideal_ceiling": 565,
+            "off_target": 816,
+            "post_completion_queries": 357,
+            "proof_admissible": 1829,
+            "queries": 3000,
+            "queries_reducing_residual": 1829,
+            "refute_admissible": 355,
+            "residual_decrease_sum": 1829
+          },
+          "KRRvK M3": {
+            "complete_after_budget": 0,
+            "depth_histogram": {
+              "1": 908,
+              "2": 1715,
+              "3": 362,
+              "4": 15
+            },
+            "depth_sum": 5484,
+            "distinct_root_branches_sum": 908,
+            "examples": 750,
+            "final_residual_sum": 6619,
+            "first_query_correct_root": 506,
+            "ideal_ceiling": 0,
+            "off_target": 945,
+            "post_completion_queries": 0,
+            "proof_admissible": 1621,
+            "queries": 3000,
+            "queries_reducing_residual": 1621,
+            "refute_admissible": 434,
+            "residual_decrease_sum": 1621
+          }
+        },
+        "pooled": {
+          "complete_after_budget": 2183,
+          "depth_histogram": {
+            "1": 7571,
+            "2": 7569,
+            "3": 2797,
+            "4": 63
+          },
+          "depth_sum": 31352,
+          "distinct_root_branches_sum": 7571,
+          "examples": 4500,
+          "final_residual_sum": 16101,
+          "first_query_correct_root": 3518,
+          "ideal_ceiling": 2607,
+          "off_target": 6763,
+          "post_completion_queries": 5159,
+          "proof_admissible": 7643,
+          "queries": 18000,
+          "queries_reducing_residual": 7643,
+          "refute_admissible": 3594,
+          "residual_decrease_sum": 7643
+        }
+      },
+      "summary": {
+        "budget": 4,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.367174942790593,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.999723187057997,
+            "entropy": 0.3688083167336955,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.716111803481835,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.499313784951481,
+            "entropy": 1.8772364514833626,
+            "n": 750,
+            "top1": 0.7293333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.351623783903604,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33108313327246996,
+            "entropy": 2.304161624577355,
+            "n": 750,
+            "top1": 0.476
+          },
+          "KRRvK M1": {
+            "ce": 0.09128737556925585,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998844909136281,
+            "entropy": 0.09225258862518629,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4738415298314558,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6072511853393436,
+            "entropy": 1.3844013529446468,
+            "n": 750,
+            "top1": 0.7826666666666666
+          },
+          "KRRvK M3": {
+            "ce": 1.9125616644253332,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4984976437890289,
+            "entropy": 1.77883941086348,
+            "n": 750,
+            "top1": 0.6906666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22923115917992443,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998038389858095,
+            "entropy": 0.23053045267944047,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5949766666566465,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5532824851454129,
+            "entropy": 1.6308189022140074,
+            "n": 1500,
+            "top1": 0.756
+          },
+          "M3": {
+            "ce": 2.132092724164469,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41479038853075,
+            "entropy": 2.0415005177204177,
+            "n": 1500,
+            "top1": 0.5833333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4783035100586779,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.610040035093983,
+            "entropy": 1.5167354642648052,
+            "n": 2250,
+            "top1": 0.7351111111111112
+          },
+          "KRRvK": {
+            "ce": 1.1592301899420152,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7018777733473337,
+            "entropy": 1.0851644508111045,
+            "n": 2250,
+            "top1": 0.8244444444444444
+          }
+        },
+        "macro_cell": {
+          "ce": 1.318766850000346,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206581,
+          "entropy": 1.3009499575379542,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "pooled": {
+          "ce": 1.3187668500003467,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206572,
+          "entropy": 1.3009499575379564,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "selection": "active"
+      }
+    },
+    {
+      "refined_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750,
+              "4": 750,
+              "8": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 1513,
+              "2": 1204,
+              "3": 1989,
+              "4": 481,
+              "5": 62,
+              "6": 1
+            },
+            "post_completion_off_target": 4046,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 5250,
+            "post_completion_refute_admissible": 1204,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 276.6442212891816,
+            "pre_completion_selector_margin_sum": 4422.66396188736,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 6000
+          },
+          "KQRvK M2": {
+            "complete_after_query": {
+              "4": 316,
+              "8": 483
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "3": 302,
+              "4": 14,
+              "5": 103,
+              "6": 25,
+              "7": 16,
+              "8": 23
+            },
+            "never_complete": 267,
+            "positions_with_post_completion_queries": 460,
+            "post_completion_depth_histogram": {
+              "1": 391,
+              "2": 397,
+              "3": 734,
+              "4": 346,
+              "5": 64,
+              "6": 8,
+              "7": 1
+            },
+            "post_completion_off_target": 1767,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 1941,
+            "post_completion_refute_admissible": 174,
+            "pre_completion_depth_histogram": {
+              "1": 1183,
+              "2": 1776,
+              "3": 1010,
+              "4": 77,
+              "5": 13
+            },
+            "pre_completion_off_target": 1244,
+            "pre_completion_proof_admissible": 1995,
+            "pre_completion_queries": 4059,
+            "pre_completion_refute_admissible": 820,
+            "pre_completion_residual_decrease_sum": 1995,
+            "pre_completion_selector_entropy_sum": 9189.555019028485,
+            "pre_completion_selector_margin_sum": 3625.834105038084,
+            "pre_completion_selector_stat_count": 4059,
+            "queries": 6000
+          },
+          "KQRvK M3": {
+            "complete_after_query": {
+              "8": 19
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "5": 9,
+              "7": 3,
+              "8": 7
+            },
+            "never_complete": 731,
+            "positions_with_post_completion_queries": 12,
+            "post_completion_depth_histogram": {
+              "1": 10,
+              "2": 9,
+              "3": 3,
+              "4": 4,
+              "5": 4
+            },
+            "post_completion_off_target": 28,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 30,
+            "post_completion_refute_admissible": 2,
+            "pre_completion_depth_histogram": {
+              "1": 1742,
+              "2": 3328,
+              "3": 635,
+              "4": 232,
+              "5": 33
+            },
+            "pre_completion_off_target": 3062,
+            "pre_completion_proof_admissible": 1601,
+            "pre_completion_queries": 5970,
+            "pre_completion_refute_admissible": 1307,
+            "pre_completion_residual_decrease_sum": 1601,
+            "pre_completion_selector_entropy_sum": 17234.4723040089,
+            "pre_completion_selector_margin_sum": 2908.250843222253,
+            "pre_completion_selector_stat_count": 5970,
+            "queries": 6000
+          },
+          "KRRvK M1": {
+            "complete_after_query": {
+              "1": 750,
+              "2": 750,
+              "4": 750,
+              "8": 750
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "1": 750
+            },
+            "never_complete": 0,
+            "positions_with_post_completion_queries": 750,
+            "post_completion_depth_histogram": {
+              "1": 1016,
+              "2": 1302,
+              "3": 2214,
+              "4": 599,
+              "5": 110,
+              "6": 9
+            },
+            "post_completion_off_target": 3948,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 5250,
+            "post_completion_refute_admissible": 1302,
+            "pre_completion_depth_histogram": {
+              "1": 750
+            },
+            "pre_completion_off_target": 0,
+            "pre_completion_proof_admissible": 750,
+            "pre_completion_queries": 750,
+            "pre_completion_refute_admissible": 0,
+            "pre_completion_residual_decrease_sum": 750,
+            "pre_completion_selector_entropy_sum": 69.01928990777378,
+            "pre_completion_selector_margin_sum": 6966.9210686683655,
+            "pre_completion_selector_stat_count": 750,
+            "queries": 6000
+          },
+          "KRRvK M2": {
+            "complete_after_query": {
+              "4": 367,
+              "8": 551
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "3": 357,
+              "4": 10,
+              "5": 124,
+              "6": 20,
+              "7": 30,
+              "8": 10
+            },
+            "never_complete": 199,
+            "positions_with_post_completion_queries": 541,
+            "post_completion_depth_histogram": {
+              "1": 324,
+              "2": 322,
+              "3": 836,
+              "4": 610,
+              "5": 162,
+              "6": 13
+            },
+            "post_completion_off_target": 2096,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 2267,
+            "post_completion_refute_admissible": 171,
+            "pre_completion_depth_histogram": {
+              "1": 1053,
+              "2": 1567,
+              "3": 1023,
+              "4": 74,
+              "5": 16
+            },
+            "pre_completion_off_target": 914,
+            "pre_completion_proof_admissible": 2169,
+            "pre_completion_queries": 3733,
+            "pre_completion_refute_admissible": 650,
+            "pre_completion_residual_decrease_sum": 2169,
+            "pre_completion_selector_entropy_sum": 7118.7423139875755,
+            "pre_completion_selector_margin_sum": 4894.090681239963,
+            "pre_completion_selector_stat_count": 3733,
+            "queries": 6000
+          },
+          "KRRvK M3": {
+            "complete_after_query": {
+              "8": 9
+            },
+            "examples": 750,
+            "first_completion_step": {
+              "5": 4,
+              "6": 1,
+              "7": 1,
+              "8": 3
+            },
+            "never_complete": 741,
+            "positions_with_post_completion_queries": 6,
+            "post_completion_depth_histogram": {
+              "1": 3,
+              "2": 3,
+              "3": 5,
+              "4": 3,
+              "5": 1
+            },
+            "post_completion_off_target": 14,
+            "post_completion_proof_admissible": 0,
+            "post_completion_queries": 15,
+            "post_completion_refute_admissible": 1,
+            "pre_completion_depth_histogram": {
+              "1": 1428,
+              "2": 3011,
+              "3": 1161,
+              "4": 284,
+              "5": 90,
+              "6": 8,
+              "7": 3
+            },
+            "pre_completion_off_target": 2623,
+            "pre_completion_proof_admissible": 2314,
+            "pre_completion_queries": 5985,
+            "pre_completion_refute_admissible": 1048,
+            "pre_completion_residual_decrease_sum": 2314,
+            "pre_completion_selector_entropy_sum": 15601.259878369048,
+            "pre_completion_selector_margin_sum": 3257.410084269941,
+            "pre_completion_selector_stat_count": 5985,
+            "queries": 6000
+          }
+        },
+        "pooled": {
+          "complete_after_query": {
+            "1": 1500,
+            "2": 1500,
+            "4": 2183,
+            "8": 2562
+          },
+          "examples": 4500,
+          "first_completion_step": {
+            "1": 1500,
+            "3": 659,
+            "4": 24,
+            "5": 240,
+            "6": 46,
+            "7": 50,
+            "8": 43
+          },
+          "never_complete": 1938,
+          "positions_with_post_completion_queries": 2519,
+          "post_completion_depth_histogram": {
+            "1": 3257,
+            "2": 3237,
+            "3": 5781,
+            "4": 2043,
+            "5": 403,
+            "6": 31,
+            "7": 1
+          },
+          "post_completion_off_target": 11899,
+          "post_completion_proof_admissible": 0,
+          "post_completion_queries": 14753,
+          "post_completion_refute_admissible": 2854,
+          "pre_completion_depth_histogram": {
+            "1": 6906,
+            "2": 9682,
+            "3": 3829,
+            "4": 667,
+            "5": 152,
+            "6": 8,
+            "7": 3
+          },
+          "pre_completion_off_target": 7843,
+          "pre_completion_proof_admissible": 9579,
+          "pre_completion_queries": 21247,
+          "pre_completion_refute_admissible": 3825,
+          "pre_completion_residual_decrease_sum": 9579,
+          "pre_completion_selector_entropy_sum": 49489.69302659096,
+          "pre_completion_selector_margin_sum": 26075.170744325966,
+          "pre_completion_selector_stat_count": 21247,
+          "queries": 36000
+        }
+      },
+      "selector_diag": {
+        "cells": {
+          "KQRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 2263,
+              "2": 1204,
+              "3": 1989,
+              "4": 481,
+              "5": 62,
+              "6": 1
+            },
+            "depth_sum": 12878,
+            "distinct_root_branches_sum": 2263,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 4046,
+            "post_completion_queries": 5250,
+            "proof_admissible": 750,
+            "queries": 6000,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 1204,
+            "residual_decrease_sum": 750
+          },
+          "KQRvK M2": {
+            "complete_after_budget": 483,
+            "depth_histogram": {
+              "1": 1574,
+              "2": 2173,
+              "3": 1744,
+              "4": 423,
+              "5": 77,
+              "6": 8,
+              "7": 1
+            },
+            "depth_sum": 13284,
+            "distinct_root_branches_sum": 1574,
+            "examples": 750,
+            "final_residual_sum": 763,
+            "first_query_correct_root": 524,
+            "ideal_ceiling": 747,
+            "off_target": 3011,
+            "post_completion_queries": 1941,
+            "proof_admissible": 1995,
+            "queries": 6000,
+            "queries_reducing_residual": 1995,
+            "refute_admissible": 994,
+            "residual_decrease_sum": 1995
+          },
+          "KQRvK M3": {
+            "complete_after_budget": 19,
+            "depth_histogram": {
+              "1": 1752,
+              "2": 3337,
+              "3": 638,
+              "4": 236,
+              "5": 37
+            },
+            "depth_sum": 11469,
+            "distinct_root_branches_sum": 1752,
+            "examples": 750,
+            "final_residual_sum": 6925,
+            "first_query_correct_root": 420,
+            "ideal_ceiling": 324,
+            "off_target": 3090,
+            "post_completion_queries": 30,
+            "proof_admissible": 1601,
+            "queries": 6000,
+            "queries_reducing_residual": 1601,
+            "refute_admissible": 1309,
+            "residual_decrease_sum": 1601
+          },
+          "KRRvK M1": {
+            "complete_after_budget": 750,
+            "depth_histogram": {
+              "1": 1766,
+              "2": 1302,
+              "3": 2214,
+              "4": 599,
+              "5": 110,
+              "6": 9
+            },
+            "depth_sum": 14012,
+            "distinct_root_branches_sum": 1766,
+            "examples": 750,
+            "final_residual_sum": 0,
+            "first_query_correct_root": 750,
+            "ideal_ceiling": 750,
+            "off_target": 3948,
+            "post_completion_queries": 5250,
+            "proof_admissible": 750,
+            "queries": 6000,
+            "queries_reducing_residual": 750,
+            "refute_admissible": 1302,
+            "residual_decrease_sum": 750
+          },
+          "KRRvK M2": {
+            "complete_after_budget": 551,
+            "depth_histogram": {
+              "1": 1377,
+              "2": 1889,
+              "3": 1859,
+              "4": 684,
+              "5": 178,
+              "6": 13
+            },
+            "depth_sum": 14436,
+            "distinct_root_branches_sum": 1377,
+            "examples": 750,
+            "final_residual_sum": 551,
+            "first_query_correct_root": 568,
+            "ideal_ceiling": 746,
+            "off_target": 3010,
+            "post_completion_queries": 2267,
+            "proof_admissible": 2169,
+            "queries": 6000,
+            "queries_reducing_residual": 2169,
+            "refute_admissible": 821,
+            "residual_decrease_sum": 2169
+          },
+          "KRRvK M3": {
+            "complete_after_budget": 9,
+            "depth_histogram": {
+              "1": 1431,
+              "2": 3014,
+              "3": 1166,
+              "4": 287,
+              "5": 91,
+              "6": 8,
+              "7": 3
+            },
+            "depth_sum": 12629,
+            "distinct_root_branches_sum": 1431,
+            "examples": 750,
+            "final_residual_sum": 5926,
+            "first_query_correct_root": 506,
+            "ideal_ceiling": 280,
+            "off_target": 2637,
+            "post_completion_queries": 15,
+            "proof_admissible": 2314,
+            "queries": 6000,
+            "queries_reducing_residual": 2314,
+            "refute_admissible": 1049,
+            "residual_decrease_sum": 2314
+          }
+        },
+        "pooled": {
+          "complete_after_budget": 2562,
+          "depth_histogram": {
+            "1": 10163,
+            "2": 12919,
+            "3": 9610,
+            "4": 2710,
+            "5": 555,
+            "6": 39,
+            "7": 4
+          },
+          "depth_sum": 78708,
+          "distinct_root_branches_sum": 10163,
+          "examples": 4500,
+          "final_residual_sum": 14165,
+          "first_query_correct_root": 3518,
+          "ideal_ceiling": 3597,
+          "off_target": 19742,
+          "post_completion_queries": 14753,
+          "proof_admissible": 9579,
+          "queries": 36000,
+          "queries_reducing_residual": 9579,
+          "refute_admissible": 6679,
+          "residual_decrease_sum": 9579
+        }
+      },
+      "summary": {
+        "budget": 8,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.3672589756073826,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9996548057218598,
+            "entropy": 0.3693110957480003,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.6986994782462943,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4999396146058798,
+            "entropy": 1.887758808611269,
+            "n": 750,
+            "top1": 0.7453333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.3393067200810664,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33650408826425604,
+            "entropy": 2.306481796635262,
+            "n": 750,
+            "top1": 0.512
+          },
+          "KRRvK M1": {
+            "ce": 0.09132373555382622,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998500025833379,
+            "entropy": 0.09256717610232097,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4539383397115604,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6027582597315673,
+            "entropy": 1.423805752948391,
+            "n": 750,
+            "top1": 0.8173333333333334
+          },
+          "KRRvK M3": {
+            "ce": 1.8904286568981088,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4981633672961324,
+            "entropy": 1.805361792332119,
+            "n": 750,
+            "top1": 0.7026666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292913555806044,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9997524041525989,
+            "entropy": 0.23093913592516072,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5763189089789271,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5513489371687235,
+            "entropy": 1.6557822807798301,
+            "n": 1500,
+            "top1": 0.7813333333333333
+          },
+          "M3": {
+            "ce": 2.114867688489587,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41733372778019506,
+            "entropy": 2.055921794483689,
+            "n": 1500,
+            "top1": 0.6073333333333333
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4684217246449143,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.612032836197332,
+            "entropy": 1.5211839003315109,
+            "n": 2250,
+            "top1": 0.7524444444444445
+          },
+          "KRRvK": {
+            "ce": 1.1452302440544981,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7002572098703439,
+            "entropy": 1.1072449071276094,
+            "n": 2250,
+            "top1": 0.84
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3068259843497065,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338389,
+          "entropy": 1.3142144037295604,
+          "n": 4500,
+          "top1": 0.7962222222222222
+        },
+        "pooled": {
+          "ce": 1.306825984349706,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338379,
+          "entropy": 1.3142144037295622,
+          "n": 4500,
+          "top1": 0.7962222222222223
+        },
+        "selection": "active"
+      }
+    }
+  ],
+  "eval_wall_s": 116.2984107,
+  "fixed_B2_B4_B8": [
+    {
+      "refined_diag": null,
+      "selector_diag": null,
+      "summary": {
+        "budget": 2,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.3669862071609719,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9998133888498475,
+            "entropy": 0.36802965150166067,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.7369287413556425,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.5033903754646267,
+            "entropy": 1.8435543627065072,
+            "n": 750,
+            "top1": 0.704
+          },
+          "KQRvK M3": {
+            "ce": 2.3477788851584704,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3440608802467435,
+            "entropy": 2.269461397478392,
+            "n": 750,
+            "top1": 0.5346666666666666
+          },
+          "KRRvK M1": {
+            "ce": 0.09125437818383236,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9999414401333288,
+            "entropy": 0.09169095119100117,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.5017086078796122,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5887013320362795,
+            "entropy": 1.4350882004219212,
+            "n": 750,
+            "top1": 0.7586666666666667
+          },
+          "KRRvK M3": {
+            "ce": 1.9248158907553394,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.49830602039481386,
+            "entropy": 1.7805901803872408,
+            "n": 750,
+            "top1": 0.6866666666666666
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22912029267240216,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998774144915857,
+            "entropy": 0.22986030134633093,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6193186746176271,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5460458537504526,
+            "entropy": 1.6393212815642149,
+            "n": 1500,
+            "top1": 0.7313333333333333
+          },
+          "M3": {
+            "ce": 2.1362973879569056,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4211834503207781,
+            "entropy": 2.0250257889328167,
+            "n": 1500,
+            "top1": 0.6106666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4838979445583622,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6157548815204056,
+            "entropy": 1.4936818038955213,
+            "n": 2250,
+            "top1": 0.7462222222222222
+          },
+          "KRRvK": {
+            "ce": 1.1725929589395938,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6956495975214746,
+            "entropy": 1.102456444000053,
+            "n": 2250,
+            "top1": 0.8151111111111111
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3282454517489781,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.65570223952094,
+          "entropy": 1.2980691239477873,
+          "n": 4500,
+          "top1": 0.7806666666666667
+        },
+        "pooled": {
+          "ce": 1.3282454517489775,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6557022395209376,
+          "entropy": 1.2980691239477875,
+          "n": 4500,
+          "top1": 0.7806666666666666
+        },
+        "selection": "fixed_bfs_actionid_v1"
+      }
+    },
+    {
+      "refined_diag": null,
+      "selector_diag": null,
+      "summary": {
+        "budget": 4,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.3677016899774494,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9991041444710813,
+            "entropy": 0.37351776976760154,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.740323057871773,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4803542200376681,
+            "entropy": 1.9274087829076412,
+            "n": 750,
+            "top1": 0.7013333333333334
+          },
+          "KQRvK M3": {
+            "ce": 2.339620625008337,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33885006915141397,
+            "entropy": 2.2899743915197885,
+            "n": 750,
+            "top1": 0.5373333333333333
+          },
+          "KRRvK M1": {
+            "ce": 0.09153828072439582,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9996716374011859,
+            "entropy": 0.09419839777512809,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.5015474025100473,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5609125540704668,
+            "entropy": 1.5421191193135315,
+            "n": 750,
+            "top1": 0.7586666666666667
+          },
+          "KRRvK M3": {
+            "ce": 1.9147576296942106,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4841620541557567,
+            "entropy": 1.835806089623247,
+            "n": 750,
+            "top1": 0.6853333333333333
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22961998535092262,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9993878909361313,
+            "entropy": 0.23385808377136474,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.62093523019091,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5206333870540669,
+            "entropy": 1.7347639511105863,
+            "n": 1500,
+            "top1": 0.73
+          },
+          "M3": {
+            "ce": 2.127189127351274,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.411506061653585,
+            "entropy": 2.062890240571518,
+            "n": 1500,
+            "top1": 0.6113333333333333
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4825484576191856,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.606102811220054,
+            "entropy": 1.530300314731677,
+            "n": 2250,
+            "top1": 0.7462222222222222
+          },
+          "KRRvK": {
+            "ce": 1.1692811043095512,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6815820818758034,
+            "entropy": 1.1573745355706373,
+            "n": 2250,
+            "top1": 0.8146666666666667
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3259147809643688,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6438424465479288,
+          "entropy": 1.3438374251511565,
+          "n": 4500,
+          "top1": 0.7804444444444444
+        },
+        "pooled": {
+          "ce": 1.3259147809643683,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.643842446547928,
+          "entropy": 1.3438374251511576,
+          "n": 4500,
+          "top1": 0.7804444444444445
+        },
+        "selection": "fixed_bfs_actionid_v1"
+      }
+    },
+    {
+      "refined_diag": null,
+      "selector_diag": null,
+      "summary": {
+        "budget": 8,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36779128661056,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.999028853412464,
+            "entropy": 0.3739583691747493,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.747211200947325,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4672404175100082,
+            "entropy": 1.9681032423728395,
+            "n": 750,
+            "top1": 0.696
+          },
+          "KQRvK M3": {
+            "ce": 2.337652455011246,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3358880741239141,
+            "entropy": 2.2929361343117547,
+            "n": 750,
+            "top1": 0.5346666666666666
+          },
+          "KRRvK M1": {
+            "ce": 0.09153998202367156,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9996706342526306,
+            "entropy": 0.09417125176633823,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.507657868090603,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5472145520161178,
+            "entropy": 1.5877915780321579,
+            "n": 750,
+            "top1": 0.7546666666666667
+          },
+          "KRRvK M3": {
+            "ce": 1.918284839318527,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4764854099111911,
+            "entropy": 1.854754449792804,
+            "n": 750,
+            "top1": 0.6826666666666666
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22966563431711579,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9993497438325469,
+            "entropy": 0.23406481047054423,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.627434534518964,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5072274847630639,
+            "entropy": 1.7779474102024997,
+            "n": 1500,
+            "top1": 0.7253333333333334
+          },
+          "M3": {
+            "ce": 2.1279686471648858,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.40618674201755267,
+            "entropy": 2.0738452920522787,
+            "n": 1500,
+            "top1": 0.6086666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4842183141897103,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.600719115015462,
+            "entropy": 1.5449992486197832,
+            "n": 2250,
+            "top1": 0.7435555555555555
+          },
+          "KRRvK": {
+            "ce": 1.1724942298109338,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6744568653933138,
+            "entropy": 1.1789057598637676,
+            "n": 2250,
+            "top1": 0.8124444444444444
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3283562720003221,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6375879902043876,
+          "entropy": 1.361952504241774,
+          "n": 4500,
+          "top1": 0.778
+        },
+        "pooled": {
+          "ce": 1.3283562720003232,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.637587990204387,
+          "entropy": 1.3619525042417748,
+          "n": 4500,
+          "top1": 0.778
+        },
+        "selection": "fixed_bfs_actionid_v1"
+      }
+    }
+  ],
+  "kind": "final",
+  "query_content_ablation_active_paths": [
+    {
+      "ablated_query_state_content": {
+        "budget": 2,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36740107524924104,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9998255642710757,
+            "entropy": 0.36755660316944394,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.7339093565004686,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4882089723697632,
+            "entropy": 1.8946993936337688,
+            "n": 750,
+            "top1": 0.6973333333333334
+          },
+          "KQRvK M3": {
+            "ce": 2.3402746361790205,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3474762412319637,
+            "entropy": 2.2422207015219358,
+            "n": 750,
+            "top1": 0.5413333333333333
+          },
+          "KRRvK M1": {
+            "ce": 0.09124223595826697,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9999370421364286,
+            "entropy": 0.0917617090648159,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4899972667313284,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5672920447355011,
+            "entropy": 1.516959883819586,
+            "n": 750,
+            "top1": 0.7533333333333333
+          },
+          "KRRvK M3": {
+            "ce": 1.9093061877585122,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.49372128963721224,
+            "entropy": 1.794677164497836,
+            "n": 750,
+            "top1": 0.688
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.229321655603754,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998813032037509,
+            "entropy": 0.22965915611713017,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.611953311615898,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5277505085526325,
+            "entropy": 1.7058296387266758,
+            "n": 1500,
+            "top1": 0.7253333333333334
+          },
+          "M3": {
+            "ce": 2.1247904119687657,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4205987654345892,
+            "entropy": 2.0184489330098843,
+            "n": 1500,
+            "top1": 0.6146666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4805283559762419,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6118369259576012,
+            "entropy": 1.5014922327750513,
+            "n": 2250,
+            "top1": 0.7462222222222222
+          },
+          "KRRvK": {
+            "ce": 1.1635152301493685,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6869834588363795,
+            "entropy": 1.134466252460743,
+            "n": 2250,
+            "top1": 0.8137777777777778
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3220217930628062,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6494101923969908,
+          "entropy": 1.3179792426178978,
+          "n": 4500,
+          "top1": 0.7799999999999999
+        },
+        "pooled": {
+          "ce": 1.3220217930628055,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6494101923969902,
+          "entropy": 1.3179792426178958,
+          "n": 4500,
+          "top1": 0.78
+        },
+        "selection": "active_path_ablated_query_state_content"
+      },
+      "budget": 2,
+      "normal_state_content": {
+        "budget": 2,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36732497817146764,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9998094611500853,
+            "entropy": 0.36777986113346994,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.73327386072401,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.48793383323554507,
+            "entropy": 1.8894081998733803,
+            "n": 750,
+            "top1": 0.6986666666666667
+          },
+          "KQRvK M3": {
+            "ce": 2.3435204191441104,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3400275631164672,
+            "entropy": 2.2706568442064667,
+            "n": 750,
+            "top1": 0.5146666666666667
+          },
+          "KRRvK M1": {
+            "ce": 0.09124371245860372,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9999309265673497,
+            "entropy": 0.0918239382118464,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4901992380008102,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5926275501937978,
+            "entropy": 1.4159660399019118,
+            "n": 750,
+            "top1": 0.764
+          },
+          "KRRvK M3": {
+            "ce": 1.9123851462059553,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.5123253309301647,
+            "entropy": 1.7153542915214988,
+            "n": 750,
+            "top1": 0.684
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292843453150357,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998701938587164,
+            "entropy": 0.22980189967265804,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6117365493624092,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5402806917146726,
+            "entropy": 1.6526871198876416,
+            "n": 1500,
+            "top1": 0.7313333333333333
+          },
+          "M3": {
+            "ce": 2.1279527826750333,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4261764470233161,
+            "entropy": 1.9930055678639835,
+            "n": 1500,
+            "top1": 0.5993333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4813730860131955,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6092569525006997,
+            "entropy": 1.5092816350711062,
+            "n": 2250,
+            "top1": 0.7377777777777778
+          },
+          "KRRvK": {
+            "ce": 1.1646093655551228,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.701627935897104,
+            "entropy": 1.074381423211754,
+            "n": 2250,
+            "top1": 0.816
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3229912257841596,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989016,
+          "entropy": 1.2918315291414293,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "pooled": {
+          "ce": 1.3229912257841594,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989021,
+          "entropy": 1.2918315291414286,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "selection": "active_path_normal_state_content"
+      },
+      "path_source": "active",
+      "positions_top1_changed_by_ablation": 102,
+      "replay_vs_source_max_abs_ce_diff": 0.0,
+      "source": {
+        "budget": 2,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36732497817146764,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9998094611500853,
+            "entropy": 0.36777986113346994,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.73327386072401,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.48793383323554507,
+            "entropy": 1.8894081998733803,
+            "n": 750,
+            "top1": 0.6986666666666667
+          },
+          "KQRvK M3": {
+            "ce": 2.3435204191441104,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3400275631164672,
+            "entropy": 2.2706568442064667,
+            "n": 750,
+            "top1": 0.5146666666666667
+          },
+          "KRRvK M1": {
+            "ce": 0.09124371245860372,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9999309265673497,
+            "entropy": 0.0918239382118464,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4901992380008102,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5926275501937978,
+            "entropy": 1.4159660399019118,
+            "n": 750,
+            "top1": 0.764
+          },
+          "KRRvK M3": {
+            "ce": 1.9123851462059553,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.5123253309301647,
+            "entropy": 1.7153542915214988,
+            "n": 750,
+            "top1": 0.684
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292843453150357,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998701938587164,
+            "entropy": 0.22980189967265804,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6117365493624092,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5402806917146726,
+            "entropy": 1.6526871198876416,
+            "n": 1500,
+            "top1": 0.7313333333333333
+          },
+          "M3": {
+            "ce": 2.1279527826750333,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4261764470233161,
+            "entropy": 1.9930055678639835,
+            "n": 1500,
+            "top1": 0.5993333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4813730860131955,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6092569525006997,
+            "entropy": 1.5092816350711062,
+            "n": 2250,
+            "top1": 0.7377777777777778
+          },
+          "KRRvK": {
+            "ce": 1.1646093655551228,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.701627935897104,
+            "entropy": 1.074381423211754,
+            "n": 2250,
+            "top1": 0.816
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3229912257841596,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989016,
+          "entropy": 1.2918315291414293,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "pooled": {
+          "ce": 1.3229912257841594,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6554424441989021,
+          "entropy": 1.2918315291414286,
+          "n": 4500,
+          "top1": 0.7768888888888889
+        },
+        "selection": "active_path_source"
+      }
+    },
+    {
+      "ablated_query_state_content": {
+        "budget": 4,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.367245100220175,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9996109657274195,
+            "entropy": 0.36975943674689393,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.7389169686752657,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4900361883117454,
+            "entropy": 1.8795911508264482,
+            "n": 750,
+            "top1": 0.692
+          },
+          "KQRvK M3": {
+            "ce": 2.347843420673315,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.3570390198313531,
+            "entropy": 2.1849862337405423,
+            "n": 750,
+            "top1": 0.5493333333333333
+          },
+          "KRRvK M1": {
+            "ce": 0.09132423851705365,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998493982129206,
+            "entropy": 0.0925946814212042,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4870087572077912,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.567284196299692,
+            "entropy": 1.5167121248961155,
+            "n": 750,
+            "top1": 0.7453333333333333
+          },
+          "KRRvK M3": {
+            "ce": 1.9121129332103666,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.500420298193818,
+            "entropy": 1.7581484072101212,
+            "n": 750,
+            "top1": 0.676
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292846693686143,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9997301819701694,
+            "entropy": 0.23117705908404923,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6129628629415282,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.528660192305719,
+            "entropy": 1.6981516378612875,
+            "n": 1500,
+            "top1": 0.7186666666666667
+          },
+          "M3": {
+            "ce": 2.1299781769418407,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.4287296590125849,
+            "entropy": 1.9715673204753303,
+            "n": 1500,
+            "top1": 0.6126666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.48466849652292,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.6155620579568396,
+            "entropy": 1.478112273771296,
+            "n": 2250,
+            "top1": 0.7471111111111111
+          },
+          "KRRvK": {
+            "ce": 1.163481976311737,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6891846309021425,
+            "entropy": 1.122485071175814,
+            "n": 2250,
+            "top1": 0.8071111111111111
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3240752364173278,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6523733444294915,
+          "entropy": 1.3002986724735541,
+          "n": 4500,
+          "top1": 0.7771111111111111
+        },
+        "pooled": {
+          "ce": 1.3240752364173287,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6523733444294916,
+          "entropy": 1.3002986724735552,
+          "n": 4500,
+          "top1": 0.7771111111111111
+        },
+        "selection": "active_path_ablated_query_state_content"
+      },
+      "budget": 4,
+      "normal_state_content": {
+        "budget": 4,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.367174942790593,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.999723187057997,
+            "entropy": 0.3688083167336955,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.716111803481835,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.499313784951481,
+            "entropy": 1.8772364514833626,
+            "n": 750,
+            "top1": 0.7293333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.351623783903604,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33108313327246996,
+            "entropy": 2.304161624577355,
+            "n": 750,
+            "top1": 0.476
+          },
+          "KRRvK M1": {
+            "ce": 0.09128737556925585,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998844909136281,
+            "entropy": 0.09225258862518629,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4738415298314558,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6072511853393436,
+            "entropy": 1.3844013529446468,
+            "n": 750,
+            "top1": 0.7826666666666666
+          },
+          "KRRvK M3": {
+            "ce": 1.9125616644253332,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4984976437890289,
+            "entropy": 1.77883941086348,
+            "n": 750,
+            "top1": 0.6906666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22923115917992443,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998038389858095,
+            "entropy": 0.23053045267944047,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5949766666566465,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5532824851454129,
+            "entropy": 1.6308189022140074,
+            "n": 1500,
+            "top1": 0.756
+          },
+          "M3": {
+            "ce": 2.132092724164469,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41479038853075,
+            "entropy": 2.0415005177204177,
+            "n": 1500,
+            "top1": 0.5833333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4783035100586779,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.610040035093983,
+            "entropy": 1.5167354642648052,
+            "n": 2250,
+            "top1": 0.7351111111111112
+          },
+          "KRRvK": {
+            "ce": 1.1592301899420152,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7018777733473337,
+            "entropy": 1.0851644508111045,
+            "n": 2250,
+            "top1": 0.8244444444444444
+          }
+        },
+        "macro_cell": {
+          "ce": 1.318766850000346,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206581,
+          "entropy": 1.3009499575379542,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "pooled": {
+          "ce": 1.3187668500003467,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206572,
+          "entropy": 1.3009499575379564,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "selection": "active_path_normal_state_content"
+      },
+      "path_source": "active",
+      "positions_top1_changed_by_ablation": 310,
+      "replay_vs_source_max_abs_ce_diff": 0.0,
+      "source": {
+        "budget": 4,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.367174942790593,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.999723187057997,
+            "entropy": 0.3688083167336955,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.716111803481835,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.499313784951481,
+            "entropy": 1.8772364514833626,
+            "n": 750,
+            "top1": 0.7293333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.351623783903604,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33108313327246996,
+            "entropy": 2.304161624577355,
+            "n": 750,
+            "top1": 0.476
+          },
+          "KRRvK M1": {
+            "ce": 0.09128737556925585,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998844909136281,
+            "entropy": 0.09225258862518629,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4738415298314558,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6072511853393436,
+            "entropy": 1.3844013529446468,
+            "n": 750,
+            "top1": 0.7826666666666666
+          },
+          "KRRvK M3": {
+            "ce": 1.9125616644253332,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4984976437890289,
+            "entropy": 1.77883941086348,
+            "n": 750,
+            "top1": 0.6906666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22923115917992443,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9998038389858095,
+            "entropy": 0.23053045267944047,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5949766666566465,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5532824851454129,
+            "entropy": 1.6308189022140074,
+            "n": 1500,
+            "top1": 0.756
+          },
+          "M3": {
+            "ce": 2.132092724164469,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41479038853075,
+            "entropy": 2.0415005177204177,
+            "n": 1500,
+            "top1": 0.5833333333333334
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4783035100586779,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.610040035093983,
+            "entropy": 1.5167354642648052,
+            "n": 2250,
+            "top1": 0.7351111111111112
+          },
+          "KRRvK": {
+            "ce": 1.1592301899420152,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7018777733473337,
+            "entropy": 1.0851644508111045,
+            "n": 2250,
+            "top1": 0.8244444444444444
+          }
+        },
+        "macro_cell": {
+          "ce": 1.318766850000346,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206581,
+          "entropy": 1.3009499575379542,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "pooled": {
+          "ce": 1.3187668500003467,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6559589042206572,
+          "entropy": 1.3009499575379564,
+          "n": 4500,
+          "top1": 0.7797777777777778
+        },
+        "selection": "active_path_source"
+      }
+    },
+    {
+      "ablated_query_state_content": {
+        "budget": 8,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.36744708551166666,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.99939421276213,
+            "entropy": 0.37125427687912194,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.738707485257255,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4968907779770516,
+            "entropy": 1.8151691518341855,
+            "n": 750,
+            "top1": 0.6986666666666667
+          },
+          "KQRvK M3": {
+            "ce": 2.3645346235818323,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.36814927890128996,
+            "entropy": 2.072129270301362,
+            "n": 750,
+            "top1": 0.5293333333333333
+          },
+          "KRRvK M1": {
+            "ce": 0.09137255792376488,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.999802585864454,
+            "entropy": 0.0929934964392294,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4892011089801787,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.5694707254063164,
+            "entropy": 1.4851595209300437,
+            "n": 750,
+            "top1": 0.7573333333333333
+          },
+          "KRRvK M3": {
+            "ce": 1.9237874052108992,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.5072037292120003,
+            "entropy": 1.689916005697742,
+            "n": 750,
+            "top1": 0.68
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.22940982171771576,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.999598399313292,
+            "entropy": 0.23212388665917535,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.6139542971187166,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5331807516916839,
+            "entropy": 1.650164336382115,
+            "n": 1500,
+            "top1": 0.728
+          },
+          "M3": {
+            "ce": 2.144161014396364,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.43767650405664477,
+            "entropy": 1.881022637999552,
+            "n": 1500,
+            "top1": 0.6046666666666667
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4902297314502515,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.621478089880157,
+            "entropy": 1.4195175663382245,
+            "n": 2250,
+            "top1": 0.7426666666666667
+          },
+          "KRRvK": {
+            "ce": 1.1681203573716137,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.6921590134942561,
+            "entropy": 1.0893563410223372,
+            "n": 2250,
+            "top1": 0.8124444444444444
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3291750444109327,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.656818551687207,
+          "entropy": 1.2544369536802809,
+          "n": 4500,
+          "top1": 0.7775555555555554
+        },
+        "pooled": {
+          "ce": 1.3291750444109347,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6568185516872079,
+          "entropy": 1.2544369536802793,
+          "n": 4500,
+          "top1": 0.7775555555555556
+        },
+        "selection": "active_path_ablated_query_state_content"
+      },
+      "budget": 8,
+      "normal_state_content": {
+        "budget": 8,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.3672589756073826,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9996548057218598,
+            "entropy": 0.3693110957480003,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.6986994782462943,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4999396146058798,
+            "entropy": 1.887758808611269,
+            "n": 750,
+            "top1": 0.7453333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.3393067200810664,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33650408826425604,
+            "entropy": 2.306481796635262,
+            "n": 750,
+            "top1": 0.512
+          },
+          "KRRvK M1": {
+            "ce": 0.09132373555382622,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998500025833379,
+            "entropy": 0.09256717610232097,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4539383397115604,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6027582597315673,
+            "entropy": 1.423805752948391,
+            "n": 750,
+            "top1": 0.8173333333333334
+          },
+          "KRRvK M3": {
+            "ce": 1.8904286568981088,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4981633672961324,
+            "entropy": 1.805361792332119,
+            "n": 750,
+            "top1": 0.7026666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292913555806044,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9997524041525989,
+            "entropy": 0.23093913592516072,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5763189089789271,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5513489371687235,
+            "entropy": 1.6557822807798301,
+            "n": 1500,
+            "top1": 0.7813333333333333
+          },
+          "M3": {
+            "ce": 2.114867688489587,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41733372778019506,
+            "entropy": 2.055921794483689,
+            "n": 1500,
+            "top1": 0.6073333333333333
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4684217246449143,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.612032836197332,
+            "entropy": 1.5211839003315109,
+            "n": 2250,
+            "top1": 0.7524444444444445
+          },
+          "KRRvK": {
+            "ce": 1.1452302440544981,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7002572098703439,
+            "entropy": 1.1072449071276094,
+            "n": 2250,
+            "top1": 0.84
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3068259843497065,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338389,
+          "entropy": 1.3142144037295604,
+          "n": 4500,
+          "top1": 0.7962222222222222
+        },
+        "pooled": {
+          "ce": 1.306825984349706,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338379,
+          "entropy": 1.3142144037295622,
+          "n": 4500,
+          "top1": 0.7962222222222223
+        },
+        "selection": "active_path_normal_state_content"
+      },
+      "path_source": "active",
+      "positions_top1_changed_by_ablation": 302,
+      "replay_vs_source_max_abs_ce_diff": 0.0,
+      "source": {
+        "budget": 8,
+        "cells": {
+          "KQRvK M1": {
+            "ce": 0.3672589756073826,
+            "chance_top1": 0.04229884197562933,
+            "correct_mass": 0.9996548057218598,
+            "entropy": 0.3693110957480003,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KQRvK M2": {
+            "ce": 1.6986994782462943,
+            "chance_top1": 0.050910602475206054,
+            "correct_mass": 0.4999396146058798,
+            "entropy": 1.887758808611269,
+            "n": 750,
+            "top1": 0.7453333333333333
+          },
+          "KQRvK M3": {
+            "ce": 2.3393067200810664,
+            "chance_top1": 0.06002567016830047,
+            "correct_mass": 0.33650408826425604,
+            "entropy": 2.306481796635262,
+            "n": 750,
+            "top1": 0.512
+          },
+          "KRRvK M1": {
+            "ce": 0.09132373555382622,
+            "chance_top1": 0.036630285794536276,
+            "correct_mass": 0.9998500025833379,
+            "entropy": 0.09256717610232097,
+            "n": 750,
+            "top1": 1.0
+          },
+          "KRRvK M2": {
+            "ce": 1.4539383397115604,
+            "chance_top1": 0.055800762089590235,
+            "correct_mass": 0.6027582597315673,
+            "entropy": 1.423805752948391,
+            "n": 750,
+            "top1": 0.8173333333333334
+          },
+          "KRRvK M3": {
+            "ce": 1.8904286568981088,
+            "chance_top1": 0.060827220323185126,
+            "correct_mass": 0.4981633672961324,
+            "entropy": 1.805361792332119,
+            "n": 750,
+            "top1": 0.7026666666666667
+          }
+        },
+        "depths": {
+          "M1": {
+            "ce": 0.2292913555806044,
+            "chance_top1": 0.0394645638850828,
+            "correct_mass": 0.9997524041525989,
+            "entropy": 0.23093913592516072,
+            "n": 1500,
+            "top1": 1.0
+          },
+          "M2": {
+            "ce": 1.5763189089789271,
+            "chance_top1": 0.05335568228239814,
+            "correct_mass": 0.5513489371687235,
+            "entropy": 1.6557822807798301,
+            "n": 1500,
+            "top1": 0.7813333333333333
+          },
+          "M3": {
+            "ce": 2.114867688489587,
+            "chance_top1": 0.060426445245742796,
+            "correct_mass": 0.41733372778019506,
+            "entropy": 2.055921794483689,
+            "n": 1500,
+            "top1": 0.6073333333333333
+          }
+        },
+        "families": {
+          "KQRvK": {
+            "ce": 1.4684217246449143,
+            "chance_top1": 0.05107837153971195,
+            "correct_mass": 0.612032836197332,
+            "entropy": 1.5211839003315109,
+            "n": 2250,
+            "top1": 0.7524444444444445
+          },
+          "KRRvK": {
+            "ce": 1.1452302440544981,
+            "chance_top1": 0.05108608940243721,
+            "correct_mass": 0.7002572098703439,
+            "entropy": 1.1072449071276094,
+            "n": 2250,
+            "top1": 0.84
+          }
+        },
+        "macro_cell": {
+          "ce": 1.3068259843497065,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338389,
+          "entropy": 1.3142144037295604,
+          "n": 4500,
+          "top1": 0.7962222222222222
+        },
+        "pooled": {
+          "ce": 1.306825984349706,
+          "chance_top1": 0.05108223047107458,
+          "correct_mass": 0.6561450230338379,
+          "entropy": 1.3142144037295622,
+          "n": 4500,
+          "top1": 0.7962222222222223
+        },
+        "selection": "active_path_source"
+      }
+    }
+  ],
+  "recipe_digest": "a14539d9e57bcb8df141151cda697e177ac3178b0c9049e464743422655fa15a",
+  "update": 800
+}

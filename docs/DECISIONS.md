@@ -1343,3 +1343,13 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   identity checks (P5 recipe digest, selected-recipe identity, seed, LR, 800 updates, model config, metadata).
 - **Evidence:** `docs/evidence/v35/v35-preflight-16x8.json`. The workspace test suite passes with and without `--features cuda`
   (492 passed, 0 failed; the count is the same, so this does not by itself show that GPU-only tests exist).
+
+## V35-D7 - V3.5 result: PARTIAL - CONTENT
+
+- **Status:** RESULT of the pre-registered rules (V35-D4), applied once on 2026-10-02 (`docs/evidence/v35/v35-gates.json`).
+- **Decision:** KQRvK M3, update 800, seeds 5101/5102/5103. Gate II FAIL (`ACTIVE_B8 - B0` = -0.0222, CI [-0.0400, -0.0049]);
+  Gate III FAIL (`ACTIVE_B8 - FIXED_B8` = -0.0227, CI [-0.0396, -0.0058]); Content-Use PASS (`CE_ablated - CE_normal` = +0.0369,
+  CI [+0.0185, +0.0553], every seed positive); Gate VI PASS (rollout/replay parity exactly 0.0 every update). Outcome **PARTIAL -
+  CONTENT**: returned state content is used, but B8 does not improve the task and the learned selector does not beat FIXED.
+  Stop before HOLDOUT_C; B16 not run (conditional on all primary gates). No second iteration. V4 is a design memo only
+  (`docs/V35_RESULTS.md`). HOLDOUT_C NOT EVALUATED.
