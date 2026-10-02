@@ -1320,3 +1320,26 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Decision:** TUNE only, all 4,500 positions, at 0/200/400/600/800 (diagnostics except update 800); B16 only after FULL-GO
   precursors (Content-Use + II + III + VI) pass, on the same checkpoints, never trained; Gate V is not required for FULL GO.
   If V3.5 fails: no second iteration, a V4 design memo only. HOLDOUT_C NOT EVALUATED.
+
+## V35-D6 - V3.5 throughput finding, resolved layout and frozen recipe digests
+
+- **Status:** PRE-REGISTERED / MEASURED on TRAIN only (2026-10-02), before any V3.5 TUNE evaluation.
+- **Decision:** the physical layout is **micro16 x accum8** (preferred; the fallback micro8 x accum16 is not needed). Real
+  updates ran on CUDA at full geometry from each seed's P5 final weights: peak VRAM 1,914 MiB of 16,380 MiB; steady update wall
+  **1.62 s** (rollout 0.39 s, replay + backward 1.19 s); detached rollout vs autodiff replay policy difference **0.0 exactly** over
+  every preflight update. Stage profile (steady, s/update): FEN parsing 0.0001; ProofTrace targets 0.002; StateQuery CPU 0.005
+  (Pass A) + 0.006 (Pass B); CandidateFacts ~0.001 per pass; Pass A selector/planner stage 0.31 (includes the host readback for
+  ACTIVE argmax, i.e. the wait for the GPU); Pass B forward 0.47; loss + backward 0.66; parity check 0.001.
+  **No execution-only optimisation is adopted:** the duplicated CPU work the plan hypothesised (re-parsing, replaying
+  StateQuery and CandidateFacts in Pass B) totals about 0.01 s of 1.62 s, so caching it cannot matter, and batching Pass A by
+  budget would change the batch composition of the rollout relative to the replay (risking the parity guarantee) for at most
+  ~12% of the update. The update is bound by many small GPU kernels and launch/sync latency (GPU busy mean ~35%), as in P5.
+  Therefore before/after semantics are identical because nothing changed. Projected run: 800 x 1.62 s = ~22 min training plus
+  ~5 minutes of TUNE evaluation per seed.
+- **Frozen per-seed recipe digests (layout 16x8, health checks on):** 5101
+  `742b193da3948986dc5a529c6a1f08c979635894f0348119edb1f10dfab9555f`; 5102
+  `b03afc3214f57385ac759b7e88b471b07173ccae73a52ded714035166f302f9b`; 5103
+  `a14539d9e57bcb8df141151cda697e177ac3178b0c9049e464743422655fa15a`. All three init checkpoints loaded and passed the
+  identity checks (P5 recipe digest, selected-recipe identity, seed, LR, 800 updates, model config, metadata).
+- **Evidence:** `docs/evidence/v35/v35-preflight-16x8.json`. The workspace test suite passes with and without `--features cuda`
+  (492 passed, 0 failed; the count is the same, so this does not by itself show that GPU-only tests exist).

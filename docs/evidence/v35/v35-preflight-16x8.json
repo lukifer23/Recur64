@@ -1,0 +1,146 @@
+{
+ "schema": "v35_preflight_evidence_v1",
+ "label": "MEASURED on TRAIN only (no TUNE, no HOLDOUT_C); real updates, live StateQuery, CUDA, FP32, health checks on",
+ "device": "cuda",
+ "layout": "16x8",
+ "seed_used_for_timing": 5101,
+ "updates_run": 8,
+ "cold_update_wall_s": 10.7972556,
+ "steady_update_wall_s_mean": 1.62167275,
+ "steady_rollout_s_mean": 0.38555908333333333,
+ "steady_replay_backward_s_mean": 1.1871809333333332,
+ "max_replay_policy_diff_over_all_updates": 0.0,
+ "steady_stage_profile_s_per_update": {
+  "parse_s": 0.00014116666666666664,
+  "target_s": 0.0021639,
+  "parity_s": 0.00116425,
+  "loss_backward_s": 0.6617377166666667,
+  "pass_a": {
+   "root_facts_s": 0.0005793166666666667,
+   "root_encoder_s": 0.02531566666666667,
+   "cpu_query_s": 0.004516166666666666,
+   "query_encoder_s": 0.04533426666666666,
+   "planner_selector_s": 0.30672188333333333,
+   "model_total_s": 0.38445003333333333
+  },
+  "pass_b": {
+   "root_facts_s": 0.0009343333333333333,
+   "root_encoder_s": 0.13319218333333332,
+   "cpu_query_s": 0.0059315,
+   "query_encoder_s": 0.06886061666666667,
+   "planner_selector_s": 0.26138666666666666,
+   "model_total_s": 0.47496108333333337
+  }
+ },
+ "gpu": {
+  "last_vram_mb": 1914,
+  "min_vram_mb": 118,
+  "peak_vram_mb": 1914,
+  "samples": 44,
+  "temp_max_c": 41,
+  "util_busy_mean": 34.794117647058826,
+  "util_max": 77
+ },
+ "per_seed_init_checks": {
+  "5101": {
+   "init_loaded_and_identity_verified_on_cuda": true,
+   "recipe_digest_16x8": "742b193da3948986dc5a529c6a1f08c979635894f0348119edb1f10dfab9555f",
+   "first_update_replay_policy_diff": 0.0,
+   "first_update_supervised_decisions": 291
+  },
+  "5102": {
+   "init_loaded_and_identity_verified_on_cuda": true,
+   "recipe_digest_16x8": "b03afc3214f57385ac759b7e88b471b07173ccae73a52ded714035166f302f9b",
+   "first_update_replay_policy_diff": 0.0,
+   "first_update_supervised_decisions": 287
+  },
+  "5103": {
+   "init_loaded_and_identity_verified_on_cuda": true,
+   "recipe_digest_16x8": "a14539d9e57bcb8df141151cda697e177ac3178b0c9049e464743422655fa15a",
+   "first_update_replay_policy_diff": 0.0,
+   "first_update_supervised_decisions": 297
+  }
+ },
+ "updates": [
+  {
+   "update": 0,
+   "wall_s": 10.7972556,
+   "rollout_s": 3.9354453,
+   "replay_backward_s": 6.4816373,
+   "total_loss": 5.489921835792024,
+   "policy_loss": 1.2269217669963837,
+   "selector_loss": 4.26300006879564,
+   "supervised_decisions": 291
+  },
+  {
+   "update": 1,
+   "wall_s": 1.8423846,
+   "rollout_s": 0.3766835,
+   "replay_backward_s": 1.422197,
+   "total_loss": 5.424416705203138,
+   "policy_loss": 1.429421067237854,
+   "selector_loss": 3.9949956379652836,
+   "supervised_decisions": 293
+  },
+  {
+   "update": 2,
+   "wall_s": 1.5769862,
+   "rollout_s": 0.3585702,
+   "replay_backward_s": 1.175152,
+   "total_loss": 5.198522348750022,
+   "policy_loss": 1.3259103000164032,
+   "selector_loss": 3.872612048733619,
+   "supervised_decisions": 310
+  },
+  {
+   "update": 3,
+   "wall_s": 1.7082214,
+   "rollout_s": 0.4416631,
+   "replay_backward_s": 1.2228255,
+   "total_loss": 3.9514591069297587,
+   "policy_loss": 1.0566674023866653,
+   "selector_loss": 2.8947917045430933,
+   "supervised_decisions": 282
+  },
+  {
+   "update": 4,
+   "wall_s": 1.7424305,
+   "rollout_s": 0.4456893,
+   "replay_backward_s": 1.2529781,
+   "total_loss": 4.530813656747341,
+   "policy_loss": 1.1192773208022118,
+   "selector_loss": 3.4115363359451294,
+   "supervised_decisions": 288
+  },
+  {
+   "update": 5,
+   "wall_s": 1.5778782,
+   "rollout_s": 0.3550649,
+   "replay_backward_s": 1.1793273,
+   "total_loss": 4.418517457015836,
+   "policy_loss": 1.2440146580338478,
+   "selector_loss": 3.1745027989819885,
+   "supervised_decisions": 311
+  },
+  {
+   "update": 6,
+   "wall_s": 1.5439986,
+   "rollout_s": 0.3612327,
+   "replay_backward_s": 1.1385469,
+   "total_loss": 3.909542001705967,
+   "policy_loss": 1.076941192150116,
+   "selector_loss": 2.832600809555851,
+   "supervised_decisions": 287
+  },
+  {
+   "update": 7,
+   "wall_s": 1.5805216,
+   "rollout_s": 0.3511343,
+   "replay_backward_s": 1.1542558,
+   "total_loss": 3.5969016966346192,
+   "policy_loss": 1.200961634516716,
+   "selector_loss": 2.3959400621179032,
+   "supervised_decisions": 292
+  }
+ ]
+}

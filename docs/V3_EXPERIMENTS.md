@@ -399,3 +399,12 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
   microbatch-independent whole-update normalisation; selector weight independent of B0 count; recipe/init identity refusals;
   bit-exact CPU resume; equal budget exposure.
 - **NOT RUN:** the throughput pass, the CUDA preflight, V3.5 training, any TUNE evaluation, B16, HOLDOUT_C.
+
+## V35-E2 - V3.5 TRAIN-only throughput profile and CUDA preflight
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED (TRAIN only). No TUNE evaluation of any V3.5 model has occurred.
+- **Result:** see V35-D6. micro16 x accum8 frozen; steady 1.62 s/update; rollout/replay parity exact; init checkpoints for all
+  three seeds verified; no execution-only optimisation adopted (profile does not support one).
+- **Evidence:** `docs/evidence/v35/v35-preflight-16x8.json`.
+- **NOT RUN:** V3.5 training runs, TUNE evaluation, B16, HOLDOUT_C.

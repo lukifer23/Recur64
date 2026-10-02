@@ -32,6 +32,8 @@ pub struct ProofTargetProvider<'a> {
     /// `targets[example][step]`: the frontier indices handed to the loss.
     pub targets: Vec<Vec<Vec<usize>>>,
     pub stats: Vec<TargetStats>,
+    /// Wall seconds spent computing labels (ProofTrace + frontier mapping).
+    pub target_s: f64,
 }
 
 impl<'a> ProofTargetProvider<'a> {
@@ -41,6 +43,7 @@ impl<'a> ProofTargetProvider<'a> {
             traces,
             targets: vec![Vec::new(); n],
             stats: vec![TargetStats::default(); n],
+            target_s: 0.0,
         }
     }
 
@@ -51,6 +54,21 @@ impl<'a> ProofTargetProvider<'a> {
 
 impl QueryTargetProvider for ProofTargetProvider<'_> {
     fn targets(
+        &mut self,
+        example: usize,
+        step: usize,
+        frontier: &[EdgeRef],
+        tree: &Tree,
+    ) -> anyhow::Result<Vec<usize>> {
+        let t0 = std::time::Instant::now();
+        let r = self.label(example, step, frontier, tree);
+        self.target_s += t0.elapsed().as_secs_f64();
+        r
+    }
+}
+
+impl ProofTargetProvider<'_> {
+    fn label(
         &mut self,
         example: usize,
         step: usize,

@@ -187,3 +187,11 @@ V35-A (this commit): plan, API, trainer, estimators, CLI, tests. V35-B: TRAIN-on
 parity-proven execution-only optimisations, CUDA preflight, resolved layout, final recipe digests; pushed before any TUNE
 evaluation. V35-C: three runs, gates applied once, compact evidence and results, then STOP. The final statement of V35-C is
 `HOLDOUT_C NOT EVALUATED - awaiting owner review/approval.`
+
+## 19. Frozen in V35-B (before any TUNE evaluation of a V3.5 model)
+
+Resolved layout **micro16 x accum8**; per-seed recipe digests (layout 16x8, health checks on): 5101
+`742b193da3948986dc5a529c6a1f08c979635894f0348119edb1f10dfab9555f`, 5102
+`b03afc3214f57385ac759b7e88b471b07173ccae73a52ded714035166f302f9b`, 5103
+`a14539d9e57bcb8df141151cda697e177ac3178b0c9049e464743422655fa15a`. Throughput and parity evidence: V35-D6,
+`docs/evidence/v35/v35-preflight-16x8.json`. No change to any rule above was made after this point.

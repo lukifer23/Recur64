@@ -100,6 +100,8 @@ pub struct Rollout {
     pub unique_nodes: usize,
     pub terminal_nodes: usize,
     pub transpositions: usize,
+    pub stage: StageTimes,
+    pub target_s: f64,
 }
 
 fn host<B: Backend>(t: Tensor<B, 2>) -> anyhow::Result<Vec<f32>> {
@@ -148,6 +150,7 @@ pub fn rollout<B: Backend>(
         Selection::ActiveLabelled(&mut provider),
         device,
     )?;
+    let target_s = provider.target_s;
     let supervised = provider.supervised_total();
     let refute_steps = provider.stats.iter().map(|s| s.refute_steps).sum();
     let proofs_completed = provider
@@ -168,6 +171,8 @@ pub fn rollout<B: Backend>(
         unique_nodes: out.accounting.unique_nodes,
         terminal_nodes: out.accounting.terminal_nodes,
         transpositions: out.accounting.transpositions_detected,
+        stage: StageTimes::of(&out.accounting),
+        target_s,
     })
 }
 
@@ -206,6 +211,56 @@ pub fn check_replay<B: Backend>(
     Ok(worst)
 }
 
+/// Wall seconds of the model-side stages of one run (unsynchronised GPU sections measure
+/// launch time; the CPU stages are exact).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct StageTimes {
+    pub root_facts_s: f64,
+    pub root_encoder_s: f64,
+    pub cpu_query_s: f64,
+    pub query_encoder_s: f64,
+    pub planner_selector_s: f64,
+    pub model_total_s: f64,
+}
+
+impl StageTimes {
+    fn of(a: &recur64_model::active::Accounting) -> Self {
+        Self {
+            root_facts_s: a.root_facts_s,
+            root_encoder_s: a.root_encoder_s,
+            cpu_query_s: a.cpu_query_s,
+            query_encoder_s: a.query_encoder_s,
+            planner_selector_s: a.planner_selector_s,
+            model_total_s: a.total_s,
+        }
+    }
+
+    fn add(&mut self, o: &Self) {
+        self.root_facts_s += o.root_facts_s;
+        self.root_encoder_s += o.root_encoder_s;
+        self.cpu_query_s += o.cpu_query_s;
+        self.query_encoder_s += o.query_encoder_s;
+        self.planner_selector_s += o.planner_selector_s;
+        self.model_total_s += o.model_total_s;
+    }
+}
+
+/// Per-update stage profile (V35-B throughput pass).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UpdateProfile {
+    /// FEN -> GameState parsing for the whole update.
+    pub parse_s: f64,
+    /// Pass A model stages (summed over micro-batches) and ProofTrace target time.
+    pub pass_a: StageTimes,
+    pub target_s: f64,
+    /// Pass B model stages (forward with autodiff, replay of recorded edges).
+    pub pass_b: StageTimes,
+    /// Replay-vs-rollout parity checks (host readback and comparison).
+    pub parity_s: f64,
+    /// Loss construction, `backward()` and gradient accumulation.
+    pub loss_backward_s: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BudgetReport35 {
     pub budget: usize,
@@ -228,6 +283,8 @@ pub struct UpdateReport35 {
     pub rollout_s: f64,
     pub replay_backward_s: f64,
     pub per_budget: Vec<BudgetReport35>,
+    #[serde(default)]
+    pub profile: UpdateProfile,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -268,12 +325,15 @@ pub fn compute_update<B: AutodiffBackend>(
     let n_total = plan.examples();
     anyhow::ensure!(n_total > 0, "empty update");
     let t_a = Instant::now();
+    let mut profile = UpdateProfile::default();
     let inference = model.valid();
     let mut all_roots = Vec::with_capacity(plan.micros.len());
     let mut rollouts: Vec<Option<Rollout>> = Vec::with_capacity(plan.micros.len());
     let mut sup_total = 0usize;
     for m in &plan.micros {
+        let t_p = Instant::now();
         let roots = roots_of(data, &m.items)?;
+        profile.parse_s += t_p.elapsed().as_secs_f64();
         if m.budget == 0 {
             rollouts.push(None);
         } else {
@@ -287,6 +347,8 @@ pub fn compute_update<B: AutodiffBackend>(
                 device,
             )?;
             sup_total += r.supervised;
+            profile.pass_a.add(&r.stage);
+            profile.target_s += r.target_s;
             rollouts.push(Some(r));
         }
         all_roots.push(roots);
@@ -318,12 +380,9 @@ pub fn compute_update<B: AutodiffBackend>(
                     follow: vec![Vec::new(); roots.len()],
                     targets: vec![Vec::new(); roots.len()],
                 };
-                (
-                    model.run(roots, &opts, Selection::Script(&mut none), device)?,
-                    0,
-                    0,
-                    0,
-                )
+                let out = model.run(roots, &opts, Selection::Script(&mut none), device)?;
+                profile.pass_b.add(&StageTimes::of(&out.accounting));
+                (out, 0, 0, 0)
             }
             Some(r) => {
                 let mut script = RecordedScript {
@@ -331,12 +390,16 @@ pub fn compute_update<B: AutodiffBackend>(
                     targets: r.targets.clone(),
                 };
                 let out = model.run(roots, &opts, Selection::Script(&mut script), device)?;
+                profile.pass_b.add(&StageTimes::of(&out.accounting));
+                let t_c = Instant::now();
                 let d = check_replay(r, &out, recipe.replay_policy_tolerance)?;
+                profile.parity_s += t_c.elapsed().as_secs_f64();
                 max_diff = max_diff.max(d);
                 (out, r.supervised, r.refute_steps, r.proofs_completed)
             }
         };
 
+        let t_l = Instant::now();
         let [b, w] = out.readout.policy.mask.dims();
         let mut tgt = vec![0.0f32; b * w];
         for (i, it) in m.items.iter().enumerate() {
@@ -384,6 +447,7 @@ pub fn compute_update<B: AutodiffBackend>(
 
         let grads = GradientsParams::from_grads(loss.backward(), model);
         acc.accumulate(model, grads);
+        profile.loss_backward_s += t_l.elapsed().as_secs_f64();
     }
     for pb in &mut per_budget {
         if pb.examples > 0 {
@@ -412,6 +476,7 @@ pub fn compute_update<B: AutodiffBackend>(
             rollout_s,
             replay_backward_s: t_b.elapsed().as_secs_f64(),
             per_budget,
+            profile,
         },
     ))
 }
