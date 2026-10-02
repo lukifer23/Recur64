@@ -623,3 +623,13 @@ P5 infrastructure (`recur64_runtime::p5`, `recur64 v3-p5`) and the pre-registere
   census and CUDA preflight (micro16 x accum8); `docs/V3_P6_PLAN.md` and V3-D22 to V3-D25 committed before any ALL-INFO TUNE
   evaluation.
 - **NOT RUN:** ALL-INFO training and evaluation, Gate I, DAgger, P7, HOLDOUT_C (sealed, unevaluated).
+
+### V3 P6 complete (2026-10-01)
+
+- **COMPLETED:** P5.2 refined selector diagnostic and query-content ablation; three ALL-INFO runs; B0 references (three paired
+  seeds); Gate I applied once.
+- **VERIFIED (TUNE):** **Gate I PASS** - `Delta = +0.2351` (CI [0.2044, 0.2671], threshold +0.20) on KQRvK M3 top-1; ALL-INFO
+  0.692 vs B0 0.457. Raw future-state information is sufficient for this model family on V3_TUNE_V1 (narrow claim). Teacher-forced
+  P5 accuracy is explained by query-pattern leakage (ablation). Details: `docs/V3_P6_RESULTS.md`.
+- **NOT RUN:** DAgger, P7, Gate II, Gate III, B16, HOLDOUT_C (sealed, unevaluated).
+- **Next gate:** owner decision on the one pre-registered DAgger rescue; separately, the throughput/overhead pass (V3-D27).

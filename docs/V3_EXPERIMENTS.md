@@ -369,3 +369,18 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **Finding recorded:** same-seed ACTIVE and ALL-INFO shared modules do not start with identical weights (lazy,
   order-dependent initialisation); not claimed.
 - **NOT RUN:** ALL-INFO training, B0 reference evaluation, Gate I, DAgger, P7.
+
+## V3-E17 - P6 ALL-INFO runs, B0 references and Gate I
+
+- **Date:** 2026-10-01
+- **Runs:** three ALL-INFO models (seeds 5101/5102/5103; micro16 x accum8; 800 updates; LR 3e-4), each fresh, uninterrupted,
+  `exit 0`, about 92-94 min of training; TUNE evaluated once after update 800. B0 references (ACTIVE selected recipe, zero queries)
+  for the same seeds re-evaluated bit-identically to the committed evidence (seed 5103 is the pre-registered replication).
+- **Result:** Gate I **PASS**: `Delta = +0.2351`, paired 95% CI [0.2044, 0.2671], threshold +0.20; per-seed +0.2560 / +0.2227 /
+  +0.2267; ALL-INFO KQRvK M3 top-1 0.692 vs B0 0.457. Pooled top-1 0.867 vs 0.757; pooled CE 0.976 vs 1.357.
+- **P5.2 results:** refined selector accounting (no proof-admissible edge after completion; M3 selector weakness is genuine);
+  query-content ablation (teacher-forced accuracy does not depend on state content: query-pattern leakage; ACTIVE does not use
+  queried content productively).
+- **Evidence:** `docs/V3_P6_RESULTS.md`, `v3-p6-gate1.json`, `v3-p6-allinfo-seed*.json`, `v3-p6-b0-manifest.json`,
+  `v3-p5.2-selector-diagnostics.json`, `v3-p5.2-query-content-ablation.json`.
+- **NOT RUN:** DAgger/scheduled sampling, P7, Gate II, Gate III, B16, adaptive STOP, CONFIRM, HOLDOUT_C.

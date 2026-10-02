@@ -1253,3 +1253,24 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   the absolute ALL-INFO top-1 0.75 is a non-gating reference; per-seed deltas are reported prominently. A pass is narrow
   (raw future-state information is sufficient for this model family) and a fail stops the work; neither authorises DAgger, P7,
   Gate II/III, CONFIRM or HOLDOUT_C.
+
+## V3-D26 - P6 Gate I result
+
+- **Status:** RESULT of the pre-registered rule (V3-D25), applied once on 2026-10-01.
+- **Decision:** **GATE I PASS - RAW FUTURE-STATE INFORMATION IS SUFFICIENT FOR THIS MODEL FAMILY ON V3_TUNE_V1.** Three-seed paired
+  `Delta = +0.2351` on KQRvK M3 top-1 (per seed +0.2560 / +0.2227 / +0.2267), paired 95% bootstrap CI [0.2044, 0.2671], threshold
+  +0.20. ALL-INFO absolute M3 top-1 0.692 (non-gating reference 0.75). The conclusion is narrow: it does not establish learned
+  selective search, Gate II/III, CONFIRM or a causal information-only effect. It is a scientific rationale to consider the one
+  pre-registered DAgger rescue; that rescue, P7 and HOLDOUT_C are not authorised or run by this decision.
+- **Supporting diagnostics (not gating):** the P5.2 re-evaluation splits selector queries at proof completion (pre-completion B8
+  off-target 0.52, KQRvK M3 proof-admissible only ~0.21-0.22, 28-39/750 M3 proofs completed) and the evaluation-only
+  `query_content_ablation_v1` shows the P5 teacher-forced accuracy survives removal of all queried state content (so it is
+  explained by which edges were queried) and that ACTIVE's top-1 is unchanged by the same removal.
+
+## V3-D27 - Next priority: throughput, duplication and overhead pass (future, not started)
+
+- **Status:** NOTED (owner direction, 2026-10-01). Not part of P6 and not started.
+- **Decision:** after P6 review, a dedicated engineering pass looks for duplicated work, redundant host/device traffic,
+  bottlenecks and inference overhead (P5 was CPU-bound at ~1.2 s/update with ~52% GPU busy; P6 is GPU-bound at ~7 s/update with
+  ~91% busy). It must not change the experiment, its scientific semantics, frozen identities or scope; any speed-up that changes
+  a contract (a state cap, precision, the input) needs its own versioned identity and owner approval.
