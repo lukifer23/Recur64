@@ -19,7 +19,9 @@ pub mod data;
 pub mod ledger;
 pub mod model;
 pub mod session;
+pub mod stage;
 pub mod stats;
+pub mod study;
 pub mod train;
 pub mod utility;
 

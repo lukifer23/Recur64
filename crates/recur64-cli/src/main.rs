@@ -29,6 +29,7 @@ mod v3_p5;
 mod v3_p6;
 mod v3_qual;
 mod v3_verdict;
+mod v4;
 mod value_diag;
 
 #[derive(Parser)]
@@ -70,6 +71,9 @@ enum Commands {
     /// P6: the ALL-INFO information-sufficiency control and Gate I.
     #[command(name = "v3-p6", subcommand)]
     V3P6(v3_p6::P6Cmd),
+    /// V4 evidence_belief_v4: model-info, tune-gen/verify, train, measure, bench (TRAIN only).
+    #[command(name = "v4", subcommand)]
+    V4(v4::V4Cmd),
     /// Apply the hardened qualification verdict to an existing v3-qual report.
     V3QualVerdict(v3_qual::V3QualVerdictArgs),
     /// Exact proof-position tooling (ProofTargetsV1): bench, gen, audit.
@@ -139,6 +143,7 @@ fn main() -> anyhow::Result<()> {
         Commands::V3P4(c) => v3_p4::run(c),
         Commands::V3P5(c) => v3_p5::run(c),
         Commands::V3P35(c) => v3_p35::run(c),
+        Commands::V4(c) => v4::run(c),
         Commands::V3P6(c) => v3_p6::run(c),
         Commands::V3QualVerdict(a) => v3_qual::run_verdict(a),
         Commands::Proof(c) => proof_cli::run(c),

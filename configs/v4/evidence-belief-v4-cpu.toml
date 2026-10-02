@@ -1,0 +1,20 @@
+# Recur64 V4 evidence_belief_v4: V2.5 CF root geometry (base tower) + bias-free content-causal
+# evidence path + query-utility head. Geometry and contracts per docs/V4_RESEARCH_PLAN.md. FP32 only.
+name = "evidence-belief-v4-cpu"
+device = "cpu"
+precision = "fp32"
+recurrence = [1]
+deep_supervision = false
+batch_size = 16
+seed = 1
+
+[model]
+architecture = "evidence_belief_v4"
+width = 640
+heads = 10
+ffn = 1280
+input_blocks = 0
+core_blocks = 8
+output_blocks = 0
+
+[model.evidence]
