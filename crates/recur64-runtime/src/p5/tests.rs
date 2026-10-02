@@ -32,7 +32,7 @@ use super::recipe::{BUDGETS, Layout, Recipe, TUNE_DIGEST, teacher_key_base};
 use super::teacher::{SeededProofTeacher, follow_key, simulate_episode};
 use super::train::{Item, Micro, Trainer, UpdatePlan, compute_update};
 
-type TB = CpuTrainBackend;
+pub(crate) type TB = CpuTrainBackend;
 
 /// The backend RNG is process-global: tests that seed it or build models must not interleave
 /// (P5 and P6 tests share this lock).
@@ -46,7 +46,7 @@ const KQ: &[char] = &['K', 'Q'];
 const KR: &[char] = &['K', 'R'];
 const KQR: &[char] = &['K', 'Q', 'R'];
 
-fn tiny_model() -> ModelConfig {
+pub(crate) fn tiny_model() -> ModelConfig {
     let mut c = ModelConfig::active_search_v3();
     c.width = 32;
     c.heads = 4;
@@ -208,7 +208,7 @@ fn expected_for(path: &std::path::Path, tdir: &std::path::Path, split: Split) ->
     }
 }
 
-fn dataset(count: usize, seed: u64) -> (Dataset, PathBuf) {
+pub(crate) fn dataset(count: usize, seed: u64) -> (Dataset, PathBuf) {
     let d = tmp(&format!("ds_{seed}_{count}"));
     let (p, t) = mini_dataset(Split::Train, &d, count, seed);
     let ds = load_dataset(&p, &t, &expected_for(&p, &t, Split::Train)).unwrap();
@@ -573,7 +573,7 @@ fn every_optimizer_update_has_equal_budget_exposure() {
 // Loss normalisation
 // ---------------------------------------------------------------------------
 
-fn flat(grads: &GradientsParams, model: &ActiveSearchModel<TB>) -> Vec<f32> {
+pub(crate) fn flat(grads: &GradientsParams, model: &ActiveSearchModel<TB>) -> Vec<f32> {
     struct V<'a> {
         g: &'a GradientsParams,
         out: Vec<f32>,
@@ -599,7 +599,7 @@ fn flat(grads: &GradientsParams, model: &ActiveSearchModel<TB>) -> Vec<f32> {
     v.out
 }
 
-fn plan_of(items: &[(usize, usize, u64)], micro: usize) -> UpdatePlan {
+pub(crate) fn plan_of(items: &[(usize, usize, u64)], micro: usize) -> UpdatePlan {
     // items: (budget, index, ordinal) grouped by budget into microbatches of `micro`.
     let mut micros = Vec::new();
     for b in BUDGETS {
@@ -702,7 +702,7 @@ fn the_selector_weight_does_not_depend_on_how_many_b0_examples_exist() {
 // Checkpoint identity and exact CPU resume
 // ---------------------------------------------------------------------------
 
-fn params(m: &ActiveSearchModel<TB>) -> Vec<f32> {
+pub(crate) fn params(m: &ActiveSearchModel<TB>) -> Vec<f32> {
     struct P(Vec<f32>);
     impl burn::module::ModuleVisitor<TB> for P {
         fn visit_float<const D: usize>(&mut self, p: &burn::module::Param<Tensor<TB, D>>) {

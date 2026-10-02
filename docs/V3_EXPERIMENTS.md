@@ -384,3 +384,18 @@ Base `feb86236f24eeaca2a1dc16f7c9e45bca4dc51de` (`experiment/workstation-v25`). 
 - **Evidence:** `docs/V3_P6_RESULTS.md`, `v3-p6-gate1.json`, `v3-p6-allinfo-seed*.json`, `v3-p6-b0-manifest.json`,
   `v3-p5.2-selector-diagnostics.json`, `v3-p5.2-query-content-ablation.json`.
 - **NOT RUN:** DAgger/scheduled sampling, P7, Gate II, Gate III, B16, adaptive STOP, CONFIRM, HOLDOUT_C.
+
+## V35-E1 - V3.5 pre-registration and implementation (before any V3.5 measurement)
+
+- **Date:** 2026-10-02
+- **Status:** PRE-REGISTERED / IMPLEMENTED. No V3.5 model has been trained or evaluated.
+- **What exists:** branch `experiment/workstation-v35-onpolicy` (from `7e508df`); `docs/V35_RESEARCH_PLAN.md`; V35-D1..D5;
+  the `QueryTargetProvider` / `Selection::ActiveLabelled` API; the label-only `ProofTargetProvider`; the two-pass trainer
+  (`p35`), weights-only init with identity checks, resumable state (`v35_state_v1`); the Gate II / Gate III / Content-Use
+  estimators and the outcome classifier; the `recur64 v3-p35` CLI (`preflight`, `train`, `eval-final`, `gate`).
+- **Tests (CPU, tiny geometry of the same architecture, real exact positions):** provider cannot change the trajectory or any
+  forward value; labels change only the selector gradient; off-target branches receive legal non-empty `A_refute` targets;
+  arbitrary learner prefixes get legal targets; completion empties targets while ACTIVE continues; rollout/replay parity;
+  microbatch-independent whole-update normalisation; selector weight independent of B0 count; recipe/init identity refusals;
+  bit-exact CPU resume; equal budget exposure.
+- **NOT RUN:** the throughput pass, the CUDA preflight, V3.5 training, any TUNE evaluation, B16, HOLDOUT_C.

@@ -75,6 +75,12 @@ pub struct AblationEval {
     pub replay_vs_source_max_abs_ce_diff: f64,
     /// Positions whose ablated top-1 differs from the normal replay's.
     pub positions_top1_changed_by_ablation: usize,
+    /// Per-position results of the normal replay and the ablated replay, in dataset order
+    /// (for the paired V3.5 Content-Use estimator; not serialised into evidence summaries).
+    #[serde(skip)]
+    pub normal_per_position: Vec<ExampleResult>,
+    #[serde(skip)]
+    pub ablated_per_position: Vec<ExampleResult>,
 }
 
 fn rows(
@@ -209,6 +215,8 @@ pub fn evaluate_query_content_ablation<B: Backend>(
         ),
         replay_vs_source_max_abs_ce_diff: diff,
         positions_top1_changed_by_ablation: changed,
+        normal_per_position: norm,
+        ablated_per_position: abl,
     })
 }
 

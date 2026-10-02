@@ -1274,3 +1274,49 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   bottlenecks and inference overhead (P5 was CPU-bound at ~1.2 s/update with ~52% GPU busy; P6 is GPU-bound at ~7 s/update with
   ~91% busy). It must not change the experiment, its scientific semantics, frozen identities or scope; any speed-up that changes
   a contract (a state cap, precision, the input) needs its own versioned identity and owner approval.
+
+## V35-D1 - V3.5 lineage and scope
+
+- **Status:** PRE-REGISTERED (2026-10-02).
+- **Decision:** one on-policy information-acquisition rescue, `on_policy_proof_relabel_v1`, on branch
+  `experiment/workstation-v35-onpolicy` created from exactly V3 HEAD `7e508df8d369fb34c58990774213bc51c762c504` (remote HEAD
+  verified). Architecture `active_search_v3` frozen. Accepted V3 evidence (P4, P5 selection, Gate I, P5.2) is immutable and
+  unreinterpreted; ALL-INFO weights/outputs are not used. HOLDOUT_C sealed. Full plan: `docs/V35_RESEARCH_PLAN.md`.
+
+## V35-D2 - Choice vs supervision separation
+
+- **Status:** PRE-REGISTERED (2026-10-02).
+- **Decision:** the learner selects every query; ProofTrace only labels learner-visited states. Implemented as
+  `QueryTargetProvider` (indices out, no handle on the choice) with `Selection::ActiveLabelled`; no latch, no filler, no
+  teacher mixing, no expert action. Proof completion masks the selector loss only. Two-pass update (detached ACTIVE rollout on
+  the inference copy, then autodiff replay of the recorded learner edges), refused unless the replay reproduces the rollout
+  (paths, counts, accounting, policy within 1e-4). The old `QueryScript` is not used to choose V3.5 training edges.
+
+## V35-D3 - V3.5 recipe, initialisation and optimizer
+
+- **Status:** PRE-REGISTERED (2026-10-02).
+- **Decision:** weights-only initialisation from each seed's selected P5 final checkpoint (5101, 5102, 5103; digests in the
+  plan), verified against the selected recipe identity; fresh `adamw-v1` (P5 momentum is not inherited because the optimisation
+  distribution and objective presentation change materially); peak LR 3.0e-4, warmup 80, 800 updates, FP32, health checks on;
+  budgets {0,2,4,8}, never B16; micro16 x accum8 unless a TRAIN-only preflight establishes the execution-only micro8 x accum16
+  fallback; P5 sampler seed rule (recorded); loss `policy mean + 1.0 * selector mean`, whole-update normalisers. No LR screen,
+  no tuning after TUNE, no early stopping, no best checkpoint.
+
+## V35-D4 - V3.5 gates and outcome classification
+
+- **Status:** PRE-REGISTERED (2026-10-02).
+- **Decision:** at update 800 on KQRvK M3 (same checkpoint for every arm): Gate II `ACTIVE_B8 - B0 >= +0.10`, Gate III
+  `ACTIVE_B8 - FIXED_B8 >= +0.05` (`fixed_bfs_actionid_v1`), Content-Use `mean(CE_ablated - CE_normal) > 0` on the same ACTIVE
+  B8 paths (`query_content_ablation_v1`), each also requiring the paired 95% bootstrap CI wholly > 0 and every seed
+  positive; Gate VI stability including rollout/replay parity and measured VRAM. Bootstrap: 20,000 position resamples keeping
+  seed pairs together, SplitMix64, seeds `0x7A350002` / `0x7A350003` / `0x7A350004`. Outcomes exactly as in the plan section
+  15 (FULL GO / PARTIAL-COMPUTE / PARTIAL-CONTENT / PATH-COMPUTE WITHOUT INFORMATION USE / NO-GO; a Gate VI failure with
+  everything else passing is `StabilityFailure`, not a GO). Gate II/III estimators are new code (no V3 implementation existed),
+  committed before any measurement.
+
+## V35-D5 - V3.5 evaluation scope
+
+- **Status:** PRE-REGISTERED (2026-10-02).
+- **Decision:** TUNE only, all 4,500 positions, at 0/200/400/600/800 (diagnostics except update 800); B16 only after FULL-GO
+  precursors (Content-Use + II + III + VI) pass, on the same checkpoints, never trained; Gate V is not required for FULL GO.
+  If V3.5 fails: no second iteration, a V4 design memo only. HOLDOUT_C NOT EVALUATED.

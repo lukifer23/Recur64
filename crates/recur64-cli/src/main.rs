@@ -23,6 +23,7 @@ mod phase3;
 mod proof_cli;
 mod search_gain;
 mod v25_qual;
+mod v3_p35;
 mod v3_p4;
 mod v3_p5;
 mod v3_p6;
@@ -63,6 +64,9 @@ enum Commands {
     /// V3 P5 bounded LR screen: recipe, preflight, train, select.
     #[command(subcommand, name = "v3-p5")]
     V3P5(v3_p5::P5Cmd),
+    /// V3.5: the on-policy information-acquisition rescue (preflight, train, eval-final, gate).
+    #[command(name = "v3-p35", subcommand)]
+    V3P35(v3_p35::P35Cmd),
     /// P6: the ALL-INFO information-sufficiency control and Gate I.
     #[command(name = "v3-p6", subcommand)]
     V3P6(v3_p6::P6Cmd),
@@ -134,6 +138,7 @@ fn main() -> anyhow::Result<()> {
         Commands::V3Qual(a) => v3_qual::run(a),
         Commands::V3P4(c) => v3_p4::run(c),
         Commands::V3P5(c) => v3_p5::run(c),
+        Commands::V3P35(c) => v3_p35::run(c),
         Commands::V3P6(c) => v3_p6::run(c),
         Commands::V3QualVerdict(a) => v3_qual::run_verdict(a),
         Commands::Proof(c) => proof_cli::run(c),

@@ -43,10 +43,28 @@ pub trait QueryScript {
     ) -> anyhow::Result<ScriptStep>;
 }
 
+/// Supplies selector SUPERVISION ONLY for a learner-chosen query (V3.5
+/// `on_policy_proof_relabel_v1`). It is called after the learned selector has already chosen,
+/// receives no handle on the choice, and returns frontier indices only: it has no means of
+/// choosing, overriding or perturbing the executed edge. An empty vector means no selector
+/// loss for that example at that step.
+pub trait QueryTargetProvider {
+    fn targets(
+        &mut self,
+        example: usize,
+        step: usize,
+        frontier: &[EdgeRef],
+        tree: &Tree,
+    ) -> anyhow::Result<Vec<usize>>;
+}
+
 /// How the next edge is chosen.
 pub enum Selection<'a> {
     /// The learned selector (argmax, lowest index on ties).
     Active,
+    /// The learned selector chooses exactly as [`Selection::Active`]; the provider only
+    /// labels the learner-visited state (V3.5). The trajectory is identical to `Active`.
+    ActiveLabelled(&'a mut dyn QueryTargetProvider),
     /// `fixed_bfs_actionid_v1`: minimum of `(parent depth, parent slot, ActionId)`.
     /// Reads no labels, scores or network output.
     Fixed,
@@ -131,6 +149,8 @@ pub struct SelectorStep<B: Backend> {
 
 /// Everything a run produces.
 pub struct ActiveOutput<B: Backend> {
+    /// Per example, per executed step: the frontier index that was queried.
+    pub chosen: Vec<Vec<usize>>,
     pub readout: Readout<B>,
     pub selector_steps: Vec<SelectorStep<B>>,
     pub traces: Vec<Vec<QueryRecord>>,
@@ -333,6 +353,7 @@ impl<B: Backend> ActiveSearchModel<B> {
         let mut widths: Vec<usize> = vec![w];
 
         let mut traces: Vec<Vec<QueryRecord>> = vec![Vec::new(); b];
+        let mut chosen_log: Vec<Vec<usize>> = vec![Vec::new(); b];
         let mut selector_steps = Vec::new();
         let mut diagnostics = Vec::new();
         let mut rngs: Vec<SplitMix> = (0..b)
@@ -417,7 +438,8 @@ impl<B: Backend> ActiveSearchModel<B> {
             acct.selector_valid_edges += fronts.iter().map(Vec::len).sum::<usize>();
 
             // ---- choose ----
-            let need_host = matches!(selection, Selection::Active) || opts.diagnostics;
+            let need_host = matches!(selection, Selection::Active | Selection::ActiveLabelled(_))
+                || opts.diagnostics;
             let host: Option<Vec<f32>> = if need_host {
                 Some(host_vec(logits.clone(), "selector logits")?)
             } else {
@@ -440,7 +462,7 @@ impl<B: Backend> ActiveSearchModel<B> {
                     stats[e] = Some(selector_stats(row));
                 }
                 chosen[e] = match &mut selection {
-                    Selection::Active => {
+                    Selection::Active | Selection::ActiveLabelled(_) => {
                         let row = &host.as_ref().expect("host logits")
                             [e * (fmax + 1)..e * (fmax + 1) + front.len()];
                         let mut best = 0usize;
@@ -479,7 +501,30 @@ impl<B: Backend> ActiveSearchModel<B> {
                     }
                 };
             }
-            if matches!(selection, Selection::Script(_)) && targets.iter().any(|t| !t.is_empty()) {
+            for e in 0..b {
+                if !exhausted[e] {
+                    chosen_log[e].push(chosen[e]);
+                }
+            }
+            if let Selection::ActiveLabelled(provider) = &mut selection {
+                // Labels only: `chosen` is already fixed and is not visible to the provider.
+                for e in 0..b {
+                    if exhausted[e] {
+                        continue;
+                    }
+                    let t = provider.targets(e, step, &fronts[e], &trees[e])?;
+                    anyhow::ensure!(
+                        t.iter().all(|&i| i < fronts[e].len()),
+                        "target provider returned an index outside the frontier"
+                    );
+                    targets[e] = t;
+                }
+            }
+            if matches!(
+                selection,
+                Selection::Script(_) | Selection::ActiveLabelled(_)
+            ) && targets.iter().any(|t| !t.is_empty())
+            {
                 let mut tgt = vec![0.0f32; b * (fmax + 1)];
                 let mut has = vec![false; b];
                 for e in 0..b {
@@ -727,6 +772,7 @@ impl<B: Backend> ActiveSearchModel<B> {
             .map_err(|e| anyhow::anyhow!("accounting invariant violated: {e}"))?;
 
         Ok(ActiveOutput {
+            chosen: chosen_log,
             readout: Readout {
                 policy,
                 wdl_logits: stage.wdl_logits,

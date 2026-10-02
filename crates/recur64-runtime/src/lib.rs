@@ -18,6 +18,7 @@ pub mod gpu_telemetry;
 pub mod inference;
 pub mod learner;
 pub mod model_io;
+pub mod p35;
 pub mod p5;
 pub mod p6;
 pub mod pilot;
