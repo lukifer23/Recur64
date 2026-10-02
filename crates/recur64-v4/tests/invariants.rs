@@ -518,7 +518,7 @@ fn utility_scoring_executes_no_query_and_takes_only_parent_known_inputs() {
     let _g = lock();
     let m = model();
     let device = Default::default();
-    let mut s = Session::new(&m, &roots(), RunOptions::new(4), 0, &device).unwrap();
+    let mut s = Session::new(&m, &roots(), RunOptions::new(4).with_state(), 0, &device).unwrap();
     s.advance(&mut Selection::Utility).unwrap();
     let fronts = s.frontiers();
     let before: Vec<u32> = s.managers().iter().map(|m| m.successful_queries()).collect();
@@ -775,4 +775,27 @@ fn zero_content_along_the_deep_breadth_first_path_also_returns_exactly_to_b0() {
         )
         .unwrap();
     assert_ne!(v(&real.logits), v(&real.z0));
+}
+
+#[test]
+fn the_utility_state_path_is_off_unless_requested_and_does_not_change_the_belief() {
+    let _g = lock();
+    let m = model();
+    let device = Default::default();
+    // Off by default: utility scoring is refused rather than silently running without it.
+    let mut s = Session::new(&m, &roots(), RunOptions::new(3), 0, &device).unwrap();
+    s.advance(&mut Selection::Fixed).unwrap();
+    let fronts = s.frontiers();
+    let e = s.utilities(&fronts).err().expect("must refuse").to_string();
+    assert!(e.contains("with_state"), "{e}");
+    assert_eq!(s.accounting().state_encoder_calls, 0);
+    // The belief does not depend on the utility path.
+    let plain = m
+        .run(&roots(), &RunOptions::new(3), Selection::Fixed, 0, &device)
+        .unwrap();
+    let with = m
+        .run(&roots(), &RunOptions::new(3).with_state(), Selection::Fixed, 0, &device)
+        .unwrap();
+    assert_eq!(v(&plain.logits), v(&with.logits));
+    assert!(with.accounting.state_encoder_calls > 0);
 }

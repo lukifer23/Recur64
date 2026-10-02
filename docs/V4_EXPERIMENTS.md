@@ -103,3 +103,28 @@ Labels: PRE-REGISTERED / MEASURED / INFERRED / NOT RUN. Never edit past entries;
 - **Limitation (inherited):** HP/X1/X2 exact datasets are not present on this workstation in a compatible form, so
   disjointness from them was NOT verified (same limitation as V3_TUNE_V1).
 - **NOT RUN:** any evaluation on `v4_tune_v1`; HOLDOUT_C was only digest-verified.
+
+## V4-E4 - CUDA correctness smoke and cost measurements (engineering, no science)
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED on the RTX 2000 Ada (16 GB), `recur64` release build with `--features cuda`, FP32 (no TF32).
+- **Commands:** `recur64 v4 cuda-smoke --train runs/v25/p25/data/proof-train.json --output docs/evidence/v4/v4-cuda-smoke.json`;
+  `recur64 v4 bench --train runs/v25/p25/data/proof-train.json --device cuda --batch 16 --repeats 10 --output docs/evidence/v4/v4-bench-cuda.json`.
+- **TESTED (the real graph ran on the GPU, 30,023,684 parameters):**
+  - CPU/CUDA forward parity from identical weights (saved on the CPU backend, loaded on CUDA), 16 TRAIN positions: max
+    |logit difference| 5.4e-5 at B0 and 5.5e-5 at B4 (tolerance 2e-3), argmax equal everywhere.
+  - A CUDA backward + AdamW update with the base detached (3 updates, finite losses): B0 per-position CE bit-identical before
+    and after; the evidence delta is non-zero. A CUDA checkpoint round trip (`Trainer::save` -> `Trainer::load`) restores B0 exactly.
+  - Not substituted: `verify_device` errors visibly if CUDA cannot run kernels.
+- **Cost (batch of 16 positions, `fixed_bfs` selection, per batch):** B0 18.7 ms; B2 24 ms; B4 53 ms; B8 41 ms (timings are
+  noisy at this size; the marginal cost per query step is about 3-9 ms per batch, dominated by host-side StateQuery and the
+  per-step host synchronisation); utility selection B4 113 ms; counterfactual probes about 940 probe queries per second.
+  GPU busy mean 29-60% (host-bound at this batch size, as for V3).
+- **Training steps (full geometry):** Stage A update (batch 128, micro 64) 0.5-1.1 s after a 2.5 s cold start, peak VRAM 2.5 GB;
+  Stage B update (batch 128, micro 32, base detached) 0.8-0.9 s after a 3.5 s cold start, peak VRAM sampled 10.6 GB (in a
+  process that had already run Stage A; cubecl's allocator does not return memory).
+- **Defect found and fixed during this entry (cost, not correctness):** the first benchmark showed 14.8 GB peak for Stage B
+  because every query step also ran the utility path's parent/action state encoder under autodiff even when the selection
+  (FIXED/RANDOM) never reads it. That path is now opt-in (`RunOptions::with_state`; required for utility selection, utilities
+  and probes), the belief is bit-identical with it on or off (test), and the Stage B peak fell to 10.6 GB.
+- **NOT RUN:** B16, sustained-load VRAM plateau, TF32/BF16 (not part of V4).

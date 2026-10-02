@@ -85,6 +85,9 @@ pub struct RunOptions {
     /// Read message norms / trust back to the host (synchronises).
     pub diagnostics: bool,
     pub freeze: Freeze,
+    /// Encode every discovered state with the parent/action state encoder (needed by the utility
+    /// head). Off by default: evidence-only runs never read it, and it dominates their memory.
+    pub state_path: bool,
     content: ContentMode,
 }
 
@@ -95,8 +98,15 @@ impl RunOptions {
             health_checks: true,
             diagnostics: false,
             freeze: Freeze::NONE,
+            state_path: false,
             content: ContentMode::Normal,
         }
+    }
+
+    /// Enable the utility path's state encoding (required for `Selection::Utility`, utilities and probes).
+    pub fn with_state(mut self) -> Self {
+        self.state_path = true;
+        self
     }
 
     pub fn with_freeze(mut self, freeze: Freeze) -> Self {
@@ -425,6 +435,10 @@ impl<'m, B: Backend> Session<'m, B> {
         &self,
         fronts: &[Vec<EdgeRef>],
     ) -> anyhow::Result<(Tensor<B, 2>, FrontierEdgeView<B>)> {
+        anyhow::ensure!(
+            self.opts.state_path,
+            "utility scoring needs RunOptions::with_state (the parent/action state path is off)"
+        );
         let device = &self.device;
         let (b, w) = (self.b, self.w);
         let qd = self.model.evidence().token_dim();
@@ -675,6 +689,7 @@ impl<'m, B: Backend> Session<'m, B> {
         self.ledger.append(&device, &active, msg, &branches, &depths)?;
 
         // ---- parent/action state encoding for the utility path only ----
+        if self.opts.state_path {
         let a_w = active
             .iter()
             .map(|&e| children[e].as_ref().map_or(0, |(_, p, _)| p.legal_actions.len()))
@@ -726,6 +741,7 @@ impl<'m, B: Backend> Session<'m, B> {
         self.node_pool.push(pool_full.unsqueeze_dim::<3>(1));
         self.edge_embs.push(emb_full);
         self.widths.push(a_w);
+        }
 
         self.step += 1;
         Ok(true)
@@ -885,7 +901,11 @@ impl<B: Backend> EvidenceBeliefModel<B> {
             Selection::Random(s) => *s,
             _ => random_seed,
         };
-        let mut session = Session::new(self, roots, opts.clone(), seed, device)?;
+        let mut opts = opts.clone();
+        if matches!(selection, Selection::Utility) {
+            opts.state_path = true;
+        }
+        let mut session = Session::new(self, roots, opts, seed, device)?;
         session.run_all(&mut selection)?;
         session.finish()
     }

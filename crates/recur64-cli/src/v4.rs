@@ -57,10 +57,23 @@ pub enum V4Cmd {
     Measure(MeasureArgs),
     /// Timing and VRAM measurements.
     Bench(BenchArgs),
+    /// CUDA correctness smoke: CPU/CUDA parity of the real graph, a CUDA update, B0 immutability.
+    CudaSmoke(SmokeArgs),
     /// Apply the frozen Stage-B LR-screen rule to the screen measurement reports.
     SelectLr(SelectLrArgs),
     /// Apply the frozen Stage-C loss-selection rule to the two utility reports.
     SelectLoss(SelectLossArgs),
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct SmokeArgs {
+    #[arg(long)]
+    pub train: PathBuf,
+    /// Positions per forward comparison.
+    #[arg(long, default_value_t = 16)]
+    pub positions: usize,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -240,6 +253,7 @@ pub fn run(cmd: V4Cmd) -> anyhow::Result<()> {
                 }
             })
         }
+        V4Cmd::CudaSmoke(a) => big_stack("v4-cuda-smoke", move || cuda_smoke(a)),
         V4Cmd::SelectLr(a) => select_lr(&a),
         V4Cmd::SelectLoss(a) => select_loss(&a),
         V4Cmd::Bench(a) => {
@@ -782,5 +796,119 @@ fn select_loss(a: &SelectLossArgs) -> anyhow::Result<()> {
         }),
     )?;
     println!("selected utility loss: {chosen} (spearman ranking {rk:.4}, regression {rg:.4})");
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------
+// CUDA correctness smoke
+// ---------------------------------------------------------------------------------------
+
+#[cfg(not(feature = "cuda"))]
+fn cuda_smoke(_a: SmokeArgs) -> anyhow::Result<()> {
+    anyhow::bail!("CUDA support is not compiled; rebuild with --features cuda (no CPU substitution is made)")
+}
+
+/// The real V4 graph on `Autodiff<Cuda>`: CPU/CUDA forward parity from identical weights at B0 and
+/// B4, a CUDA backward + AdamW update with the base detached, B0 bit-identical on the GPU after
+/// it, and a CUDA checkpoint round trip. Nothing is substituted: a missing GPU is an error.
+#[cfg(feature = "cuda")]
+fn cuda_smoke(a: SmokeArgs) -> anyhow::Result<()> {
+    use recur64_model::checkpoint::{CheckpointMeta, save_training};
+    use recur64_model::train::{CpuTrainBackend, adamw};
+    type C = burn::backend::Autodiff<burn::backend::Cuda>;
+    type G = CpuTrainBackend;
+    let t0 = Instant::now();
+    let cdev = Default::default();
+    model_io::verify_device::<C>(&cdev)?;
+    let gdev = Default::default();
+    let vram_start = sample_gpu();
+    let data = V4Data::load(&a.train)?;
+    let cfg = ModelConfig::evidence_belief_v4();
+    cfg.validate()?;
+    let idx: Vec<usize> = dev1000(&data).into_iter().take(a.positions).collect();
+    let roots = data.roots(&idx)?;
+
+    // Identical weights on both devices: save on the CPU backend, load on CUDA.
+    let tmp = std::env::temp_dir().join(format!("recur64-v4-cuda-smoke-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&tmp);
+    let cpu_model = EvidenceBeliefModel::<G>::new(cfg.clone(), &gdev);
+    let meta = CheckpointMeta::new(cfg.clone(), 1, false, 0, 3e-4, 1, 0, "v4-cpu", "fp32");
+    save_training::<G, _, _>(&tmp.join("checkpoint"), &cpu_model, &adamw::<G, EvidenceBeliefModel<G>>(), &meta)?;
+    let (cuda_model, _) = load_model::<C>(&tmp, &cfg, &cdev)?;
+    let cpu_inf = inference::<G>(&cpu_model);
+    let cuda_inf = inference::<C>(&cuda_model);
+    let idev = Default::default();
+
+    let valid: Vec<usize> = idx.iter().map(|&i| data.position(i).legal.len()).collect();
+    let mut parity = Vec::new();
+    for budget in [0usize, 4] {
+        let c = cpu_inf.run(&roots, &RunOptions::new(budget), Selection::Fixed, 0, &gdev)?;
+        let g = cuda_inf.run(&roots, &RunOptions::new(budget), Selection::Fixed, 0, &idev)?;
+        let w = c.logits.dims()[1];
+        let (cz, gz) = (
+            c.logits.into_data().to_vec::<f32>().unwrap(),
+            g.logits.into_data().to_vec::<f32>().unwrap(),
+        );
+        let mut max_abs = 0.0f32;
+        let mut argmax_equal = true;
+        for (r, &vw) in valid.iter().enumerate() {
+            let (a_, b_) = (&cz[r * w..r * w + vw], &gz[r * w..r * w + vw]);
+            for (x, y) in a_.iter().zip(b_) {
+                max_abs = max_abs.max((x - y).abs());
+            }
+            let am = |v: &[f32]| v.iter().enumerate().fold(0, |m, (i, &x)| if x > v[m] { i } else { m });
+            argmax_equal &= am(a_) == am(b_);
+        }
+        parity.push(serde_json::json!({"budget": budget, "positions": idx.len(), "max_abs_logit_difference": max_abs,
+            "argmax_equal_everywhere": argmax_equal, "tolerance": 2e-3, "pass": max_abs <= 2e-3 && argmax_equal}));
+    }
+
+    // CUDA update with the base detached; B0 must be bit-identical afterwards.
+    let b0 = |m: &EvidenceBeliefModel<<C as AutodiffBackend>::InnerBackend>| -> anyhow::Result<Vec<f64>> {
+        Ok(recur64_v4::train::eval_policy(m, &data, &idx, 0, recur64_v4::train::EvalSel::Fixed, 8, &idev)?.ce)
+    };
+    let recipe = Recipe::new(Stage::B, 1, 3, 3e-4, &data, &cfg, Some("cuda-smoke".into()));
+    let mut trainer = Trainer::<C>::new(recipe.clone(), cuda_model)?;
+    let before = b0(&inference::<C>(&trainer.model))?;
+    let mut losses = Vec::new();
+    for _ in 0..3 {
+        losses.push(trainer.step(&data, &cdev)?.loss);
+    }
+    let after = b0(&inference::<C>(&trainer.model))?;
+    let b0_identical = before == after;
+    let moved = {
+        let o = inference::<C>(&trainer.model).run(&roots, &RunOptions::new(4), Selection::Fixed, 0, &idev)?;
+        o.delta.into_data().to_vec::<f32>().unwrap().iter().any(|d| d.abs() > 0.0)
+    };
+
+    // Checkpoint round trip on CUDA.
+    let rt = tmp.join("rt");
+    std::fs::create_dir_all(&rt)?;
+    trainer.save(&rt, "v4-cuda")?;
+    let loaded = Trainer::<C>::load(&rt, recipe, &cdev)?;
+    let rt_ok = b0(&inference::<C>(&loaded.model))? == after && loaded.updates_done == 3;
+    let vram_end = sample_gpu();
+    let _ = std::fs::remove_dir_all(&tmp);
+    let pass = parity.iter().all(|p| p["pass"] == true)
+        && b0_identical
+        && moved
+        && rt_ok
+        && losses.iter().all(|l| l.is_finite());
+    write_json(
+        &a.output,
+        &serde_json::json!({
+            "schema": "v4_cuda_smoke_v1",
+            "device": "cuda (Autodiff<Cuda>), FP32 (no TF32)",
+            "parameters": cuda_inf.num_params(),
+            "forward_parity_cpu_vs_cuda": parity,
+            "cuda_stage_b_update": {"losses": losses, "b0_bit_identical_after_updates": b0_identical, "evidence_moved": moved},
+            "checkpoint_round_trip_on_cuda": rt_ok,
+            "vram_mb_start_end": [vram_start.map(|v| v.0), vram_end.map(|v| v.0)],
+            "pass": pass, "wall_s": t0.elapsed().as_secs_f64(),
+            "tested": "the real graph ran on the CUDA device; parity checked against the CPU backend with identical weights",
+        }),
+    )?;
+    println!("v4 cuda smoke: pass = {pass} (wall {:.1}s)", t0.elapsed().as_secs_f64());
+    anyhow::ensure!(pass, "CUDA smoke failed; see {}", a.output.display());
     Ok(())
 }

@@ -1,0 +1,136 @@
+{
+  "device": "cuda",
+  "inference": [
+    {
+      "batch": 16,
+      "budget": 0,
+      "gpu": {
+        "last_vram_mb": 312,
+        "min_vram_mb": 312,
+        "peak_vram_mb": 312,
+        "samples": 2,
+        "temp_max_c": 36,
+        "util_busy_mean": 42.0,
+        "util_max": 42
+      },
+      "marginal_seconds_per_query_step_vs_b0": null,
+      "seconds_per_batch": 0.01873271,
+      "seconds_per_example": 0.001170794375
+    },
+    {
+      "batch": 16,
+      "budget": 1,
+      "gpu": {
+        "last_vram_mb": 312,
+        "min_vram_mb": 312,
+        "peak_vram_mb": 312,
+        "samples": 2,
+        "temp_max_c": 36,
+        "util_busy_mean": 42.0,
+        "util_max": 42
+      },
+      "marginal_seconds_per_query_step_vs_b0": 0.03010955,
+      "seconds_per_batch": 0.04884226,
+      "seconds_per_example": 0.00305264125
+    },
+    {
+      "batch": 16,
+      "budget": 2,
+      "gpu": {
+        "last_vram_mb": 312,
+        "min_vram_mb": 312,
+        "peak_vram_mb": 312,
+        "samples": 2,
+        "temp_max_c": 39,
+        "util_busy_mean": 60.0,
+        "util_max": 60
+      },
+      "marginal_seconds_per_query_step_vs_b0": 0.0027238950000000005,
+      "seconds_per_batch": 0.0241805,
+      "seconds_per_example": 0.00151128125
+    },
+    {
+      "batch": 16,
+      "budget": 4,
+      "gpu": {
+        "last_vram_mb": 312,
+        "min_vram_mb": 312,
+        "peak_vram_mb": 312,
+        "samples": 3,
+        "temp_max_c": 39,
+        "util_busy_mean": 29.333333333333332,
+        "util_max": 60
+      },
+      "marginal_seconds_per_query_step_vs_b0": 0.00858354,
+      "seconds_per_batch": 0.05306687,
+      "seconds_per_example": 0.003316679375
+    },
+    {
+      "batch": 16,
+      "budget": 8,
+      "gpu": {
+        "last_vram_mb": 312,
+        "min_vram_mb": 312,
+        "peak_vram_mb": 312,
+        "samples": 2,
+        "temp_max_c": 38,
+        "util_busy_mean": 48.5,
+        "util_max": 49
+      },
+      "marginal_seconds_per_query_step_vs_b0": 0.002788065,
+      "seconds_per_batch": 0.04103723,
+      "seconds_per_example": 0.002564826875
+    }
+  ],
+  "note": "inference rows are per batch of positions with fixed_bfs selection; gpu.util_busy_mean is the host/device overhead indicator (low = host-bound)",
+  "parameters": 30023684,
+  "probe": {
+    "batch": 16,
+    "k": 8,
+    "prefix": 2,
+    "probe_queries_per_second": 939.9860059583362,
+    "seconds_per_batch": 0.13617224
+  },
+  "schema": "v4_bench_v1",
+  "training": [
+    {
+      "gpu": {
+        "last_vram_mb": 2490,
+        "min_vram_mb": 440,
+        "peak_vram_mb": 2490,
+        "samples": 9,
+        "temp_max_c": 44,
+        "util_busy_mean": 38.0,
+        "util_max": 86
+      },
+      "stage": "a",
+      "update_wall_s": [
+        2.4781744,
+        0.4592892,
+        1.1101344
+      ]
+    },
+    {
+      "gpu": {
+        "last_vram_mb": 10554,
+        "min_vram_mb": 2490,
+        "peak_vram_mb": 10554,
+        "samples": 11,
+        "temp_max_c": 44,
+        "util_busy_mean": 49.2,
+        "util_max": 75
+      },
+      "stage": "b",
+      "update_wall_s": [
+        3.5394502,
+        0.9336625,
+        0.7649931
+      ]
+    }
+  ],
+  "utility_selection": {
+    "budget": 4,
+    "seconds_per_batch": 0.11318537,
+    "selection": "utility"
+  }
+}

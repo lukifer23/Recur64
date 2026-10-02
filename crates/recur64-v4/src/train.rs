@@ -309,7 +309,9 @@ pub fn probe_batch<B: Backend>(
     device: &B::Device,
 ) -> anyhow::Result<(Tensor<B, 2>, Vec<ProbeSample>)> {
     let roots = data.roots(chunk)?;
-    let opts = RunOptions::new(8).with_freeze(Freeze::BASE_AND_EVIDENCE);
+    let opts = RunOptions::new(8)
+        .with_freeze(Freeze::BASE_AND_EVIDENCE)
+        .with_state();
     let mut s = Session::new(model, &roots, opts, mix(seed, 0xAA ^ prefix as u64), device)?;
     let mut rnd = Selection::Random(0);
     for _ in 0..prefix {

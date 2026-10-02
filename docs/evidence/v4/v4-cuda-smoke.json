@@ -1,0 +1,40 @@
+{
+  "checkpoint_round_trip_on_cuda": true,
+  "cuda_stage_b_update": {
+    "b0_bit_identical_after_updates": true,
+    "evidence_moved": true,
+    "losses": [
+      3.4585191011428833,
+      3.449338376522064,
+      3.4328587651252747
+    ]
+  },
+  "device": "cuda (Autodiff<Cuda>), FP32 (no TF32)",
+  "forward_parity_cpu_vs_cuda": [
+    {
+      "argmax_equal_everywhere": true,
+      "budget": 0,
+      "max_abs_logit_difference": 0.000054131727665662766,
+      "pass": true,
+      "positions": 16,
+      "tolerance": 0.002
+    },
+    {
+      "argmax_equal_everywhere": true,
+      "budget": 4,
+      "max_abs_logit_difference": 0.00005458807572722435,
+      "pass": true,
+      "positions": 16,
+      "tolerance": 0.002
+    }
+  ],
+  "parameters": 30023684,
+  "pass": true,
+  "schema": "v4_cuda_smoke_v1",
+  "tested": "the real graph ran on the CUDA device; parity checked against the CPU backend with identical weights",
+  "vram_mb_start_end": [
+    118,
+    10298
+  ],
+  "wall_s": 14.1843054
+}
