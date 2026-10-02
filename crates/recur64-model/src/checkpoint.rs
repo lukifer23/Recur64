@@ -15,7 +15,8 @@ use burn::tensor::backend::AutodiffBackend;
 use crate::config::{
     ACTIVE_HEAD_VERSION, ALL_INFO_HEAD_VERSION, ActiveContracts, AllInfoContracts, Architecture,
     CANDIDATE_BLOCK_CONTRACT, CANDIDATE_FACTS_VERSION, CANDIDATE_HEAD_VERSION,
-    CANDIDATE_TOKEN_CONTRACT, FACT_DELTA_CONTRACT, ModelConfig,
+    CANDIDATE_TOKEN_CONTRACT, EVIDENCE_HEAD_VERSION, EvidenceContracts, FACT_DELTA_CONTRACT,
+    ModelConfig,
 };
 use crate::net::NeuralModel;
 
@@ -89,6 +90,9 @@ pub struct CheckpointMeta {
     /// P6 ALL-INFO scientific contracts (present iff `all_info_v1`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub all_info_contracts: Option<AllInfoContracts>,
+    /// V4 scientific contracts (present iff `evidence_belief_v4`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence_contracts: Option<EvidenceContracts>,
 }
 
 fn legacy_architecture() -> String {
@@ -118,12 +122,14 @@ impl CheckpointMeta {
         let lf = model.architecture == Architecture::LegacyFactsV25;
         let act = model.architecture == Architecture::ActiveSearchV3;
         let ai = model.architecture == Architecture::AllInfoV1;
+        let ev = model.architecture == Architecture::EvidenceBeliefV4;
         Self {
             active_contracts: act.then(ActiveContracts::default),
             all_info_contracts: ai.then(AllInfoContracts::default),
+            evidence_contracts: ev.then(EvidenceContracts::default),
             architecture: model.architecture.id().to_string(),
             fact_delta_contract: if lf { FACT_DELTA_CONTRACT } else { 0 },
-            candidate_facts_version: if cand || lf || act || ai {
+            candidate_facts_version: if cand || lf || act || ai || ev {
                 CANDIDATE_FACTS_VERSION
             } else {
                 0
@@ -152,6 +158,8 @@ impl CheckpointMeta {
             lr_schedule_step: step,
             head_version: if act {
                 ACTIVE_HEAD_VERSION
+            } else if ev {
+                EVIDENCE_HEAD_VERSION
             } else if ai {
                 ALL_INFO_HEAD_VERSION
             } else if cand {
@@ -215,6 +223,20 @@ impl CheckpointMeta {
                 "active_search_v3 checkpoint contracts {:?} differ from the current contracts {:?}",
                 self.active_contracts,
                 ActiveContracts::default()
+            );
+        } else if self.architecture == Architecture::EvidenceBeliefV4.id() {
+            anyhow::ensure!(
+                self.head_version == EVIDENCE_HEAD_VERSION
+                    && self.candidate_facts_version == CANDIDATE_FACTS_VERSION,
+                "evidence_belief_v4 checkpoint head {} / facts {} differ from the current (head {EVIDENCE_HEAD_VERSION}, facts {CANDIDATE_FACTS_VERSION})",
+                self.head_version,
+                self.candidate_facts_version
+            );
+            anyhow::ensure!(
+                self.evidence_contracts.as_ref() == Some(&EvidenceContracts::default()),
+                "evidence_belief_v4 checkpoint contracts {:?} differ from the current contracts {:?}",
+                self.evidence_contracts,
+                EvidenceContracts::default()
             );
         } else if self.architecture == Architecture::AllInfoV1.id() {
             anyhow::ensure!(

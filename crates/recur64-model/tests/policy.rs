@@ -33,6 +33,7 @@ fn cfg() -> ModelConfig {
         legacy_facts: None,
         active: None,
         all_info: None,
+        evidence: None,
     }
 }
 

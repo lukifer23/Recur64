@@ -380,6 +380,8 @@ impl RunConfig {
             .refuse_active_v3("the mainline self-play / training / evaluation runtime")?;
         cfg.model
             .refuse_all_info("the mainline self-play / training / evaluation runtime")?;
+        cfg.model
+            .refuse_evidence_v4("the mainline self-play / training / evaluation runtime")?;
         Ok(cfg)
     }
 

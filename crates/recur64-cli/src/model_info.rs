@@ -32,6 +32,7 @@ fn f10_params() -> usize {
         legacy_facts: None,
         active: None,
         all_info: None,
+        evidence: None,
     };
     ProbeModel::<Flex>::new(cfg, &Default::default()).num_params()
 }
@@ -50,6 +51,9 @@ pub fn run_model_info(path: &Path, json: Option<&Path>) -> anyhow::Result<()> {
         Architecture::LegacyFactsV25 => return run_legacy_facts_info(&cfg, json),
         Architecture::ActiveSearchV3 => return run_active_info(&cfg, json),
         Architecture::AllInfoV1 => return run_all_info_info(&cfg, json),
+        Architecture::EvidenceBeliefV4 => anyhow::bail!(
+            "evidence_belief_v4 is described by `recur64 v4 model-info`, not by the historical `model-info`"
+        ),
         Architecture::ProbeV1 => {}
     }
     let device = Default::default();

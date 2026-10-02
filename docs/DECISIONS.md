@@ -1366,3 +1366,20 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Data hygiene:** `V3_TUNE_V1` is now `HISTORICAL_REGRESSION_ONLY` (no V4 gating or tuning use). `V4_TUNE_V1` will be
   generated and sealed in this pass and NOT evaluated. HOLDOUT_C remains sealed.
 - **Evidence:** `docs/V4_RESEARCH_PLAN.md`, `docs/V4_NOVELTY_REVIEW.md`. V4 FINAL SCIENCE NOT RUN.
+
+## V4-D2 - V4 architecture contract as built (V4-B)
+
+- **Status:** MEASURED (engineering). Details beyond `docs/V4_RESEARCH_PLAN.md` that the build fixed:
+- **Decision:**
+  - Content causality is by construction: the evidence encoder, belief update and trust head are bias-free with f(0)=0
+    activations and scale-only RMSNorm; per-square position enters only as a multiplicative gain `(1+g_s)` and a relative
+    displacement bias in attention logits. Action content is a one-hot, never an embedding lookup (a lookup row would be a
+    bias). `trust = tanh(t^2)` is 0 iff the message is 0; `delta = B*tanh(sum_j trust_j gate_ij s_ij / B)`, B = 8 logits.
+  - Parity of the child ply is routing metadata, not content; check/terminal flags of the child are content.
+  - The belief update sums gated per-message contributions (evidence accumulates additively, permutation invariant); the
+    hypothesis tokens it reads are detached from the base in stages B-D.
+  - The utility path reuses the V3 `QueryEncoder` (biased, trainable) for parent/action representations and is kept
+    separate from the evidence path.
+  - Stage scoping is by detaching (`Freeze::BASE`, `Freeze::BASE_AND_EVIDENCE`); AdamW leaves parameters without a gradient
+    untouched, which is what makes B0 bit-identical (tested).
+- **Evidence:** `docs/V4_EXPERIMENTS.md` V4-E1.

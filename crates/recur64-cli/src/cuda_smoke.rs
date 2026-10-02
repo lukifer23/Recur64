@@ -45,6 +45,8 @@ pub fn run_cuda_smoke(args: CudaSmokeArgs) -> anyhow::Result<()> {
         .refuse_active_v3("`cuda-smoke` (the historical Probe GPU proof)")?;
     cfg.model
         .refuse_all_info("`cuda-smoke` (the historical Probe GPU proof)")?;
+    cfg.model
+        .refuse_evidence_v4("`cuda-smoke` (the historical Probe GPU proof)")?;
     anyhow::ensure!(
         matches!(cfg.precision, Precision::Fp32),
         "cuda-smoke is FP32 only; requested {}",

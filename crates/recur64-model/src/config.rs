@@ -105,6 +105,11 @@ pub struct ModelConfig {
     /// V3 scientific hash is unchanged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub all_info: Option<AllInfoConfig>,
+    /// V4 evidence-belief geometry and contract identities; present iff
+    /// `architecture == evidence_belief_v4`. Skipped when absent, so every historical,
+    /// V3 and ALL-INFO scientific hash is unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<EvidenceConfig>,
 }
 
 /// Which network a `ModelConfig` instantiates.
@@ -125,6 +130,10 @@ pub enum Architecture {
     /// Recur64 V3 P6: the separately trained information-sufficiency control that
     /// receives an exhaustive raw depth-2 tree at once (`all_info_v1`).
     AllInfoV1,
+    /// Recur64 V4: an immutable base belief over root-action hypotheses plus an explicit,
+    /// content-causal evidence ledger and a learned query-utility head
+    /// (`evidence_belief_v4`).
+    EvidenceBeliefV4,
 }
 
 impl Architecture {
@@ -139,6 +148,7 @@ impl Architecture {
             Architecture::LegacyFactsV25 => "legacy_facts_v25",
             Architecture::ActiveSearchV3 => "active_search_v3",
             Architecture::AllInfoV1 => "all_info_v1",
+            Architecture::EvidenceBeliefV4 => "evidence_belief_v4",
         }
     }
 }
@@ -495,6 +505,174 @@ impl AllInfoConfig {
     }
 }
 
+// ---------------------------------------------------------------------------
+// V4 `evidence_belief_v4`: root hypothesis bank, immutable base belief z0, explicit
+// content-causal evidence messages, set-like ledger, additive belief update, and a
+// decision-aligned query-utility head. See docs/V4_RESEARCH_PLAN.md.
+// ---------------------------------------------------------------------------
+
+pub const EVIDENCE_BASE_READOUT: &str = "base_readout_v4_v1";
+pub const EVIDENCE_ENCODER: &str = "evidence_encoder_v4_v1";
+pub const EVIDENCE_LEDGER: &str = "evidence_ledger_set_v1";
+pub const EVIDENCE_BELIEF_UPDATE: &str = "belief_update_gated_sum_v1";
+pub const EVIDENCE_UTILITY_HEAD: &str = "query_utility_head_v1";
+
+/// Version of the V4 readout function (base logits + additive evidence delta).
+pub const EVIDENCE_HEAD_VERSION: u32 = 1;
+
+/// Versioned identities of every V4 scientific contract.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EvidenceContracts {
+    pub root_encoder: String,
+    pub root_candidate_tokens: String,
+    pub state_query: String,
+    pub base_readout: String,
+    pub evidence_encoder: String,
+    pub ledger: String,
+    pub belief_update: String,
+    pub utility_head: String,
+}
+
+impl Default for EvidenceContracts {
+    fn default() -> Self {
+        Self {
+            root_encoder: ACTIVE_ROOT_ENCODER.into(),
+            root_candidate_tokens: ACTIVE_ROOT_CANDIDATE_TOKENS.into(),
+            state_query: ACTIVE_STATE_QUERY.into(),
+            base_readout: EVIDENCE_BASE_READOUT.into(),
+            evidence_encoder: EVIDENCE_ENCODER.into(),
+            ledger: EVIDENCE_LEDGER.into(),
+            belief_update: EVIDENCE_BELIEF_UPDATE.into(),
+            utility_head: EVIDENCE_UTILITY_HEAD.into(),
+        }
+    }
+}
+
+fn d_ev_content_dim() -> usize {
+    192
+}
+fn d_ev_content_heads() -> usize {
+    4
+}
+fn d_ev_content_ffn() -> usize {
+    384
+}
+fn d_ev_content_blocks() -> usize {
+    2
+}
+fn d_ev_message_dim() -> usize {
+    128
+}
+fn d_ev_pair_dim() -> usize {
+    128
+}
+fn d_ev_key_dim() -> usize {
+    64
+}
+fn d_ev_trust_hidden() -> usize {
+    64
+}
+fn d_ev_base_hidden() -> usize {
+    256
+}
+fn d_ev_utility_hidden() -> usize {
+    256
+}
+fn d_ev_delta_bound() -> f64 {
+    8.0
+}
+
+/// V4 geometry. The root candidate dimension is also the width of the (non-evidence)
+/// query-state encoder that supplies parent/action representations to the utility head.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EvidenceConfig {
+    /// Root candidate (hypothesis token) geometry: dim 256, 4 heads, FFN 512, 1 block, facts on.
+    #[serde(default)]
+    pub candidate: CandidateConfig,
+    /// Hidden width of the base readout `z0_i = f(h_i, root_context)`.
+    #[serde(default = "d_ev_base_hidden")]
+    pub base_hidden: usize,
+    /// Parent-state encoder used by the utility head only (never by the evidence path).
+    #[serde(default = "d_q_heads")]
+    pub query_heads: usize,
+    #[serde(default = "d_q_ffn")]
+    pub query_ffn: usize,
+    #[serde(default = "d_q_blocks")]
+    pub query_blocks: usize,
+    /// Bias-free content encoder token width / heads / FFN / blocks.
+    #[serde(default = "d_ev_content_dim")]
+    pub content_dim: usize,
+    #[serde(default = "d_ev_content_heads")]
+    pub content_heads: usize,
+    #[serde(default = "d_ev_content_ffn")]
+    pub content_ffn: usize,
+    #[serde(default = "d_ev_content_blocks")]
+    pub content_blocks: usize,
+    /// `EvidenceMessage` vector width.
+    #[serde(default = "d_ev_message_dim")]
+    pub message_dim: usize,
+    /// Width of the hypothesis x message interaction.
+    #[serde(default = "d_ev_pair_dim")]
+    pub pair_dim: usize,
+    /// Width of the content-derived attention key used by the routing gate.
+    #[serde(default = "d_ev_key_dim")]
+    pub key_dim: usize,
+    #[serde(default = "d_ev_trust_hidden")]
+    pub trust_hidden: usize,
+    #[serde(default = "d_ev_utility_hidden")]
+    pub utility_hidden: usize,
+    /// `delta_z` is passed through `B * tanh(x / B)`; B is part of the model function.
+    #[serde(default = "d_ev_delta_bound")]
+    pub delta_bound: f64,
+    #[serde(default)]
+    pub contracts: EvidenceContracts,
+}
+
+impl Default for EvidenceConfig {
+    fn default() -> Self {
+        Self {
+            candidate: CandidateConfig::default(),
+            base_hidden: d_ev_base_hidden(),
+            query_heads: d_q_heads(),
+            query_ffn: d_q_ffn(),
+            query_blocks: d_q_blocks(),
+            content_dim: d_ev_content_dim(),
+            content_heads: d_ev_content_heads(),
+            content_ffn: d_ev_content_ffn(),
+            content_blocks: d_ev_content_blocks(),
+            message_dim: d_ev_message_dim(),
+            pair_dim: d_ev_pair_dim(),
+            key_dim: d_ev_key_dim(),
+            trust_hidden: d_ev_trust_hidden(),
+            utility_hidden: d_ev_utility_hidden(),
+            delta_bound: d_ev_delta_bound(),
+            contracts: EvidenceContracts::default(),
+        }
+    }
+}
+
+impl EvidenceConfig {
+    /// Width of the root candidate tokens (the hypothesis tokens).
+    pub fn token_dim(&self) -> usize {
+        self.candidate.dim
+    }
+
+    /// The geometry the reused V3 `RootPath` and `QueryEncoder` modules are built from. Only
+    /// the root candidate geometry and the query-encoder fields enter; the planner/selector
+    /// fields keep their defaults and never enter a V4 model.
+    pub fn shared_geometry(&self) -> ActiveConfig {
+        ActiveConfig {
+            candidate: self.candidate.clone(),
+            query_dim: self.candidate.dim,
+            query_heads: self.query_heads,
+            query_ffn: self.query_ffn,
+            query_blocks: self.query_blocks,
+            readout_hidden: self.base_hidden,
+            ..ActiveConfig::default()
+        }
+    }
+}
+
 impl ModelConfig {
     /// The V2.5 primary geometry: width 640, 10 heads, FFN 1280, 8 unique
     /// blocks, no input/output blocks.
@@ -520,6 +698,7 @@ impl ModelConfig {
             legacy_facts: None,
             active: None,
             all_info: None,
+            evidence: None,
         }
     }
 
@@ -544,6 +723,7 @@ impl ModelConfig {
             legacy_facts: Some(LegacyFactsConfig::default()),
             active: None,
             all_info: None,
+            evidence: None,
         }
     }
 
@@ -564,6 +744,28 @@ impl ModelConfig {
         m.candidate = None;
         m.all_info = Some(AllInfoConfig::default());
         m
+    }
+
+    /// V4 `evidence_belief_v4`: the V2.5 CF root geometry for the base tower plus the
+    /// evidence components. Root CandidateFacts are enabled.
+    pub fn evidence_belief_v4() -> Self {
+        let mut m = Self::candidate_v25(true);
+        m.architecture = Architecture::EvidenceBeliefV4;
+        m.candidate = None;
+        m.evidence = Some(EvidenceConfig::default());
+        m
+    }
+
+    /// Visible refusal for every historical command that has no `evidence_belief_v4` path.
+    /// Call it before any model construction or device work.
+    pub fn refuse_evidence_v4(&self, command: &str) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.architecture != Architecture::EvidenceBeliefV4,
+            "evidence_belief_v4 is not supported by {command}: that tool builds a different \
+             graph and would measure the wrong model. Use `recur64 v4` to describe and run \
+             evidence_belief_v4"
+        );
+        Ok(())
     }
 
     /// Visible refusal for every historical command that has no `all_info_v1` path.
@@ -605,6 +807,50 @@ impl ModelConfig {
             self.all_info.is_none() || self.architecture == Architecture::AllInfoV1,
             "only all_info_v1 may carry an ALL-INFO geometry"
         );
+        anyhow::ensure!(
+            self.evidence.is_none() || self.architecture == Architecture::EvidenceBeliefV4,
+            "only evidence_belief_v4 may carry an evidence geometry"
+        );
+        if self.architecture == Architecture::EvidenceBeliefV4 {
+            let e = self.evidence.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("evidence_belief_v4 requires an evidence geometry")
+            })?;
+            anyhow::ensure!(
+                self.candidate.is_none()
+                    && self.legacy_facts.is_none()
+                    && self.active.is_none()
+                    && self.all_info.is_none(),
+                "evidence_belief_v4 carries its candidate geometry inside `evidence`"
+            );
+            anyhow::ensure!(
+                self.input_blocks == 0 && self.output_blocks == 0,
+                "evidence_belief_v4 root encoder has no input or output blocks"
+            );
+            anyhow::ensure!(
+                e.candidate.facts_enabled,
+                "evidence_belief_v4 root CandidateFacts must be enabled"
+            );
+            anyhow::ensure!(
+                e.candidate.dim.is_multiple_of(e.candidate.heads)
+                    && e.candidate.dim.is_multiple_of(e.query_heads)
+                    && e.content_dim.is_multiple_of(e.content_heads),
+                "evidence_belief_v4 dims must divide by their head counts"
+            );
+            anyhow::ensure!(
+                e.delta_bound.is_finite() && e.delta_bound > 0.0,
+                "evidence delta bound must be finite and positive"
+            );
+            anyhow::ensure!(
+                e.message_dim > 0 && e.pair_dim > 0 && e.key_dim > 0 && e.trust_hidden > 0,
+                "evidence widths must be positive"
+            );
+            anyhow::ensure!(
+                e.contracts == EvidenceContracts::default(),
+                "evidence_belief_v4 contracts {:?} differ from the current contracts",
+                e.contracts
+            );
+            return Ok(());
+        }
         if self.architecture == Architecture::AllInfoV1 {
             let a = self
                 .all_info
@@ -700,7 +946,8 @@ impl ModelConfig {
             }
             (Architecture::LegacyFactsV25, _)
             | (Architecture::ActiveSearchV3, _)
-            | (Architecture::AllInfoV1, _) => {
+            | (Architecture::AllInfoV1, _)
+            | (Architecture::EvidenceBeliefV4, _) => {
                 unreachable!("handled above")
             }
             (Architecture::CandidateV25, None) => {
@@ -731,6 +978,7 @@ impl ModelConfig {
                 | Architecture::LegacyFactsV25
                 | Architecture::ActiveSearchV3
                 | Architecture::AllInfoV1
+                | Architecture::EvidenceBeliefV4
         ) {
             anyhow::ensure!(
                 recurrence == 1,
@@ -827,6 +1075,7 @@ mod tests {
             legacy_facts: None,
             active: None,
             all_info: None,
+            evidence: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         assert_eq!(m.executed_blocks_final(1), 8);
@@ -852,6 +1101,7 @@ mod tests {
             legacy_facts: None,
             active: None,
             all_info: None,
+            evidence: None,
         };
         assert_eq!(m.unique_blocks(), 8);
         // 2 + 4R + 2

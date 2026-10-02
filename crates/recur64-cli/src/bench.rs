@@ -100,6 +100,8 @@ pub fn run_bench(args: BenchArgs) -> anyhow::Result<()> {
         .refuse_active_v3("`bench` (the historical Probe benchmark)")?;
     cfg.model
         .refuse_all_info("`bench` (the historical Probe benchmark)")?;
+    cfg.model
+        .refuse_evidence_v4("`bench` (the historical Probe benchmark)")?;
     recur64_model::precision::ensure_supported(cfg.precision, cfg.device)?;
 
     let recurrences: Vec<usize> = if args.recurrences.is_empty() {

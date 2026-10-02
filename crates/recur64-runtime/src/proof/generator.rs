@@ -657,6 +657,93 @@ pub fn generate_v3_tune(spec: &V3TuneSpec) -> anyhow::Result<V3TuneOutput> {
     })
 }
 
+/// `v4_tune_v1` request (frozen in docs/V4_RESEARCH_PLAN.md before generation).
+#[derive(Debug, Clone)]
+pub struct V4TuneSpec {
+    /// Unique positions per (family, depth) cell.
+    pub per_cell: usize,
+    pub seed: u64,
+    pub threads: usize,
+    /// Canonical classes the set must avoid (every earlier dataset, V3_TUNE_V1 included).
+    pub exclude_canon: HashSet<String>,
+    /// Exact FENs the set must avoid (stated twice, as for v3_tune_v1).
+    pub exclude_fen: HashSet<String>,
+}
+
+/// Generate `v4_tune_v1`: the same construction as [`generate_v3_tune`] (KQRvK and KRRvK x
+/// M1..M3, exact eligible pools, canonical-class and exact-FEN exclusion, seeded shuffle) with
+/// its own shuffle tags and id prefix, so the two sets can never be confused. A cell that cannot
+/// supply `per_cell` eligible, disjoint positions is an error carrying the accounting: nothing
+/// is relaxed, reduced or partial. (`generate_v3_tune` is deliberately left untouched so the
+/// frozen V3 set regenerates bit-identically.)
+pub fn generate_v4_tune(spec: &V4TuneSpec) -> anyhow::Result<V3TuneOutput> {
+    let mut positions = Vec::new();
+    let mut cells = Vec::new();
+    let mut pools = Vec::new();
+    let mut counter = 0usize;
+    for &fi in &V3_TUNE_FAMILIES {
+        let (family, _) = FAMILIES[fi];
+        let (report, cands) = enumerate_pool(fi, 3, spec.threads)?;
+        pools.push(report);
+        for d in 1..=3u8 {
+            let cell: Vec<Candidate> = cands.iter().filter(|c| c.depth == d).cloned().collect();
+            let available: Vec<Candidate> = cell
+                .iter()
+                .filter(|c| {
+                    !spec.exclude_canon.contains(&c.canon) && !spec.exclude_fen.contains(&c.fen)
+                })
+                .cloned()
+                .collect();
+            anyhow::ensure!(
+                available.len() >= spec.per_cell,
+                "STOP: {family} M{d} has only {} eligible disjoint classes (pool {}, excluded {}); \
+                 v4_tune_v1 needs {} and is not accepted partially or reduced",
+                available.len(),
+                cell.len(),
+                cell.len() - available.len(),
+                spec.per_cell
+            );
+            let tag = mix(0x4A40_0000 + fi as u64 * 16 + d as u64);
+            let chosen: Vec<Candidate> = shuffled(&available, mix(spec.seed ^ tag))
+                .into_iter()
+                .take(spec.per_cell)
+                .collect();
+            let mut labelled =
+                label_positions(&chosen, family, Split::Tune, spec.seed, &mut counter)?;
+            for p in &mut labelled {
+                // Distinct from every earlier tune set's ids.
+                p.id = p.id.replacen("tune-", "v4tune-", 1);
+            }
+            positions.extend(labelled);
+            cells.push(V3TuneCell {
+                family: family.to_string(),
+                depth: d,
+                eligible_pool: cell.len(),
+                excluded: cell.len() - available.len(),
+                available: available.len(),
+                taken: spec.per_cell,
+            });
+        }
+    }
+    let filters = serde_json::json!({
+        "identity": "v4_tune_v1",
+        "purpose": "V4 final science only; sealed, never evaluated during P0/P1 development",
+        "families": V3_TUNE_FAMILIES.iter().map(|i| FAMILIES[*i].0).collect::<Vec<_>>(),
+        "depths": [1, 2, 3],
+        "per_cell": spec.per_cell,
+        "source": "exhaustive exact heavy pools, canonical-class and exact-FEN exclusion, seeded shuffle",
+        "shuffle_tag": "mix(0x4A400000 + family_index*16 + depth)",
+        "max_correct_fraction": MAX_CORRECT_FRACTION,
+        "fact_ambiguity_required_for_depth_at_least": 2,
+        "split": "tune",
+    });
+    Ok(V3TuneOutput {
+        set: ProofTargets::new(Split::Tune, spec.seed, filters, positions),
+        cells,
+        pools,
+    })
+}
+
 /// P25_DATA_V1 training-extension request.
 #[derive(Debug, Clone)]
 pub struct ExtensionSpec {

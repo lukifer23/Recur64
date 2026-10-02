@@ -247,3 +247,190 @@ pub fn cell_counts(t: &ProofTargets) -> BTreeMap<String, usize> {
     }
     m
 }
+
+// ---------------------------------------------------------------------------
+// V4: `v4_tune_v1` custody. The rule, seed and size were committed in
+// docs/V4_RESEARCH_PLAN.md before the set was generated.
+// ---------------------------------------------------------------------------
+
+/// Frozen `v4_tune_v1` specification.
+pub const V4_TUNE_IDENTITY: &str = "v4_tune_v1";
+pub const V4_TUNE_SEED: u64 = 0x7A40_0001;
+pub const V4_TUNE_PER_CELL: usize = 1000;
+/// 2 families x M1..M3 x `V4_TUNE_PER_CELL`.
+pub const V4_TUNE_POSITIONS: usize = 6 * V4_TUNE_PER_CELL;
+pub const V4_TUNE_SEAL_SCHEMA: &str = "v4_tune_seal_v1";
+/// The only phase that may open the sealed V4 set.
+pub const V4_TUNE_AUTH_PHASE: &str = "V4-FINAL";
+
+/// The recorded state of the sealed V4 primary evaluation set.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct V4TuneSeal {
+    pub schema: String,
+    pub identity: String,
+    pub file: String,
+    pub digest: String,
+    pub positions: usize,
+    pub verified: bool,
+    pub sealed: bool,
+    /// Always false during P0/P1: no checkpoint has been evaluated on this set.
+    pub evaluated: bool,
+    pub permitted_p0p1_use: String,
+    pub future_access: String,
+}
+
+/// Verify a stored `v4_tune_v1` and produce its seal: schema, contracts and content digest are
+/// validated by `ProofTargets::load`; identity, size and cell structure are checked here.
+pub fn seal_v4_tune(path: &Path) -> anyhow::Result<V4TuneSeal> {
+    let t = ProofTargets::load(path)?;
+    anyhow::ensure!(
+        t.split == Split::Tune
+            && t.filters.get("identity").and_then(|v| v.as_str()) == Some(V4_TUNE_IDENTITY),
+        "{}: not a {V4_TUNE_IDENTITY} dataset",
+        path.display()
+    );
+    anyhow::ensure!(
+        t.digest != HOLDOUT_C_DIGEST,
+        "{}: carries the HOLDOUT_C digest",
+        path.display()
+    );
+    anyhow::ensure!(
+        t.positions.len() == V4_TUNE_POSITIONS,
+        "{V4_TUNE_IDENTITY} has {} positions, expected {V4_TUNE_POSITIONS}",
+        t.positions.len()
+    );
+    for (cell, n) in cell_counts(&t) {
+        anyhow::ensure!(
+            n == V4_TUNE_PER_CELL,
+            "{V4_TUNE_IDENTITY} cell {cell} has {n} positions, expected {V4_TUNE_PER_CELL}"
+        );
+    }
+    Ok(V4TuneSeal {
+        schema: V4_TUNE_SEAL_SCHEMA.into(),
+        identity: V4_TUNE_IDENTITY.into(),
+        file: path.display().to_string().replace('\\', "/"),
+        digest: t.digest,
+        positions: t.positions.len(),
+        verified: true,
+        sealed: true,
+        evaluated: false,
+        permitted_p0p1_use: "custody, generation determinism and disjointness only. No developmental \
+             checkpoint, mechanism study or hyperparameter choice may evaluate against it"
+            .into(),
+        future_access: "only through proof::custody::load_sealed_v4_tune with a V4TuneAuthorization for phase V4-FINAL"
+            .into(),
+    })
+}
+
+/// Proof that the owner authorized the V4 final evaluation. Constructible only for phase
+/// `V4-FINAL` with a non-empty reference to the approval; its use is logged.
+#[derive(Debug)]
+pub struct V4TuneAuthorization {
+    phase: String,
+    approval_reference: String,
+}
+
+impl V4TuneAuthorization {
+    pub fn request(phase: &str, approval_reference: &str) -> anyhow::Result<Self> {
+        anyhow::ensure!(
+            phase == V4_TUNE_AUTH_PHASE,
+            "v4_tune_v1 access is only authorized for phase {V4_TUNE_AUTH_PHASE}, not '{phase}'"
+        );
+        anyhow::ensure!(
+            !approval_reference.trim().is_empty(),
+            "v4_tune_v1 access needs a recorded owner approval reference"
+        );
+        Ok(Self {
+            phase: phase.to_string(),
+            approval_reference: approval_reference.to_string(),
+        })
+    }
+}
+
+/// The only way to obtain `v4_tune_v1`. Checks the seal (valid, sealed, not evaluated),
+/// re-verifies the digest, and appends an exposure line to `exposure_log` BEFORE returning data.
+pub fn load_sealed_v4_tune(
+    path: &Path,
+    seal: &Path,
+    auth: &V4TuneAuthorization,
+    exposure_log: &Path,
+) -> anyhow::Result<ProofTargets> {
+    let s: V4TuneSeal = serde_json::from_slice(&std::fs::read(seal)?)?;
+    anyhow::ensure!(
+        s.schema == V4_TUNE_SEAL_SCHEMA
+            && s.identity == V4_TUNE_IDENTITY
+            && s.verified
+            && s.sealed,
+        "the v4_tune_v1 seal is not valid"
+    );
+    anyhow::ensure!(
+        !s.evaluated,
+        "the seal records that this set was already evaluated; a second evaluation is refused"
+    );
+    let t = ProofTargets::load(path)?;
+    anyhow::ensure!(
+        t.digest == s.digest && t.positions.len() == V4_TUNE_POSITIONS,
+        "{}: not the sealed v4_tune_v1",
+        path.display()
+    );
+    use std::io::Write;
+    let mut f = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(exposure_log)?;
+    writeln!(
+        f,
+        "V4 TUNE EXPOSURE phase={} approval={} digest={}",
+        auth.phase, auth.approval_reference, t.digest
+    )?;
+    Ok(t)
+}
+
+#[cfg(test)]
+mod v4_tests {
+    use super::*;
+
+    #[test]
+    fn the_v4_tune_authorization_needs_the_final_phase_and_an_approval_reference() {
+        assert!(V4TuneAuthorization::request("V4-P1", "ref").is_err());
+        assert!(V4TuneAuthorization::request("V3-P8", "ref").is_err());
+        assert!(V4TuneAuthorization::request("V4-FINAL", "  ").is_err());
+        assert!(V4TuneAuthorization::request("V4-FINAL", "owner-2026-xx").is_ok());
+    }
+
+    #[test]
+    fn an_evaluated_or_foreign_v4_seal_is_refused_before_any_data_is_read() {
+        let dir = std::env::temp_dir().join(format!("recur64-v4-seal-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let auth = V4TuneAuthorization::request("V4-FINAL", "owner-test").unwrap();
+        let mk = |evaluated: bool, schema: &str| V4TuneSeal {
+            schema: schema.into(),
+            identity: V4_TUNE_IDENTITY.into(),
+            file: "x".into(),
+            digest: "d".into(),
+            positions: V4_TUNE_POSITIONS,
+            verified: true,
+            sealed: true,
+            evaluated,
+            permitted_p0p1_use: String::new(),
+            future_access: String::new(),
+        };
+        for (i, seal) in [mk(true, V4_TUNE_SEAL_SCHEMA), mk(false, SEAL_SCHEMA)]
+            .iter()
+            .enumerate()
+        {
+            let p = dir.join(format!("seal{i}.json"));
+            std::fs::write(&p, serde_json::to_vec(seal).unwrap()).unwrap();
+            let missing = dir.join("does-not-exist.json");
+            let log = dir.join("exposure.log");
+            let e = load_sealed_v4_tune(&missing, &p, &auth, &log)
+                .err()
+                .expect("must refuse")
+                .to_string();
+            // A refusal that names the seal, not the missing data file, proves the order.
+            assert!(e.contains("seal"), "{e}");
+            assert!(!log.exists(), "an exposure was logged for a refused load");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

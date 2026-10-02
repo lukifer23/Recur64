@@ -40,6 +40,7 @@ fn mainline_model(input: usize, core: usize, output: usize) -> ModelConfig {
         legacy_facts: None,
         active: None,
         all_info: None,
+        evidence: None,
     }
 }
 
@@ -128,6 +129,7 @@ fn r10_topology_r1_parity() {
         legacy_facts: None,
         active: None,
         all_info: None,
+        evidence: None,
     };
     let device = Default::default();
     let model = ProbeModel::<Flex>::new(cfg.clone(), &device);

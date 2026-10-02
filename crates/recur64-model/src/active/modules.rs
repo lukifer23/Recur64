@@ -265,6 +265,7 @@ impl<B: Backend> QueryEncoder<B> {
             legacy_facts: None,
             active: None,
             all_info: None,
+            evidence: None,
         };
         Self {
             input_proj: LinearConfig::new(cfg.in_features, qd)

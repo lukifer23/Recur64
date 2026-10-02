@@ -4544,6 +4544,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "recur64-v4"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "burn",
+ "recur64-core",
+ "recur64-model",
+ "recur64-runtime",
+ "recur64-statequery",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -508,6 +508,9 @@ pub fn run(args: V25QualArgs) -> anyhow::Result<()> {
         "v25-qual is an FP32 qualification (fusion/autotune/TF32 are not part of V2.5)"
     );
     let report = match (cfg.device, cfg.model.architecture) {
+        (_, Architecture::EvidenceBeliefV4) => anyhow::bail!(
+            "evidence_belief_v4 is not supported by this historical proof command: it needs the live query tool (use `recur64 v4`)"
+        ),
         (_, Architecture::AllInfoV1) => anyhow::bail!(
             "all_info_v1 is not supported by `v25-qual`: it consumes the exhaustive depth-2 tree (use `recur64 v3-p6`)"
         ),
