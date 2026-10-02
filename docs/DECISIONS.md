@@ -1383,3 +1383,11 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   - Stage scoping is by detaching (`Freeze::BASE`, `Freeze::BASE_AND_EVIDENCE`); AdamW leaves parameters without a gradient
     untouched, which is what makes B0 bit-identical (tested).
 - **Evidence:** `docs/V4_EXPERIMENTS.md` V4-E1.
+
+## V4-D3 - V4 P0/P1 result: ARCHITECTURE-STOP at Stage B; pause for owner review
+
+- **Status:** RESULT of the pre-registered rules (V4-E7). **Decision:** per the V4 brief ("if A-C is no, stop architecture
+  development"), no Stage C/D, no redesign, no retuning. The mechanism is exact and instrumented (C passes) but the trained evidence
+  path does not change decisions (G exactly 0; A only +2e-6 nats; B shuffled-content CI includes 0). Suspected cause (INFERRED,
+  untested): a multiplicative trust-gate dead-start. Any fix is a new pre-registered TRAIN-only step awaiting the owner. `v4_tune_v1`
+  sealed and never evaluated; HOLDOUT_C sealed. Evidence: `docs/V4_P1_RESULTS.md`, `docs/evidence/v4/`.

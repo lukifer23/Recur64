@@ -1,0 +1,21 @@
+{
+  "candidates": [
+    {
+      "lr": 0.0003,
+      "mean_ce_b8": 1.260703780086994,
+      "report": "docs/evidence/v4/stage-b-screen-lr3e-4.json"
+    },
+    {
+      "lr": 0.001,
+      "mean_ce_b8": 1.2607927390987863,
+      "report": "docs/evidence/v4/stage-b-screen-lr1e-3.json"
+    },
+    {
+      "lr": 0.003,
+      "mean_ce_b8": 1.2607035443657182,
+      "report": "docs/evidence/v4/stage-b-screen-lr3e-3.json"
+    }
+  ],
+  "rule": "lowest mean V4_TRAIN_DEV CE at B8 over FIXED and RANDOM; ties to the lower LR",
+  "selected_lr": 0.003
+}

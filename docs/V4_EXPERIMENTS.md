@@ -156,3 +156,13 @@ Labels: PRE-REGISTERED / MEASURED / INFERRED / NOT RUN. Never edit past entries;
 - **Protocol:** the micro-batch is restored to 32, exactly as pre-registered in V4-E2; V4-E5 is withdrawn. No parameter,
   schedule, measurement or pass rule differs from V4-E2.
 - **Process note:** the first failure was not noticed for about half an hour because the run was not checked after launch.
+
+## V4-E7 - Stage B result: ARCHITECTURE-STOP (A formality, B FAIL, C PASS, G FAIL)
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED, applying the rules pre-registered in V4-A / V4-E2 once, to the three-seed Stage B models.
+- **Commands:** `scripts/v4_stage_a.sh`, `scripts/v4_stage_b.sh` (LR screen, selection, three seeds, `v4 measure --kind b`).
+- **Evidence:** `docs/evidence/v4/stage-a-seed*.json`, `stage-b-screen-lr*.json`, `stage-b-lr-selected.json`, `stage-b-mechanism.json`.
+- **Result:** see `docs/V4_P1_RESULTS.md` section 2. A: +2.3e-6 / +2.2e-6 nats (CI wholly positive, no practical effect); B: the
+  shuffled-content CI includes 0; C: bitwise exact; G: top-1 change exactly 0. Verdict: stop architecture development.
+- **NOT RUN:** Stage C (utility head, answers D/E/F), Stage D, the loss-selection study, the trust/gradient diagnostic, any V4_TUNE evaluation.
