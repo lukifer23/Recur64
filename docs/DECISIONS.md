@@ -1353,3 +1353,16 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   CONTENT**: returned state content is used, but B8 does not improve the task and the learned selector does not beat FIXED.
   Stop before HOLDOUT_C; B16 not run (conditional on all primary gates). No second iteration. V4 is a design memo only
   (`docs/V35_RESULTS.md`). HOLDOUT_C NOT EVALUATED.
+
+## V4-D1 - V4 `evidence_belief_v4` line opened (pre-registration)
+
+- **Status:** PRE-REGISTERED 2026-10-02, before any V4 model code, data generation, or measurement.
+- **Decision:** Open a new architecture line `evidence_belief_v4` on branch `experiment/workstation-v4-evidence-belief` from the
+  accepted V3.5 HEAD `40916509936e83468e2fe58c455a33a246123545`. It is not V3.6; V3/V3.5 branches are untouched and V3.x
+  training stops. Architecture laws A-D, staged protocol A-D, TRAIN-only mechanism questions A-G with frozen pass rules, the
+  TRAIN-dev partition rule, and the `V4_TUNE_V1` generation rule (seed `0x7A40_0001`, 1,000/cell, no post-hoc reduction) are
+  frozen in `docs/V4_RESEARCH_PLAN.md`. Novelty review: `docs/V4_NOVELTY_REVIEW.md` (no material duplicate of the full
+  combination found in an abstract-level web search; close art is VOC/BMPS, metacontrol, I2A, DAD).
+- **Data hygiene:** `V3_TUNE_V1` is now `HISTORICAL_REGRESSION_ONLY` (no V4 gating or tuning use). `V4_TUNE_V1` will be
+  generated and sealed in this pass and NOT evaluated. HOLDOUT_C remains sealed.
+- **Evidence:** `docs/V4_RESEARCH_PLAN.md`, `docs/V4_NOVELTY_REVIEW.md`. V4 FINAL SCIENCE NOT RUN.
