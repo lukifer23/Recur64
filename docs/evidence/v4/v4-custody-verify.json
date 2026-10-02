@@ -1,0 +1,14 @@
+{
+  "holdout_c": {
+    "digest": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+    "evaluated": false,
+    "positions": 4500,
+    "sealed": true
+  },
+  "v4_tune_v1": {
+    "digest": "b83624e4495d6586622aad3b523789dd065e1c398f391403743468796f7aaf77",
+    "evaluated": false,
+    "positions": 6000,
+    "sealed": true
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "cell_counts": {
+    "KQRvK M1": 1000,
+    "KQRvK M2": 1000,
+    "KQRvK M3": 1000,
+    "KRRvK M1": 1000,
+    "KRRvK M2": 1000,
+    "KRRvK M3": 1000
+  },
+  "deterministic_regeneration": {
+    "identical_digest": true,
+    "performed": true
+  },
+  "digest": "b83624e4495d6586622aad3b523789dd065e1c398f391403743468796f7aaf77",
+  "disjointness": {
+    "internal_unique_canonical_classes": 6000,
+    "internal_unique_fens": 6000,
+    "overlap_with_any_inventoried_dataset": 0,
+    "pairwise_datasets_checked": 15
+  },
+  "exclusion": {
+    "datasets": [
+      {
+        "canon_classes": 44332,
+        "digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+        "path": "runs/v25/p25/data/proof-train.json",
+        "positions": 44332,
+        "split": "train"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+        "path": "runs/v25/p25/data/proof-tune.json",
+        "positions": 1208,
+        "split": "tune"
+      },
+      {
+        "canon_classes": 4500,
+        "digest": "384a528eb037b268d3ca214d5d9c90575d657c7a513a6f498afdfe76dd4e9b07",
+        "path": "runs/v25/p25/holdouts/proof-holdout_a.json",
+        "positions": 4500,
+        "split": "holdout_a"
+      },
+      {
+        "canon_classes": 4500,
+        "digest": "13c8e018beea71058dbbbf510c723ebbe85b3a057c7b0e4a845a1039e107df10",
+        "path": "runs/v25/p25/holdouts/proof-holdout_b.json",
+        "positions": 4500,
+        "split": "holdout_b"
+      },
+      {
+        "canon_classes": 4500,
+        "digest": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+        "path": "runs/v25/p25/holdouts/proof-holdout_c.json",
+        "positions": 4500,
+        "split": "holdout_c"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "ed36378381eed0a05958c2302752b219a1d2b2f94996bb4e373e9a9510ccc101",
+        "path": "runs/v25/proof/proof-confirm.json",
+        "positions": 1208,
+        "split": "confirm"
+      },
+      {
+        "canon_classes": 11501,
+        "digest": "8d6440d214e606a7f01ad0584d292cf6ac500495040bda96816fb9f599e74cab",
+        "path": "runs/v25/proof/proof-train.json",
+        "positions": 11501,
+        "split": "train"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "d48ccf8616091437210e2c21f5ad33638a1847bd8220abf6c36b2f510c0185a3",
+        "path": "runs/v25/proof/proof-tune.json",
+        "positions": 1208,
+        "split": "tune"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "8c4d2b723afb7f730d28a42f150935d0aab6ff6e98e25124c18febe71e0301df",
+        "path": "runs/v25/proof-v2/proof-confirm.json",
+        "positions": 1208,
+        "split": "confirm"
+      },
+      {
+        "canon_classes": 11501,
+        "digest": "1e5e121bc407e0d27b2956eac570c2d67485f8637b7d9e329d21e863427671d4",
+        "path": "runs/v25/proof-v2/proof-train.json",
+        "positions": 11501,
+        "split": "train"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+        "path": "runs/v25/proof-v2/proof-tune.json",
+        "positions": 1208,
+        "split": "tune"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "8c4d2b723afb7f730d28a42f150935d0aab6ff6e98e25124c18febe71e0301df",
+        "path": "runs/v25/proof-v2-check/proof-confirm.json",
+        "positions": 1208,
+        "split": "confirm"
+      },
+      {
+        "canon_classes": 11501,
+        "digest": "1e5e121bc407e0d27b2956eac570c2d67485f8637b7d9e329d21e863427671d4",
+        "path": "runs/v25/proof-v2-check/proof-train.json",
+        "positions": 11501,
+        "split": "train"
+      },
+      {
+        "canon_classes": 1208,
+        "digest": "f59d744a133e887d7c50a00923ee2d16b9bd7a4560330252a93574828bfc16e4",
+        "path": "runs/v25/proof-v2-check/proof-tune.json",
+        "positions": 1208,
+        "split": "tune"
+      },
+      {
+        "canon_classes": 4500,
+        "digest": "c66018657009c9c5eade58369b5f451466d6662c910f76b8aacddcac99921b53",
+        "path": "runs/v3/data/proof-v3-tune-v1.json",
+        "positions": 4500,
+        "split": "tune"
+      }
+    ],
+    "excluded_canonical_classes": 75124,
+    "excluded_exact_fens": 75124,
+    "exclusion_manifest_digest": "8c2be0e0528d0442da6bd497dc375b031c849a7f30471f6477ce6ce160c64014",
+    "limitation": "HP/X1/X2 exact datasets are not present on this workstation in a compatible form; cross-line disjointness from them was NOT verified"
+  },
+  "file": "runs/v4/data/proof-v4-tune-v1.json",
+  "history_contract": "fresh_no_history_v1",
+  "holdout_c": {
+    "digest_verified": "4ab951c6edd8dd4f531bb87d2f4373895d1fddb70efdf052b24c09a1b71d87d5",
+    "evaluated": false,
+    "sealed": true
+  },
+  "identity": "v4_tune_v1",
+  "independent_audit": {
+    "checked": 6000,
+    "failures": 0
+  },
+  "per_cell_target": 1000,
+  "pool_accounting": [
+    {
+      "available": 102639,
+      "depth": 1,
+      "eligible_pool": 111273,
+      "excluded": 8634,
+      "family": "KQRvK",
+      "taken": 1000
+    },
+    {
+      "available": 297947,
+      "depth": 2,
+      "eligible_pool": 306595,
+      "excluded": 8648,
+      "family": "KQRvK",
+      "taken": 1000
+    },
+    {
+      "available": 202574,
+      "depth": 3,
+      "eligible_pool": 211215,
+      "excluded": 8641,
+      "family": "KQRvK",
+      "taken": 1000
+    },
+    {
+      "available": 32998,
+      "depth": 1,
+      "eligible_pool": 41612,
+      "excluded": 8614,
+      "family": "KRRvK",
+      "taken": 1000
+    },
+    {
+      "available": 113439,
+      "depth": 2,
+      "eligible_pool": 122082,
+      "excluded": 8643,
+      "family": "KRRvK",
+      "taken": 1000
+    },
+    {
+      "available": 99452,
+      "depth": 3,
+      "eligible_pool": 108086,
+      "excluded": 8634,
+      "family": "KRRvK",
+      "taken": 1000
+    }
+  ],
+  "positions": 6000,
+  "purpose": "V4 final science only; sealed, never evaluated during P0/P1 development",
+  "schema": "v4_tune_v1_manifest",
+  "seed": 2051014657,
+  "seed_hex": "0x7a400001",
+  "wall_s": 110.1898774
+}

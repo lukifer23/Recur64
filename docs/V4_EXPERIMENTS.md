@@ -78,3 +78,28 @@ Labels: PRE-REGISTERED / MEASURED / INFERRED / NOT RUN. Never edit past entries;
   the B0 bit-identity check across all stages.
 - **NOT RUN:** everything above. Multi-step (BMPS complementary-computation) utility diagnostics are NOT planned for this
   pass and will be reported as NOT RUN.
+
+## V4-E3 - `v4_tune_v1` generated, audited and sealed (custody only; NEVER evaluated)
+
+- **Date:** 2026-10-02
+- **Status:** MEASURED (generation and custody). The rule, the seed `0x7A40_0001` and the 1,000-per-cell size were committed
+  in V4-A (`docs/V4_RESEARCH_PLAN.md`, commit `37d2139`) before this run; `generate_v4_tune` and its constants were committed
+  in V4-B before this run. No count was reduced.
+- **Command:** `recur64 v4 tune-gen --inventory-dirs runs/v25/p25/data,runs/v25/p25/holdouts,runs/v25/proof,runs/v25/proof-v2,runs/v25/proof-v2-check,runs/v3/data --data-dir runs/v4/data --manifest docs/evidence/v4/v4-tune-v1-manifest.json --seal-output docs/evidence/v4/v4-tune-v1-seal.json --holdout-c runs/v25/p25/holdouts/proof-holdout_c.json --threads 12`
+- **Result:**
+  - 6,000 unique positions, **1,000 in every cell** (KQRvK and KRRvK x M1/M2/M3); digest
+    `b83624e4495d6586622aad3b523789dd065e1c398f391403743468796f7aaf77`; independent audit 6,000 checked, 0 failures.
+  - Hard-disjoint by exact FEN and canonical class from every inventoried dataset: 15 files (P25 TRAIN/TUNE, HOLDOUT_A/B/C,
+    the V2/V2.5 proof sets, `proof-v2-check`, and V3_TUNE_V1); 75,124 excluded canonical classes and exact FENs; exclusion
+    manifest digest `8c2be0e0528d0442da6bd497dc375b031c849a7f30471f6477ce6ce160c64014`; 0 overlap; every pair also checked
+    with `check_disjoint`. Every cell had a large eligible pool (for example KQRvK M1: 102,639 available of 111,273), so the
+    frozen rule was feasible with no relaxation.
+  - Deterministic regeneration from the seed gave the identical digest. Wall 110 s.
+  - Sealed: `sealed = true`, `evaluated = false` (`docs/evidence/v4/v4-tune-v1-seal.json`). `recur64 v4 tune-verify`
+    re-verified the seal and HOLDOUT_C's frozen digest `4ab951c6...d87d5` (`docs/evidence/v4/v4-custody-verify.json`):
+    HOLDOUT_C sealed, unevaluated.
+  - The dataset file itself is in git-ignored `runs/v4/data/`; every V4 training and mechanism path loads only P25 TRAIN
+    (`V4Data::load` refuses any other digest) and `load_sealed_v4_tune` needs a `V4TuneAuthorization` for phase `V4-FINAL`.
+- **Limitation (inherited):** HP/X1/X2 exact datasets are not present on this workstation in a compatible form, so
+  disjointness from them was NOT verified (same limitation as V3_TUNE_V1).
+- **NOT RUN:** any evaluation on `v4_tune_v1`; HOLDOUT_C was only digest-verified.

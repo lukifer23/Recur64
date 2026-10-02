@@ -1,0 +1,12 @@
+{
+  "digest": "b83624e4495d6586622aad3b523789dd065e1c398f391403743468796f7aaf77",
+  "evaluated": false,
+  "file": "runs/v4/data/proof-v4-tune-v1.json",
+  "future_access": "only through proof::custody::load_sealed_v4_tune with a V4TuneAuthorization for phase V4-FINAL",
+  "identity": "v4_tune_v1",
+  "permitted_p0p1_use": "custody, generation determinism and disjointness only. No developmental checkpoint, mechanism study or hyperparameter choice may evaluate against it",
+  "positions": 6000,
+  "schema": "v4_tune_seal_v1",
+  "sealed": true,
+  "verified": true
+}

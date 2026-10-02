@@ -57,6 +57,31 @@ pub enum V4Cmd {
     Measure(MeasureArgs),
     /// Timing and VRAM measurements.
     Bench(BenchArgs),
+    /// Apply the frozen Stage-B LR-screen rule to the screen measurement reports.
+    SelectLr(SelectLrArgs),
+    /// Apply the frozen Stage-C loss-selection rule to the two utility reports.
+    SelectLoss(SelectLossArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct SelectLrArgs {
+    /// Comma-separated `measure --kind b` reports, one per screened LR (same order as --lrs).
+    #[arg(long)]
+    pub reports: String,
+    #[arg(long)]
+    pub lrs: String,
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+#[derive(Args, Debug)]
+pub struct SelectLossArgs {
+    #[arg(long)]
+    pub ranking: PathBuf,
+    #[arg(long)]
+    pub regression: PathBuf,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug, Clone)]
@@ -215,6 +240,8 @@ pub fn run(cmd: V4Cmd) -> anyhow::Result<()> {
                 }
             })
         }
+        V4Cmd::SelectLr(a) => select_lr(&a),
+        V4Cmd::SelectLoss(a) => select_loss(&a),
         V4Cmd::Bench(a) => {
             let dev = a.device;
             dispatch(dev, move |d| match d {
@@ -678,5 +705,82 @@ fn bench<B: AutodiffBackend>(a: &BenchArgs, device_label: &str) -> anyhow::Resul
     });
     write_json(&a.output, &doc)?;
     println!("wrote {}", a.output.display());
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------
+// frozen selection rules (docs/V4_EXPERIMENTS.md V4-E2)
+// ---------------------------------------------------------------------------------------
+
+fn read_json(p: &Path) -> anyhow::Result<serde_json::Value> {
+    Ok(serde_json::from_slice(&std::fs::read(p)?)?)
+}
+
+/// B8 CE of the first (only) model under one schedule of a `measure --kind b` report.
+fn b8_ce(report: &serde_json::Value, sched: &str) -> anyhow::Result<f64> {
+    let table = report["per_schedule"][sched]["table"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("report has no per_schedule.{sched}.table"))?;
+    let row = table
+        .iter()
+        .find(|r| r["budget"] == 8)
+        .ok_or_else(|| anyhow::anyhow!("report has no B8 row"))?;
+    row["per_seed"][0]["normal"]["ce"]
+        .as_f64()
+        .ok_or_else(|| anyhow::anyhow!("report has no B8 CE"))
+}
+
+/// Lowest mean `V4_TRAIN_DEV` CE at B8 over the FIXED and RANDOM schedules; ties go to the lower LR.
+fn select_lr(a: &SelectLrArgs) -> anyhow::Result<()> {
+    let reports: Vec<&str> = a.reports.split(',').map(str::trim).collect();
+    let lrs: Vec<f64> = a
+        .lrs
+        .split(',')
+        .map(|s| s.trim().parse::<f64>())
+        .collect::<Result<_, _>>()?;
+    anyhow::ensure!(reports.len() == lrs.len() && !lrs.is_empty(), "one report per LR");
+    let mut rows = Vec::new();
+    for (r, &lr) in reports.iter().zip(&lrs) {
+        let doc = read_json(Path::new(r))?;
+        let score = (b8_ce(&doc, "fixed")? + b8_ce(&doc, "random")?) / 2.0;
+        rows.push((lr, score, (*r).to_string()));
+    }
+    let best = rows
+        .iter()
+        .min_by(|x, y| {
+            x.1.partial_cmp(&y.1)
+                .expect("finite")
+                .then(x.0.partial_cmp(&y.0).expect("finite"))
+        })
+        .expect("non-empty");
+    write_json(
+        &a.output,
+        &serde_json::json!({
+            "rule": "lowest mean V4_TRAIN_DEV CE at B8 over FIXED and RANDOM; ties to the lower LR",
+            "candidates": rows.iter().map(|(lr, s, r)| serde_json::json!({"lr": lr, "mean_ce_b8": s, "report": r})).collect::<Vec<_>>(),
+            "selected_lr": best.0,
+        }),
+    )?;
+    println!("selected stage-B LR {:e} (mean B8 CE {:.4})", best.0, best.1);
+    Ok(())
+}
+
+/// Higher pooled DEV1000 per-state Spearman wins; within 0.02 the ranking loss is chosen.
+fn select_loss(a: &SelectLossArgs) -> anyhow::Result<()> {
+    let sp = |p: &Path| -> anyhow::Result<f64> {
+        read_json(p)?["E"]["spearman_per_state"]["mean"]
+            .as_f64()
+            .ok_or_else(|| anyhow::anyhow!("{}: no E.spearman_per_state.mean", p.display()))
+    };
+    let (rk, rg) = (sp(&a.ranking)?, sp(&a.regression)?);
+    let chosen = if rg - rk >= 0.02 { "regression" } else { "ranking" };
+    write_json(
+        &a.output,
+        &serde_json::json!({
+            "rule": "higher pooled DEV1000 mean per-state Spearman; if within 0.02 choose ranking",
+            "spearman_ranking": rk, "spearman_regression": rg, "selected_loss": chosen,
+        }),
+    )?;
+    println!("selected utility loss: {chosen} (spearman ranking {rk:.4}, regression {rg:.4})");
     Ok(())
 }
