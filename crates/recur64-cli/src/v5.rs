@@ -285,13 +285,19 @@ fn doctor(a: DoctorArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn source_sha() -> anyhow::Result<String> {
+fn git_sha() -> anyhow::Result<String> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let sha = std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
         .current_dir(&root)
         .output()?;
     anyhow::ensure!(sha.status.success(), "cannot resolve source Git SHA");
+    Ok(String::from_utf8(sha.stdout)?.trim().to_owned())
+}
+
+fn source_sha() -> anyhow::Result<String> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let sha = git_sha()?;
     let code_clean = std::process::Command::new("git")
         .args([
             "diff",
@@ -308,7 +314,7 @@ fn source_sha() -> anyhow::Result<String> {
         code_clean.success(),
         "tracked code/config changes are uncommitted; scientific training is refused"
     );
-    Ok(String::from_utf8(sha.stdout)?.trim().to_owned())
+    Ok(sha)
 }
 
 fn require_empty_new_run(path: &Path) -> anyhow::Result<()> {
@@ -448,7 +454,7 @@ fn train(a: TrainArgs) -> anyhow::Result<()> {
             #[cfg(not(feature = "cuda"))]
             {
                 anyhow::bail!(
-                    "CUDA support is not compiled; rebuild with --no-default-features --features cuda (no CPU substitution)"
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
                 )
             }
         }
@@ -461,7 +467,9 @@ where
     B::Device: Default,
 {
     let device = B::Device::default();
-    let report = recur64_v5::qualification::run::<B>(device_label, a.microbatch, &device)?;
+    let source_sha = git_sha()?;
+    let report =
+        recur64_v5::qualification::run::<B>(&source_sha, device_label, a.microbatch, &device)?;
     write_json(&a.output, &report)?;
     println!(
         "V5 {device_label} qualification: pass={} microbatch={} params={} null_error={:e} warm_worst={:.3}s",
@@ -490,7 +498,7 @@ fn qualify(a: QualifyArgs) -> anyhow::Result<()> {
             #[cfg(not(feature = "cuda"))]
             {
                 anyhow::bail!(
-                    "CUDA support is not compiled; rebuild with --no-default-features --features cuda (no CPU substitution)"
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
                 )
             }
         }

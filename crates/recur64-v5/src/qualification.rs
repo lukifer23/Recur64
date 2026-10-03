@@ -31,6 +31,7 @@ pub struct ShapeTiming {
 #[derive(Debug, Clone, Serialize)]
 pub struct QualificationReport {
     pub schema: String,
+    pub source_sha: String,
     pub pass: bool,
     pub device: String,
     pub precision: String,
@@ -218,6 +219,7 @@ fn checkpoint_roundtrip<B: AutodiffBackend>(
 }
 
 pub fn run<B>(
+    source_sha: &str,
     device_label: &str,
     microbatch: usize,
     device: &B::Device,
@@ -225,6 +227,7 @@ pub fn run<B>(
 where
     B: AutodiffBackend,
 {
+    anyhow::ensure!(!source_sha.is_empty(), "qualification source SHA is empty");
     anyhow::ensure!(
         matches!(microbatch, 1 | 2),
         "qualification microbatch must be 1 or 2"
@@ -358,6 +361,7 @@ where
         && null_error <= null_tolerance;
     Ok(QualificationReport {
         schema: "v5_qualification_report_v1".into(),
+        source_sha: source_sha.into(),
         pass,
         device: device_label.into(),
         precision: "fp32".into(),
