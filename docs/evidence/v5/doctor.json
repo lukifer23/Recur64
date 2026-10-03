@@ -1,0 +1,11 @@
+{
+  "arch": "x86_64",
+  "architecture": "counterfactual_relational_loop_v1",
+  "cuda_user_space": "C:\\Users\\Caitl\\AppData\\Local\\Recur64\\cuda\\12.9.1",
+  "logical_threads": 12,
+  "os": "windows",
+  "precision": "fp32",
+  "schema": "v5_hp_doctor_v1",
+  "status": "detected_not_tested",
+  "tested": false
+}

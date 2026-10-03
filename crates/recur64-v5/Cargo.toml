@@ -1,0 +1,23 @@
+[package]
+name = "recur64-v5"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+[features]
+default = ["cpu"]
+cpu = ["recur64-model/cpu", "recur64-runtime/cpu"]
+cuda = ["recur64-model/cuda", "recur64-runtime/cuda"]
+
+[dependencies]
+recur64-core = { path = "../recur64-core" }
+recur64-statequery = { path = "../recur64-statequery" }
+recur64-model = { path = "../recur64-model", default-features = false }
+recur64-runtime = { path = "../recur64-runtime", default-features = false }
+burn = { workspace = true, features = ["std", "autodiff"] }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+sha2 = "0.10"
+

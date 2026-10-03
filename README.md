@@ -40,7 +40,8 @@ state count Q versus repeated shared relational integration R. It uses
 root-relative returned states, bidirectional hypothesis/evidence refinement,
 immutable-input recall and a matched factual/null correction. The architecture and
 single-seed reader pilot are pre-registered in `docs/V5_ARCHITECTURE.md` and
-`docs/V5_RESEARCH_PLAN.md`. The exact P25 TRAIN artifact is currently missing on
+`docs/V5_RESEARCH_PLAN.md`. The 7,160,080-parameter implementation has passed
+its debug CPU preflight. The exact P25 TRAIN artifact is currently missing on
 the HP, so dataset-dependent training is blocked; V4_TUNE_V1 and HOLDOUT_C remain
 sealed and unevaluated.
 

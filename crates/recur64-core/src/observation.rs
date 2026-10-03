@@ -67,6 +67,16 @@ fn piece_channel(piece: Piece, canonical_color: Color) -> usize {
 #[derive(Clone)]
 pub struct ObservationV1(pub [f32; OBS_LEN]);
 
+/// Observation V1 field layout expressed in one decision's immutable root-player
+/// frame rather than the observed state's side-to-move frame.
+///
+/// This is a distinct type so a V5 returned state cannot be accidentally compared
+/// with an independently canonicalized [`ObservationV1`]. Channels 0..5 are the
+/// root player's pieces and 6..11 are the opponent's pieces. Every history frame,
+/// castling field and en-passant square uses the same root perspective.
+#[derive(Clone)]
+pub struct RootRelativeObservationV1(pub [f32; OBS_LEN]);
+
 impl Default for ObservationV1 {
     fn default() -> Self {
         Self([0.0; OBS_LEN])
@@ -97,6 +107,34 @@ impl ObservationV1 {
     }
 
     /// Write into a caller-provided buffer (for batch assembly).
+    pub fn encode_into(&self, out: &mut [f32]) {
+        out[..OBS_LEN].copy_from_slice(&self.0);
+    }
+}
+
+impl Default for RootRelativeObservationV1 {
+    fn default() -> Self {
+        Self([0.0; OBS_LEN])
+    }
+}
+
+impl std::fmt::Debug for RootRelativeObservationV1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RootRelativeObservationV1")
+            .field("len", &OBS_LEN)
+            .finish()
+    }
+}
+
+impl RootRelativeObservationV1 {
+    pub fn get(&self, square: usize, feature: usize) -> f32 {
+        self.0[square * FEATURES_PER_SQUARE + feature]
+    }
+
+    pub fn as_slice(&self) -> &[f32] {
+        &self.0
+    }
+
     pub fn encode_into(&self, out: &mut [f32]) {
         out[..OBS_LEN].copy_from_slice(&self.0);
     }
@@ -169,6 +207,75 @@ pub fn encode_observation_v1(state: &GameState) -> ObservationV1 {
         obs.0[base + REPETITION_OFFSET] = repetition;
     }
 
+    obs
+}
+
+/// Encode `state` in the immutable physical frame and ownership convention of
+/// `root_player`. This preserves the complete authoritative history; it does not
+/// derive a transition delta or apply any successor move.
+pub fn encode_root_relative_observation_v1(
+    state: &GameState,
+    root_player: Color,
+) -> RootRelativeObservationV1 {
+    let mut obs = RootRelativeObservationV1::default();
+    let p = crate::square::Perspective::of(root_player);
+    let board = state.board();
+    let hist = state.history();
+    let nframes = hist.len().min(NUM_FRAMES);
+
+    let own = board.castle_rights(root_player);
+    let opp = board.castle_rights(!root_player);
+    let castle = [
+        own.short.is_some(),
+        own.long.is_some(),
+        opp.short.is_some(),
+        opp.long.is_some(),
+    ];
+
+    let ep_square: Option<Square> = board.en_passant().map(|file| {
+        let rank = if state.side_to_move() == Color::White {
+            Rank::Sixth
+        } else {
+            Rank::Third
+        };
+        Square::new(file, rank)
+    });
+    let halfmove = (board.halfmove_clock().min(150) as f32) / 150.0;
+    let repetition = (state.repetition_count().min(5) as f32) / 5.0;
+
+    for rs in 0..NUM_SQUARES {
+        let physical = p.square(Square::index(rs));
+        let base = rs * FEATURES_PER_SQUARE;
+        for k in 0..NUM_FRAMES {
+            let fbase = base + k * FRAME_LEN;
+            if k < nframes {
+                let frame_board = &hist[hist.len() - 1 - k];
+                obs.0[fbase + 13] = 1.0;
+                match frame_board.piece_on(physical) {
+                    Some(piece) => {
+                        let color = frame_board
+                            .color_on(physical)
+                            .expect("piece_on implies color_on");
+                        let ownership = if color == root_player {
+                            Color::White
+                        } else {
+                            Color::Black
+                        };
+                        obs.0[fbase + piece_channel(piece, ownership)] = 1.0;
+                    }
+                    None => obs.0[fbase + 12] = 1.0,
+                }
+            }
+        }
+        for (i, present) in castle.iter().enumerate() {
+            obs.0[base + CASTLE_OFFSET + i] = f32::from(u8::from(*present));
+        }
+        if ep_square.is_some_and(|sq| p.square(sq) == Square::index(rs)) {
+            obs.0[base + EP_OFFSET] = 1.0;
+        }
+        obs.0[base + HALFMOVE_OFFSET] = halfmove;
+        obs.0[base + REPETITION_OFFSET] = repetition;
+    }
     obs
 }
 
@@ -270,6 +377,73 @@ mod tests {
         for v in obs.as_slice() {
             assert!(v.is_finite());
             assert!(*v >= 0.0 && *v <= 1.0);
+        }
+    }
+
+    #[test]
+    fn root_frame_does_not_flip_when_the_mover_changes() {
+        let mut g = GameState::startpos();
+        let white = encode_root_relative_observation_v1(&g, Color::White);
+        assert_eq!(white.get(4, 5), 1.0); // white king e1 is root-owned
+        g.apply_uci("e2e4").unwrap();
+        let child = encode_root_relative_observation_v1(&g, Color::White);
+        assert_eq!(child.get(4, 5), 1.0);
+        assert_eq!(child.get(28, 0), 1.0); // white pawn remains on physical e4
+        assert_eq!(child.get(60, 11), 1.0); // black king remains opponent e8
+        assert_eq!(child.get(20, EP_OFFSET), 1.0); // physical e3
+        assert_eq!(child.get(12, FRAME_LEN), 1.0); // root pawn on e2 in history
+    }
+
+    #[test]
+    fn black_root_frame_reflects_once_and_keeps_black_as_owner() {
+        let mut g = GameState::startpos();
+        g.apply_uci("e2e4").unwrap();
+        let obs = encode_root_relative_observation_v1(&g, Color::Black);
+        assert_eq!(obs.get(4, 5), 1.0); // physical e8 -> root square e1
+        assert_eq!(obs.get(36, 6), 1.0); // physical white pawn e4 -> e5 opponent
+        assert_eq!(obs.get(44, EP_OFFSET), 1.0);
+    }
+
+    #[test]
+    fn root_frame_preserves_capture_promotion_castling_and_en_passant_history() {
+        let mut capture = GameState::from_fen("4k3/8/8/3q4/8/8/8/3RK3 w - - 0 1").unwrap();
+        capture.apply_uci("d1d5").unwrap();
+        let obs = encode_root_relative_observation_v1(&capture, Color::White);
+        assert_eq!(obs.get(35, 3), 1.0); // root rook on physical d5
+        assert_eq!(obs.get(35, FRAME_LEN + 10), 1.0); // captured opponent queen in history
+
+        let mut promotion = GameState::from_fen("7k/4P3/8/8/8/8/8/K7 w - - 0 1").unwrap();
+        promotion.apply_uci("e7e8q").unwrap();
+        let obs = encode_root_relative_observation_v1(&promotion, Color::White);
+        assert_eq!(obs.get(60, 4), 1.0);
+        assert_eq!(obs.get(52, FRAME_LEN), 1.0);
+
+        let mut castle = GameState::from_fen("4k3/8/8/8/8/8/8/4K2R w K - 0 1").unwrap();
+        castle.apply_uci("e1g1").unwrap();
+        let obs = encode_root_relative_observation_v1(&castle, Color::White);
+        assert_eq!(obs.get(6, 5), 1.0);
+        assert_eq!(obs.get(5, 3), 1.0);
+
+        let mut ep = GameState::from_fen("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1").unwrap();
+        ep.apply_uci("e5d6").unwrap();
+        let obs = encode_root_relative_observation_v1(&ep, Color::White);
+        assert_eq!(obs.get(43, 0), 1.0);
+        assert_eq!(obs.get(36, FRAME_LEN), 1.0);
+        assert_eq!(obs.get(35, FRAME_LEN + 6), 1.0);
+    }
+
+    #[test]
+    fn root_frame_keeps_repetition_and_all_available_history_frames() {
+        let mut game = GameState::startpos();
+        for mv in [
+            "g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8",
+        ] {
+            game.apply_uci(mv).unwrap();
+        }
+        let obs = encode_root_relative_observation_v1(&game, Color::White);
+        assert!(obs.get(0, REPETITION_OFFSET) > 0.0);
+        for frame in 0..NUM_FRAMES {
+            assert_eq!(obs.get(0, frame * FRAME_LEN + 13), 1.0);
         }
     }
 }

@@ -15,8 +15,11 @@ in the scientific configuration digest.
 - baseline and correction readout hidden width: 256
 - residual scale alpha: 0.5
 
-The target is approximately 6-8M measured parameters. Parameters are never added
-or removed cosmetically. More than 10M stops training for design accounting.
+The implemented frozen graph contains **7,160,080 unique parameters**:
+3,677,728 root/baseline; 1,633,808 returned-state encoder; 65,792 hypothesis
+adapter; 136,960 evidence initializer; 789,872 shared evidence block; 789,872
+shared hypothesis block; and 66,048 correction readout. No parameters were added
+cosmetically. The parameter count is independent of Q and R.
 
 ## Root and baseline
 
@@ -98,4 +101,3 @@ equality; CUDA qualification starts with maximum centered-logit error 1e-6.
 `v5_state_tokens4_v1`, `v5_acquired_graph_v1`, `v5_relational_loop_v1`,
 `v5_input_recall_v1`, `v5_paired_null_readout_v1`,
 `v5_correct_set_loss_v1`, `v5_fixed_graph_reader_pilot_v1`.
-

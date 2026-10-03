@@ -147,6 +147,13 @@ impl ActionId {
         (perspective.square(from), perspective.square(to), promo)
     }
 
+    /// Re-express an action encoded in `source` canonical coordinates in the
+    /// immutable `target` frame. The physical move is unchanged.
+    pub fn reframe(self, source: Perspective, target: Perspective) -> Self {
+        let (from, to, promo) = self.to_physical(source);
+        Self::from_physical(from, to, promo, target)
+    }
+
     /// Convenience: the promotion code.
     pub const fn promo(self) -> PromotionCode {
         PromotionCode((self.0 as u32 % 5) as u8)
@@ -286,5 +293,18 @@ mod tests {
             Perspective::black(),
         );
         assert_eq!(white, black);
+    }
+
+    #[test]
+    fn action_reframe_preserves_the_physical_move() {
+        let child_side = Perspective::black();
+        let root_side = Perspective::white();
+        let child =
+            ActionId::from_physical(Square::E7, Square::E5, PromotionCode::NONE, child_side);
+        let root = child.reframe(child_side, root_side);
+        assert_eq!(
+            root.to_physical(root_side),
+            (Square::E7, Square::E5, PromotionCode::NONE)
+        );
     }
 }

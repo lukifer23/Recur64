@@ -1,0 +1,30 @@
+//! Recur64 V5 `counterfactual_relational_loop_v1`.
+//!
+//! V5 keeps exact state acquisition (Q) separate from repeated applications of
+//! one shared hypothesis/evidence loop (R). The model is read through matched
+//! factual and all-payload-null streams so only candidate-relative payload
+//! corrections reach the frozen baseline.
+
+pub mod config;
+pub mod data;
+pub mod graph;
+pub mod loss;
+pub mod model;
+pub mod qualification;
+pub mod stage;
+
+pub const SQUARES: usize = 64;
+pub const IN_FEATURES: usize = 119;
+pub const FACT_FIELDS: usize = 8;
+pub const ACTION_GEOMETRY: usize = 11;
+pub const PAYLOAD_FLAGS: usize = 9;
+pub const STRUCTURAL_FEATURES: usize = 5 + 2 + 4 + ACTION_GEOMETRY;
+pub const MASKED_LOGIT: f32 = -1.0e9;
+
+pub(crate) fn splitmix64(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    let mut z = *state;
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}

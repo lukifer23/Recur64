@@ -19,3 +19,30 @@ Corrections are appended; old entries are never rewritten.
 - **NOT RUN:** V5 code, model construction, tests, CUDA graph, drill, Stage A,
   Stage B, DEV evaluation, R8, query controller, replication, sealed sets.
 
+## V5-E1 - Milestone B implementation and CPU preflight
+
+- **Date:** 2026-10-03
+- **Status:** TESTED / MEASURED on CPU; CUDA NOT TESTED in this entry.
+- **Identity:** counterfactual_relational_loop_v1, config digest
+  0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c.
+- **Measured size:** 7,160,080 unique parameters; 28,640,320 FP32 parameter
+  bytes. No parameter padding was added.
+- **Attempt E1a:** the first debug qualification process failed visibly with
+  Windows STATUS_STACK_OVERFLOW before evidence output. Root cause was the
+  default worker stack while constructing/recording the full Burn graph.
+- **Correction E1b:** V5 train/qualification commands received an explicit
+  64 MiB worker-stack boundary. The complete debug CPU qualification then
+  passed at physical microbatch 2.
+- **Executed graph:** Q2/Q4/Q8 x R1/R2/R4 each ran forward, backward and AdamW
+  on the paired factual/null graph. Q8/R4 then ran 50 additional resident-model
+  updates; R8 ran forward only.
+- **Key invariants:** exact CPU all-null correction 0; returned-payload input
+  gradient L2 0.0003146815; nonzero finite gradients in state encoder,
+  evidence block, hypothesis block and correction readout; graph-free baseline
+  fingerprint exact after reader updates; full model/optimizer restore exact.
+- **Timing status:** debug-build diagnostic only, not a release performance
+  claim. Worst observed warm update was 1.2428614 s.
+- **Evidence:** docs/evidence/v5/model-info.json and
+  docs/evidence/v5/cpu-qualification-debug.json.
+- **Dataset limitation:** exact P25 TRAIN remains missing, so the engineering
+  drill and both pilot stages remain NOT RUN.
