@@ -10,13 +10,14 @@
   `V5_ROOT_CAUSE.md` and `V5_NUMERICAL_ROOT_CAUSE.md` preserve failure evidence.
 - HP hardware, toolchain and CUDA runtime are DETECTED. Historical network
   fixture checks passed CPU/RTX 2050 in FP32 at microbatch 2. They do not satisfy
-  the full engineering gate. Depth-amended CPU qualification failed only exact
-  graph-free/autodiff baseline parity. The isolated softmax dispatch difference
-  and bounded execution correction are in `V5_EXECUTION_PARITY.md`; fresh
-  qualification must pass without relaxing gates.
+  the full engineering gate. Corrected current CPU/RTX 2050 functional fixture
+  qualifications pass all recorded gates without relaxed assertions at source
+  64c4dd4, FP32/microbatch 2. Full release workspace: 578 passed, two ignored.
+  CUDA sampled device-wide peak 1,068 MiB; all 50 resident samples 364 MiB.
+  Detailed component/end-to-end timing is not inferred from qualifier intervals.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
   work may proceed under the owner's next-step delegation. Drill/training/
-  DEV evaluation require both corrected engineering qualification and custody.
+  DEV evaluation require exact custody, the FIT drill and complete accounting.
 - The complete bounded drill, update-0/update-800 reader matrix, interventions,
   composition analysis, exact bootstrap gates and conditional R8 commands are
   implemented and tested at their non-data boundaries. They remain NOT RUN.

@@ -5,9 +5,10 @@ in the scientific configuration digest.
 
 Current implementation: the owner delegated next-step choice on 2026-10-03.
 The complete-frontier depth correction is implemented under the amendment below.
-Focused CPU contracts pass. Fresh CPU qualification failed exact cross-backend
-baseline parity; V5-D8 is the separately documented execution correction in
-`V5_EXECUTION_PARITY.md`. Fresh qualification remains required.
+CPU contracts and fresh CPU/RTX 2050 functional fixture qualification now pass
+at source 64c4dd4. V5-D8 is the separately documented execution correction in
+`V5_EXECUTION_PARITY.md`; all exact gates were preserved. Exact TRAIN custody,
+FIT drill and detailed performance accounting remain required before the pilot.
 `V5_ROOT_CAUSE.md` preserves the original acquisition failure and
 `V5_NUMERICAL_ROOT_CAUSE.md` records the finite-difference measurement correction.
 

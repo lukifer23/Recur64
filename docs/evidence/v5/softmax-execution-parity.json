@@ -30,6 +30,8 @@
   "full_release_workspace": { "passed": 577, "failed": 0, "ignored": 2, "result_blocks": 68 },
   "execution_identity": "burn_0_21_explicit_detached_max_exp_sum_div_v1",
   "no_precision_geometry_recipe_or_threshold_change": true,
-  "fresh_measured_qualification": "pending",
+  "fresh_measured_qualification": "CPU and RTX 2050 functional PASS at source 64c4dd4008a9b5bc8d715515279ec67e6e1173a1",
+  "final_full_release_workspace": { "passed": 578, "failed": 0, "ignored": 2, "result_blocks": 68 },
+  "full_engineering_gate": "FIT drill and detailed performance accounting remain pending",
   "not_run": ["engineering_drill", "stage_a", "stage_b", "dev", "pilot"]
 }

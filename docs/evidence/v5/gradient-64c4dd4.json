@@ -1,0 +1,110 @@
+{
+  "schema": "v5_gradient_execution_amendment_evidence_v1",
+  "source_sha": "64c4dd4008a9b5bc8d715515279ec67e6e1173a1",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "scope": "test-only real chess fixture; Q2/R2; not drill or pilot",
+  "production_precision": "fp32",
+  "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
+  "relative_error_limit": 0.12,
+  "autodiff_precision_parity_limit": 0.001,
+  "gradient_evidence": [
+    {
+      "autodiff": 0.000007866974556236528,
+      "autodiff_precision": "fp32",
+      "direction_seed": 42241,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": 0.000007534248552024978,
+      "gradient_l2": 0.000007208392617030768,
+      "numerical_reference_precision": "fp64_same_weights",
+      "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
+      "relative_error": 0.04229402317664573
+    },
+    {
+      "autodiff": -0.0000033620226531638764,
+      "autodiff_precision": "fp32",
+      "direction_seed": 42242,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": -0.000003185217648248009,
+      "gradient_l2": 0.000007208392617030768,
+      "numerical_reference_precision": "fp64_same_weights",
+      "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
+      "relative_error": 0.052588879717833686
+    },
+    {
+      "autodiff": 0.000008010657438717317,
+      "autodiff_precision": "fp32",
+      "direction_seed": 42243,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": 0.00000801301236330728,
+      "gradient_l2": 0.000007208392617030768,
+      "numerical_reference_precision": "fp64_same_weights",
+      "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
+      "relative_error": 0.0002938875522951624
+    },
+    {
+      "autodiff": 0.0000023482591586798662,
+      "autodiff_precision": "fp32",
+      "direction_seed": 42244,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": 0.0000024800443447086188,
+      "gradient_l2": 0.000007208392617030768,
+      "numerical_reference_precision": "fp64_same_weights",
+      "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
+      "relative_error": 0.05313823775366243
+    }
+  ],
+  "autodiff_reference": [
+    {
+      "autodiff_fp32": 0.000007866984157021105,
+      "autodiff_fp64": 0.000007866317595008329,
+      "direction_seed": 42241,
+      "epsilon": 0.05,
+      "finite_difference_fp64": 0.0000075342512952450424,
+      "fp32_vs_fd64_relative_error": 0.04229484325058745,
+      "fp32_vs_fp64_relative_error": 0.00008472903967668629,
+      "fp64_vs_fd64_relative_error": 0.042213690936405014,
+      "production_precision": "fp32"
+    },
+    {
+      "autodiff_fp32": -0.0000033620409338524712,
+      "autodiff_fp64": -0.0000033625367169721873,
+      "direction_seed": 42242,
+      "epsilon": 0.05,
+      "finite_difference_fp64": -0.0000031852178350444404,
+      "fp32_vs_fd64_relative_error": 0.05259397559012287,
+      "fp32_vs_fp64_relative_error": 0.00014744318395504692,
+      "fp64_vs_fd64_relative_error": 0.05273366415086005,
+      "production_precision": "fp32"
+    },
+    {
+      "autodiff_fp32": 0.00000801065377839267,
+      "autodiff_fp64": 0.000008010514104576347,
+      "direction_seed": 42243,
+      "epsilon": 0.05,
+      "finite_difference_fp64": 0.000008013012918542395,
+      "fp32_vs_fd64_relative_error": 0.0002944136211569575,
+      "fp32_vs_fp64_relative_error": 0.00001743600712082628,
+      "fp64_vs_fd64_relative_error": 0.0003118444948797888,
+      "production_precision": "fp32"
+    },
+    {
+      "autodiff_fp32": 0.000002348263753094125,
+      "autodiff_fp64": 0.0000023479320953174587,
+      "direction_seed": 42244,
+      "epsilon": 0.05,
+      "finite_difference_fp64": 0.0000024800417443293643,
+      "fp32_vs_fd64_relative_error": 0.05313539239270902,
+      "fp32_vs_fp64_relative_error": 0.0001412353174677674,
+      "fp64_vs_fd64_relative_error": 0.05326912311616343,
+      "production_precision": "fp32"
+    }
+  ],
+  "passed": 3,
+  "ignored_explicit_nonqualifying_fp32_ladder": 1,
+  "full_release_workspace": {
+    "blocks": 68,
+    "passed": 578,
+    "failed": 0,
+    "ignored": 2
+  }
+}

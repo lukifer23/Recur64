@@ -46,7 +46,10 @@ see `docs/V5_ROOT_CAUSE.md`. Focused CPU contracts pass with an explicitly
 test-only same-weight numerical reference. Depth-amended CPU qualification
 failed exact graph-free/autodiff baseline parity; the documented softmax
 execution correction passes its unchanged exact unit comparisons
-(`docs/V5_EXECUTION_PARITY.md`). Fresh measured CPU/CUDA qualification is pending.
+(`docs/V5_EXECUTION_PARITY.md`). Current CPU/RTX 2050 functional fixture
+qualification passes at FP32/microbatch 2 (578 release tests passed). CUDA sampled
+device-wide peak is 1,068 MiB; 50 resident update samples stay at 364 MiB.
+Detailed component/online timing and the FIT drill are separate remaining gates.
 Exact P25 TRAIN is still missing, so the drill and dataset-dependent
 pilot remain NOT RUN. V4_TUNE_V1 and HOLDOUT_C remain sealed and unevaluated.
 

@@ -3,7 +3,9 @@
 Status: **PRE-REGISTERED 2026-10-03, before V5 implementation or measurement.**
 
 Current execution status: acquisition correction implemented after the owner's
-2026-10-03 delegation to choose next steps; fresh qualification pending. No drill,
+2026-10-03 delegation to choose next steps; corrected CPU/CUDA functional fixture
+qualification passes at 64c4dd4. Exact custody, FIT drill and detailed timing
+accounting remain required. No drill,
 training or DEV evaluation has run. The original failure is preserved in
 `V5_ROOT_CAUSE.md`; the pre-pilot amendment below changes no training/evaluation
 recipe, seeds, loss, practical gates or authorized research scope.

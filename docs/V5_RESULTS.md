@@ -1,6 +1,65 @@
 # V5 results
 
-**CURRENT STATUS: DEPTH-AMENDED CPU QUALIFICATION FAILED BASELINE PARITY.**
+**CURRENT STATUS: CORRECTED CPU/CUDA FIXTURE QUALIFICATION PASS; TRAIN MISSING.**
+
+Current scientific source: `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
+Full release workspace: **578 passed, zero failed, two explicitly ignored**.
+The corrected paired graph passed CPU and RTX 2050 CUDA in FP32 at physical
+microbatch 2: all nine Q2/Q4/Q8 × R1/R2/R4 forward/backward/AdamW conditions,
+50 resident Q8/R4 updates, and forward-only engineering R8. Both streams are
+differentiated. Exact graph-free/autodiff baseline reference, frozen baseline
+outputs and ALL parameters after reader updates, ALL model/moment restoration,
+and one continued model/moment update passed on both devices. CPU trainer
+sampler/schedule/graph continuation is also exact in the release contract suite.
+
+| Qualification measurement | CPU FP32 | RTX 2050 CUDA FP32 |
+|---|---:|---:|
+| Worst warm qualifier update | 0.7248367 s | 0.4127371 s |
+| Resident Q8/R4 first / last update | 0.7139785 / 0.7074989 s | 0.2029461 / 0.1985860 s |
+| Paired all-null centered error | 0 | 0 (limit 1e-6) |
+| Returned-payload input gradient L2 | 0.0039228043 | 0.00059487484 |
+| Engineering R8 forward | 0.4974181 s | 0.0796470 s |
+| Raw two-position Q8 acquisition time | 0.0043778 s | 0.0044342 s |
+
+State encoder, evidence block, hypothesis block and correction readout all have
+finite nonzero gradients. The four fixed Q2/R2 candidate-relative perturbations
+have input-gradient L2 7.208392617030768e-6 and relative finite-difference errors
+0.04229402317664573, 0.052588879717833686, 0.0002938875522951624,
+0.05313823775366243, below unchanged 0.12. Their test-only same-weight FP64 tensor
+reference retains pinned FP32 RMS statistics; production remains FP32.
+
+CUDA device-wide sampled used-memory baseline/peak was **138 / 1,068 MiB**
+(930 MiB increase). Every one of the 50 resident update samples was **364 MiB**;
+no growth was observed in that bounded series. The larger sampled peak includes
+checkpoint restoration, not just the resident update loop. These are WDDM
+device-wide snapshots, NOT a process-only or continuously sampled true peak.
+Microbatch 2 is resolved; accumulation 32 for Stage A and 18 for Stage B.
+
+Timings are qualifier-harness wall intervals, including gradient-coverage host
+reads, not isolated kernel/encoder/backward/transfer benchmarks or online active
+decision latency. Loss/gradient reads synchronize execution; no explicit
+post-AdamW barrier is present at each timer end, so optimizer completion may be
+charged at the next synchronization. Do not present these as fully synchronized
+per-component timings or extrapolate a full-data stage duration from them.
+CPU/CUDA initializers differ by backend; no same-seed cross-device weight or
+policy parity is claimed. Within-device exact baseline/null/resume comparisons
+use identical tensors and weights.
+
+Reports: `qualification-64c4dd4-{cpu,cuda}.json`, `gradient-64c4dd4.json` and
+`softmax-execution-parity.json` under `docs/evidence/v5/`. Canonical qualification
+paths now hold the same current reports; historical source reports remain
+archived. V5-E12/E13 preserve the Windows build-sharing and missing-header runtime
+failures and their serial-build/process-local setup corrections.
+
+This clears the recorded FUNCTIONAL fixture qualification, not the FIT drill,
+all performance-accounting requirements, or any learned-reader pilot gate.
+No exact P25 custody, 24-FIT drill, Stage A, Stage B, DEV reader matrix, treatment/
+composition measurement, bootstrap classification or conditional scientific R8
+has run. Detailed component/end-to-end performance accounting remains to be
+completed before measured data training; do not infer it from these warm timings.
+
+## Retained depth-amended baseline parity failure
+
 Source 7737640 passed the full release workspace (573 tests, two ignored), but
 its measured CPU qualification exited 1 solely at graph-free/autodiff exact
 baseline equality. Context error was 1.6689300537109375e-6, hypotheses
@@ -8,7 +67,7 @@ baseline equality. Context error was 1.6689300537109375e-6, hypotheses
 outputs/parameters after reader updates and full parameter/optimizer restoration
 and continuation were exact. These passing components do not clear the gate.
 `V5_EXECUTION_PARITY.md` records the isolated dispatch cause and corrective
-execution experiment; that amendment still requires fresh qualification.
+execution experiment. The fresh functional qualifications above now pass.
 The complete uniform-frontier correction now includes all 19 legal edges at the
 previous failing boundary. Depths 6..16 and their structural fields are tested.
 The focused release suite passes 28 tests, with one explicitly invoked numerical
@@ -59,8 +118,8 @@ or architectural falsification can be inferred from this implementation defect.
 The CUDA device-wide used-memory peak was 338 MiB versus a 144 MiB pre-run
 baseline, a 194 MiB delta and well below the 3,072 MiB preference. This is
 device-wide `nvidia-smi` accounting under WDDM, not a process-only resident peak.
-See `docs/evidence/v5/cpu-qualification-release.json` and
-`docs/evidence/v5/cuda-qualification.json`.
+See the archived `docs/evidence/v5/qualification-df6e2aa-cpu.json` and
+`docs/evidence/v5/qualification-df6e2aa-cuda.json`, not the current canonical paths.
 
 This is engineering evidence only. The exact P25 TRAIN artifact is still absent,
 so no memorization drill, Stage A training, Stage B training, DEV evaluation or

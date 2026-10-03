@@ -343,3 +343,58 @@ Corrections are appended; old entries are never rewritten.
   committed/pushed and rebuilt before qualification. No dataset-dependent work.
 - **Focused validation:** all five config tests passed, V5 all-target clippy
   with warnings denied passed. No TF32-enabled binary was compiled or run.
+- **Serial-build correction:** the final full CPU workspace suite and CUDA build
+  were started concurrently. CUDA failed replacing `target/release/recur64.exe`
+  with Windows access-denied during the concurrent suite, whose CLI tests use
+  that shared output path. This is consistent with an executable-sharing race;
+  the later process inventory found no remaining `recur64.exe`, so the exact
+  holder at the failure instant was not observed.
+  This is an operational build failure, not a CUDA graph qualification result;
+  no measured qualification launched. Do not delete/kill unrelated processes.
+  Wait for the suite, inspect live target-executable processes, then retry the
+  SAME pinned CUDA build serially. No source/recipe change is a remedy.
+- **Final-source full release suite:** 578 passed, zero failed, two explicitly
+  ignored across 68 result blocks. Serial CUDA build succeeded (reported 2m18s).
+
+## V5-E13 - final-source qualification, runtime setup failure retained
+
+- **Scientific source:** `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
+  Config `849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
+- **CPU:** measured qualification PASS at microbatch 2, null error 0, exact
+  graph-free baseline reference, exact frozen-base outputs/all parameters after
+  reader updates, full parameter/moment restoration and resumed update exact.
+  Worst warm qualifier update 0.7248367 s; input gradient L2 0.0039228043.
+  Report: `qualification-64c4dd4-cpu.json`.
+- **Fresh gradient directions:** all four pass unchanged 0.12; maximum error
+  0.05313823775366243. Same-weight autodiff parity maximum
+  0.00014744318395504692. `gradient-64c4dd4.json` retains all values and the
+  pinned FP32 RMS statistics limitation in the test-only FP64 tensor reference.
+- **First CUDA runtime attempt:** PATH-only setup failed visibly at NVRTC header
+  compilation (`cuda_runtime.h` missing), exit 1, no qualification report or
+  checkpoint created and no CPU substitution. The pinned header DOES exist.
+  CubeCL 0.10 `install::cuda_path` requires process-local CUDA_PATH or chooses
+  its default Windows toolkit directory. The read-only HP donor setup sets
+  both variables. Retry the SAME source/binary with both set to the existing
+  user-space 12.9.1 root. Compact failure: `cuda-runtime-header-failure-64c4dd4.json`.
+- **Corrected CUDA attempt:** SAME committed source/binary, both process-local
+  CUDA_PATH/PATH set; intended RTX 2050 functional qualification PASS, no CPU
+  substitution. All nine shapes, 50 resident updates, both differentiated arms,
+  baseline/reference/all-parameter equality, complete model/moment restoration
+  and continued update exact. Null error 0 against unchanged 1e-6 limit. Gradient
+  L2 0.00059487484 and all four reader groups nonzero/finite.
+- **Measured envelope:** device-wide sampled baseline/peak 138/1,068 MiB,
+  930 MiB increase. All 50 resident samples 364 MiB, first/last update intervals
+  0.2029461/0.1985860 s, worst warm interval 0.4127371 s. Engineering-only R8
+  forward 0.0796470 s. No continuously sampled/process-only peak is claimed.
+- **Timing limits:** qualifier wall intervals include gradient-coverage host
+  reads, and do not have an explicit post-AdamW timer barrier. Separate encoders,
+  streams, loops, backward, transfer and full-decision timings remain to be
+  instrumented/qualified; these values are not a full-data training projection.
+- **Resolved physical layout:** FP32, 2 positions; A accumulation 32, B
+  accumulation 18. Fallback 1 NOT USED. Source-tagged CPU/CUDA reports retained;
+  canonical qualifier paths contain the same parsed reports. Old source
+  reports remain archived. No qualification or preflight checkpoint initializes
+  the drill or pilot.
+- **Still NOT RUN:** exact P25 custody, FIT drill/Q16, Stage A/B, all DEV science,
+  pilot gates/diagnostics, scientific conditional R8, replication and sealed
+  confirmation. This is functional engineering evidence, not learned chess use.

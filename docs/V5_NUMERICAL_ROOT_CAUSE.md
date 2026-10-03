@@ -60,3 +60,10 @@ paired computation. No production dtype, tensor geometry or normalization change
 The corrected focused release suite passes 28 tests, with one intentionally
 ignored, explicitly runnable diagnostic. Full workspace and fresh CPU/CUDA
 qualification must be recorded separately before the engineering gate is cleared.
+
+Subsequent records: V5-E10 retains the depth-amended exact baseline failure;
+V5-D8/E11 correct its pinned softmax dispatch difference without relaxing exact
+checks. At 64c4dd4, the full release suite passes 578 tests and both CPU/CUDA
+functional fixture qualifications pass. Fresh direction evidence is in
+`gradient-64c4dd4.json`. The FIT drill and complete performance accounting are
+separate remaining requirements; no pilot result exists.

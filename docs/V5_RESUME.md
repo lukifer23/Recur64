@@ -1,13 +1,11 @@
 # V5 HP resume and artifact transfer
 
-**PRE-PILOT:** the owner delegated next-step choice and the complete-frontier
-correction now passes its retained regression. Read `docs/V5_ROOT_CAUSE.md` and
-`docs/V5_NUMERICAL_ROOT_CAUSE.md` and `docs/V5_EXECUTION_PARITY.md`.
-Depth-amended CPU qualification failed only exact cross-backend baseline parity;
-the isolated corrective experiment now passes its exact unit comparisons.
-Fresh CPU/CUDA qualification for the execution-amended
-configuration and exact P25 custody are required before any drill or training.
-Historical depth-five qualification reports cannot unlock the amended model.
+**PRE-PILOT, CUSTODY BLOCKED:** corrected CPU and RTX 2050 CUDA fixture
+qualification both PASS at source `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`,
+FP32, physical microbatch 2. Full release workspace: 578 passed, two ignored.
+The exact P25 TRAIN artifact remains required before the FIT drill or training.
+Read `V5_ROOT_CAUSE.md`, `V5_NUMERICAL_ROOT_CAUSE.md` and
+`V5_EXECUTION_PARITY.md` for preserved failures and pre-pilot corrections.
 
 ## Worktree
 
@@ -60,6 +58,22 @@ artifact and must reproduce the content digest bit-for-bit.
 - Every stage uses <=45-minute deterministic chunks and stops on unexpected
   failure.
 
+## Process-local HP CUDA setup
+
+In PowerShell, from the V5 worktree, before CUDA build OR execution:
+
+    $env:CUDA_PATH = "$env:LOCALAPPDATA\Recur64\cuda\12.9.1"
+    if (-not (Test-Path -LiteralPath "$env:CUDA_PATH\include\cuda_runtime.h")) { throw "Pinned CUDA headers missing" }
+    $env:PATH = "$env:CUDA_PATH\bin;" + $env:PATH
+    cmd.exe /d /s /c '"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64 && cargo build --release -p recur64-cli --features cuda'
+    if ($LASTEXITCODE -ne 0) { throw "V5 CUDA build failed" }
+
+Both CUDA_PATH (NVRTC headers) and PATH (DLLs) are required. Setting only PATH
+failed visibly in V5-E13; CubeCL otherwise selected the default Windows toolkit
+directory. No permanent environment or toolkit installation is changed. Do not
+use --features tf32: V5 now refuses that incompatible build. Run builds and CLI
+tests serially, because Windows can prevent replacement of a running executable.
+
 ## Executed commands
 
 From the V5 worktree:
@@ -81,8 +95,20 @@ after the explicit V5 64 MiB worker-stack boundary, the shown qualification
 command executed successfully. A release build with `--no-default-features`
 failed at compile time because the pinned model crate exposes an unconditional
 CPU type alias. `--features cuda` is the tested compatible build. Both release
-qualification reports pass and bind to source
-`df6e2aa650c12726ad7094dae04a7c73339139a8`.
+historical qualification reports bind to source
+`df6e2aa650c12726ad7094dae04a7c73339139a8` and remain archived under
+`qualification-df6e2aa-{cpu,cuda}.json`. They are not current qualifications.
+
+Current executed commands, after the process-local setup and clean source build:
+
+    .\target\release\recur64.exe v5 qualify --device cpu --microbatch 2 --output docs/evidence/v5/qualification-64c4dd4-cpu.json
+    .\target\release\recur64.exe v5 qualify --device cuda --microbatch 2 --output docs/evidence/v5/qualification-64c4dd4-cuda.json
+
+Both pass; the canonical cpu-qualification-release.json/cuda-qualification.json
+contain these same reports for the dataset-dependent commands below. Physical
+layout is resolved as 2 positions: Stage A accumulation 32, Stage B accumulation
+18. No microbatch-1 fallback was used. Drill qualification is still NOT RUN;
+fixture qualification alone does not authorize bypassing the required drill.
 
 Scientific source identity is the last commit touching `crates`, Cargo
 manifests/lock or `configs`; staged, unstaged and untracked scientific changes
@@ -101,8 +127,8 @@ permits the fresh disposable diagnostic:
 
     .\target\release\recur64.exe v5 drill --device cuda --data runs/v25/p25/data/proof-train.json --q 16 --q8-report docs/evidence/v5/drill-q8.json --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output docs/evidence/v5/drill-q16.json
 
-With release CPU and CUDA qualification passing, the frozen pilot stage commands
-are:
+Only AFTER exact custody, the qualifying FIT drill AND complete detailed
+performance accounting (still pending), the frozen pilot stage commands are:
 
     cargo run --release -p recur64-cli --features cuda -- v5 train --stage a --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --drill docs/evidence/v5/drill-q8.json
 

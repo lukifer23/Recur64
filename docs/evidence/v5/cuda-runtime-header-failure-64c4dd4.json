@@ -1,0 +1,18 @@
+{
+  "schema": "v5_operational_failure_v1",
+  "source_sha": "64c4dd4008a9b5bc8d715515279ec67e6e1173a1",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "command": "recur64 v5 qualify --device cuda --microbatch 2",
+  "exit_code": 1,
+  "classification": "runtime_environment_failure_not_model_qualification",
+  "error": "NVRTC cannot open cuda_runtime.h; server invalid; worker panicked",
+  "completed_qualification_report_written": false,
+  "cpu_substitution": false,
+  "detected_pinned_header_exists": true,
+  "cause": "PATH contained pinned DLL bin, but CUDA_PATH was not set to the pinned toolkit root; CubeCL 0.10 then chose its default Windows toolkit path",
+  "correction": "set CUDA_PATH and PATH for this process only, to existing user-space CUDA 12.9.1; no installation, backend, precision, source, geometry or recipe change",
+  "primary_source": "cubecl-cuda 0.10.0 src/lib.rs install::cuda_path and install::include_path",
+  "historical_setup_reference": "HP donor scripts/hp-cuda-env.sh sets both CUDA_PATH and PATH",
+  "scientific_result": "NOT RUN",
+  "checkpoint_created_or_reused": false
+}
