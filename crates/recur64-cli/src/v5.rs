@@ -397,10 +397,22 @@ fn doctor(a: DoctorArgs) -> anyhow::Result<()> {
 fn git_sha() -> anyhow::Result<String> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let sha = std::process::Command::new("git")
-        .args(["rev-parse", "HEAD"])
+        .args([
+            "log",
+            "-1",
+            "--format=%H",
+            "--",
+            "crates",
+            "Cargo.toml",
+            "Cargo.lock",
+            "configs",
+        ])
         .current_dir(&root)
         .output()?;
-    anyhow::ensure!(sha.status.success(), "cannot resolve source Git SHA");
+    anyhow::ensure!(
+        sha.status.success(),
+        "cannot resolve scientific source Git SHA"
+    );
     Ok(String::from_utf8(sha.stdout)?.trim().to_owned())
 }
 
