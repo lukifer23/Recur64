@@ -15,6 +15,11 @@
   64c4dd4, FP32/microbatch 2. Full release workspace: 578 passed, two ignored.
   CUDA sampled device-wide peak 1,068 MiB; all 50 resident samples 364 MiB.
   Detailed component/end-to-end timing is not inferred from qualifier intervals.
+- Synchronized real-path profiling and strict qualification-loader checks are
+  implemented (`V5_TIMING_ACCOUNTING.md`). New CPU padding parity tests pass
+  for all gradients and AdamW state at R1/R2/R4. Full release suite: 581 passed,
+  zero failed, two preserved ignores, native exit 0. Fresh-source CPU/CUDA
+  qualification is pending; 64c4dd4 remains historical evidence.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
   work may proceed under the owner's next-step delegation. Drill/training/
   DEV evaluation require exact custody, the FIT drill and complete accounting.

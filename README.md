@@ -50,6 +50,9 @@ execution correction passes its unchanged exact unit comparisons
 qualification passes at FP32/microbatch 2 (578 release tests passed). CUDA sampled
 device-wide peak is 1,068 MiB; 50 resident update samples stay at 364 MiB.
 Detailed component/online timing and the FIT drill are separate remaining gates.
+The real-path synchronized profiling protocol and exact-gradient/optimizer parity
+checks are documented in `docs/V5_TIMING_ACCOUNTING.md`; fresh-source device
+qualification is pending. Instrumented timing is not online decision latency.
 Exact P25 TRAIN is still missing, so the drill and dataset-dependent
 pilot remain NOT RUN. V4_TUNE_V1 and HOLDOUT_C remain sealed and unevaluated.
 

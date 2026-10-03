@@ -806,6 +806,27 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         treatment: Treatment,
         factual_payload_mask: Option<Tensor<B, 2, Bool>>,
     ) -> PairedOutput<B> {
+        self.paired_profiled(
+            input,
+            base,
+            loops,
+            treatment,
+            factual_payload_mask,
+            &mut |_| {},
+        )
+    }
+
+    /// The production paired computation with optional completion observers.
+    /// Observers receive names only, never tensors or autodiff state.
+    pub(crate) fn paired_profiled(
+        &self,
+        input: &V5Inputs<B>,
+        base: BaseOutput<B>,
+        loops: usize,
+        treatment: Treatment,
+        factual_payload_mask: Option<Tensor<B, 2, Bool>>,
+        phase: &mut dyn FnMut(&str),
+    ) -> PairedOutput<B> {
         assert!(loops > 0, "R must be positive for reader execution");
         let mut factual_x = self
             .state
@@ -815,6 +836,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 input.node_mask.clone(),
             )
             .reshape([input.batch, input.evidence_tokens, self.cfg.width]);
+        phase("returned_state_encoder");
         if let Some(mask) = factual_payload_mask {
             assert_eq!(
                 mask.dims(),
@@ -836,8 +858,22 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         } else {
             factual_x
         };
-        let factual_h = self.run_stream(&base, input, factual_anchor, loops, treatment);
-        let null_h = self.run_stream(&base, input, null_x, loops, treatment);
+        phase("payload_boundary");
+        let factual_h = self
+            .run_stream_inner(
+                &base,
+                input,
+                factual_anchor,
+                loops,
+                treatment,
+                false,
+                "factual",
+                phase,
+            )
+            .0;
+        let null_h = self
+            .run_stream_inner(&base, input, null_x, loops, treatment, false, "null", phase)
+            .0;
         let read = |h: Tensor<B, 3>| {
             rows(
                 &self.correction_out,
@@ -858,6 +894,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         let centered = (raw.clone() - mean.expand([input.batch, input.cands.width]))
             .mask_fill(input.cands.mask.clone().bool_not(), 0.0);
         let logits = base.z0.clone() + centered.clone();
+        phase("paired_readout_centering");
         PairedOutput {
             logits,
             z0: base.z0,
@@ -903,9 +940,26 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         } else {
             factual_x
         };
-        let (factual_h, factual) =
-            self.run_stream_inner(&base, input, factual_anchor, loops, treatment, true);
-        let (null_h, null) = self.run_stream_inner(&base, input, null_x, loops, treatment, true);
+        let (factual_h, factual) = self.run_stream_inner(
+            &base,
+            input,
+            factual_anchor,
+            loops,
+            treatment,
+            true,
+            "factual",
+            &mut |_| {},
+        );
+        let (null_h, null) = self.run_stream_inner(
+            &base,
+            input,
+            null_x,
+            loops,
+            treatment,
+            true,
+            "null",
+            &mut |_| {},
+        );
         let read = |h: Tensor<B, 3>| {
             rows(
                 &self.correction_out,
@@ -938,18 +992,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         }
     }
 
-    fn run_stream(
-        &self,
-        base: &BaseOutput<B>,
-        input: &V5Inputs<B>,
-        anchor: Tensor<B, 3>,
-        loops: usize,
-        treatment: Treatment,
-    ) -> Tensor<B, 3> {
-        self.run_stream_inner(base, input, anchor, loops, treatment, false)
-            .0
-    }
-
+    #[allow(clippy::too_many_arguments)] // One shared execution path for normal, traced and profiled reads.
     fn run_stream_inner(
         &self,
         base: &BaseOutput<B>,
@@ -958,6 +1001,8 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         loops: usize,
         treatment: Treatment,
         trace: bool,
+        stream: &str,
+        phase: &mut dyn FnMut(&str),
     ) -> (Tensor<B, 3>, Vec<StreamLoopTensorTrace<B>>) {
         let [b, _w, d] = base.hypotheses.dims();
         let e = input.evidence_tokens;
@@ -986,7 +1031,8 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         let mut h = h0.clone();
         let mut traces = Vec::with_capacity(if trace { loops } else { 0 });
         let root_valid = Tensor::<B, 2, Bool>::ones([b, SQUARES], &base.context.device());
-        for _ in 0..loops {
+        phase(&format!("{stream}.initialize"));
+        for iteration in 0..loops {
             let supplied_h = if treatment == Treatment::NoHypothesisFeedback {
                 h0.clone()
             } else {
@@ -1013,6 +1059,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 trace,
             );
             ev = next_ev;
+            phase(&format!("{stream}.r{}.evidence", iteration + 1));
             let h_mem = Tensor::cat(vec![h.clone(), ev.clone(), base.context.clone()], 1);
             let h_valid = Tensor::cat(
                 vec![
@@ -1034,6 +1081,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 trace,
             );
             h = next_h;
+            phase(&format!("{stream}.r{}.hypothesis", iteration + 1));
             if trace {
                 traces.push(StreamLoopTensorTrace {
                     evidence_before: evidence_before.expect("trace evidence"),
@@ -1057,16 +1105,29 @@ impl<B: burn::tensor::backend::AutodiffBackend> CounterfactualRelationalLoop<B> 
         examples: &[(&GameState, &AcquiredGraph)],
         device: &B::Device,
     ) -> anyhow::Result<BaseOutput<B>> {
+        self.base_frozen_profiled(examples, device, &mut |_| {})
+    }
+
+    pub(crate) fn base_frozen_profiled(
+        &self,
+        examples: &[(&GameState, &AcquiredGraph)],
+        device: &B::Device,
+        phase: &mut dyn FnMut(&str),
+    ) -> anyhow::Result<BaseOutput<B>> {
         use burn::module::AutodiffModule;
         let inner = self.valid();
-        let inputs = V5Inputs::<B::InnerBackend>::from_examples(examples, device)?;
+        phase("frozen_model_view");
+        let inputs = V5Inputs::<B::InnerBackend>::from_examples_profiled(examples, device, phase)?;
         let base = inner.base(&inputs);
-        Ok(BaseOutput {
+        phase("frozen_root_encoder_and_candidate_path");
+        let lifted = BaseOutput {
             context: Tensor::from_inner(base.context),
             pooled: Tensor::from_inner(base.pooled),
             hypotheses: Tensor::from_inner(base.hypotheses),
             z0: Tensor::from_inner(base.z0),
-        })
+        };
+        phase("frozen_base_lift");
+        Ok(lifted)
     }
 }
 
@@ -1132,6 +1193,14 @@ fn ev_relation(a: &AcquiredNode, b: &AcquiredNode) -> usize {
 
 impl<B: Backend> RootInputs<B> {
     pub fn from_roots(roots: &[&GameState], device: &B::Device) -> anyhow::Result<Self> {
+        Self::from_roots_profiled(roots, device, &mut |_| {})
+    }
+
+    fn from_roots_profiled(
+        roots: &[&GameState],
+        device: &B::Device,
+        phase: &mut dyn FnMut(&str),
+    ) -> anyhow::Result<Self> {
         anyhow::ensure!(!roots.is_empty(), "empty V5 root batch");
         let batch = roots.len();
         let legal: Vec<Vec<ActionId>> = roots.iter().map(|r| r.legal_actions()).collect();
@@ -1153,10 +1222,13 @@ impl<B: Backend> RootInputs<B> {
         let batch_desc = CandidateBatch::from_lists(&lists);
         let cands = CandidateTensors::from_batch(&batch_desc, device);
         let width = batch_desc.width;
+        phase("root_legal_lists_and_candidate_upload");
         let mut board = Vec::with_capacity(batch * SQUARES * IN_FEATURES);
         let mut geometry = vec![0.0; batch * width * ACTION_GEOMETRY];
+        phase("root_host_allocation");
         let all_facts: Vec<Vec<recur64_core::CandidateFactsV1>> =
             roots.iter().map(|root| candidate_facts(root)).collect();
+        phase("root_candidate_facts_exact_cpu");
         for (row, root) in roots.iter().enumerate() {
             let obs = encode_root_relative_observation_v1(root, root.side_to_move());
             board.extend_from_slice(obs.as_slice());
@@ -1168,7 +1240,7 @@ impl<B: Backend> RootInputs<B> {
         }
         let refs: Vec<&[recur64_core::CandidateFactsV1]> =
             all_facts.iter().map(Vec::as_slice).collect();
-        Ok(Self {
+        let inputs = Self {
             batch,
             root: Tensor::from_data(
                 TensorData::new(board, [batch, SQUARES, IN_FEATURES]),
@@ -1180,7 +1252,9 @@ impl<B: Backend> RootInputs<B> {
                 device,
             ),
             facts: facts_tensor::<B>(&refs, width, device)?,
-        })
+        };
+        phase("root_observation_geometry_and_fact_upload");
+        Ok(inputs)
     }
 }
 
@@ -1218,6 +1292,14 @@ impl<B: Backend> V5Inputs<B> {
         examples: &[(&GameState, &AcquiredGraph)],
         device: &B::Device,
     ) -> anyhow::Result<Self> {
+        Self::from_examples_profiled(examples, device, &mut |_| {})
+    }
+
+    pub(crate) fn from_examples_profiled(
+        examples: &[(&GameState, &AcquiredGraph)],
+        device: &B::Device,
+        phase: &mut dyn FnMut(&str),
+    ) -> anyhow::Result<Self> {
         anyhow::ensure!(!examples.is_empty(), "empty V5 batch");
         let batch = examples.len();
         let roots: Vec<&GameState> = examples.iter().map(|x| x.0).collect();
@@ -1226,7 +1308,7 @@ impl<B: Backend> V5Inputs<B> {
             legal.iter().all(|x| !x.is_empty()),
             "terminal root in V5 batch"
         );
-        let root_inputs = RootInputs::<B>::from_roots(&roots, device)?;
+        let root_inputs = RootInputs::<B>::from_roots_profiled(&roots, device, phase)?;
         let w = root_inputs.cands.width;
         let qn = examples.iter().map(|x| x.1.actual_q).max().unwrap_or(0);
         anyhow::ensure!(qn > 0, "reader batch requires Q>0");
@@ -1332,7 +1414,7 @@ impl<B: Backend> V5Inputs<B> {
                 }
             }
         }
-        Ok(Self {
+        let inputs = Self {
             batch,
             evidence_tokens: e,
             root: root_inputs.root,
@@ -1359,7 +1441,9 @@ impl<B: Backend> V5Inputs<B> {
                 TensorData::new(hrel, [batch, w, w + e + SQUARES, RELATIONS]),
                 device,
             ),
-        })
+        };
+        phase("graph_packet_encoding_relations_and_upload");
+        Ok(inputs)
     }
 }
 

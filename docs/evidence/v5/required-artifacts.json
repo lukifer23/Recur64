@@ -24,7 +24,7 @@
   "historical_extension_exclusion_manifest_digest": "60fbdd5e422bbd4696aea7492d21674a3c790fd9b10d661dc252bff29018ff58",
   "sealed_inputs_forbidden": ["V4_TUNE_V1", "HOLDOUT_C"],
   "sealed_inputs_opened_or_evaluated": false,
-  "local_recheck_scope": "matching proof-train JSON filenames under Desktop, Documents and Downloads; documented paths in both worktrees",
+  "local_recheck_scope": "matching proof-train JSON filenames under Desktop, Documents, Downloads and D:; documented paths in both worktrees",
   "github_recheck_scope": "accepted source commit pull-request-triggered workflow runs returned an empty list; not an exhaustive repository artifact inventory",
   "dataset_dependent_work_run": false
 }

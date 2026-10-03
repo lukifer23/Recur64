@@ -18,6 +18,79 @@ use crate::config::V5Config;
 use crate::graph::{AcquiredGraph, EpisodeKey, Schedule, acquire};
 use crate::loss::correct_set_loss;
 use crate::model::{CounterfactualRelationalLoop, Treatment, V5Inputs};
+use crate::profile::{PhaseTiming, SynchronizedProfile};
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ExecutionAccounting {
+    pub requested_q_per_position: usize,
+    pub actual_q: Vec<usize>,
+    pub exhausted_frontier: Vec<bool>,
+    pub maximum_depth: Vec<u8>,
+    pub root_branches: Vec<usize>,
+    pub graph_digests: Vec<String>,
+    pub root_encoder_examples: usize,
+    pub returned_encoder_examples: usize,
+    pub returned_encoder_physical_rows: usize,
+    pub returned_encoder_padding_rows: usize,
+    pub legal_candidates: Vec<usize>,
+    pub candidate_physical_rows: usize,
+    pub root_candidate_facts_calls: usize,
+    pub root_candidate_facts_successor_boards: usize,
+    pub raw_packet_preparations: usize,
+    pub core_applications_per_example: usize,
+    pub core_applications_whole_batch: usize,
+}
+
+fn accounting(
+    roots: &[recur64_core::GameState],
+    graphs: &[AcquiredGraph],
+    r: usize,
+) -> ExecutionAccounting {
+    let batch = roots.len();
+    let legal: Vec<_> = roots
+        .iter()
+        .map(|root| root.legal_actions().len())
+        .collect();
+    let actual: usize = graphs.iter().map(|graph| graph.actual_q).sum();
+    let physical = batch * graphs.iter().map(|graph| graph.actual_q).max().unwrap_or(0);
+    ExecutionAccounting {
+        requested_q_per_position: graphs[0].requested_q,
+        actual_q: graphs.iter().map(|graph| graph.actual_q).collect(),
+        exhausted_frontier: graphs
+            .iter()
+            .map(|graph| graph.exhausted_frontier)
+            .collect(),
+        maximum_depth: graphs
+            .iter()
+            .map(|graph| graph.nodes.iter().map(|node| node.depth).max().unwrap_or(0))
+            .collect(),
+        root_branches: graphs
+            .iter()
+            .map(|graph| {
+                graph
+                    .nodes
+                    .iter()
+                    .map(|node| node.root_candidate)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+            })
+            .collect(),
+        graph_digests: graphs.iter().map(|graph| graph.digest.clone()).collect(),
+        root_encoder_examples: batch,
+        returned_encoder_examples: actual,
+        returned_encoder_physical_rows: physical,
+        returned_encoder_padding_rows: physical - actual,
+        candidate_physical_rows: batch * legal.iter().copied().max().unwrap_or(0),
+        root_candidate_facts_calls: 2 * batch,
+        root_candidate_facts_successor_boards: 2 * legal.iter().sum::<usize>(),
+        legal_candidates: legal,
+        // Current graph-free baseline constructs its own raw inputs. This is
+        // duplicated HOST/UPLOAD work, NOT a second returned-state encoding.
+        raw_packet_preparations: 2 * actual,
+        core_applications_per_example: 4 * r,
+        core_applications_whole_batch: 4 * r * batch,
+    }
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ShapeTiming {
@@ -27,6 +100,7 @@ pub struct ShapeTiming {
     pub warm_seconds: f64,
     pub loss: f64,
     pub core_applications_per_example: usize,
+    pub accounting: ExecutionAccounting,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -42,6 +116,16 @@ pub struct QualificationReport {
     pub parameters: usize,
     pub parameter_bytes_fp32: usize,
     pub query_seconds: f64,
+    pub qualification_wall_seconds: f64,
+    pub timing_contract: String,
+    pub timing_contract_digest: String,
+    pub synchronized_profile_q8_r4: Vec<PhaseTiming>,
+    pub synchronized_profile_wall_seconds: f64,
+    pub synchronized_profile_accounting: ExecutionAccounting,
+    pub checkpoint_profile: Vec<PhaseTiming>,
+    pub profile_outputs_and_all_gradients_exact: bool,
+    pub profile_adamw_parameters_and_moments_exact: bool,
+    pub profile_phase_accounting_consistent: bool,
     pub matrix: Vec<ShapeTiming>,
     pub worst_update_warm_seconds: f64,
     pub repeated_updates: usize,
@@ -161,7 +245,7 @@ fn logits<B: AutodiffBackend>(
 }
 
 fn update<B: AutodiffBackend>(
-    mut model: CounterfactualRelationalLoop<B>,
+    model: CounterfactualRelationalLoop<B>,
     optim: &mut Opt<B>,
     roots: &[recur64_core::GameState],
     graphs: &[AcquiredGraph],
@@ -169,19 +253,45 @@ fn update<B: AutodiffBackend>(
     device: &B::Device,
     track_input: bool,
 ) -> anyhow::Result<(CounterfactualRelationalLoop<B>, f64, Vec<CoverageRow>, f32)> {
+    update_observed(
+        model,
+        optim,
+        roots,
+        graphs,
+        r,
+        device,
+        track_input,
+        &mut |_| {},
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn update_observed<B: AutodiffBackend>(
+    mut model: CounterfactualRelationalLoop<B>,
+    optim: &mut Opt<B>,
+    roots: &[recur64_core::GameState],
+    graphs: &[AcquiredGraph],
+    r: usize,
+    device: &B::Device,
+    track_input: bool,
+    phase: &mut dyn FnMut(&str),
+) -> anyhow::Result<(CounterfactualRelationalLoop<B>, f64, Vec<CoverageRow>, f32)> {
     let examples: Vec<_> = roots.iter().zip(graphs).collect();
-    let mut input = V5Inputs::<B>::from_examples(&examples, device)?;
+    let mut input = V5Inputs::<B>::from_examples_profiled(&examples, device, phase)?;
     let tracked = track_input.then(|| input.states.clone().require_grad());
     if let Some(value) = &tracked {
         input.states = value.clone();
     }
-    let base = model.base_frozen(&examples, device)?;
-    let output = model.paired_with_base(&input, base, r, Treatment::Normal);
+    phase("input_gradient_tracking");
+    let base = model.base_frozen_profiled(&examples, device, phase)?;
+    let output = model.paired_profiled(&input, base, r, Treatment::Normal, None, phase);
     let correct = first_legal_correct(&input, device);
     let loss = correct_set_loss(output.logits, input.cands.mask.clone(), correct);
     let loss_value = f64::from(loss.clone().into_data().to_vec::<f32>()?[0]);
     anyhow::ensure!(loss_value.is_finite(), "qualification loss is non-finite");
+    phase("target_loss_and_scalar_readback");
     let raw = loss.backward();
+    phase("backward_both_streams");
     let input_norm = tracked
         .and_then(|value| value.grad(&raw))
         .map(|gradient| {
@@ -201,7 +311,11 @@ fn update<B: AutodiffBackend>(
         coverage.iter().all(|row| row.finite),
         "qualification gradient is non-finite"
     );
+    phase("gradient_health_and_input_readback");
     model = optim.step(3.0e-4, model, grads);
+    B::sync(device)
+        .map_err(|error| anyhow::anyhow!("post-AdamW completion fence failed: {error:?}"))?;
+    phase("adamw_and_completion_fence");
     Ok((model, loss_value, coverage, input_norm))
 }
 
@@ -211,24 +325,30 @@ fn checkpoint_roundtrip<B: AutodiffBackend>(
     device: &B::Device,
     roots: &[recur64_core::GameState],
     graphs: &[AcquiredGraph],
+    phase: &mut dyn FnMut(&str),
 ) -> anyhow::Result<(bool, bool, bool, bool)> {
     let dir: PathBuf = std::env::temp_dir().join(format!(
         "recur64-v5-qualification-{}-{}",
         std::process::id(),
-        model.num_params()
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
     ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir)?;
+    // Exclusive creation: never erase an interrupted/invalid attempt.
+    std::fs::create_dir(&dir)?;
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     model.clone().save_file(dir.join("model"), &recorder)?;
     recorder.record(optim.to_record(), dir.join("optimizer"))?;
+    phase("checkpoint_save_model_and_optimizer");
     let template = CounterfactualRelationalLoop::<B>::new(V5Config::default(), device);
     let loaded = template.load_file(dir.join("model"), &recorder, device)?;
     let record = recorder.load(dir.join("optimizer"), device)?;
     let mut loaded_optim = adamw::<B, CounterfactualRelationalLoop<B>>().load_record(record);
+    phase("checkpoint_load_model_and_optimizer");
     let equal = model.parameter_digest()? == loaded.parameter_digest()?
         && logits(model, roots, graphs, 4, device)? == logits(&loaded, roots, graphs, 4, device)?;
     let moments_equal = optimizer_digest(optim)? == optimizer_digest(&loaded_optim)?;
+    phase("checkpoint_full_contents_and_forward_verification");
     let mut continued_optim = optim.clone();
     let (continued, _, _, _) = update(
         model.clone(),
@@ -243,7 +363,23 @@ fn checkpoint_roundtrip<B: AutodiffBackend>(
     let continued_equal = continued.parameter_digest()? == resumed.parameter_digest()?;
     let continued_moments_equal =
         optimizer_digest(&continued_optim)? == optimizer_digest(&loaded_optim)?;
-    let _ = std::fs::remove_dir_all(dir);
+    phase("checkpoint_two_continuations_and_full_contents_verification");
+    // Only this successfully verified, uniquely created temporary artifact is
+    // disposable. Resolve and constrain its target before recursive removal.
+    if equal && moments_equal && continued_equal && continued_moments_equal {
+        let resolved = dir.canonicalize()?;
+        let temp_parent = std::env::temp_dir().canonicalize()?;
+        anyhow::ensure!(
+            resolved.parent() == Some(temp_parent.as_path()),
+            "checkpoint cleanup escaped the temporary directory"
+        );
+        std::fs::remove_dir_all(&resolved)?;
+    } else {
+        eprintln!(
+            "V5 failed checkpoint qualification retained at {}",
+            dir.display()
+        );
+    }
     Ok((
         equal,
         moments_equal,
@@ -272,6 +408,114 @@ fn optimizer_digest<B: AutodiffBackend>(optim: &Opt<B>) -> anyhow::Result<String
     Ok(format!("{:x}", writer.0.finalize()))
 }
 
+/// Hash every gradient component (and absent-gradient marker), not merely one
+/// changed parameter or a norm. Same cloned model means identical ParamIds.
+fn gradient_digest<B: AutodiffBackend>(
+    model: &CounterfactualRelationalLoop<B>,
+    grads: &GradientsParams,
+) -> anyhow::Result<String> {
+    use burn::module::{ModuleVisitor, Param};
+    struct Visitor<'a, B: AutodiffBackend> {
+        grads: &'a GradientsParams,
+        hash: Sha256,
+        error: Option<String>,
+        marker: std::marker::PhantomData<B>,
+    }
+    impl<B: AutodiffBackend> ModuleVisitor<B> for Visitor<'_, B> {
+        fn visit_float<const D: usize>(&mut self, param: &Param<Tensor<B, D>>) {
+            self.hash.update(param.id.to_string().as_bytes());
+            match self.grads.get::<B::InnerBackend, D>(param.id) {
+                None => self.hash.update([0]),
+                Some(gradient) => {
+                    self.hash.update([1]);
+                    let data = gradient.into_data();
+                    for dim in data.shape.dims::<D>() {
+                        self.hash.update((dim as u64).to_le_bytes());
+                    }
+                    match data.to_vec::<f32>() {
+                        Ok(values) => {
+                            for value in values {
+                                self.hash.update(value.to_bits().to_le_bytes());
+                            }
+                        }
+                        Err(error) => {
+                            self.error = Some(format!("gradient readback failed: {error:?}"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let mut visitor = Visitor::<B> {
+        grads,
+        hash: Sha256::new(),
+        error: None,
+        marker: std::marker::PhantomData,
+    };
+    model.visit(&mut visitor);
+    anyhow::ensure!(
+        visitor.error.is_none(),
+        "{}",
+        visitor.error.unwrap_or_default()
+    );
+    Ok(format!("{:x}", visitor.hash.finalize()))
+}
+
+/// Same weights, graph and existing AdamW state on this device. The instrumented
+/// arm changes completion fences ONLY. This is not CPU/CUDA parity.
+fn profile_parity<B: AutodiffBackend>(
+    model: &CounterfactualRelationalLoop<B>,
+    optim: &Opt<B>,
+    roots: &[recur64_core::GameState],
+    graphs: &[AcquiredGraph],
+    r: usize,
+    device: &B::Device,
+) -> anyhow::Result<(bool, bool)> {
+    let run = |observed: bool| -> anyhow::Result<_> {
+        let mut profile = SynchronizedProfile::<B>::new(device)?;
+        let mut phase = |name: &str| {
+            if observed {
+                profile.mark(name);
+            }
+        };
+        let examples: Vec<_> = roots.iter().zip(graphs).collect();
+        let mut input = V5Inputs::<B>::from_examples_profiled(&examples, device, &mut phase)?;
+        let tracked = input.states.clone().require_grad();
+        input.states = tracked.clone();
+        let base = model.base_frozen_profiled(&examples, device, &mut phase)?;
+        let out = model.paired_profiled(&input, base, r, Treatment::Normal, None, &mut phase);
+        let logits = out.logits.clone().into_data();
+        let centered = out.centered_delta.into_data();
+        let loss = correct_set_loss(
+            out.logits,
+            input.cands.mask.clone(),
+            first_legal_correct(&input, device),
+        );
+        let value = loss.clone().into_data();
+        let raw = loss.backward();
+        phase("parity_backward");
+        let payload_gradient = tracked
+            .grad(&raw)
+            .ok_or_else(|| anyhow::anyhow!("profile parity missing payload gradient"))?
+            .into_data();
+        let gradients = GradientsParams::from_grads(raw, model);
+        let gradient_hash = gradient_digest::<B>(model, &gradients)?;
+        let mut optimizer = optim.clone();
+        let next = optimizer.step(3.0e-4, model.clone(), gradients);
+        B::sync(device)
+            .map_err(|error| anyhow::anyhow!("profile parity AdamW fence failed: {error:?}"))?;
+        phase("parity_adamw");
+        profile.finish()?;
+        Ok((
+            (logits, centered, value, payload_gradient, gradient_hash),
+            (next.parameter_digest()?, optimizer_digest(&optimizer)?),
+        ))
+    };
+    let normal = run(false)?;
+    let profiled = run(true)?;
+    Ok((normal.0 == profiled.0, normal.1 == profiled.1))
+}
+
 pub fn run<B>(
     source_sha: &str,
     device_label: &str,
@@ -281,6 +525,7 @@ pub fn run<B>(
 where
     B: AutodiffBackend,
 {
+    let qualification_start = Instant::now();
     anyhow::ensure!(!source_sha.is_empty(), "qualification source SHA is empty");
     crate::graph::validate_uniform_frontier_contract()?;
     anyhow::ensure!(
@@ -364,6 +609,7 @@ where
                 warm_seconds,
                 loss,
                 core_applications_per_example: 4 * r,
+                accounting: accounting(&roots, &prefixed, r),
             });
         }
     }
@@ -410,6 +656,25 @@ where
     for timing in &matrix {
         worst_warm = worst_warm.max(timing.warm_seconds);
     }
+    // Dedicated synchronized profiling update uses disposable clones. It does
+    // not alter the resident update sequence or pilot initialization.
+    let (profile_outputs_and_all_gradients_exact, profile_adamw_parameters_and_moments_exact) =
+        profile_parity(&model, &optim, &roots, &q8, 4, device)?;
+    let mut profile = SynchronizedProfile::<B>::new(device)?;
+    let profile_start = Instant::now();
+    let mut profile_optim = optim.clone();
+    let _ = update_observed(
+        model.clone(),
+        &mut profile_optim,
+        &roots,
+        &q8,
+        4,
+        device,
+        true,
+        &mut |name| profile.mark(name),
+    )?;
+    let synchronized_profile_wall_seconds = profile_start.elapsed().as_secs_f64();
+    let synchronized_profile_q8_r4 = profile.finish()?;
     let base_after = crate::stage::baseline_fingerprint(&model, device)?;
     let base_parameters_exact = base_parameters_before == model.baseline_parameter_digest()?;
     let examples: Vec<_> = roots.iter().zip(&q8).collect();
@@ -428,11 +693,20 @@ where
         .into_data();
     let r8_forward_seconds = r8_started.elapsed().as_secs_f64();
     let (
-        checkpoint_restore_exact,
-        optimizer_moments_restore_exact,
-        resumed_update_parameters_exact,
-        resumed_update_moments_exact,
-    ) = checkpoint_roundtrip(&model, &optim, device, &roots, &q8)?;
+        (
+            checkpoint_restore_exact,
+            optimizer_moments_restore_exact,
+            resumed_update_parameters_exact,
+            resumed_update_moments_exact,
+        ),
+        checkpoint_profile,
+    ) = {
+        let mut profile = SynchronizedProfile::<B>::new(device)?;
+        let result = checkpoint_roundtrip(&model, &optim, device, &roots, &q8, &mut |name| {
+            profile.mark(name)
+        })?;
+        (result, profile.finish()?)
+    };
     if device_label == "cuda"
         && let Some((_, used)) = gpu_memory()
     {
@@ -442,6 +716,27 @@ where
         .zip(memory_peak)
         .map(|(baseline, peak)| peak.saturating_sub(baseline.1));
     let memory_pass = device_label != "cuda" || memory_delta.is_some_and(|delta| delta <= 3_072);
+    let phase_count = |name: &str| {
+        synchronized_profile_q8_r4
+            .iter()
+            .filter(|timing| timing.phase == name)
+            .count()
+    };
+    let profile_phase_accounting_consistent = phase_count("root_candidate_facts_exact_cpu") == 2
+        && phase_count("frozen_root_encoder_and_candidate_path") == 1
+        && phase_count("returned_state_encoder") == 1
+        && phase_count("adamw_and_completion_fence") == 1
+        && ["factual", "null"].iter().all(|stream| {
+            phase_count(&format!("{stream}.initialize")) == 1
+                && (1..=4).all(|r| {
+                    ["evidence", "hypothesis"]
+                        .iter()
+                        .all(|block| phase_count(&format!("{stream}.r{r}.{block}")) == 1)
+                })
+        })
+        && synchronized_profile_q8_r4
+            .iter()
+            .all(|phase| phase.seconds.is_finite() && phase.seconds >= 0.0);
     let pass = gradient_groups.len() == 4
         && payload_input_gradient_l2.is_finite()
         && payload_input_gradient_l2 > 0.0
@@ -452,6 +747,9 @@ where
         && resumed_update_parameters_exact
         && resumed_update_moments_exact
         && graph_free_baseline_matches_reference
+        && profile_outputs_and_all_gradients_exact
+        && profile_adamw_parameters_and_moments_exact
+        && profile_phase_accounting_consistent
         && memory_pass
         && null_error <= null_tolerance;
     Ok(QualificationReport {
@@ -466,6 +764,16 @@ where
         parameters: model.num_params(),
         parameter_bytes_fp32: model.num_params() * 4,
         query_seconds,
+        qualification_wall_seconds: qualification_start.elapsed().as_secs_f64(),
+        timing_contract: crate::profile::CONTRACT.into(),
+        timing_contract_digest: crate::profile::contract_digest(),
+        synchronized_profile_q8_r4,
+        synchronized_profile_wall_seconds,
+        synchronized_profile_accounting: accounting(&roots, &q8, 4),
+        checkpoint_profile,
+        profile_outputs_and_all_gradients_exact,
+        profile_adamw_parameters_and_moments_exact,
+        profile_phase_accounting_consistent,
         matrix,
         worst_update_warm_seconds: worst_warm,
         repeated_updates: 50,
@@ -496,6 +804,11 @@ where
             "actual paired factual/null graph; both streams differentiated".into(),
             "R8 is forward-only engineering qualification".into(),
             "cold shape timings are separated from repeated warm updates".into(),
+            "all update timings now end after Backend::sync completes AdamW; NVML subprocess sampling overhead is included in resident-loop wall intervals".into(),
+            "synchronized component profiling includes fence overhead and host preparation/upload; it is not uninstrumented throughput or an online active decision".into(),
+            "current raw packets/root CandidateFacts are prepared twice (autodiff reader inputs plus graph-free baseline inputs); root/state encoder executions remain once each".into(),
+            "CandidateFacts performs one successor-board play and terminal/reply inspection per legal root candidate per call; this common baseline work is NOT Q and exact reply enumeration is not separately counted".into(),
+            "successful unique qualification checkpoint temporaries are removed after verification; failed/interrupted temporaries are preserved".into(),
             "checkpoint verification compares every FP32 parameter, optimizer moment/counter, and one continued AdamW update exactly".into(),
             "CUDA memory is the nvidia-smi device-used increase over the pre-run baseline; unrelated GPU workloads were not terminated".into(),
         ],
@@ -505,6 +818,72 @@ where
 #[cfg(test)]
 mod baseline_diagnostic {
     use super::*;
+
+    #[test]
+    fn synchronized_observers_preserve_all_gradients_and_adamw_with_padding() {
+        type B = burn::backend::Autodiff<burn::backend::Flex>;
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let device = Default::default();
+        <B as Backend>::seed(&device, 5301);
+        let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+        let roots = roots(2);
+        let mut graphs = graphs(&roots, 8).unwrap();
+        graphs[1] = graphs[1].prefix(2).unwrap();
+        let optim = adamw::<B, CounterfactualRelationalLoop<B>>();
+        for r in [1, 2, 4] {
+            assert_eq!(
+                profile_parity(&model, &optim, &roots, &graphs, r, &device).unwrap(),
+                (true, true),
+                "R{r}"
+            );
+            let counts = accounting(&roots, &graphs, r);
+            assert_eq!(counts.actual_q, [8, 2]);
+            assert_eq!(counts.root_encoder_examples, 2);
+            assert_eq!(counts.returned_encoder_examples, 10);
+            assert_eq!(counts.returned_encoder_physical_rows, 16);
+            assert_eq!(counts.returned_encoder_padding_rows, 6);
+            assert_eq!(counts.raw_packet_preparations, 20);
+            assert_eq!(counts.core_applications_whole_batch, 8 * r);
+        }
+        let mut profile = SynchronizedProfile::<B>::new(&device).unwrap();
+        let mut profile_optim = optim;
+        update_observed(
+            model,
+            &mut profile_optim,
+            &roots,
+            &graphs,
+            4,
+            &device,
+            true,
+            &mut |name| profile.mark(name),
+        )
+        .unwrap();
+        let phases = profile.finish().unwrap();
+        assert_eq!(
+            phases
+                .iter()
+                .filter(|p| p.phase.ends_with(".evidence") || p.phase.ends_with(".hypothesis"))
+                .count(),
+            16
+        );
+        assert_eq!(
+            phases
+                .iter()
+                .filter(|p| p.phase == "root_candidate_facts_exact_cpu")
+                .count(),
+            2
+        );
+        assert_eq!(
+            phases
+                .iter()
+                .filter(|p| p.phase == "returned_state_encoder")
+                .count(),
+            1
+        );
+        assert_eq!(phases.last().unwrap().phase, "adamw_and_completion_fence");
+    }
 
     #[test]
     fn explicit_attention_preserves_old_autodiff_outputs_and_payload_gradients_exactly() {

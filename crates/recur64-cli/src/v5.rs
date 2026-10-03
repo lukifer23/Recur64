@@ -507,6 +507,7 @@ fn qualification_seconds(
         path.display(),
         microbatch
     );
+    require_synchronized_qualification(&value)?;
     let wanted = match device {
         DeviceArg::Cpu => "cpu",
         DeviceArg::Cuda => "cuda",
@@ -999,6 +1000,19 @@ fn qualifying_report(path: &Path, device: &str, bundle: &EvaluationBundle) -> an
         "{} is not the matching passing {device} qualification",
         path.display()
     );
+    require_synchronized_qualification(&value)?;
+    Ok(())
+}
+
+fn require_synchronized_qualification(value: &serde_json::Value) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        value["timing_contract"] == recur64_v5::profile::CONTRACT
+            && value["timing_contract_digest"] == recur64_v5::profile::contract_digest()
+            && value["profile_outputs_and_all_gradients_exact"] == true
+            && value["profile_adamw_parameters_and_moments_exact"] == true
+            && value["profile_phase_accounting_consistent"] == true,
+        "V5 qualification lacks current synchronized accounting and exact profiling parity"
+    );
     Ok(())
 }
 
@@ -1143,6 +1157,34 @@ fn big_stack(
 #[cfg(test)]
 mod source_identity_tests {
     use super::*;
+
+    #[test]
+    fn qualification_without_synchronized_parity_is_refused() {
+        let mut value = serde_json::json!({
+            "timing_contract": recur64_v5::profile::CONTRACT,
+            "timing_contract_digest": recur64_v5::profile::contract_digest(),
+            "profile_outputs_and_all_gradients_exact": true,
+            "profile_adamw_parameters_and_moments_exact": true,
+            "profile_phase_accounting_consistent": true,
+        });
+        assert!(require_synchronized_qualification(&value).is_ok());
+        for field in [
+            "timing_contract",
+            "timing_contract_digest",
+            "profile_outputs_and_all_gradients_exact",
+            "profile_adamw_parameters_and_moments_exact",
+            "profile_phase_accounting_consistent",
+        ] {
+            let saved = value.as_object_mut().unwrap().remove(field).unwrap();
+            assert!(
+                require_synchronized_qualification(&value).is_err(),
+                "missing {field}"
+            );
+            value[field] = saved;
+        }
+        value["profile_outputs_and_all_gradients_exact"] = false.into();
+        assert!(require_synchronized_qualification(&value).is_err());
+    }
 
     #[test]
     fn source_guard_refuses_staged_untracked_and_stale_builds_but_allows_documentation_commits() {

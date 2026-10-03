@@ -1,5 +1,15 @@
 # V5 HP environment
 
+Continuation re-detection, 2026-10-03, BEFORE synchronized-accounting qualification
+(DETECTED, not a measured graph): Ryzen 5 7535HS, 6 cores/12 threads; Windows 11
+Home build 26300; visible RAM 31.208354949951172 GiB, free 18.107170104980469 GiB;
+C: free 56.597873687744141 GiB, D: free 69.87890625 GiB. RTX 2050 reports
+4,096 MiB total, 9 MiB used, 3,954 MiB free, driver 616.92. ChatGPT is an existing
+GPU client (WDDM process memory N/A); no client was terminated. NVIDIA memory
+fields are direct measurements and may exclude reserved memory. These changing
+availability snapshots are not resource guarantees. New timing/source qualification
+is pending; earlier tested measurements below remain historical.
+
 Recorded 2026-10-03. DETECTED is not TESTED.
 
 Current TESTED functional fixture graph: source
@@ -48,9 +58,10 @@ security settings or Windows features.
 
 The preferred resident peak is <=3,072 MiB. The actual paired graph passed at
 physical batch 2, Q8/R4, both streams and full backward on the historical
-network fixtures. Full engineering qualification is
-now requires requalification after the depth and execution amendments in
-`V5_ROOT_CAUSE.md` and `V5_EXECUTION_PARITY.md`. The microbatch-1 fallback was
+network fixtures. Full pre-pilot qualification still requires current-source
+synchronized accounting (`V5_TIMING_ACCOUNTING.md`) and the exact FIT drill.
+The retained depth/execution amendments are in `V5_ROOT_CAUSE.md` and
+`V5_EXECUTION_PARITY.md`. The microbatch-1 fallback was
 not used.
 
 The HISTORICAL pre-amendment CUDA qualification ran through the pinned path and the

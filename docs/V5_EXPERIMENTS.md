@@ -398,3 +398,39 @@ Corrections are appended; old entries are never rewritten.
 - **Still NOT RUN:** exact P25 custody, FIT drill/Q16, Stage A/B, all DEV science,
   pilot gates/diagnostics, scientific conditional R8, replication and sealed
   confirmation. This is functional engineering evidence, not learned chess use.
+
+## V5-E14 - synchronized execution accounting protocol
+
+- **Registered before measurement:** `V5_TIMING_ACCOUNTING.md`. SAME architecture,
+  geometry, FP32, recipes, seeds, losses and practical pilot gates. Add explicit
+  post-AdamW completion fences and observers to the REAL shared implementation.
+- **Accounting:** separate exact root CandidateFacts CPU cost from Q; expose
+  existing duplicated host preparation/upload, valid/padded rows, graph/depth/
+  branch identity and every factual/null E/H loop application. Do not conceal
+  duplication as free computation or claim isolated DMA/online latency.
+- **Parity prerequisite:** exact same-device outputs, all payload/parameter
+  gradients and ALL AdamW parameters/moments; CPU unequal-Q padding at R1/R2/R4.
+  Old functional qualifications alone are no longer a current training gate.
+- **Development failures retained:** initial compile incorrectly iterated Burn's
+  `Shape` directly, then attempted its private `dims` field. Both failed visibly
+  (E0277/E0616); use the pinned public `dims()` accessor. No measured run or
+  scientific result arose from either failure. A third compile (E0614) corrected
+  the accessor's owned `usize` items, which must not be dereferenced. No assertion
+  was weakened. The fourth compile (E0284) required its explicit const rank
+  `dims::<D>()`; confirmed from pinned CubeCL 0.10 `Shape` documentation.
+- **Still blocked:** no `*proof*train*.json*` found in Desktop/Documents/Downloads
+  or D: during this continuation. Exact P25 custody and FIT drill/training remain NOT
+  RUN. No substitute, regeneration or sealed input was used.
+- **First full-suite logging attempt:** all 68 result blocks report 581 passed,
+  zero failed, two preserved ignores, but the PowerShell stderr/Tee wrapper
+  returned exit 1 without an explicit native exit record. Preserve its log in
+  ignored `runs/v5/qualification-accounting/`; rerun the SAME suite with native
+  redirection and explicit Cargo exit capture before accepting the process gate.
+- **Native full-suite rerun:** SAME source, explicit `CARGO_NATIVE_EXIT=0`;
+  68 result blocks, 581 passed, zero failed, two preserved ignores. Thus no
+  full-suite test failure is supported by either log; the original wrapper
+  discrepancy is retained, not silently relabelled as a passing process.
+- **Scoped checks:** edited-file rustfmt check and release V5 all-targets Clippy
+  `-D warnings` PASS. Release CLI all-targets Clippy PASS with only the previously
+  documented V4 `collapsible_if` / `manual_is_multiple_of` allowances. Measured
+  current-source CPU/CUDA qualification remains pending.

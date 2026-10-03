@@ -4,6 +4,9 @@
 qualification both PASS at source `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`,
 FP32, physical microbatch 2. Full release workspace: 578 passed, two ignored.
 The exact P25 TRAIN artifact remains required before the FIT drill or training.
+64c4dd4 is historical functional qualification, not the new synchronized timing
+prerequisite. See `V5_TIMING_ACCOUNTING.md`; current source must be committed,
+rebuilt and CPU/CUDA requalified before using the canonical qualification files.
 Read `V5_ROOT_CAUSE.md`, `V5_NUMERICAL_ROOT_CAUSE.md` and
 `V5_EXECUTION_PARITY.md` for preserved failures and pre-pilot corrections.
 
