@@ -84,3 +84,46 @@ Corrections are appended; old entries are never rewritten.
   `docs/evidence/v5/cpu-qualification-release.json`.
 - **Dataset limitation:** the 24-position engineering drill, Stage A, Stage B,
   DEV matrix and pilot gates remain NOT RUN because exact P25 TRAIN is absent.
+
+## V5-E3 - complete bounded pilot harness and final-source requalification
+
+- **Date:** 2026-10-03
+- **Status:** IMPLEMENTED / TESTED on fixture and engineering paths; dataset work
+  NOT RUN.
+- **Scientific source:** `df6e2aa650c12726ad7094dae04a7c73339139a8`.
+  Source identity is the last commit touching crates, Cargo manifests/lock or
+  configs, so later documentation-only evidence commits do not recursively
+  invalidate a report. Uncommitted scientific paths are still refused.
+- **Implemented commands:** bounded Q8 drill with guarded Q16 fallback; per-cell
+  update-0/update-800 reader evaluation; six-cell merge; ablation/composition
+  report; exact bootstrap pilot report; and gate-guarded forward-only R8.
+- **Evaluation invariants:** Q8 is acquired once per position/schedule and Q2/Q4
+  are prefixes; R shares that graph; training acquisition seeds no longer depend
+  on R; payload shuffle records non-self donor paths matched within family/depth
+  and observed node depth; structure-only graph identity is invariant to payload
+  intervention; composition nulling is applied after state encoding; normal
+  traced replay must match its source evaluation.
+- **Telemetry:** every record includes all requested policy/correction metrics,
+  query and reader accounting, factual/null per-loop state/update RMS and
+  attention health. Gate code uses 20,000 SplitMix64 resamples and the frozen
+  ranks/seeds without rounded comparisons.
+- **Checkpoint correction:** a new Stage B run now saves immutable update 0
+  before its first optimizer step. Evaluation loads only exact update 0 or 800
+  generations and revalidates model content, recipe and baseline fingerprint.
+- **Tests:** full default workspace suite passed: 562 passed, 0 failed, 1 ignored
+  (the historical deep-perft ignored test). V5-specific total: 19 library/
+  integration tests plus 6 CLI-boundary tests, all passed. V5 clippy passed with
+  warnings denied; CLI clippy passed with only the two documented pre-existing
+  V4 lint names allowed.
+- **Final-source CUDA:** PASS, FP32 microbatch 2. Exact null error 0; payload
+  gradient L2 0.00038374067; baseline/restore exact; worst warm shape update
+  0.4107268 s; repeated first/last 0.1865621/0.2088036 s; R8 forward 0.0801630 s;
+  device-wide peak 338 MiB from 144 MiB (194 MiB delta).
+- **Final-source CPU:** PASS, FP32 microbatch 2. Exact null error 0; payload
+  gradient L2 0.0003146815; baseline/restore exact; worst warm shape update
+  0.7699340 s; repeated first/last 0.7603199/0.7372230 s; R8 forward 0.4794547 s.
+- **Evidence:** `docs/evidence/v5/cuda-qualification.json`,
+  `cpu-qualification-release.json`, and `implementation-summary.json`.
+- **Hard stop:** the exact P25 artifact is still absent. Drill, Stage A, Stage B,
+  update-0/update-800 DEV evaluation, ablations, pilot classification and R8 are
+  all NOT RUN. No substitute data or training was used.

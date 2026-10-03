@@ -49,6 +49,9 @@ The four-token result is immutable anchor `X_e`.
 Nulling occurs at this boundary: every anchor token and returned flag contribution
 is exactly zero. Structure, path actions, turn roles, node existence and routing
 remain matched. Thus the intervention is conditional on the acquired structure.
+The composition diagnostic uses the same encoded-anchor boundary with an explicit
+per-node four-slot mask; it never attempts to obtain a null anchor by passing a
+zero raw observation through biased encoder layers.
 
 `v5_acquired_graph_v1` is a path-specific tree with no transposition merging. It
 records parent/child direction, siblings, four-slot membership, root-branch
@@ -94,6 +97,16 @@ z_i = z0_i + centered_delta_i
 Padding never enters attention, centering, softmax, or loss denominators. Both
 streams remain in the autodiff graph. Identical null inputs must produce exact CPU
 equality; CUDA qualification starts with maximum centered-logit error 1e-6.
+
+Evaluation tracing executes the same reader computation and records, for factual
+and null streams at every loop, valid-token state RMS, update RMS, attention
+entropy and mean maximum attention weight. A parity test requires traced and
+ordinary logits to be exactly equal on deterministic CPU execution.
+
+The implementation emits separate full-payload and structure-only graph digests.
+Payload shuffle changes the former while the latter must remain fixed. Shuffle
+donor position/path mappings and deterministic composition partitions are stored
+with per-position evidence.
 
 ## Versioned subcontracts
 

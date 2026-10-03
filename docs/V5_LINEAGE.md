@@ -25,6 +25,11 @@ Historical conclusions remain closed:
 V5 starts from random weights. No V3/V3.5/V4/HP checkpoint initializes it. V5 is
 not a repair or continuation of those experiments.
 
+The read-only HP historical dataset inventory is recorded in
+`docs/evidence/v5/historical-dataset-inventory.json` for future disjointness
+checks. Those x1/x2 files are not V5 inputs and were not evaluated. No exact P25
+TRAIN, V4_TUNE_V1 or HOLDOUT_C artifact was found or opened here.
+
 ## Scope boundary
 
 Authorized: implementation, CPU/CUDA qualification, one bounded engineering
@@ -33,4 +38,3 @@ drill, Stage A, Stage B, and one reader pilot with seed 5301.
 Not authorized: seeds 5302/5303, learned query control, self-play, external-engine
 supervision, sealed evaluation, multiple architecture variants, hyperparameter
 sweeps, or automatic follow-up science.
-

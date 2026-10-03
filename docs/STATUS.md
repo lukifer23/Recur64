@@ -11,6 +11,9 @@
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
   qualification may proceed; drill/training/DEV evaluation are BLOCKED until its
   exact custody contract passes.
+- The complete bounded drill, update-0/update-800 reader matrix, interventions,
+  composition analysis, exact bootstrap gates and conditional R8 commands are
+  implemented and tested at their non-data boundaries. They remain NOT RUN.
 - Seeds 5302/5303, controller training, self-play and sealed evaluation are NOT
   RUN and not authorized.
 

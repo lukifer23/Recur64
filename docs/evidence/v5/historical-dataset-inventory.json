@@ -1,0 +1,27 @@
+{
+  "schema": "v5_historical_dataset_inventory_v1",
+  "date": "2026-10-03",
+  "location": "read-only accepted-source worktree runs directory",
+  "purpose": "future cross-line disjointness inventory only",
+  "used_by_v5": false,
+  "evaluated_by_v5": false,
+  "files": [
+    {"path":"runs/x1/tactics-tune.json","bytes":15711,"sha256":"0319cc0f72fcc906c234e65e8f46f56fa251caad7f10f7bc2e0986d19921902d"},
+    {"path":"runs/x1/tactics-v1.json","bytes":24553,"sha256":"6f4ed2bae6eb2f2aa2f413981e96f9b1659b59e89778cf69d3180b625d9905f8"},
+    {"path":"runs/x1/targets-128.json","bytes":270506,"sha256":"9911821e9c27e1f62678369184dd0dfb95e1173db4de62b8b573510c5c52fbf8"},
+    {"path":"runs/x1/targets-confirm2.json","bytes":127786,"sha256":"ec6f032076046c19271960dd6fe5dbb66fee081f8740fe21ff882eed425c8644"},
+    {"path":"runs/x1/targets-confirm64.json","bytes":139652,"sha256":"64ea975552c98984adaaf38b6f01952f2a48457a64d0e0749d73f5c13d4967f0"},
+    {"path":"runs/x1/targets-mate2-exact-15k.json","bytes":11236365,"sha256":"20f47315bfa1edce5965ba85e36a886fb90b45c611d76c64378f3bf1a1a384f7"},
+    {"path":"runs/x1/targets-mate2-exact-train.json","bytes":1122848,"sha256":"e87271e6cacdee38cd857981d119817bc9a041f47acb818149dd9aad9c13799d"},
+    {"path":"runs/x1/targets-smoke32.json","bytes":69300,"sha256":"77c6d6c2fec41ebc6c5b0f7c77acfea1a9f9e9234164492d9a0f061296810057"},
+    {"path":"runs/x1/targets-smoke32-batched.json","bytes":69401,"sha256":"cd5b4a114a189038716a315102f02b2e02f239b37b965194504bb644abff54cb"},
+    {"path":"runs/x1/targets-smoke32-t4.json","bytes":69300,"sha256":"126f4bf6e88f065c2e32a2fb41dda1d30e5b1b3b1673418e961e7bdbabd4d4af"},
+    {"path":"runs/x1/targets-train960.json","bytes":1841636,"sha256":"68ac46ac827f1f0af0abe71d9559951fccf3249998f7dbe16e6e9ce1a2250fc3"},
+    {"path":"runs/x2/data/audit.json","bytes":1548,"sha256":"2e64411c88ab80222b1b63343fd9460210f526090dbbfeaaefeb57e98fa5baca","kind":"audit metadata"},
+    {"path":"runs/x2/data/confirm.json","bytes":55634,"sha256":"d63519acb69a048d72702848d1a3b35d6f6e80c161d9a0b86b4286ee07ee556d"},
+    {"path":"runs/x2/data/train.json","bytes":2518499,"sha256":"943bec444aa05c13c6d2cb9c3a513e26ac1668c81d2fbec7ca06f55789b89790"},
+    {"path":"runs/x2/data/tune.json","bytes":54718,"sha256":"acff10f7e59ffe7e856b8af4e6d43f3ccd2daa1ae29801c50d0a7fda6554b037"}
+  ],
+  "required_p25_train_found": false,
+  "sealed_v4_tune_or_holdout_opened": false
+}

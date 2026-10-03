@@ -1,0 +1,43 @@
+{
+  "schema": "v5_implementation_summary_v1",
+  "date": "2026-10-03",
+  "scientific_source_sha": "df6e2aa650c12726ad7094dae04a7c73339139a8",
+  "architecture": "counterfactual_relational_loop_v1",
+  "config_digest": "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c",
+  "parameters": 7160080,
+  "workspace_tests": {
+    "passed": 562,
+    "failed": 0,
+    "ignored": 1,
+    "ignored_test": "historical deeper perft; run with --ignored --release"
+  },
+  "v5_tests": {
+    "library_and_integration_passed": 19,
+    "cli_boundary_passed": 6,
+    "failed": 0
+  },
+  "qualification": {
+    "cpu": "pass",
+    "cuda_rtx_2050": "pass",
+    "precision": "fp32",
+    "physical_microbatch": 2
+  },
+  "implemented_not_run": [
+    "engineering_drill_q8",
+    "engineering_drill_q16_conditional",
+    "stage_a_1200",
+    "stage_b_800",
+    "dev_update_0",
+    "dev_update_800",
+    "ablation_and_composition",
+    "pilot_gate_classification",
+    "r8_conditional"
+  ],
+  "blocking_artifact": {
+    "name": "P25_DATA_V1 TRAIN",
+    "sha256": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+    "positions": 44332,
+    "found": false
+  },
+  "sealed_inputs_evaluated": false
+}

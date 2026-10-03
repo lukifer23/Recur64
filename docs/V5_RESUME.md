@@ -27,8 +27,8 @@ DEV: 4403
 DEV sorted-ID digest: f877219bc87d916ad8478a745f1572821c1a051337c3a071f2b37b9a5f83b899
 ```
 
-Copy as a new file; do not replace another dataset. Run `recur64 v5 custody
-verify` before any drill or training. A similar dataset or V3 TUNE is refused.
+Copy as a new file; do not replace another dataset. Run `recur64 v5 custody`
+before any drill or training. A similar dataset or V3 TUNE is refused.
 Regeneration is allowed only from the documented recipe with every exclusion
 artifact and must reproduce the content digest bit-for-bit.
 
@@ -63,7 +63,24 @@ command executed successfully. A release build with `--no-default-features`
 failed at compile time because the pinned model crate exposes an unconditional
 CPU type alias. `--features cuda` is the tested compatible build. Both release
 qualification reports pass and bind to source
-`028025da1c7486eb0aa9140a88509c2822275e8a`.
+`df6e2aa650c12726ad7094dae04a7c73339139a8`.
+
+Scientific source identity is the last commit touching `crates`, Cargo
+manifests/lock or `configs`; tracked uncommitted changes in those paths are
+refused. Documentation/evidence-only commits therefore do not invalidate the
+qualified executable identity.
+
+## Dataset-dependent command sequence (NOT RUN)
+
+After transfer, custody and the disposable drill are:
+
+    .\target\release\recur64.exe v5 custody --data runs/v25/p25/data/proof-train.json --output docs/evidence/v5/custody.json
+    .\target\release\recur64.exe v5 drill --device cuda --data runs/v25/p25/data/proof-train.json --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output docs/evidence/v5/drill-q8.json
+
+Do not run Q16 if Q8 passes or is uninformative. Only an informative Q8 failure
+permits the fresh disposable diagnostic:
+
+    .\target\release\recur64.exe v5 drill --device cuda --data runs/v25/p25/data/proof-train.json --q 16 --q8-report docs/evidence/v5/drill-q8.json --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output docs/evidence/v5/drill-q16.json
 
 With release CPU and CUDA qualification passing, the frozen pilot stage commands
 are:
@@ -75,3 +92,31 @@ Each invocation projects remaining work before starting and stops after at most
 45 minutes. Add --resume to the identical command to continue the latest
 complete immutable checkpoint generation. These stage commands have NOT RUN
 because custody is blocked by the missing exact dataset.
+
+Stage B saves update 0 before its first optimizer step. Evaluate only update 0
+and the fixed final update 800. Run one bounded cell per process for each update:
+
+    $cells = @(@('KQRvK',1),@('KQRvK',2),@('KQRvK',3),@('KRRvK',1),@('KRRvK',2),@('KRRvK',3))
+    foreach ($cell in $cells) {
+      $family = $cell[0]; $depth = $cell[1]
+      .\target\release\recur64.exe v5 evaluate --device cuda --data runs/v25/p25/data/proof-train.json --stage-b runs/v5/seed-5301/stage-b --update 800 --family $family --mate-depth $depth --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output "runs/v5/seed-5301/eval-800/$family-M$depth.json"
+      if ($LASTEXITCODE -ne 0) { throw "V5 evaluation failed for $family M$depth" }
+    }
+
+Repeat with `--update 0` and a distinct `eval-000` directory. Never overwrite
+one update with the other. Merge each six-shard set with all inputs following one
+`--input` flag:
+
+    .\target\release\recur64.exe v5 eval-merge --input runs/v5/seed-5301/eval-800/KQRvK-M1.json runs/v5/seed-5301/eval-800/KQRvK-M2.json runs/v5/seed-5301/eval-800/KQRvK-M3.json runs/v5/seed-5301/eval-800/KRRvK-M1.json runs/v5/seed-5301/eval-800/KRRvK-M2.json runs/v5/seed-5301/eval-800/KRRvK-M3.json --output runs/v5/seed-5301/eval-800/all-dev.json
+    .\target\release\recur64.exe v5 ablation --evaluation runs/v5/seed-5301/eval-800/all-dev.json --output runs/v5/seed-5301/eval-800/ablations.json
+    .\target\release\recur64.exe v5 pilot-report --evaluation runs/v5/seed-5301/eval-800/all-dev.json --cpu-qualification docs/evidence/v5/cpu-qualification-release.json --cuda-qualification docs/evidence/v5/cuda-qualification.json --drill docs/evidence/v5/drill-q8.json --output runs/v5/seed-5301/pilot-report.json
+
+The merge refuses overlapping or incomplete cell shards and verifies 4,403 DEV
+positions plus 507 KQRvK M3 positions. `pilot-report` recomputes all summaries
+from per-position records. Only a `PILOT_CANDIDATE` report unlocks:
+
+    .\target\release\recur64.exe v5 extra-loops --device cuda --data runs/v25/p25/data/proof-train.json --stage-b runs/v5/seed-5301/stage-b --evaluation runs/v5/seed-5301/eval-800/all-dev.json --pilot-report runs/v5/seed-5301/pilot-report.json --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output runs/v5/seed-5301/r8-primary.json
+
+All commands in this section are implemented and their argument surfaces are
+covered by CLI tests. They are explicitly NOT RUN on this machine because the
+required P25 artifact is absent.

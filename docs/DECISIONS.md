@@ -1425,3 +1425,16 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   peaked at 194 MiB. Freeze microbatch 2 for Stage B. The authorized fallback
   was not exercised. This is engineering qualification only; the P25-dependent
   drill and pilot remain NOT RUN.
+
+## V5-D5 - Stable scientific source identity and bounded evaluation shards
+
+- **Status:** IMPLEMENTED / TESTED 2026-10-03.
+- **Decision:** bind V5 reports and recipes to the last commit touching scientific
+  code/config paths, while refusing uncommitted changes there. Documentation-only
+  evidence commits do not change that identity. The final qualified source is
+  `df6e2aa650c12726ad7094dae04a7c73339139a8`.
+- **Decision:** evaluate one inherited family/depth cell per process, then require
+  exactly six disjoint, identical-identity shards for the 4,403-position merge.
+  This supplies deterministic resumable operational chunks without changing any
+  graph, sample, checkpoint, Q/R condition or estimator. R8 remains hard-gated on
+  `PILOT_CANDIDATE`.

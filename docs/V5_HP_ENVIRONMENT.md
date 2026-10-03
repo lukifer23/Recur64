@@ -30,4 +30,5 @@ intended RTX 2050. NVIDIA device-wide used memory rose from 144 MiB before the
 run to a measured peak of 338 MiB (194 MiB delta). Because WDDM did not expose
 reliable process-resident memory, this is reported as device-wide rather than
 mislabelled as a process peak. Other GPU workloads remained active. The worst
-warm qualification update was 0.4693646 s on CUDA and 0.7318495 s on CPU.
+warm final-source qualification update was 0.4107268 s on CUDA and 0.7699340 s
+on CPU.

@@ -97,3 +97,6 @@ isolated and fully charged; deployed state receives only selected returns. No
 controller module, utility label, THINK/QUERY/STOP allocator, adaptive halting,
 warm start, transposition merge, diffusion, expert system or self-play is built in
 V5.0.
+
+The full deferred target/input/isolation/accounting sketch is in
+`docs/V5_QUERY_CONTROLLER_MEMO.md`.
