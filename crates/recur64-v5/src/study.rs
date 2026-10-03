@@ -218,8 +218,8 @@ fn composition_partition(
     if a.iter().all(|x| *x) || a.iter().all(|x| !*x) {
         scored.sort_unstable();
         a.fill(false);
-        for &(_, index) in &scored[..scored.len() / 2] {
-            a[index] = true;
+        for (rank, &(_, index)) in scored.iter().enumerate() {
+            a[index] = rank.is_multiple_of(2);
         }
     }
     let group_a_paths = graph
