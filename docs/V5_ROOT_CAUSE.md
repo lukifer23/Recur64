@@ -27,6 +27,8 @@ production uniform selector includes **zero** of those 19 edges.
 
 The release test fails with expected 19 versus actual 0 and process exit 1.
 It is retained as a failing regression. No assertion was relaxed or removed.
+The regression and qualification preflight are preserved in scientific checkpoint
+`0c52b6e32d44e90107bcf34f3688377a0bc4ce31`, pushed to the V5 branch.
 
 ## Coupled cause
 

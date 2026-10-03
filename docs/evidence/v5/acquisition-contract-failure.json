@@ -2,6 +2,7 @@
   "schema": "v5_acquisition_contract_failure_v1",
   "date": "2026-10-03",
   "affected_scientific_source_sha": "97921bdd3cab701dff6478c7f0fdae525f0d6d00",
+  "retained_regression_and_preflight_checkpoint_sha": "0c52b6e32d44e90107bcf34f3688377a0bc4ce31",
   "status": "engineering_stop",
   "architecture": "counterfactual_relational_loop_v1",
   "schedule": "uniform_frontier_v1",

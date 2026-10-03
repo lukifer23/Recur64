@@ -1,7 +1,8 @@
 {
   "schema": "v5_implementation_summary_v1",
   "date": "2026-10-03",
-  "scientific_source_sha": "97921bdd3cab701dff6478c7f0fdae525f0d6d00",
+  "scientific_source_sha": "0c52b6e32d44e90107bcf34f3688377a0bc4ce31",
+  "preceding_implementation_source_sha": "97921bdd3cab701dff6478c7f0fdae525f0d6d00",
   "architecture": "counterfactual_relational_loop_v1",
   "config_digest": "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c",
   "parameters": 7160080,

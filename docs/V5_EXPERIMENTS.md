@@ -195,3 +195,7 @@ Corrections are appended; old entries are never rewritten.
   fixtures; compact evidence is `gradient-recall-audit.json`.
 - **NOT RUN:** drill, Stage A/final DEV B0, Stage B, reader matrix, ablations,
   composition, pilot bootstrap/gates and conditional R8. P25 remains missing.
+- **Pushed stop checkpoint:** `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`
+  preserves the failing regression, visible qualification refusal and root-cause
+  report on `experiment/hp-v5-counterfactual-loop`. No proposed correction was
+  implemented.

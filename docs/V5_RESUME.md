@@ -13,6 +13,10 @@ C:\Users\Caitl\Desktop\Code Projects\Recur64-v5
 ```
 
 Branch: `experiment/hp-v5-counterfactual-loop`.
+Current scientific checkpoint: `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`.
+It contains the retained failing regression and qualification preflight, not a
+depth-representation fix. Subsequent documentation-only commits do not change
+this scientific source identity.
 
 ## Required missing artifact
 
