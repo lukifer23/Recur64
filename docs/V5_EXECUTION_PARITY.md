@@ -47,6 +47,9 @@ field refuse, rather than silently inheriting a different forward implementation
 Actual model-info execution reports the new configuration digest
 `849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee` and
 unchanged 7,162,896 parameters.
+V5 configuration validation also refuses TF32-enabled binaries, rather than
+claiming the fixed FP32 contract on an incompatible historical build feature.
+No TF32/autotune execution or precision change is authorized or performed.
 
 Before interpreting this correction as qualified, require:
 

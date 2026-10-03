@@ -15,6 +15,14 @@ pub const PAIRED_NULL_READOUT: &str = "v5_paired_null_readout_v1";
 pub const CORRECT_SET_LOSS: &str = "v5_correct_set_loss_v1";
 pub const PILOT: &str = "v5_fixed_graph_reader_pilot_v1";
 
+fn ensure_fp32_build(tf32_build: bool) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        !tf32_build,
+        "V5 requires a build WITHOUT tf32/autotune; refusing to claim FP32 on a TF32-enabled binary"
+    );
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Contracts {
     pub root_frame: String,
@@ -105,6 +113,7 @@ impl Default for V5Config {
 
 impl V5Config {
     pub fn validate(&self) -> anyhow::Result<()> {
+        ensure_fp32_build(recur64_model::precision::TF32_BUILD)?;
         anyhow::ensure!(
             self.architecture == ARCHITECTURE,
             "V5 architecture mismatch"
@@ -165,6 +174,17 @@ impl V5Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn v5_refuses_tf32_builds_instead_of_mislabelling_their_execution() {
+        ensure_fp32_build(false).unwrap();
+        assert!(
+            ensure_fp32_build(true)
+                .unwrap_err()
+                .to_string()
+                .contains("WITHOUT tf32")
+        );
+    }
 
     #[test]
     fn frozen_config_round_trips_and_hashes() {

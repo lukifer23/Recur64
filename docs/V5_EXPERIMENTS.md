@@ -323,3 +323,23 @@ Corrections are appended; old entries are never rewritten.
   digest; focused V5/CLI rerun covers those final test-only edits. V5 all-target
   clippy passes with warnings denied; CLI clippy passes with only the previously
   recorded V4 allowances. Edited Rust files pass rustfmt --check.
+- **Final focused rerun:** after lint-only module relocation and the CLI literal
+  digest pin, V5 32 passed/one ignored and CLI V5 boundary seven passed.
+- **Push:** `2af69fe63e1a9725b1728c7c6b7dd701c01837b1` pushed before fresh
+  qualification. Its CUDA release build passed; no measured qualification at
+  that source was launched before the precision-preflight correction below.
+
+## V5-E12 - explicit FP32-only build refusal
+
+- **Preflight finding:** the V5 command path did not apply the historical TF32
+  build refusal, so a future `--features tf32` build could be mislabelled FP32.
+  The current CUDA build used only `--features cuda`, NOT tf32 or autotune.
+- **Correction:** V5 configuration validation refuses TF32-enabled builds before
+  model construction, identity use or qualification. A pure interface test
+  checks both build-flag cases using the actual production guard; no TF32
+  execution, alternate precision or new backend was enabled.
+- **Scientific effect:** valid FP32 outputs/config digest/geometry unchanged;
+  incompatible execution now fails visibly. New scientific source must be
+  committed/pushed and rebuilt before qualification. No dataset-dependent work.
+- **Focused validation:** all five config tests passed, V5 all-target clippy
+  with warnings denied passed. No TF32-enabled binary was compiled or run.
