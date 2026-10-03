@@ -41,9 +41,10 @@ root-relative returned states, bidirectional hypothesis/evidence refinement,
 immutable-input recall and a matched factual/null correction. The architecture and
 single-seed reader pilot are pre-registered in `docs/V5_ARCHITECTURE.md` and
 `docs/V5_RESEARCH_PLAN.md`. The 7,160,080-parameter implementation has passed
-its debug CPU preflight. The exact P25 TRAIN artifact is currently missing on
-the HP, so dataset-dependent training is blocked; V4_TUNE_V1 and HOLDOUT_C remain
-sealed and unevaluated.
+formal release CPU and RTX 2050 CUDA qualification in FP32 at physical
+microbatch 2. The exact P25 TRAIN artifact is currently missing on the HP, so
+the drill and dataset-dependent pilot remain blocked; V4_TUNE_V1 and HOLDOUT_C
+remain sealed and unevaluated.
 
 **Branch `experiment/workstation-v35-onpolicy` (Recur64 V3.5, current state).** One on-policy rescue of the V3 architecture: the learner selects every query and the proof oracle only labels the learner-visited states (never chooses). Three seeds, 800 updates each, evaluated once on V3_TUNE_V1 KQRvK M3: the model now uses queried-state content (Content-Use PASS, +0.037 nats, every seed), but Gate II (ACTIVE B8 - B0 = -0.022) and Gate III (ACTIVE B8 - FIXED B8 = -0.023) FAIL. Outcome **PARTIAL - CONTENT**; HOLDOUT_C remains sealed and unevaluated; B16 not run; the lineage stops and a V4 design memo is in `docs/V35_RESULTS.md`. Plan: `docs/V35_RESEARCH_PLAN.md`; evidence: `docs/evidence/v35/`. The V3 branch text below is unchanged history.
 

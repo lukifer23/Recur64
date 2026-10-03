@@ -46,3 +46,41 @@ Corrections are appended; old entries are never rewritten.
   docs/evidence/v5/cpu-qualification-debug.json.
 - **Dataset limitation:** exact P25 TRAIN remains missing, so the engineering
   drill and both pilot stages remain NOT RUN.
+
+## V5-E2 - release CPU/CUDA qualification and resolved physical layout
+
+- **Date:** 2026-10-03
+- **Status:** TESTED / MEASURED on release CPU and the intended NVIDIA CUDA
+  device. Source `028025da1c7486eb0aa9140a88509c2822275e8a`; config digest
+  `0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c`.
+- **Build attempt E2a:** `--no-default-features --features cuda` failed at
+  compile time because the pinned model crate's CPU type alias is unconditional.
+  No graph executed and no CPU substitution occurred.
+- **Correction E2b:** the compatible pinned build is `--features cuda`. It
+  compiled CUDA alongside the default feature; the V5 CLI explicitly selected
+  `cuda` and refuses if CUDA support is absent.
+- **Identity correction:** preliminary passing release reports omitted the
+  source SHA. They were not committed. The report schema was corrected, the
+  correction was pushed, and both qualifications were rebuilt and rerun from
+  the exact source SHA above.
+- **CUDA:** physical microbatch 2 passed Q2/Q4/Q8 x R1/R2/R4 paired factual/null
+  forward, full backward and AdamW; 50 additional resident Q8/R4 updates; and
+  forward-only R8. Null centered-logit error was 0 (required <=1e-6), payload
+  input-gradient L2 was 0.00038374067, every required reader group received a
+  finite nonzero gradient, baseline identity and checkpoint restoration were
+  exact. Worst warm shape update was 0.4693646 s; first/last repeated updates
+  were 0.1897180/0.2006881 s.
+- **Memory:** NVIDIA reported 4,096 MiB total. Device-wide used memory rose from
+  144 MiB to 338 MiB, a 194 MiB peak delta, while unrelated workloads remained
+  alive. WDDM did not provide process-resident accounting, so this is a
+  conservative device-wide delta rather than a process-only peak.
+- **CPU:** physical microbatch 2 passed the same Q/R training matrix, 50-update
+  retention check and R8 forward diagnostic. Exact null error was 0; payload
+  input-gradient L2 was 0.0003146815; worst warm shape update was 0.7318495 s;
+  baseline and restore checks were exact.
+- **Decision:** freeze FP32 physical microbatch 2 for the pilot. The authorized
+  microbatch-1 fallback was not needed.
+- **Evidence:** `docs/evidence/v5/cuda-qualification.json` and
+  `docs/evidence/v5/cpu-qualification-release.json`.
+- **Dataset limitation:** the 24-position engineering drill, Stage A, Stage B,
+  DEV matrix and pilot gates remain NOT RUN because exact P25 TRAIN is absent.

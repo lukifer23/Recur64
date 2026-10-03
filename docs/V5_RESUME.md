@@ -51,15 +51,22 @@ From the V5 worktree:
     cargo run -p recur64-cli -- v5 graph generate --fen "6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1" --position-id cli-fixture --schedule uniform-frontier --q 4 --output runs/v5/fixtures/graph-q4.json
     cargo run -p recur64-cli -- v5 graph audit --graph runs/v5/fixtures/graph-q4.json
     cargo run -p recur64-cli -- v5 qualify --device cpu --microbatch 2 --output docs/evidence/v5/cpu-qualification-debug.json
+    cargo build --release -p recur64-cli --features cuda
+    .\target\release\recur64.exe v5 qualify --device cuda --microbatch 2 --output docs/evidence/v5/cuda-qualification.json
+    .\target\release\recur64.exe v5 qualify --device cpu --microbatch 2 --output docs/evidence/v5/cpu-qualification-release.json
 
 The model-info and graph generate/audit examples have executed successfully.
 Custody is expected to exit nonzero until the exact artifact is transferred. The
 first CPU qualification attempt failed with a default-thread stack overflow;
 after the explicit V5 64 MiB worker-stack boundary, the shown qualification
-command executed successfully.
+command executed successfully. A release build with `--no-default-features`
+failed at compile time because the pinned model crate exposes an unconditional
+CPU type alias. `--features cuda` is the tested compatible build. Both release
+qualification reports pass and bind to source
+`028025da1c7486eb0aa9140a88509c2822275e8a`.
 
-After release CPU and CUDA qualification produce passing reports, the frozen
-pilot stage commands are:
+With release CPU and CUDA qualification passing, the frozen pilot stage commands
+are:
 
     cargo run --release -p recur64-cli --features cuda -- v5 train --stage a --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json
     cargo run --release -p recur64-cli --features cuda -- v5 train --stage b --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-b --stage-a runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json
@@ -67,4 +74,4 @@ pilot stage commands are:
 Each invocation projects remaining work before starting and stops after at most
 45 minutes. Add --resume to the identical command to continue the latest
 complete immutable checkpoint generation. These stage commands have NOT RUN
-because custody is blocked and CUDA qualification has not yet completed.
+because custody is blocked by the missing exact dataset.

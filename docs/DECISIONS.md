@@ -1414,3 +1414,14 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Decision:** CUDA FP32, preferred reader microbatch 2; only microbatch 1 with
   equivalent accumulation may replace it after real Q8/R4 paired-graph failure or
   memory excess. The resolved layout is frozen before the pilot.
+
+## V5-D4 - Freeze physical microbatch 2 after release qualification
+
+- **Status:** TESTED / MEASURED 2026-10-03.
+- **Decision:** source `028025da1c7486eb0aa9140a88509c2822275e8a` passed the
+  actual paired V5 graph on release CPU and intended RTX 2050 CUDA in FP32.
+  Q8/R4 full backward and AdamW passed at physical microbatch 2; 50 resident
+  updates showed no graph-retention failure; the device-wide used-memory delta
+  peaked at 194 MiB. Freeze microbatch 2 for Stage B. The authorized fallback
+  was not exercised. This is engineering qualification only; the P25-dependent
+  drill and pilot remain NOT RUN.

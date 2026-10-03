@@ -4,9 +4,10 @@
 
 - Lineage and single-seed fixed-reader pilot are PRE-REGISTERED from accepted V4
   source `17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5`.
-- HP hardware, toolchain and CUDA runtime are DETECTED. The implemented V5 graph
-  passed debug CPU preflight at microbatch 2; release CPU and actual CUDA
-  qualification remain pending.
+- HP hardware, toolchain and CUDA runtime are DETECTED. The 7,160,080-parameter
+  V5 graph passed release CPU and intended RTX 2050 CUDA qualification in FP32
+  at physical microbatch 2, including the full Q/R matrix, 50 repeated Q8/R4
+  updates, exact null equality, required gradient transmission and exact resume.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
   qualification may proceed; drill/training/DEV evaluation are BLOCKED until its
   exact custody contract passes.
