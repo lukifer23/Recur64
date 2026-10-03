@@ -272,3 +272,54 @@ Corrections are appended; old entries are never rewritten.
   or model invariant failure. These nonzero exits are retained here.
 - **Current boundary:** the corrected full workspace run is still required.
   Do not infer a full-suite PASS from the earlier focused 28-test result.
+
+## V5-E10 - depth-amended full suite and failed CPU qualification
+
+- **Source:** `7737640572c158fbda9c4cbadfe1332eb9303abc`, config
+  `d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+- **Full release workspace:** 573 passed, zero failed, two explicitly ignored
+  diagnostics (historical expensive perft and the FP32 numerical ladder).
+  Scoped rustfmt and V5 clippy with warnings denied passed. CLI clippy passed
+  with only the recorded pre-existing V4 lint allowances.
+- **CPU qualification:** microbatch 2; nonzero exit, aggregate FAIL solely
+  because graph-free/autodiff baseline values were not exact. Null error 0,
+  payload gradient L2 0.003922534, all four reader groups nonzero; every baseline
+  parameter and baseline output remained exact after reader updates. Complete
+  parameter/moment restoration and one resumed parameter/moment update exact.
+- **Executed work:** Q2/Q4/Q8 × R1/R2/R4, both streams differentiated,
+  50 resident Q8/R4 updates; worst warm 0.7456381 s. R8 was engineering-only
+  forward, 0.4578827 s. These are test-only fixtures, NOT a drill or pilot.
+- **Evidence:** `qualification-7737640-cpu.json`, numerical gradient evidence
+  `cpu-gradient-depth-7737640.json`. FP64 reference retains pinned FP32 RMS
+  statistics; no fully FP64 normalization is claimed.
+- **Diagnosis/decision:** `V5_EXECUTION_PARITY.md` freezes V5-D8 before its
+  qualification: use the pinned default softmax primitive equation on both
+  backends and require unchanged exact gates and exact old/new autodiff parity.
+- **NOT RUN:** CUDA at this source, data drill/training/DEV/pilot. TRAIN absent.
+
+## V5-E11 - explicit softmax execution parity tests
+
+- **Decision:** V5-D8 in `V5_EXECUTION_PARITY.md`, frozen before measured
+  qualification. No assertions/tolerances, geometry, precision, training recipe
+  or data scope were relaxed.
+- **Initial compile error retained:** the new parity harness attempted to clone
+  `V5Inputs`, which has no Clone implementation. It now reconstructs the same
+  versioned raw fixture input for each arm; no production input API changed.
+- **Focused release:** three parity tests passed. Built-in graph-free softmax
+  differs from Autodiff by 7.450580596923828e-9 on fixed isolated inputs; the
+  explicit formula is exact. Full graph-free/autodiff root context, hypotheses
+  and z0 are now bit-exact. Old/new Autodiff reader logits, centered deltas and
+  returned-payload gradients are bit-exact for all nine Q/R conditions.
+- **Parameter integrity:** baseline parameter content digest unchanged by this
+  test. This is same-weight execution parity, NOT trained improvement.
+- **Remaining gate:** full release workspace, fmt/clippy, source checkpoint,
+  CUDA build and fresh CPU/CUDA qualification. No data-dependent work ran.
+- **Lint failure retained:** V5 all-target clippy rejected the diagnostic module
+  placed before production items (`items_after_test_module`). The module was
+  moved to the file end; no lint suppression or production equation change.
+- **Full release outcome:** 577 passed, zero failed, two explicitly ignored,
+  across 68 result blocks. After that compiled run the diagnostic module was
+  relocated (lint-only) and the CLI digest assertion pinned to the actual new
+  digest; focused V5/CLI rerun covers those final test-only edits. V5 all-target
+  clippy passes with warnings denied; CLI clippy passes with only the previously
+  recorded V4 allowances. Edited Rust files pass rustfmt --check.

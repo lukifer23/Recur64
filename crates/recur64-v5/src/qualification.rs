@@ -501,3 +501,135 @@ where
         ],
     })
 }
+
+#[cfg(test)]
+mod baseline_diagnostic {
+    use super::*;
+
+    #[test]
+    fn explicit_attention_preserves_old_autodiff_outputs_and_payload_gradients_exactly() {
+        type B = burn::backend::Autodiff<burn::backend::Flex>;
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let device = Default::default();
+        <B as Backend>::seed(&device, 5301);
+        let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+        let roots = roots(2);
+        let before = model.baseline_parameter_digest().unwrap();
+        for q in [2, 4, 8] {
+            let graphs = graphs(&roots, q).unwrap();
+            let examples: Vec<_> = roots.iter().zip(&graphs).collect();
+            for r in [1, 2, 4] {
+                let run = || {
+                    let mut tracked_input =
+                        V5Inputs::<B>::from_examples(&examples, &device).unwrap();
+                    let tracked = tracked_input.states.clone().require_grad();
+                    tracked_input.states = tracked.clone();
+                    let out = model.paired(&tracked_input, r, Treatment::Normal);
+                    let logits = out.logits.clone().into_data();
+                    let delta = out.centered_delta.clone().into_data();
+                    let target = out.centered_delta.clone().slice([0..1, 0..1]).sum()
+                        - out.centered_delta.slice([0..1, 1..2]).sum();
+                    let grads = target.backward();
+                    let input_grad = tracked.grad(&grads).unwrap().into_data();
+                    (logits, delta, input_grad)
+                };
+                assert_eq!(run(), crate::model::with_legacy_softmax(run), "Q{q}/R{r}");
+            }
+        }
+        assert_eq!(before, model.baseline_parameter_digest().unwrap());
+    }
+
+    #[test]
+    fn isolate_pinned_softmax_backend_dispatch_difference() {
+        type Free = burn::backend::Flex;
+        type Ad = burn::backend::Autodiff<Free>;
+        let device = Default::default();
+        // Fixed, nonsaturated data: no RNG or model-performance selection.
+        let values: Vec<f32> = (0..2 * 8 * 64 * 64)
+            .map(|i| ((i * 73 % 997) as f32 - 498.0) / 179.0)
+            .collect();
+        let data = TensorData::new(values, [2, 8, 64, 64]);
+        let free = Tensor::<Free, 4>::from_data(data.clone(), &device);
+        let ad = Tensor::<Ad, 4>::from_data(data, &device);
+        let direct = burn::tensor::activation::softmax(free.clone(), 3).into_data();
+        let reference = burn::tensor::activation::softmax(ad, 3).into_data();
+        let max = free.clone().detach().max_dim(3);
+        let exp = (free - max).exp();
+        let explicit = (exp.clone() / exp.sum_dim(3)).into_data();
+        let x = direct.to_vec::<f32>().unwrap();
+        let y = reference.to_vec::<f32>().unwrap();
+        let error = x
+            .iter()
+            .zip(&y)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0_f32, f32::max);
+        println!(
+            "V5_SOFTMAX_DISPATCH_DIAGNOSTIC {}",
+            serde_json::json!({
+                "graph_free_builtin_vs_autodiff_max_abs": error,
+                "explicit_graph_free_vs_autodiff_tensor_data_exact": explicit == reference,
+                "production_execution_unchanged": true
+            })
+        );
+        assert!(error.is_finite() && error > 0.0);
+        assert_eq!(explicit, reference);
+    }
+
+    #[test]
+    fn measure_graph_free_against_autodiff_reference_without_relaxing_the_gate() {
+        type B = burn::backend::Autodiff<burn::backend::Flex>;
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let device = Default::default();
+        <B as Backend>::seed(&device, 5301);
+        let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+        let roots = roots(2);
+        let graphs = graphs(&roots, 8).unwrap();
+        let examples: Vec<_> = roots.iter().zip(&graphs).collect();
+        let input = V5Inputs::<B>::from_examples(&examples, &device).unwrap();
+        let reference = model.base(&input);
+        let frozen = model.base_frozen(&examples, &device).unwrap();
+        for (name, ad, constant) in [
+            (
+                "context",
+                reference.context.into_data(),
+                frozen.context.into_data(),
+            ),
+            (
+                "hypotheses",
+                reference.hypotheses.into_data(),
+                frozen.hypotheses.into_data(),
+            ),
+            ("z0", reference.z0.into_data(), frozen.z0.into_data()),
+        ] {
+            let x = ad.to_vec::<f32>().unwrap();
+            let y = constant.to_vec::<f32>().unwrap();
+            assert_eq!(x.len(), y.len());
+            let max_abs = x
+                .iter()
+                .zip(&y)
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0_f32, f32::max);
+            let first = x
+                .iter()
+                .zip(&y)
+                .enumerate()
+                .find(|(_, (a, b))| a.to_bits() != b.to_bits());
+            println!(
+                "V5_BASELINE_REFERENCE_DIAGNOSTIC {}",
+                serde_json::json!({"field": name,
+                "tensor_data_equal": ad == constant, "shape_ad": ad.shape, "shape_graph_free": constant.shape,
+                "dtype_ad": format!("{:?}", ad.dtype), "dtype_graph_free": format!("{:?}", constant.dtype),
+                "max_abs": max_abs, "first_value_bit_mismatch": first.map(|(i,(a,b))| (i,*a,*b)),
+                "values_bit_exact": first.is_none(), "qualifying_gate_unchanged": true})
+            );
+            assert!(max_abs.is_finite());
+            // The corrective execution experiment must satisfy the ORIGINAL
+            // bit-exact comparison, not a relaxed tolerance.
+            assert_eq!(ad, constant, "graph-free baseline mismatch: {name}");
+        }
+    }
+}

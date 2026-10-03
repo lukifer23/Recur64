@@ -21,6 +21,11 @@ reader code, the exact FP32-initialized weights promoted to FP64, the same graph
 the same four directions, and epsilon 0.05. It is not a new initializer, model
 geometry, training backend, or production precision. The original FP32 parameter
 digest is checked unchanged after the reference execution.
+FP64 here describes parameter/tensor dtype, not every internal operation: pinned
+Burn 0.21 RmsNorm explicitly casts its squared-mean statistics to FP32 even for
+FP64 inputs, then restores the input dtype. The reference retains this exact
+implementation; no fully FP64 RMS reference is claimed. Reduced readout
+cancellation, not a backend replacement or rewritten normalization, is tested.
 
 Across directions 0xA501..0xA504:
 

@@ -176,6 +176,7 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
                 "direction_seed": seed, "epsilon": epsilon, "gradient_l2": gradient_l2,
                 "autodiff": derivative, "finite_difference": numeric, "relative_error": relative,
                 "autodiff_precision": "fp32", "numerical_reference_precision": "fp64_same_weights",
+                "reference_rms_statistics_precision": "fp32_pinned_burn_0.21",
             })
         );
         if derivative.abs() > 1.0e-8 || numeric.abs() > 1.0e-8 {

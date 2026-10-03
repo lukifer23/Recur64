@@ -1,0 +1,35 @@
+{
+  "schema": "v5_execution_parity_evidence_v1",
+  "date": "2026-10-03",
+  "decision": "V5-D8",
+  "scope": "CPU real-reader test fixtures, not a pilot or optimization drill",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "parameters": 7162896,
+  "precision": "fp32",
+  "unchanged_gate": "exact_tensor_data_and_values_no_new_tolerance",
+  "failed_source_sha": "7737640572c158fbda9c4cbadfe1332eb9303abc",
+  "failed_baseline_max_abs": {
+    "context": 0.0000016689300537109375,
+    "hypotheses": 0.000002205371856689453,
+    "z0": 0.00000007078051567077637
+  },
+  "isolated_builtin_softmax_max_abs": 0.000000007450580596923828,
+  "isolated_explicit_graph_free_vs_autodiff_exact": true,
+  "corrected_baseline_max_abs": { "context": 0.0, "hypotheses": 0.0, "z0": 0.0 },
+  "old_new_autodiff_reader": {
+    "q": [2, 4, 8],
+    "r": [1, 2, 4],
+    "same_weights": true,
+    "logits_exact": true,
+    "centered_delta_exact": true,
+    "returned_payload_gradient_exact": true,
+    "baseline_parameter_digest_unchanged": true,
+    "legacy_dispatch_test_only": true
+  },
+  "focused_parity_tests": { "passed": 3, "failed": 0 },
+  "full_release_workspace": { "passed": 577, "failed": 0, "ignored": 2, "result_blocks": 68 },
+  "execution_identity": "burn_0_21_explicit_detached_max_exp_sum_div_v1",
+  "no_precision_geometry_recipe_or_threshold_change": true,
+  "fresh_measured_qualification": "pending",
+  "not_run": ["engineering_drill", "stage_a", "stage_b", "dev", "pilot"]
+}

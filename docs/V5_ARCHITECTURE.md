@@ -5,7 +5,9 @@ in the scientific configuration digest.
 
 Current implementation: the owner delegated next-step choice on 2026-10-03.
 The complete-frontier depth correction is implemented under the amendment below.
-Focused CPU contracts pass; fresh full engineering qualification is pending.
+Focused CPU contracts pass. Fresh CPU qualification failed exact cross-backend
+baseline parity; V5-D8 is the separately documented execution correction in
+`V5_EXECUTION_PARITY.md`. Fresh qualification remains required.
 `V5_ROOT_CAUSE.md` preserves the original acquisition failure and
 `V5_NUMERICAL_ROOT_CAUSE.md` records the finite-difference measurement correction.
 
@@ -83,10 +85,22 @@ is `v5_graph_manifest_v2` and binds the configuration digest; old manifests and
 old depth-five configurations are refused. Parent/path/depth/ownership and
 depth <= actual Q <= requested Q <= 16 are verified. This adds 2,816 parameters
 only to the evidence initializer. All main geometry, loss and pilot exposures
-remain unchanged. Configuration digest:
+remain unchanged. Depth-only configuration digest, before V5-D8:
 `d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
 
 ## Shared relational loop
+
+Every attention uses the explicit pinned Burn 0.21 default softmax equation:
+`exp(logits - detached_max) / sum(exp(logits - detached_max))`. This avoids
+different CPU softmax dispatch between graph-free Flex and Autodiff. It changes
+no precision or mathematical attention rule; V5-D8 requires exact old/new
+autodiff outputs and payload gradients and the original exact baseline gate.
+The execution identity is hashed as
+`burn_0_21_explicit_detached_max_exp_sum_div_v1`. No stream or iteration is
+detached. See `V5_EXECUTION_PARITY.md`; the previous depth-only digest above is
+historical, not the identity for this execution amendment. Actual amended
+model-info reports configuration digest
+`849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
 
 The evidence initializer is the same function for both streams and reads
 `[X, structural context]`. The hypothesis initializer is a reasoner-only adapter
@@ -139,6 +153,6 @@ with per-position evidence.
 ## Versioned subcontracts
 
 `v5_root_frame_v1`, `v5_root_hypotheses_v1`, `v5_returned_payload_v1`,
-`v5_state_tokens4_v1`, `v5_acquired_graph_v1`, `v5_relational_loop_v1`,
+`v5_state_tokens4_v1`, `v5_acquired_graph_v2`, `v5_relational_loop_v1`,
 `v5_input_recall_v1`, `v5_paired_null_readout_v1`,
 `v5_correct_set_loss_v1`, `v5_fixed_graph_reader_pilot_v1`.

@@ -69,6 +69,7 @@ pub struct V5Config {
     pub ranked_max_depth: usize,
     pub ranked_max_branch_edges: usize,
     pub uniform_frontier_rule: String,
+    pub attention_execution: String,
     pub contracts: Contracts,
 }
 
@@ -96,6 +97,7 @@ impl Default for V5Config {
             ranked_max_depth: usize::from(crate::graph::RANKED_MAX_DEPTH),
             ranked_max_branch_edges: crate::graph::MAX_BRANCH_EDGES,
             uniform_frontier_rule: "complete_unqueried_legal_frontier".into(),
+            attention_execution: "burn_0_21_explicit_detached_max_exp_sum_div_v1".into(),
             contracts: Contracts::default(),
         }
     }
@@ -138,6 +140,10 @@ impl V5Config {
         anyhow::ensure!(
             self.width.is_multiple_of(self.heads),
             "width must divide by heads"
+        );
+        anyhow::ensure!(
+            self.attention_execution == "burn_0_21_explicit_detached_max_exp_sum_div_v1",
+            "V5 attention execution contract mismatch"
         );
         anyhow::ensure!(
             self.contracts == Contracts::default(),
@@ -183,6 +189,25 @@ mod tests {
         let mut cfg = V5Config::default();
         cfg.contracts.pilot = "other".into();
         assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn legacy_or_changed_attention_execution_is_refused_and_changes_identity() {
+        let mut legacy = serde_json::to_value(V5Config::default()).unwrap();
+        legacy
+            .as_object_mut()
+            .unwrap()
+            .remove("attention_execution");
+        assert!(serde_json::from_value::<V5Config>(legacy).is_err());
+        let invalid = V5Config {
+            attention_execution: "implicit_backend_dispatch".into(),
+            ..V5Config::default()
+        };
+        assert!(invalid.validate().is_err());
+        assert_ne!(
+            V5Config::default().scientific_digest().unwrap(),
+            "d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937"
+        );
     }
 
     #[test]

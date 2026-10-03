@@ -1,6 +1,14 @@
 # V5 results
 
-**CURRENT STATUS: AMENDED CPU UNIT CONTRACTS PASS; FRESH QUALIFICATION PENDING.**
+**CURRENT STATUS: DEPTH-AMENDED CPU QUALIFICATION FAILED BASELINE PARITY.**
+Source 7737640 passed the full release workspace (573 tests, two ignored), but
+its measured CPU qualification exited 1 solely at graph-free/autodiff exact
+baseline equality. Context error was 1.6689300537109375e-6, hypotheses
+2.205371856689453e-6 and z0 7.078051567077637e-8. Null error was zero; baseline
+outputs/parameters after reader updates and full parameter/optimizer restoration
+and continuation were exact. These passing components do not clear the gate.
+`V5_EXECUTION_PARITY.md` records the isolated dispatch cause and corrective
+execution experiment; that amendment still requires fresh qualification.
 The complete uniform-frontier correction now includes all 19 legal edges at the
 previous failing boundary. Depths 6..16 and their structural fields are tested.
 The focused release suite passes 28 tests, with one explicitly invoked numerical
@@ -10,8 +18,9 @@ directions. See `V5_ROOT_CAUSE.md` and `V5_NUMERICAL_ROOT_CAUSE.md` for retained
 failures and corrections. No dataset-dependent result exists.
 
 The amended model's measured count is **7,162,896**. Its evidence initializer is
-139,776, up by 2,816; all other groups below are unchanged. Config digest:
-`d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+139,776, up by 2,816; all other groups below are unchanged. Current execution
+amendment model-info config digest:
+`849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
 
 ## Historical pre-amendment engineering measurements
 

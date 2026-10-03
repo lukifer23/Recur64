@@ -1,33 +1,35 @@
 {
   "schema": "v5_implementation_summary_v1",
   "date": "2026-10-03",
-  "scientific_source_sha": "0c52b6e32d44e90107bcf34f3688377a0bc4ce31",
-  "preceding_implementation_source_sha": "97921bdd3cab701dff6478c7f0fdae525f0d6d00",
+  "scientific_source_sha": null,
+  "source_binding": "execution amendment awaiting source commit and fresh qualification",
+  "preceding_implementation_source_sha": "7737640572c158fbda9c4cbadfe1332eb9303abc",
   "architecture": "counterfactual_relational_loop_v1",
-  "config_digest": "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c",
-  "parameters": 7160080,
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "parameters": 7162896,
+  "attention_execution": "burn_0_21_explicit_detached_max_exp_sum_div_v1",
   "workspace_tests": {
-    "passed": 568,
+    "passed": 577,
     "failed": 0,
-    "ignored": 1,
-    "scope": "last full release suite before newly retained failing frontier regression"
+    "ignored": 2,
+    "scope": "execution amendment full release suite; final test-only relocation/digest-pin focused rerun pending"
   },
   "v5_tests": {
-    "library_and_integration_passed": 23,
+    "library_and_integration_passed": 32,
     "cli_boundary_passed": 7,
     "cli_source_guard_passed": 1,
-    "known_failed": 1,
-    "failed_test": "uniform_frontier_includes_legal_edges_below_a_depth_five_acquired_node",
-    "pass_counts_scope": "last full focused release run before newly retained failing frontier regression",
-    "current_library_run": { "passed": 15, "failed": 1, "exit_code": 1 },
-    "current_integration_binaries": "not run in latest invocation because cargo stopped after the library failure"
+    "known_failed": 0,
+    "pass_counts_scope": "execution amendment full release workspace invocation",
+    "execution_parity_tests": { "passed": 3, "failed": 0, "exit_code": 0 },
+    "old_new_autodiff_logits_deltas_payload_gradients": "bit_exact_all_nine_q_r_conditions",
+    "graph_free_autodiff_root_features": "bit_exact_after_explicit_softmax_correction"
   },
   "qualification": {
-    "cpu": "historical_network_fixture_pass",
+    "cpu": "7737640_failed_exact_graph_free_autodiff_baseline_parity",
     "cuda_rtx_2050": "historical_network_fixture_pass",
     "historical_fixture_source": "df6e2aa650c12726ad7094dae04a7c73339139a8",
     "current_engineering_gate": "fail",
-    "new_measured_qualification": "not_run",
+    "new_measured_qualification": "execution_amendment_not_run",
     "release_refusal_path": "verified_exit_1_no_output_before_model_construction",
     "release_refusal_evidence": "docs/evidence/v5/engineering-stop-preflight.json",
     "precision": "fp32",
@@ -52,6 +54,9 @@
     "found": false
   },
   "sealed_inputs_evaluated": false,
-  "status": "engineering_stop_uniform_frontier",
-  "invariant_failure_evidence": "docs/evidence/v5/acquisition-contract-failure.json"
+  "status": "execution_amendment_parity_tests_pass_fresh_qualification_pending",
+  "retained_failures": [
+    "docs/evidence/v5/acquisition-contract-failure.json",
+    "docs/evidence/v5/qualification-7737640-cpu.json"
+  ]
 }

@@ -2,7 +2,10 @@
 
 **PRE-PILOT:** the owner delegated next-step choice and the complete-frontier
 correction now passes its retained regression. Read `docs/V5_ROOT_CAUSE.md` and
-`docs/V5_NUMERICAL_ROOT_CAUSE.md`. Fresh CPU/CUDA qualification for the amended
+`docs/V5_NUMERICAL_ROOT_CAUSE.md` and `docs/V5_EXECUTION_PARITY.md`.
+Depth-amended CPU qualification failed only exact cross-backend baseline parity;
+the isolated corrective experiment now passes its exact unit comparisons.
+Fresh CPU/CUDA qualification for the execution-amended
 configuration and exact P25 custody are required before any drill or training.
 Historical depth-five qualification reports cannot unlock the amended model.
 
@@ -16,8 +19,11 @@ Branch: `experiment/hp-v5-counterfactual-loop`.
 Historical stop checkpoint: `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`.
 The amended source must be rebuilt after its commit. Scientific identity is the
 last commit touching `crates`, Cargo files or `configs`; documentation-only
-commits do not change it. Configuration digest:
+commits do not change it. Previous depth-only configuration digest:
 `d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+Current execution-amended digest, measured by rebuilt model-info:
+`849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
+Old qualifications cannot be reused across that identity change.
 
 ## Required missing artifact
 

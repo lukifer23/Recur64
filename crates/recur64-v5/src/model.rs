@@ -34,6 +34,38 @@ const REL_H_OTHER: usize = 11;
 const REL_H_OWNED_E: usize = 12;
 const REL_H_OTHER_E: usize = 13;
 
+#[cfg(test)]
+std::thread_local! {
+    static LEGACY_SOFTMAX: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Test-only parity reference: the real reader with the former Burn dispatch.
+/// No alternate execution switch exists in production.
+#[cfg(test)]
+pub(crate) fn with_legacy_softmax<T>(f: impl FnOnce() -> T) -> T {
+    struct Restore(bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            LEGACY_SOFTMAX.set(self.0);
+        }
+    }
+    let _restore = Restore(LEGACY_SOFTMAX.replace(true));
+    f()
+}
+
+/// The exact pinned Burn 0.21 default softmax equation, on both backends.
+/// Only the numerical max-shift is detached, as in the framework default;
+/// neither stream nor any recurrent state/iteration is detached.
+fn attention_softmax<B: Backend, const N: usize>(x: Tensor<B, N>, dim: usize) -> Tensor<B, N> {
+    #[cfg(test)]
+    if LEGACY_SOFTMAX.get() {
+        return activation::softmax(x, dim);
+    }
+    let max = x.clone().detach().max_dim(dim);
+    let exp = (x - max).exp();
+    exp.clone() / exp.sum_dim(dim)
+}
+
 fn rows<B: Backend>(linear: &Linear<B>, x: Tensor<B, 3>) -> Tensor<B, 3> {
     let [b, s, d] = x.dims();
     let y = linear.forward(x.reshape([b * s, d]));
@@ -125,7 +157,7 @@ impl<B: Backend> SquareBlock<B> {
             .matmul(k.swap_dims(2, 3))
             .mul_scalar(1.0 / (hd as f32).sqrt())
             + self.rel.forward(rel_idx, h);
-        let a = activation::softmax(logits, 3)
+        let a = attention_softmax(logits, 3)
             .matmul(v)
             .swap_dims(1, 2)
             .reshape([b, s, d]);
@@ -186,7 +218,7 @@ impl<B: Backend> MaskedBlock<B> {
             .unsqueeze_dim::<3>(1)
             .unsqueeze_dim::<4>(1)
             .expand([b, h, s, s]);
-        let a = activation::softmax(logits.mask_fill(pad, MASKED_LOGIT), 3)
+        let a = attention_softmax(logits.mask_fill(pad, MASKED_LOGIT), 3)
             .matmul(v)
             .swap_dims(1, 2)
             .reshape([b, s, d]);
@@ -410,7 +442,7 @@ impl<B: Backend> StateEncoder<B> {
         let qq = split_q(rows(&self.q, slots));
         let kk = split_s(rows(&self.k, x.clone()));
         let vv = split_s(rows(&self.v, x));
-        let pooled = activation::softmax(
+        let pooled = attention_softmax(
             qq.matmul(kk.swap_dims(2, 3))
                 .mul_scalar(1.0 / (hd as f32).sqrt()),
             3,
@@ -525,7 +557,7 @@ impl<B: Backend> RelationalBlock<B> {
             .unsqueeze_dim::<3>(1)
             .unsqueeze_dim::<4>(1)
             .expand([b, h, qs, ms]);
-        let weights = activation::softmax(logits.mask_fill(pad, MASKED_LOGIT), 3);
+        let weights = attention_softmax(logits.mask_fill(pad, MASKED_LOGIT), 3);
         let traced = trace_attention.then(|| weights.clone());
         let a = weights.matmul(v).swap_dims(1, 2).reshape([b, qs, d]);
         let t = state + rows(&self.o, a).mul_scalar(self.alpha);

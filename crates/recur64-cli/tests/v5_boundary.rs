@@ -41,7 +41,7 @@ fn model_info_reports_the_frozen_identity_and_measured_parameter_total() {
     assert_eq!(doc["parameters"], 7_162_896);
     assert_eq!(
         doc["scientific_config_digest"],
-        "d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937"
+        "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee"
     );
     assert_eq!(doc["contracts"]["acquired_graph"], "v5_acquired_graph_v2");
     assert_eq!(doc["architecture"], "counterfactual_relational_loop_v1");

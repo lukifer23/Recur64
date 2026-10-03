@@ -56,6 +56,14 @@ measured qualification remain FP32. Fresh CPU/CUDA qualification is required.
 
 ## Training recipe
 
+V5-D8, pre-pilot execution amendment: `V5_EXECUTION_PARITY.md` freezes the pinned
+primitive softmax equation on both backends to fix the measured exact baseline
+parity failure. The execution field is hashed; old configurations refuse.
+Qualification and exact old/new autodiff parity must pass without changing
+thresholds. Actual execution-amended configuration digest:
+`849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
+This does not change this training or evaluation recipe.
+
 Seed 5301 only. FP32, `adamw-v1`, correct-set loss, linear warmup 80 then existing
 cosine decay, no WDL objective, no DEV-driven selection.
 
