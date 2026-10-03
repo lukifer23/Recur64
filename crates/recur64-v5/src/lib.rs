@@ -7,11 +7,14 @@
 
 pub mod config;
 pub mod data;
+pub mod drill;
+pub mod evaluation;
 pub mod graph;
 pub mod loss;
 pub mod model;
 pub mod qualification;
 pub mod stage;
+pub mod study;
 
 pub const SQUARES: usize = 64;
 pub const IN_FEATURES: usize = 119;

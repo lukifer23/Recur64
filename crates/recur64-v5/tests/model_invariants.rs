@@ -87,3 +87,51 @@ fn consistently_remapped_storage_order_is_equivariant() {
         .fold(0.0_f32, f32::max);
     assert!(max_abs <= 1.0e-6, "max_abs={max_abs:e}");
 }
+
+#[test]
+fn composition_mask_zeros_payloads_at_the_encoded_anchor_boundary() {
+    let _guard = RNG.lock().unwrap_or_else(|e| e.into_inner());
+    let device = Default::default();
+    <B as Backend>::seed(&device, 5301);
+    let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+    let root = root();
+    let graph = graph(&root, 4);
+    let input = V5Inputs::<B>::from_examples(&[(&root, &graph)], &device).unwrap();
+    let mask = input
+        .payload_token_mask(&[vec![false; graph.actual_q]], &device)
+        .unwrap();
+    let base = model.base(&input);
+    let out = model.paired_with_base_payload_mask(
+        &input,
+        base,
+        4,
+        Treatment::Normal,
+        Some(mask),
+    );
+    assert!(values(out.raw_delta).into_iter().all(|x| x == 0.0));
+    assert!(values(out.centered_delta).into_iter().all(|x| x == 0.0));
+    assert_eq!(values(out.logits), values(out.z0));
+}
+
+#[test]
+fn traced_execution_is_the_same_reader_computation_and_exposes_each_loop() {
+    let _guard = RNG.lock().unwrap_or_else(|e| e.into_inner());
+    let device = Default::default();
+    <B as Backend>::seed(&device, 5301);
+    let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+    let root = root();
+    let graph = graph(&root, 4);
+    let input = V5Inputs::<B>::from_examples(&[(&root, &graph)], &device).unwrap();
+    let normal = model.paired(&input, 4, Treatment::Normal);
+    let traced = model.paired_traced_with_base_payload_mask(
+        &input,
+        model.base(&input),
+        4,
+        Treatment::Normal,
+        None,
+    );
+    assert_eq!(values(normal.logits), values(traced.output.logits));
+    assert_eq!(traced.factual.len(), 4);
+    assert_eq!(traced.null.len(), 4);
+    assert_eq!(traced.factual[0].evidence_attention.dims()[1], 8);
+}

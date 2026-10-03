@@ -2,14 +2,20 @@
 
 use std::path::{Path, PathBuf};
 
+use burn::module::AutodiffModule;
 use burn::prelude::*;
 use clap::{Args, Subcommand, ValueEnum};
 use recur64_core::GameState;
 use recur64_v5::config::{ARCHITECTURE, V5Config};
 use recur64_v5::data::V5Data;
+use recur64_v5::evaluation::{
+    EvaluationBundle, ablation_report, classify_pilot, merge_cell_bundles,
+};
 use recur64_v5::graph::{AcquiredGraph, EpisodeKey, Schedule, acquire};
 use recur64_v5::model::CounterfactualRelationalLoop;
-use recur64_v5::stage::{Recipe, Stage, Trainer, baseline_fingerprint, load_finished_model};
+use recur64_v5::stage::{
+    Recipe, Stage, Trainer, baseline_fingerprint, load_finished_model, load_model_at,
+};
 use serde::Serialize;
 
 #[derive(Subcommand)]
@@ -27,6 +33,18 @@ pub enum V5Cmd {
     Train(TrainArgs),
     /// Exercise the actual paired graph over Q2/Q4/Q8 and R1/R2/R4.
     Qualify(QualifyArgs),
+    /// Run the disposable 24-position reader optimization drill.
+    Drill(DrillArgs),
+    /// Evaluate one inherited DEV family/depth cell at update 0 or 800.
+    Evaluate(EvaluateArgs),
+    /// Merge the six deterministic DEV cell shards into the complete matrix.
+    EvalMerge(EvalMergeArgs),
+    /// Recompute treatment and composition summaries from per-position evidence.
+    Ablation(AblationArgs),
+    /// Apply the frozen bootstrap gates to the complete update-800 evaluation.
+    PilotReport(PilotReportArgs),
+    /// Run the conditionally authorized primary-cell Q8/R8 forward diagnostic.
+    ExtraLoops(ExtraLoopsArgs),
 }
 
 #[derive(Args)]
@@ -142,6 +160,97 @@ pub struct QualifyArgs {
     device: DeviceArg,
     #[arg(long, default_value_t = 2)]
     microbatch: usize,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct DrillArgs {
+    #[arg(long, value_enum)]
+    device: DeviceArg,
+    #[arg(long)]
+    data: PathBuf,
+    #[arg(long, default_value_t = 8)]
+    q: usize,
+    /// Required for Q16 and must be the failed Q8 report.
+    #[arg(long)]
+    q8_report: Option<PathBuf>,
+    #[arg(long, default_value_t = 2)]
+    microbatch: usize,
+    #[arg(long)]
+    qualification: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct EvaluateArgs {
+    #[arg(long, value_enum)]
+    device: DeviceArg,
+    #[arg(long)]
+    data: PathBuf,
+    #[arg(long)]
+    stage_b: PathBuf,
+    #[arg(long)]
+    update: u64,
+    #[arg(long)]
+    family: String,
+    #[arg(long)]
+    mate_depth: u8,
+    #[arg(long, default_value_t = 2)]
+    microbatch: usize,
+    #[arg(long)]
+    qualification: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct EvalMergeArgs {
+    #[arg(long, required = true, num_args = 6)]
+    input: Vec<PathBuf>,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct AblationArgs {
+    #[arg(long)]
+    evaluation: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct PilotReportArgs {
+    #[arg(long)]
+    evaluation: PathBuf,
+    #[arg(long)]
+    cpu_qualification: PathBuf,
+    #[arg(long)]
+    cuda_qualification: PathBuf,
+    #[arg(long)]
+    drill: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
+pub struct ExtraLoopsArgs {
+    #[arg(long, value_enum)]
+    device: DeviceArg,
+    #[arg(long)]
+    data: PathBuf,
+    #[arg(long)]
+    stage_b: PathBuf,
+    #[arg(long)]
+    evaluation: PathBuf,
+    #[arg(long)]
+    pilot_report: PathBuf,
+    #[arg(long, default_value_t = 2)]
+    microbatch: usize,
+    #[arg(long)]
+    qualification: PathBuf,
     #[arg(long)]
     output: PathBuf,
 }
@@ -328,13 +437,22 @@ fn require_empty_new_run(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn qualification_seconds(path: &Path, device: DeviceArg, microbatch: usize) -> anyhow::Result<f64> {
+fn qualification_seconds(
+    path: &Path,
+    device: DeviceArg,
+    microbatch: usize,
+    source_sha: &str,
+) -> anyhow::Result<f64> {
     let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+    let config_digest = V5Config::default().scientific_digest()?;
     anyhow::ensure!(
         value["schema"] == "v5_qualification_report_v1"
             && value["pass"] == true
             && value["precision"] == "fp32"
-            && value["microbatch"] == microbatch as u64,
+            && value["microbatch"] == microbatch as u64
+            && value["source_sha"] == source_sha
+            && value["architecture"] == ARCHITECTURE
+            && value["config_digest"] == config_digest,
         "{} is not a passing V5 qualification for microbatch {}",
         path.display(),
         microbatch
@@ -362,10 +480,11 @@ where
         (1..=45).contains(&a.max_minutes),
         "--max-minutes must be in 1..=45"
     );
-    let seconds_per_update = qualification_seconds(&a.qualification, a.device, a.microbatch)?;
+    let source = source_sha()?;
+    let seconds_per_physical_update =
+        qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
     let data = V5Data::load(&a.data)?;
     data.verify_custody()?;
-    let source = source_sha()?;
     let device = B::Device::default();
     let (recipe, initial_model) = match a.stage {
         StageArg::A => {
@@ -398,12 +517,20 @@ where
         require_empty_new_run(&a.run_dir)?;
         Trainer::new(recipe.clone(), initial_model.expect("new run model"))?
     };
+    if !a.resume && recipe.stage == Stage::ReaderB {
+        let hash = trainer.save(&a.run_dir, backend, &device)?;
+        println!("checkpoint update 0 model {hash}");
+    }
     let remaining = recipe.updates - trainer.updates_done;
+    let projected_seconds_per_update =
+        seconds_per_physical_update * recipe.accumulation_steps as f64;
     println!(
-        "projected remaining work: {} updates, {:.2} hours at qualified {:.3}s/update",
+        "projected remaining work: {} optimizer updates, {:.2} hours at conservative {:.3}s/update ({} x {:.3}s qualified physical updates)",
         remaining,
-        remaining as f64 * seconds_per_update / 3600.0,
-        seconds_per_update
+        remaining as f64 * projected_seconds_per_update / 3600.0,
+        projected_seconds_per_update,
+        recipe.accumulation_steps,
+        seconds_per_physical_update
     );
     let deadline = std::time::Duration::from_secs(a.max_minutes * 60);
     let started = std::time::Instant::now();
@@ -505,6 +632,289 @@ fn qualify(a: QualifyArgs) -> anyhow::Result<()> {
     }
 }
 
+fn drill_backend<B>(a: &DrillArgs, backend: &str) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    B::Device: Default,
+{
+    let source = source_sha()?;
+    let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
+    anyhow::ensure!(matches!(a.q, 8 | 16), "--q must be 8 or the conditional 16");
+    if a.q == 16 {
+        let q8_path = a
+            .q8_report
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("Q16 requires --q8-report"))?;
+        let prior: recur64_v5::drill::DrillReport =
+            serde_json::from_slice(&std::fs::read(q8_path)?)?;
+        anyhow::ensure!(
+            prior.schema == recur64_v5::drill::DRILL_SCHEMA
+                && prior.q == 8
+                && !prior.pass
+                && !prior.initial_below_point_zero_five
+                && prior.source_sha == source,
+            "Q16 is authorized only after a finite, informative Q8 drill failure from this source"
+        );
+    } else {
+        anyhow::ensure!(a.q8_report.is_none(), "--q8-report is valid only for Q16");
+    }
+    let data = V5Data::load(&a.data)?;
+    let device = B::Device::default();
+    let report = recur64_v5::drill::run::<B>(source, &data, a.q, a.microbatch, &device)?;
+    write_json(&a.output, &report)?;
+    println!(
+        "V5 {backend} Q{} drill: {} loss {:.6} -> {:.6} ({:.2}% reduction), action changes {}",
+        report.q,
+        report.classification,
+        report.initial_mean_set_loss,
+        report.final_mean_set_loss,
+        100.0 * report.relative_loss_reduction,
+        report.action_changes
+    );
+    Ok(())
+}
+
+fn drill(a: DrillArgs) -> anyhow::Result<()> {
+    match a.device {
+        DeviceArg::Cpu => drill_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu"),
+        DeviceArg::Cuda => {
+            #[cfg(feature = "cuda")]
+            {
+                drill_backend::<burn::backend::Autodiff<burn::backend::Cuda>>(&a, "cuda")
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!(
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
+                )
+            }
+        }
+    }
+}
+
+fn evaluate_backend<B>(a: &EvaluateArgs, backend: &str) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    B::Device: Default,
+{
+    anyhow::ensure!(
+        matches!(a.update, 0 | 800),
+        "reader evaluation is fixed to update 0 or 800"
+    );
+    anyhow::ensure!(
+        matches!(a.family.as_str(), "KQRvK" | "KRRvK") && matches!(a.mate_depth, 1..=3),
+        "evaluation cell must be KQRvK/KRRvK and M1/M2/M3"
+    );
+    let source = source_sha()?;
+    let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
+    let data = V5Data::load(&a.data)?;
+    let indices: Vec<usize> = data
+        .dev
+        .iter()
+        .copied()
+        .filter(|&index| {
+            data.position(index).family == a.family
+                && data.position(index).mate_depth == a.mate_depth
+        })
+        .collect();
+    anyhow::ensure!(!indices.is_empty(), "selected inherited DEV cell is empty");
+    if a.family == "KQRvK" && a.mate_depth == 3 {
+        anyhow::ensure!(
+            indices.len() == 507,
+            "primary KQRvK M3 cell must contain 507 positions"
+        );
+    }
+    let device = B::Device::default();
+    let (model, meta) = load_model_at::<B>(&a.stage_b, Stage::ReaderB, a.update, &device)?;
+    anyhow::ensure!(
+        meta.recipe.source_sha == source
+            && meta.config_digest == V5Config::default().scientific_digest()?,
+        "evaluation source/config differs from the checkpoint recipe"
+    );
+    let identity = recur64_v5::study::EvaluationIdentity {
+        source_sha: source,
+        config_digest: meta.config_digest,
+        model_hash: meta.model_hash,
+        final_update: a.update,
+        scope: format!("{}_M{}", a.family, a.mate_depth),
+        split: "inherited_v4_dev".into(),
+        microbatch: a.microbatch,
+        device: backend.into(),
+    };
+    let bundle =
+        recur64_v5::study::evaluate_reader(&model.valid(), &data, &indices, identity, &device)?;
+    write_json(&a.output, &bundle)?;
+    println!(
+        "V5 {backend} evaluation {} update {}: {} positions, {} records, graph {}",
+        bundle.scope,
+        bundle.final_update,
+        indices.len(),
+        bundle.records.len(),
+        bundle.graph_manifest_hash
+    );
+    Ok(())
+}
+
+fn evaluate(a: EvaluateArgs) -> anyhow::Result<()> {
+    match a.device {
+        DeviceArg::Cpu => evaluate_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu"),
+        DeviceArg::Cuda => {
+            #[cfg(feature = "cuda")]
+            {
+                evaluate_backend::<burn::backend::Autodiff<burn::backend::Cuda>>(&a, "cuda")
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!(
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
+                )
+            }
+        }
+    }
+}
+
+fn eval_merge(a: EvalMergeArgs) -> anyhow::Result<()> {
+    let bundles: Vec<EvaluationBundle> = a
+        .input
+        .iter()
+        .map(|path| serde_json::from_slice(&std::fs::read(path)?).map_err(Into::into))
+        .collect::<anyhow::Result<_>>()?;
+    let merged = merge_cell_bundles(bundles)?;
+    write_json(&a.output, &merged)?;
+    println!(
+        "merged {} records over all 4,403 DEV positions; graph {}",
+        merged.records.len(),
+        merged.graph_manifest_hash
+    );
+    Ok(())
+}
+
+fn ablation(a: AblationArgs) -> anyhow::Result<()> {
+    let bundle: EvaluationBundle = serde_json::from_slice(&std::fs::read(&a.evaluation)?)?;
+    let report = ablation_report(&bundle)?;
+    write_json(&a.output, &report)?;
+    println!(
+        "wrote {} ablation cells and {} composition contrasts",
+        report.summaries.len(),
+        report.composition.len()
+    );
+    Ok(())
+}
+
+fn qualifying_report(path: &Path, device: &str, bundle: &EvaluationBundle) -> anyhow::Result<()> {
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+    anyhow::ensure!(
+        value["schema"] == "v5_qualification_report_v1"
+            && value["pass"] == true
+            && value["device"] == device
+            && value["precision"] == "fp32"
+            && value["source_sha"] == bundle.source_sha
+            && value["config_digest"] == bundle.config_digest
+            && value["microbatch"] == bundle.microbatch as u64,
+        "{} is not the matching passing {device} qualification",
+        path.display()
+    );
+    Ok(())
+}
+
+fn pilot_report(a: PilotReportArgs) -> anyhow::Result<()> {
+    let bundle: EvaluationBundle = serde_json::from_slice(&std::fs::read(&a.evaluation)?)?;
+    anyhow::ensure!(
+        bundle.scope == "all_dev_4403" && bundle.final_update == 800,
+        "pilot classification requires the complete fixed update-800 DEV evaluation"
+    );
+    qualifying_report(&a.cpu_qualification, "cpu", &bundle)?;
+    qualifying_report(&a.cuda_qualification, "cuda", &bundle)?;
+    let drill: recur64_v5::drill::DrillReport = serde_json::from_slice(&std::fs::read(&a.drill)?)?;
+    let engineering_pass = drill.schema == recur64_v5::drill::DRILL_SCHEMA
+        && drill.source_sha == bundle.source_sha
+        && drill.config_digest == bundle.config_digest
+        && drill.q == 8
+        && drill.pass
+        && drill.baseline_exact
+        && drill.finite_training
+        && bundle.normal_replay_exact;
+    let report = classify_pilot(&bundle, engineering_pass, true)?;
+    write_json(&a.output, &report)?;
+    println!("V5 pilot classification: {}", report.classification);
+    Ok(())
+}
+
+fn extra_loops_backend<B>(a: &ExtraLoopsArgs, backend: &str) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    B::Device: Default,
+{
+    let gate: recur64_v5::evaluation::PilotClassification =
+        serde_json::from_slice(&std::fs::read(&a.pilot_report)?)?;
+    anyhow::ensure!(
+        gate.schema == recur64_v5::evaluation::REPORT_SCHEMA
+            && gate.classification == "PILOT_CANDIDATE",
+        "R8 is authorized only after all primary pilot gates pass"
+    );
+    let main: EvaluationBundle = serde_json::from_slice(&std::fs::read(&a.evaluation)?)?;
+    anyhow::ensure!(
+        main.scope == "all_dev_4403" && main.final_update == 800,
+        "R8 requires the complete update-800 evaluation"
+    );
+    let source = source_sha()?;
+    let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
+    let data = V5Data::load(&a.data)?;
+    let indices: Vec<usize> = data
+        .dev
+        .iter()
+        .copied()
+        .filter(|&index| {
+            data.position(index).family == "KQRvK" && data.position(index).mate_depth == 3
+        })
+        .collect();
+    let device = B::Device::default();
+    let (model, meta) = load_model_at::<B>(&a.stage_b, Stage::ReaderB, 800, &device)?;
+    anyhow::ensure!(
+        meta.model_hash == main.model_hash
+            && meta.recipe.source_sha == source
+            && main.source_sha == source,
+        "R8 checkpoint/main evaluation/source identity mismatch"
+    );
+    let identity = recur64_v5::study::EvaluationIdentity {
+        source_sha: source,
+        config_digest: meta.config_digest,
+        model_hash: meta.model_hash,
+        final_update: 800,
+        scope: String::new(),
+        split: "inherited_v4_dev".into(),
+        microbatch: a.microbatch,
+        device: backend.into(),
+    };
+    let r8 = recur64_v5::study::evaluate_r8(&model.valid(), &data, &indices, identity, &device)?;
+    let report = recur64_v5::evaluation::r8_report(&main, &r8)?;
+    let combined = serde_json::json!({"report": report, "evaluation": r8});
+    write_json(&a.output, &combined)?;
+    println!(
+        "V5 {backend} R8 diagnostic: mean top1 improvement {:+.8}, mean set-loss improvement {:+.8}",
+        report.mean_top1_improvement, report.mean_set_loss_improvement
+    );
+    Ok(())
+}
+
+fn extra_loops(a: ExtraLoopsArgs) -> anyhow::Result<()> {
+    match a.device {
+        DeviceArg::Cpu => extra_loops_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu"),
+        DeviceArg::Cuda => {
+            #[cfg(feature = "cuda")]
+            {
+                extra_loops_backend::<burn::backend::Autodiff<burn::backend::Cuda>>(&a, "cuda")
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!(
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
+                )
+            }
+        }
+    }
+}
+
 pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
     match cmd {
         V5Cmd::Doctor(a) => doctor(a),
@@ -513,6 +923,12 @@ pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
         V5Cmd::Graph(c) => graph(c),
         V5Cmd::Train(a) => big_stack("recur64-v5-train", move || train(a)),
         V5Cmd::Qualify(a) => big_stack("recur64-v5-qualify", move || qualify(a)),
+        V5Cmd::Drill(a) => big_stack("recur64-v5-drill", move || drill(a)),
+        V5Cmd::Evaluate(a) => big_stack("recur64-v5-evaluate", move || evaluate(a)),
+        V5Cmd::EvalMerge(a) => eval_merge(a),
+        V5Cmd::Ablation(a) => ablation(a),
+        V5Cmd::PilotReport(a) => pilot_report(a),
+        V5Cmd::ExtraLoops(a) => big_stack("recur64-v5-r8", move || extra_loops(a)),
     }
 }
 

@@ -357,6 +357,16 @@ fn condition_indices(data: &V5Data, update: u64, seed: u64, condition: usize) ->
         .collect()
 }
 
+fn acquisition_seed(seed: u64, condition: &Condition) -> u64 {
+    let schedule = match condition.schedule {
+        Schedule::UniformFrontierV1 => 0x55AA_0001,
+        Schedule::BaseRankedDepthV1 => 0x55AA_0002,
+    };
+    // R is deliberately absent: acquisition identity is independent of the
+    // number of shared reader-loop applications.
+    mix(seed, schedule ^ condition.q as u64)
+}
+
 impl<B: AutodiffBackend> Trainer<B> {
     pub fn new(recipe: Recipe, model: CounterfactualRelationalLoop<B>) -> anyhow::Result<Self> {
         recipe.validate()?;
@@ -445,7 +455,7 @@ impl<B: AutodiffBackend> Trainer<B> {
                                 EpisodeKey {
                                     position_id: data.position(index).id.clone(),
                                     schedule: condition.schedule,
-                                    run_seed: mix(self.recipe.seed, condition_index as u64),
+                                    run_seed: acquisition_seed(self.recipe.seed, condition),
                                     occurrence_ordinal: ordinal,
                                 },
                                 condition.q,
@@ -636,6 +646,50 @@ pub fn load_finished_model<B: AutodiffBackend>(
     Ok((model, meta))
 }
 
+/// Load one exact immutable checkpoint generation for fixed-update evaluation.
+pub fn load_model_at<B: AutodiffBackend>(
+    run_dir: &Path,
+    expected_stage: Stage,
+    update: u64,
+    device: &B::Device,
+) -> anyhow::Result<(CounterfactualRelationalLoop<B>, CheckpointMeta)> {
+    let generation = run_dir
+        .join("checkpoints")
+        .join(format!("update-{update:012}"));
+    let meta: CheckpointMeta =
+        serde_json::from_slice(&std::fs::read(generation.join("state.json"))?)?;
+    meta.recipe.validate()?;
+    anyhow::ensure!(
+        meta.schema == CHECKPOINT_SCHEMA
+            && meta.architecture == ARCHITECTURE
+            && meta.stage == expected_stage
+            && meta.recipe.stage == expected_stage
+            && meta.update == update
+            && meta.recipe_digest == meta.recipe.digest()?
+            && meta.config_digest == meta.recipe.config_digest,
+        "{}: checkpoint is not the exact, internally consistent {} update {}",
+        generation.display(),
+        expected_stage.label(),
+        update
+    );
+    let model_path = generation.join("model");
+    anyhow::ensure!(
+        hash_file(&model_path.with_extension("mpk"))? == meta.model_hash,
+        "checkpoint model content hash mismatch"
+    );
+    let template = CounterfactualRelationalLoop::<B>::new(meta.recipe.config.clone(), device);
+    let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+    let model = template.load_file(model_path, &recorder, device)?;
+    if expected_stage == Stage::ReaderB {
+        let actual = baseline_fingerprint(&model, device)?;
+        anyhow::ensure!(
+            meta.recipe.baseline_fingerprint.as_deref() == Some(actual.as_str()),
+            "Stage B checkpoint baseline fingerprint differs from its frozen Stage A identity"
+        );
+    }
+    Ok((model, meta))
+}
+
 pub fn latest_generation(run_dir: &Path) -> anyhow::Result<PathBuf> {
     let checkpoints = run_dir.join("checkpoints");
     let mut valid = Vec::new();
@@ -669,6 +723,20 @@ mod tests {
     use burn::optim::{GradientsParams, Optimizer};
 
     type B = burn::backend::Autodiff<burn::backend::Flex>;
+
+    #[test]
+    fn training_acquisition_seed_is_independent_of_r() {
+        let a = Condition {
+            schedule: Schedule::UniformFrontierV1,
+            q: 8,
+            r: 1,
+        };
+        let b = Condition { r: 4, ..a.clone() };
+        assert_eq!(
+            acquisition_seed(PILOT_SEED, &a),
+            acquisition_seed(PILOT_SEED, &b)
+        );
+    }
 
     fn fixture_update(
         trainer: &mut Trainer<B>,

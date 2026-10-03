@@ -483,7 +483,7 @@ impl<B: Backend> RelationalBlock<B> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn forward(
+    fn forward_inner(
         &self,
         state: Tensor<B, 3>,
         anchor: Tensor<B, 3>,
@@ -492,7 +492,8 @@ impl<B: Backend> RelationalBlock<B> {
         memory_valid: Tensor<B, 2, Bool>,
         relation_onehot: Tensor<B, 4>,
         remove_relations: bool,
-    ) -> Tensor<B, 3> {
+        trace_attention: bool,
+    ) -> (Tensor<B, 3>, Option<Tensor<B, 4>>) {
         let [b, qs, d] = state.dims();
         let ms = memory.dims()[1];
         let (h, hd) = (self.heads, self.head_dim);
@@ -523,24 +524,26 @@ impl<B: Backend> RelationalBlock<B> {
             .unsqueeze_dim::<3>(1)
             .unsqueeze_dim::<4>(1)
             .expand([b, h, qs, ms]);
-        let a = activation::softmax(logits.mask_fill(pad, MASKED_LOGIT), 3)
-            .matmul(v)
-            .swap_dims(1, 2)
-            .reshape([b, qs, d]);
+        let weights = activation::softmax(logits.mask_fill(pad, MASKED_LOGIT), 3);
+        let traced = trace_attention.then(|| weights.clone());
+        let a = weights.matmul(v).swap_dims(1, 2).reshape([b, qs, d]);
         let t = state + rows(&self.o, a).mul_scalar(self.alpha);
         let f = rows(
             &self.f2,
             activation::gelu(rows(&self.f1, self.mid_norm.forward(t.clone()))),
         );
-        self.out_norm
-            .forward(t + f.mul_scalar(self.alpha))
-            .mask_fill(
-                query_valid
-                    .bool_not()
-                    .unsqueeze_dim::<3>(2)
-                    .expand([b, qs, d]),
-                0.0,
-            )
+        (
+            self.out_norm
+                .forward(t + f.mul_scalar(self.alpha))
+                .mask_fill(
+                    query_valid
+                        .bool_not()
+                        .unsqueeze_dim::<3>(2)
+                        .expand([b, qs, d]),
+                    0.0,
+                ),
+            traced,
+        )
     }
 }
 
@@ -572,6 +575,21 @@ pub struct PairedOutput<B: Backend> {
     pub centered_delta: Tensor<B, 2>,
     pub factual_h: Tensor<B, 3>,
     pub null_h: Tensor<B, 3>,
+}
+
+pub struct StreamLoopTensorTrace<B: Backend> {
+    pub evidence_before: Tensor<B, 3>,
+    pub evidence_after: Tensor<B, 3>,
+    pub hypothesis_before: Tensor<B, 3>,
+    pub hypothesis_after: Tensor<B, 3>,
+    pub evidence_attention: Tensor<B, 4>,
+    pub hypothesis_attention: Tensor<B, 4>,
+}
+
+pub struct PairedTracedOutput<B: Backend> {
+    pub output: PairedOutput<B>,
+    pub factual: Vec<StreamLoopTensorTrace<B>>,
+    pub null: Vec<StreamLoopTensorTrace<B>>,
 }
 
 impl<B: Backend> CounterfactualRelationalLoop<B> {
@@ -692,8 +710,24 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         loops: usize,
         treatment: Treatment,
     ) -> PairedOutput<B> {
+        self.paired_with_base_payload_mask(input, base, loops, treatment, None)
+    }
+
+    /// Execute the matched streams with an optional factual payload-token mask.
+    ///
+    /// The mask is applied after the returned-state encoder, at the declared
+    /// payload-anchor boundary. This makes partial composition interventions an
+    /// exact zero intervention even though the encoder contains biases.
+    pub fn paired_with_base_payload_mask(
+        &self,
+        input: &V5Inputs<B>,
+        base: BaseOutput<B>,
+        loops: usize,
+        treatment: Treatment,
+        factual_payload_mask: Option<Tensor<B, 2, Bool>>,
+    ) -> PairedOutput<B> {
         assert!(loops > 0, "R must be positive for reader execution");
-        let factual_x = self
+        let mut factual_x = self
             .state
             .forward(
                 input.states.clone(),
@@ -701,6 +735,21 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 input.node_mask.clone(),
             )
             .reshape([input.batch, input.evidence_tokens, self.cfg.width]);
+        if let Some(mask) = factual_payload_mask {
+            assert_eq!(
+                mask.dims(),
+                [input.batch, input.evidence_tokens],
+                "payload mask shape mismatch"
+            );
+            factual_x = factual_x.mask_fill(
+                mask.bool_not().unsqueeze_dim::<3>(2).expand([
+                    input.batch,
+                    input.evidence_tokens,
+                    self.cfg.width,
+                ]),
+                0.0,
+            );
+        }
         let null_x = factual_x.clone().zeros_like();
         let factual_anchor = if treatment == Treatment::AllPayloadNull {
             null_x.clone()
@@ -733,6 +782,71 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         }
     }
 
+    /// Evaluation-only traced execution of the same paired computation.
+    pub fn paired_traced_with_base_payload_mask(
+        &self,
+        input: &V5Inputs<B>,
+        base: BaseOutput<B>,
+        loops: usize,
+        treatment: Treatment,
+        factual_payload_mask: Option<Tensor<B, 2, Bool>>,
+    ) -> PairedTracedOutput<B> {
+        assert!(loops > 0, "R must be positive for reader execution");
+        let mut factual_x = self
+            .state
+            .forward(
+                input.states.clone(),
+                input.flags.clone(),
+                input.node_mask.clone(),
+            )
+            .reshape([input.batch, input.evidence_tokens, self.cfg.width]);
+        if let Some(mask) = factual_payload_mask {
+            assert_eq!(mask.dims(), [input.batch, input.evidence_tokens]);
+            factual_x = factual_x.mask_fill(
+                mask.bool_not().unsqueeze_dim::<3>(2).expand([
+                    input.batch,
+                    input.evidence_tokens,
+                    self.cfg.width,
+                ]),
+                0.0,
+            );
+        }
+        let null_x = factual_x.clone().zeros_like();
+        let factual_anchor = if treatment == Treatment::AllPayloadNull {
+            null_x.clone()
+        } else {
+            factual_x
+        };
+        let (factual_h, factual) =
+            self.run_stream_inner(&base, input, factual_anchor, loops, treatment, true);
+        let (null_h, null) = self.run_stream_inner(&base, input, null_x, loops, treatment, true);
+        let read = |h: Tensor<B, 3>| {
+            rows(
+                &self.correction_out,
+                activation::gelu(rows(&self.correction_hidden, h)),
+            )
+            .squeeze_dim::<2>(2)
+        };
+        let raw = read(factual_h.clone()) - read(null_h.clone());
+        let valid = input.cands.mask.clone().float();
+        let count = valid.clone().sum_dim(1).clamp(1.0, f32::MAX);
+        let mean = (raw.clone() * valid).sum_dim(1) / count;
+        let centered = (raw.clone() - mean.expand([input.batch, input.cands.width]))
+            .mask_fill(input.cands.mask.clone().bool_not(), 0.0);
+        PairedTracedOutput {
+            output: PairedOutput {
+                logits: base.z0.clone() + centered.clone(),
+                z0: base.z0,
+                raw_delta: raw,
+                centered_delta: centered,
+                factual_h,
+                null_h,
+            },
+            factual,
+            null,
+        }
+    }
+
     fn run_stream(
         &self,
         base: &BaseOutput<B>,
@@ -741,6 +855,19 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         loops: usize,
         treatment: Treatment,
     ) -> Tensor<B, 3> {
+        self.run_stream_inner(base, input, anchor, loops, treatment, false)
+            .0
+    }
+
+    fn run_stream_inner(
+        &self,
+        base: &BaseOutput<B>,
+        input: &V5Inputs<B>,
+        anchor: Tensor<B, 3>,
+        loops: usize,
+        treatment: Treatment,
+        trace: bool,
+    ) -> (Tensor<B, 3>, Vec<StreamLoopTensorTrace<B>>) {
         let [b, _w, d] = base.hypotheses.dims();
         let e = input.evidence_tokens;
         let h0 = rows(&self.hypothesis_init, base.hypotheses.clone());
@@ -766,6 +893,7 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
             0.0,
         );
         let mut h = h0.clone();
+        let mut traces = Vec::with_capacity(if trace { loops } else { 0 });
         let root_valid = Tensor::<B, 2, Bool>::ones([b, SQUARES], &base.context.device());
         for _ in 0..loops {
             let supplied_h = if treatment == Treatment::NoHypothesisFeedback {
@@ -782,7 +910,8 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 ],
                 1,
             );
-            ev = self.evidence.forward(
+            let evidence_before = trace.then(|| ev.clone());
+            let (next_ev, evidence_attention) = self.evidence.forward_inner(
                 ev,
                 anchor.clone(),
                 ev_mem,
@@ -790,7 +919,9 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 ev_valid,
                 input.evidence_rel.clone(),
                 treatment == Treatment::NoRelationBias,
+                trace,
             );
+            ev = next_ev;
             let h_mem = Tensor::cat(vec![h.clone(), ev.clone(), base.context.clone()], 1);
             let h_valid = Tensor::cat(
                 vec![
@@ -800,7 +931,8 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 ],
                 1,
             );
-            h = self.hypothesis.forward(
+            let hypothesis_before = trace.then(|| h.clone());
+            let (next_h, hypothesis_attention) = self.hypothesis.forward_inner(
                 h,
                 base.hypotheses.clone(),
                 h_mem,
@@ -808,9 +940,21 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
                 h_valid,
                 input.hypothesis_rel.clone(),
                 treatment == Treatment::NoRelationBias,
+                trace,
             );
+            h = next_h;
+            if trace {
+                traces.push(StreamLoopTensorTrace {
+                    evidence_before: evidence_before.expect("trace evidence"),
+                    evidence_after: ev.clone(),
+                    hypothesis_before: hypothesis_before.expect("trace hypothesis"),
+                    hypothesis_after: h.clone(),
+                    evidence_attention: evidence_attention.expect("trace evidence attention"),
+                    hypothesis_attention: hypothesis_attention.expect("trace hypothesis attention"),
+                });
+            }
         }
-        h
+        (h, traces)
     }
 }
 
@@ -950,6 +1094,35 @@ impl<B: Backend> RootInputs<B> {
 }
 
 impl<B: Backend> V5Inputs<B> {
+    /// Expand per-node intervention choices to the four-slot payload boundary.
+    pub fn payload_token_mask(
+        &self,
+        active_nodes: &[Vec<bool>],
+        device: &B::Device,
+    ) -> anyhow::Result<Tensor<B, 2, Bool>> {
+        anyhow::ensure!(
+            active_nodes.len() == self.batch,
+            "payload intervention batch mismatch"
+        );
+        let node_width = self.evidence_tokens / 4;
+        let mut mask = vec![false; self.batch * self.evidence_tokens];
+        for (row, active) in active_nodes.iter().enumerate() {
+            anyhow::ensure!(
+                active.len() <= node_width,
+                "payload intervention node width exceeds input"
+            );
+            for (node, &enabled) in active.iter().enumerate() {
+                for slot in 0..4 {
+                    mask[row * self.evidence_tokens + node * 4 + slot] = enabled;
+                }
+            }
+        }
+        Ok(Tensor::from_data(
+            TensorData::new(mask, [self.batch, self.evidence_tokens]),
+            device,
+        ))
+    }
+
     pub fn from_examples(
         examples: &[(&GameState, &AcquiredGraph)],
         device: &B::Device,

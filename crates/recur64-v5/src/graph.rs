@@ -15,7 +15,7 @@ pub const MAX_ENGINEERING_Q: usize = 16;
 pub const MAX_DEPTH: u8 = 5;
 pub const MAX_BRANCH_EDGES: usize = 5;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Schedule {
     UniformFrontierV1,
@@ -123,6 +123,43 @@ impl AcquiredGraph {
         h.update(b"recur64.v5.graph_manifest.v1\0");
         h.update(serde_json::to_vec(&copy)?);
         Ok(format!("{:x}", h.finalize()))
+    }
+
+    pub fn compute_structure_digest(&self) -> anyhow::Result<String> {
+        let nodes: Vec<_> = self
+            .nodes
+            .iter()
+            .map(|node| {
+                serde_json::json!({
+                    "storage_id": node.storage_id,
+                    "parent": node.parent,
+                    "root_candidate": node.root_candidate,
+                    "incoming_action_root_frame": node.incoming_action_root_frame,
+                    "action_geometry": node.action_geometry,
+                    "depth": node.depth,
+                    "root_to_move": node.root_to_move,
+                    "path": node.path,
+                    "cumulative_legal_generations": node.cumulative_legal_generations,
+                    "cumulative_legal_moves_generated": node.cumulative_legal_moves_generated,
+                })
+            })
+            .collect();
+        let structure = serde_json::json!({
+            "schema": self.schema,
+            "episode": self.episode,
+            "requested_q": self.requested_q,
+            "actual_q": self.actual_q,
+            "exhausted_frontier": self.exhausted_frontier,
+            "root_player": self.root_player,
+            "nodes": nodes,
+            "successful_queries": self.successful_queries,
+            "legal_generations": self.legal_generations,
+            "legal_moves_generated": self.legal_moves_generated,
+        });
+        let mut hash = Sha256::new();
+        hash.update(b"recur64.v5.graph_structure.v1\0");
+        hash.update(serde_json::to_vec(&structure)?);
+        Ok(format!("{:x}", hash.finalize()))
     }
 
     pub fn verify(&self) -> anyhow::Result<()> {
@@ -547,5 +584,19 @@ mod tests {
         assert_eq!(graph.nodes[0].root_candidate, mating);
         assert_eq!(graph.nodes[0].payload.flags[1], 1.0);
         assert_eq!(graph.nodes[0].payload.flags[2], 1.0);
+    }
+
+    #[test]
+    fn structure_digest_is_payload_independent_but_full_digest_is_not() {
+        let graph = acquire(&root(), episode(Schedule::UniformFrontierV1), 4, None).unwrap();
+        let mut changed = graph.clone();
+        changed.nodes[0].payload.flags[0] = 1.0 - changed.nodes[0].payload.flags[0];
+        changed.digest.clear();
+        changed.digest = changed.compute_digest().unwrap();
+        assert_ne!(graph.digest, changed.digest);
+        assert_eq!(
+            graph.compute_structure_digest().unwrap(),
+            changed.compute_structure_digest().unwrap()
+        );
     }
 }

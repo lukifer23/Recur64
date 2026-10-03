@@ -80,3 +80,74 @@ fn custody_refuses_noncanonical_or_missing_data() {
     assert!(!out.ok);
     assert!(!out.stderr.is_empty());
 }
+
+#[test]
+fn v5_help_exposes_the_real_drill_evaluation_and_reporting_surface() {
+    let out = run(&["v5", "--help"]);
+    assert!(out.ok, "{}", out.stderr);
+    for command in [
+        "drill",
+        "evaluate",
+        "eval-merge",
+        "ablation",
+        "pilot-report",
+        "extra-loops",
+    ] {
+        assert!(
+            out.stdout.contains(command),
+            "missing {command} in {}",
+            out.stdout
+        );
+    }
+}
+
+#[test]
+fn drill_refuses_before_custody_or_qualification_can_be_bypassed() {
+    let dir = tmp("drill-refusal");
+    let output = dir.join("drill.json");
+    let out = run(&[
+        "v5",
+        "drill",
+        "--device",
+        "cpu",
+        "--data",
+        dir.join("missing-p25.json").to_str().unwrap(),
+        "--qualification",
+        dir.join("missing-qualification.json").to_str().unwrap(),
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert!(!out.ok);
+    assert!(!output.exists());
+}
+
+#[test]
+fn extra_loops_refuses_without_a_pilot_candidate_report() {
+    let dir = tmp("r8-refusal");
+    let gate = dir.join("gate.json");
+    std::fs::write(
+        &gate,
+        br#"{"schema":"v5_reader_pilot_report_v1","classification":"NO_SIGNAL"}"#,
+    )
+    .unwrap();
+    let out = run(&[
+        "v5",
+        "extra-loops",
+        "--device",
+        "cpu",
+        "--data",
+        dir.join("missing.json").to_str().unwrap(),
+        "--stage-b",
+        dir.join("stage-b").to_str().unwrap(),
+        "--evaluation",
+        dir.join("eval.json").to_str().unwrap(),
+        "--pilot-report",
+        gate.to_str().unwrap(),
+        "--qualification",
+        dir.join("qual.json").to_str().unwrap(),
+        "--output",
+        dir.join("r8.json").to_str().unwrap(),
+    ]);
+    assert!(!out.ok);
+    assert!(out.stderr.contains("missing field") || out.stderr.contains("R8 is authorized"));
+}
