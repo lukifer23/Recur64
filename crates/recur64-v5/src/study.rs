@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::time::Instant;
 
 use burn::prelude::*;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::config::ARCHITECTURE;
@@ -27,6 +28,207 @@ pub struct EvaluationIdentity {
     pub split: String,
     pub microbatch: usize,
     pub device: String,
+}
+
+pub const BASELINE_EVAL_SCHEMA: &str = "v5_final_baseline_evaluation_v1";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaselineRecord {
+    pub position_id: String,
+    pub family: String,
+    pub mate_depth: u8,
+    pub legal_actions: Vec<u16>,
+    pub correct_indices: Vec<u32>,
+    pub logits: Vec<f32>,
+    pub metrics: PolicyMetrics,
+    pub candidate_facts_evaluated: usize,
+    pub candidate_facts_probe_evaluated: usize,
+    pub candidate_facts_probe_seconds: f64,
+    pub root_path_wall_seconds: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaselineEvaluation {
+    pub schema: String,
+    pub architecture: String,
+    pub source_sha: String,
+    pub config_digest: String,
+    pub train_digest: String,
+    pub dev_digest: String,
+    pub model_hash: String,
+    pub baseline_fingerprint: String,
+    pub final_update: u64,
+    pub seed: u64,
+    pub microbatch: usize,
+    pub precision: String,
+    pub device: String,
+    pub scope: String,
+    pub root_encoder_examples: usize,
+    pub returned_encoder_examples: usize,
+    pub exact_queries: usize,
+    pub shared_core_applications: usize,
+    pub records: Vec<BaselineRecord>,
+}
+
+impl BaselineEvaluation {
+    pub fn validate_against_data(&self, data: &V5Data) -> anyhow::Result<()> {
+        self.validate()?;
+        data.verify_custody()?;
+        let positions: BTreeMap<_, _> = data
+            .dev
+            .iter()
+            .map(|&index| (data.position(index).id.as_str(), data.position(index)))
+            .collect();
+        for row in &self.records {
+            let position = positions
+                .get(row.position_id.as_str())
+                .ok_or_else(|| anyhow::anyhow!("baseline record is not inherited DEV"))?;
+            anyhow::ensure!(
+                row.legal_actions == position.legal
+                    && row.correct_indices == position.correct
+                    && row.family == position.family
+                    && row.mate_depth == position.mate_depth,
+                "baseline labels/actions/cell disagree with authoritative P25 data"
+            );
+        }
+        Ok(())
+    }
+
+    pub fn validate(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.schema == BASELINE_EVAL_SCHEMA
+                && self.architecture == ARCHITECTURE
+                && self.config_digest == crate::config::V5Config::default().scientific_digest()?
+                && self.train_digest == TRAIN_DIGEST
+                && self.dev_digest == DEV_DIGEST
+                && self.final_update == crate::stage::STAGE_A_UPDATES
+                && self.seed == crate::stage::PILOT_SEED
+                && matches!(self.microbatch, 1 | 2)
+                && self.precision == "fp32"
+                && self.scope == "all_dev_4403"
+                && self.records.len() == 4_403
+                && self.root_encoder_examples == 4_403
+                && self.returned_encoder_examples == 0
+                && self.exact_queries == 0
+                && self.shared_core_applications == 0,
+            "final baseline identity/accounting mismatch"
+        );
+        let mut ids = HashSet::new();
+        let mut primary = 0;
+        for row in &self.records {
+            anyhow::ensure!(
+                ids.insert(row.position_id.as_str())
+                    && row.legal_actions.len() == row.logits.len()
+                    && row.candidate_facts_evaluated == 2 * row.legal_actions.len()
+                    && row.candidate_facts_probe_evaluated == row.legal_actions.len(),
+                "duplicate or misaligned final baseline record"
+            );
+            let correct: Vec<usize> = row.correct_indices.iter().map(|&i| i as usize).collect();
+            anyhow::ensure!(
+                base_metrics(&row.logits, &correct)? == row.metrics,
+                "baseline metrics disagree with per-position logits"
+            );
+            if row.family == "KQRvK" && row.mate_depth == 3 {
+                primary += 1;
+            }
+        }
+        anyhow::ensure!(
+            primary == 507,
+            "final baseline primary cell must contain 507 positions"
+        );
+        let mut sorted: Vec<_> = ids.into_iter().collect();
+        sorted.sort_unstable();
+        let mut hash = Sha256::new();
+        for id in sorted {
+            hash.update(id.as_bytes());
+            hash.update(b"\n");
+        }
+        anyhow::ensure!(
+            format!("{:x}", hash.finalize()) == DEV_DIGEST,
+            "baseline sorted DEV identity digest mismatch"
+        );
+        Ok(())
+    }
+}
+
+/// Final Stage A B0 evaluation: root path only, once per position. This is
+/// separate from fixed-graph reader evaluation and performs no acquisition.
+pub fn evaluate_final_baseline<B: Backend>(
+    model: &CounterfactualRelationalLoop<B>,
+    data: &V5Data,
+    identity: EvaluationIdentity,
+    fingerprint: String,
+    device: &B::Device,
+) -> anyhow::Result<BaselineEvaluation> {
+    data.verify_custody()?;
+    anyhow::ensure!(
+        matches!(identity.microbatch, 1 | 2),
+        "invalid baseline microbatch"
+    );
+    let mut records = Vec::with_capacity(data.dev.len());
+    let started = Instant::now();
+    for indices in data.dev.chunks(identity.microbatch) {
+        anyhow::ensure!(
+            started.elapsed().as_secs() < 45 * 60,
+            "baseline evaluation exceeded the bounded 45-minute process window"
+        );
+        let roots = data.roots(indices)?;
+        let mut facts_times = Vec::new();
+        for (&index, root) in indices.iter().zip(&roots) {
+            data.validate_root_alignment(index, root)?;
+            let probe = Instant::now();
+            let facts = recur64_core::candidate_facts(root);
+            anyhow::ensure!(facts.len() == data.position(index).legal.len());
+            facts_times.push(probe.elapsed().as_secs_f64());
+        }
+        let wall = Instant::now();
+        let refs: Vec<_> = roots.iter().collect();
+        let input = RootInputs::<B>::from_roots(&refs, device)?;
+        let width = input.cands.width;
+        let z0 = values(model.base_root(&input).z0)?;
+        let elapsed = wall.elapsed().as_secs_f64() / indices.len() as f64;
+        for (row, &index) in indices.iter().enumerate() {
+            let position = data.position(index);
+            let logits = z0[row * width..row * width + position.legal.len()].to_vec();
+            let correct: Vec<_> = position.correct.iter().map(|&i| i as usize).collect();
+            records.push(BaselineRecord {
+                position_id: position.id.clone(),
+                family: position.family.clone(),
+                mate_depth: position.mate_depth,
+                legal_actions: position.legal.clone(),
+                correct_indices: position.correct.clone(),
+                metrics: base_metrics(&logits, &correct)?,
+                logits,
+                candidate_facts_evaluated: 2 * position.legal.len(),
+                candidate_facts_probe_evaluated: position.legal.len(),
+                candidate_facts_probe_seconds: facts_times[row],
+                root_path_wall_seconds: elapsed,
+            });
+        }
+    }
+    let report = BaselineEvaluation {
+        schema: BASELINE_EVAL_SCHEMA.into(),
+        architecture: ARCHITECTURE.into(),
+        source_sha: identity.source_sha,
+        config_digest: identity.config_digest,
+        train_digest: TRAIN_DIGEST.into(),
+        dev_digest: DEV_DIGEST.into(),
+        model_hash: identity.model_hash,
+        baseline_fingerprint: fingerprint,
+        final_update: identity.final_update,
+        seed: crate::stage::PILOT_SEED,
+        microbatch: identity.microbatch,
+        precision: "fp32".into(),
+        device: identity.device,
+        scope: identity.scope,
+        root_encoder_examples: records.len(),
+        returned_encoder_examples: 0,
+        exact_queries: 0,
+        shared_core_applications: 0,
+        records,
+    };
+    report.validate()?;
+    Ok(report)
 }
 
 struct PreparedCell {

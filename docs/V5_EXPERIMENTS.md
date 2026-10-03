@@ -127,3 +127,44 @@ Corrections are appended; old entries are never rewritten.
 - **Hard stop:** the exact P25 artifact is still absent. Drill, Stage A, Stage B,
   update-0/update-800 DEV evaluation, ablations, pilot classification and R8 are
   all NOT RUN. No substitute data or training was used.
+
+## V5-E4 - qualification and prerequisite audit
+
+- **Date:** 2026-10-03
+- **Status:** IMPLEMENTED / CPU CONTRACT TESTS PASS; final-source CPU/CUDA
+  qualification must be regenerated after this source checkpoint.
+- **Audit correction:** the earlier qualification's optimizer restoration check
+  loaded moments but only compared output logits. The new check compares every
+  FP32 parameter and every optimizer moment/counter, then continues both copies
+  through one matched AdamW update and requires exact parameter/moment equality.
+  Earlier reports remain under `qualification-df6e2aa-cpu.json` and
+  `qualification-df6e2aa-cuda.json`; E3 is historical evidence.
+- **Checkpoint integrity:** all V5 checkpoint loaders now verify the optimizer
+  content hash as well as the model hash. The CPU resume test uses the production
+  LR schedule and deterministic cell sampler on explicitly test-only real chess
+  fixtures; it compares the resumed LR, episode graph, logits and every parameter,
+  and refuses an otherwise valid replacement optimizer file.
+- **Scientific identity:** staged and untracked scientific files are refused.
+  The binary records its scientific source at build time and refuses execution
+  after a source commit until rebuilt. A Git-interface test covers clean,
+  documentation-only, unstaged, staged, untracked and stale-build cases.
+- **Loop contracts:** direct immutable-anchor gradients reach both production
+  blocks at every R1..R4 loop with mutable state/memory held fixed for each test
+  read. R1 exactly matches the first R4 state; no-feedback agrees at the first
+  loop and changes the next evidence update. The library's process-global Flex
+  RNG is serialized between model-building unit tests.
+- **Pilot prerequisites:** `evaluate-baseline` separately records final Stage A
+  Q0 on all DEV positions. Training requires the fixed drill report; Stage B
+  additionally verifies the baseline report against its actual Stage A checkpoint,
+  authoritative DEV labels/actions and device/layout. A single matched Q16
+  diagnostic can satisfy the engineering prerequisite after informative Q8
+  failure, without changing the recorded Q8 result.
+- **Validation:** release workspace suite: 568 passed, 0 failed, 1 historical
+  ignored test. Focused V5 release tests: 23 passed. V5 clippy with warnings
+  denied and CLI clippy with only the two existing V4 allowances passed.
+- **Resolved build findings:** moved the recall test module to the file end to
+  satisfy clippy; corrected baseline correct-set indices to the authoritative
+  `u32` type. No scientific geometry, precision, LR, loss, data or acquisition
+  recipe was changed.
+- **Data recheck:** exact P25 TRAIN remains absent. Drill, Stage A, final Stage A
+  DEV baseline, Stage B, reader evaluations and pilot diagnostics remain NOT RUN.

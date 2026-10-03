@@ -93,9 +93,14 @@ fn full_bptt_reaches_reader_groups_while_the_graph_free_base_stays_immutable() {
         "graph-free frozen baseline received a gradient"
     );
     let before = baseline_fingerprint(&model, &device).unwrap();
+    let parameters_before = model.baseline_parameter_digest().unwrap();
     let mut optimizer = adamw::<B, CounterfactualRelationalLoop<B>>();
     model = optimizer.step(1.0e-3, model, grads);
     assert_eq!(before, baseline_fingerprint(&model, &device).unwrap());
+    assert_eq!(
+        parameters_before,
+        model.baseline_parameter_digest().unwrap()
+    );
 }
 
 #[test]
@@ -120,6 +125,7 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
     let shape = ad_input.states.dims();
     let count = shape.iter().product::<usize>();
     let epsilon = 5.0e-2_f32;
+    let gradient_l2 = analytic.iter().map(|v| v * v).sum::<f32>().sqrt();
     let direction_seeds = [0xA501_u64, 0xA502, 0xA503, 0xA504];
     let mut nonzero = 0;
     for seed in direction_seeds {
@@ -154,10 +160,17 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
             .to_vec::<f32>()
             .unwrap()[0];
         let numeric = (p - m) / (2.0 * epsilon);
+        let relative =
+            (derivative - numeric).abs() / derivative.abs().max(numeric.abs()).max(1.0e-6);
+        println!(
+            "V5_GRADIENT_EVIDENCE {}",
+            serde_json::json!({
+                "direction_seed": seed, "epsilon": epsilon, "gradient_l2": gradient_l2,
+                "autodiff": derivative, "finite_difference": numeric, "relative_error": relative,
+            })
+        );
         if derivative.abs() > 1.0e-8 || numeric.abs() > 1.0e-8 {
             nonzero += 1;
-            let relative =
-                (derivative - numeric).abs() / derivative.abs().max(numeric.abs()).max(1.0e-6);
             assert!(
                 relative < 0.12,
                 "direction seed {seed:x} analytic={derivative:e} numeric={numeric:e} relative={relative:e}"

@@ -58,6 +58,76 @@ pub struct DrillReport {
     pub disposable_parameters_reused_by_pilot: bool,
 }
 
+/// Check the measured engineering prerequisite without treating a Q16
+/// diagnostic as a Q8 success. Failed/non-finite/uninformative Q8 cannot be
+/// repaired by silently selecting another report.
+pub fn validated_pilot_prerequisite(
+    q8: &DrillReport,
+    q16: Option<&DrillReport>,
+    source: &str,
+    config: &str,
+    microbatch: usize,
+) -> anyhow::Result<()> {
+    let validate = |report: &DrillReport, q| -> anyhow::Result<()> {
+        let unique: std::collections::HashSet<_> = report.selected_position_ids.iter().collect();
+        anyhow::ensure!(
+            report.schema == DRILL_SCHEMA
+                && report.architecture == ARCHITECTURE
+                && report.source_sha == source
+                && report.config_digest == config
+                && report.train_digest == TRAIN_DIGEST
+                && report.fit_digest == FIT_DIGEST
+                && report.seed == PILOT_SEED
+                && report.q == q
+                && report.r == 4
+                && report.updates == DRILL_UPDATES
+                && report.peak_lr == DRILL_LR
+                && report.warmup == DRILL_WARMUP
+                && report.physical_microbatch == microbatch
+                && report.examples == 48
+                && unique.len() == 24
+                && report.selected_by_cell.len() == 6
+                && report.selected_by_cell.values().all(|ids| ids.len() == 4)
+                && !report.disposable_parameters_reused_by_pilot,
+            "drill identity/recipe mismatch"
+        );
+        anyhow::ensure!(
+            report.finite_training
+                && report.baseline_exact
+                && report.initial_mean_set_loss.is_finite()
+                && report.final_mean_set_loss.is_finite()
+                && report.initial_mean_set_loss >= 0.05
+                && !report.initial_below_point_zero_five,
+            "drill is invalid, non-finite or uninformative; stop for review"
+        );
+        let reduction = (report.initial_mean_set_loss - report.final_mean_set_loss)
+            / report.initial_mean_set_loss;
+        anyhow::ensure!(
+            (reduction - report.relative_loss_reduction).abs() <= 1e-12
+                && report.pass == (reduction >= 0.2),
+            "drill pass flag disagrees with measured losses"
+        );
+        Ok(())
+    };
+    validate(q8, 8)?;
+    if q8.pass {
+        anyhow::ensure!(
+            q16.is_none(),
+            "Q16 is not permitted after a passing Q8 drill"
+        );
+        return Ok(());
+    }
+    let diagnostic = q16.ok_or_else(|| anyhow::anyhow!("Q8 drill failed; a passing preregistered Q16 diagnostic is required before pilot training"))?;
+    validate(diagnostic, 16)?;
+    anyhow::ensure!(
+        diagnostic.selected_position_ids == q8.selected_position_ids
+            && diagnostic.selected_by_cell == q8.selected_by_cell
+            && diagnostic.pass,
+        "Q16 diagnostic failed or changed the fixed drill positions"
+    );
+    Ok(())
+}
+
 fn selection_hash(id: &str) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash.update(b"recur64.v5.drill_selection.v1|");
@@ -322,4 +392,90 @@ pub fn run<B: AutodiffBackend>(
         graph_manifest_digests: graph_digests,
         disposable_parameters_reused_by_pilot: false,
     })
+}
+
+#[cfg(test)]
+mod prerequisite_tests {
+    use super::*;
+
+    // Isolated report-interface fixtures, never chess measurements.
+    fn report(q: usize, final_loss: f64) -> DrillReport {
+        let mut by_cell = BTreeMap::new();
+        for family in ["KQRvK", "KRRvK"] {
+            for depth in 1..=3 {
+                by_cell.insert(
+                    format!("{family}-M{depth}"),
+                    (0..4)
+                        .map(|i| format!("interface-{family}-{depth}-{i}"))
+                        .collect::<Vec<_>>(),
+                );
+            }
+        }
+        let ids = by_cell.values().flatten().cloned().collect();
+        DrillReport {
+            schema: DRILL_SCHEMA.into(),
+            source_sha: "interface-source".into(),
+            architecture: ARCHITECTURE.into(),
+            config_digest: "interface-config".into(),
+            train_digest: TRAIN_DIGEST.into(),
+            fit_digest: FIT_DIGEST.into(),
+            seed: PILOT_SEED,
+            q,
+            r: 4,
+            updates: DRILL_UPDATES,
+            peak_lr: DRILL_LR,
+            warmup: DRILL_WARMUP,
+            physical_microbatch: 2,
+            selected_position_ids: ids,
+            selected_by_cell: by_cell,
+            initial_mean_set_loss: 1.0,
+            final_mean_set_loss: final_loss,
+            relative_loss_reduction: 1.0 - final_loss,
+            relative_logit_movement_l2: 0.0,
+            action_changes: 0,
+            examples: 48,
+            finite_training: true,
+            baseline_exact: true,
+            initial_below_point_zero_five: false,
+            pass: final_loss <= 0.8,
+            classification: "interface-fixture".into(),
+            wall_seconds: 0.0,
+            graph_manifest_digests: Vec::new(),
+            disposable_parameters_reused_by_pilot: false,
+        }
+    }
+
+    fn validate(q8: &DrillReport, q16: Option<&DrillReport>) -> anyhow::Result<()> {
+        validated_pilot_prerequisite(q8, q16, "interface-source", "interface-config", 2)
+    }
+
+    #[test]
+    fn q8_success_or_the_single_matched_q16_diagnostic_can_qualify() {
+        let passing = report(8, 0.7);
+        let failed = report(8, 0.9);
+        let diagnostic = report(16, 0.7);
+        assert!(validate(&passing, None).is_ok());
+        assert!(validate(&failed, None).is_err());
+        assert!(validate(&failed, Some(&diagnostic)).is_ok());
+        assert!(validate(&passing, Some(&diagnostic)).is_err());
+        assert!(validate(&failed, Some(&report(16, 0.9))).is_err());
+        let mut changed = diagnostic;
+        changed.selected_position_ids[0] = "different-position".into();
+        assert!(validate(&failed, Some(&changed)).is_err());
+    }
+
+    #[test]
+    fn invalid_uninformative_and_forged_reports_cannot_unlock_training() {
+        for mutate in 0..5 {
+            let mut input = report(8, 0.7);
+            match mutate {
+                0 => input.finite_training = false,
+                1 => input.baseline_exact = false,
+                2 => input.initial_mean_set_loss = 0.04,
+                3 => input.relative_loss_reduction = 0.9,
+                _ => input.pass = false,
+            }
+            assert!(validate(&input, None).is_err());
+        }
+    }
 }

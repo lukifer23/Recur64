@@ -21,6 +21,16 @@ adapter; 136,960 evidence initializer; 789,872 shared evidence block; 789,872
 shared hypothesis block; and 66,048 correction readout. No parameters were added
 cosmetically. The parameter count is independent of Q and R.
 
+For batch B, legal-candidate padded width W, and acquired-node padded width N,
+the frozen tensor shapes are: root squares C `[B,64,256]`, root hypotheses H0
+`[B,W,256]`, returned observations `[B,N,64,119]`, returned flags `[B,N,9]`,
+payload anchors X and mutable evidence E `[B,4N,256]`, mutable hypotheses H
+`[B,W,256]`, and candidate logits `[B,W]`. Evidence attention is
+`[B,8,4N,4N+W+64]`; hypothesis attention is `[B,8,W,W+4N+64]`.
+Legal-candidate and acquired-node masks exclude padding from memory attention,
+candidate centering, normalization denominators and loss. These are dense
+attention tensors; no custom sparse kernel or legal-candidate truncation exists.
+
 ## Root and baseline
 
 `v5_root_frame_v1` encodes every current/history board in the root player's

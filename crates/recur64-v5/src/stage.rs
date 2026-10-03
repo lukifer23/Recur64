@@ -251,6 +251,7 @@ pub struct CheckpointMeta {
     pub config_digest: String,
     pub update: u64,
     pub model_hash: String,
+    pub optimizer_hash: String,
     pub init_model_hash: Option<String>,
     pub backend: String,
     pub precision: String,
@@ -551,7 +552,7 @@ impl<B: AutodiffBackend> Trainer<B> {
         self.model
             .clone()
             .save_file(model_path.clone(), &recorder)?;
-        recorder.record(self.optim.to_record(), optimizer_path)?;
+        recorder.record(self.optim.to_record(), optimizer_path.clone())?;
         let model_file = model_path.with_extension("mpk");
         let model_hash = hash_file(&model_file)?;
         let meta = CheckpointMeta {
@@ -562,6 +563,7 @@ impl<B: AutodiffBackend> Trainer<B> {
             config_digest: self.recipe.config_digest.clone(),
             update: self.updates_done,
             model_hash: model_hash.clone(),
+            optimizer_hash: hash_file(&optimizer_path.with_extension("mpk"))?,
             init_model_hash: self.recipe.init_model_hash.clone(),
             backend: backend.into(),
             precision: "fp32".into(),
@@ -595,6 +597,10 @@ impl<B: AutodiffBackend> Trainer<B> {
         anyhow::ensure!(
             hash_file(&model_path.with_extension("mpk"))? == meta.model_hash,
             "checkpoint model content hash mismatch"
+        );
+        anyhow::ensure!(
+            hash_file(&generation.join("optimizer.mpk"))? == meta.optimizer_hash,
+            "checkpoint optimizer content hash mismatch"
         );
         let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
         let template = CounterfactualRelationalLoop::<B>::new(recipe.config.clone(), device);
@@ -640,6 +646,10 @@ pub fn load_finished_model<B: AutodiffBackend>(
         hash_file(&model_path.with_extension("mpk"))? == meta.model_hash,
         "checkpoint model content hash mismatch"
     );
+    anyhow::ensure!(
+        hash_file(&generation.join("optimizer.mpk"))? == meta.optimizer_hash,
+        "checkpoint optimizer content hash mismatch"
+    );
     let template = CounterfactualRelationalLoop::<B>::new(meta.recipe.config.clone(), device);
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
     let model = template.load_file(model_path, &recorder, device)?;
@@ -676,6 +686,10 @@ pub fn load_model_at<B: AutodiffBackend>(
     anyhow::ensure!(
         hash_file(&model_path.with_extension("mpk"))? == meta.model_hash,
         "checkpoint model content hash mismatch"
+    );
+    anyhow::ensure!(
+        hash_file(&generation.join("optimizer.mpk"))? == meta.optimizer_hash,
+        "checkpoint optimizer content hash mismatch"
     );
     let template = CounterfactualRelationalLoop::<B>::new(meta.recipe.config.clone(), device);
     let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
@@ -741,15 +755,30 @@ mod tests {
     fn fixture_update(
         trainer: &mut Trainer<B>,
         device: &burn::backend::flex::FlexDevice,
-    ) -> Vec<f32> {
-        let root = recur64_core::GameState::from_fen("6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1").unwrap();
+    ) -> (Vec<f32>, String, f64) {
+        // Test-only real-chess fixtures: use the production schedule and
+        // cell sampler, never claim these are the missing scientific dataset.
+        let fixtures = [
+            "6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1",
+            "3rk3/4q3/8/8/8/8/8/6K1 b - - 0 1",
+        ];
+        let mut sampler = CellSampler::new(
+            &[("test-white".into(), 1), ("test-black".into(), 1)],
+            trainer.recipe.seed,
+        );
+        for _ in 0..trainer.updates_done {
+            let _ = sampler.next_index();
+        }
+        let ordinal = sampler.examples_drawn();
+        let selected = sampler.next_index();
+        let root = recur64_core::GameState::from_fen(fixtures[selected]).unwrap();
         let graph = acquire(
             &root,
             EpisodeKey {
-                position_id: "resume-fixture".into(),
+                position_id: format!("resume-fixture-{selected}"),
                 schedule: Schedule::UniformFrontierV1,
                 run_seed: 5301,
-                occurrence_ordinal: 0,
+                occurrence_ordinal: ordinal,
             },
             2,
             None,
@@ -764,26 +793,42 @@ mod tests {
         let objective = output.centered_delta.clone().slice([0..1, 0..1]).sum()
             - output.centered_delta.slice([0..1, 1..2]).sum();
         let gradients = GradientsParams::from_grads(objective.backward(), &trainer.model);
-        trainer.model = trainer.optim.step(1.0e-3, trainer.model.clone(), gradients);
+        let lr = lr_at(
+            trainer.updates_done,
+            trainer.recipe.peak_lr,
+            trainer.recipe.warmup,
+            trainer.recipe.updates,
+        );
+        trainer.model = trainer.optim.step(lr, trainer.model.clone(), gradients);
+        trainer.updates_done += 1;
         let input = V5Inputs::<B>::from_examples(&examples, device).unwrap();
-        trainer
+        let logits = trainer
             .model
             .paired(&input, 2, Treatment::Normal)
             .logits
             .into_data()
             .to_vec()
-            .unwrap()
+            .unwrap();
+        (logits, graph.digest, lr)
     }
 
     #[test]
     fn full_optimizer_checkpoint_resumes_exactly_on_cpu() {
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let device = Default::default();
         <B as Backend>::seed(&device, 5301);
-        let recipe = Recipe::stage_a("test-source".into(), 2).unwrap();
         let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+        let recipe = Recipe::stage_b(
+            "test-source".into(),
+            2,
+            "test-initial-model".into(),
+            baseline_fingerprint(&model, &device).unwrap(),
+        )
+        .unwrap();
         let mut uninterrupted = Trainer::new(recipe.clone(), model).unwrap();
         let _ = fixture_update(&mut uninterrupted, &device);
-        uninterrupted.updates_done = 1;
 
         let dir = std::env::temp_dir().join(format!("recur64-v5-resume-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -795,10 +840,34 @@ mod tests {
         let expected = fixture_update(&mut uninterrupted, &device);
         let actual = fixture_update(&mut resumed, &device);
         assert_eq!(actual, expected);
+        assert_eq!(resumed.updates_done, uninterrupted.updates_done);
+        assert_eq!(resumed.updates_done, 2);
+        assert_eq!(
+            uninterrupted.model.parameter_digest().unwrap(),
+            resumed.model.parameter_digest().unwrap()
+        );
 
         let mut incompatible = recipe;
         incompatible.source_sha = "different-source".into();
         assert!(Trainer::<B>::load_latest(&dir, incompatible, &device).is_err());
+        let generation = latest_generation(&dir).unwrap();
+        // A syntactically valid replacement optimizer is still a partial-state
+        // inconsistency and must be refused before loading any model tensors.
+        let recorder = NamedMpkFileRecorder::<FullPrecisionSettings>::new();
+        recorder
+            .record(
+                adamw::<B, CounterfactualRelationalLoop<B>>().to_record(),
+                generation.join("optimizer"),
+            )
+            .unwrap();
+        let error = Trainer::<B>::load_latest(&dir, resumed.recipe.clone(), &device)
+            .err()
+            .expect("replaced optimizer must be refused");
+        assert!(
+            error
+                .to_string()
+                .contains("optimizer content hash mismatch")
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 }

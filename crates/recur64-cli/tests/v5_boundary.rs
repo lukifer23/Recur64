@@ -88,6 +88,7 @@ fn v5_help_exposes_the_real_drill_evaluation_and_reporting_surface() {
     for command in [
         "drill",
         "evaluate",
+        "evaluate-baseline",
         "eval-merge",
         "ablation",
         "pilot-report",
@@ -150,4 +151,43 @@ fn extra_loops_refuses_without_a_pilot_candidate_report() {
     ]);
     assert!(!out.ok);
     assert!(out.stderr.contains("missing field") || out.stderr.contains("R8 is authorized"));
+}
+
+#[test]
+fn baseline_evaluation_and_training_require_their_real_prerequisites() {
+    let dir = tmp("baseline-prerequisites");
+    let output = dir.join("baseline.json");
+    let out = run(&[
+        "v5",
+        "evaluate-baseline",
+        "--device",
+        "cpu",
+        "--data",
+        dir.join("missing-p25.json").to_str().unwrap(),
+        "--stage-a",
+        dir.join("stage-a").to_str().unwrap(),
+        "--qualification",
+        dir.join("qualification.json").to_str().unwrap(),
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert!(!out.ok);
+    assert!(!output.exists());
+    let training = run(&[
+        "v5",
+        "train",
+        "--stage",
+        "a",
+        "--device",
+        "cpu",
+        "--data",
+        dir.join("missing-p25.json").to_str().unwrap(),
+        "--run-dir",
+        dir.join("stage-a").to_str().unwrap(),
+        "--qualification",
+        dir.join("qualification.json").to_str().unwrap(),
+    ]);
+    assert!(!training.ok);
+    assert!(training.stderr.contains("--drill"));
+    assert!(!dir.join("stage-a").exists());
 }

@@ -37,6 +37,8 @@ pub enum V5Cmd {
     Drill(DrillArgs),
     /// Evaluate one inherited DEV family/depth cell at update 0 or 800.
     Evaluate(EvaluateArgs),
+    /// Record final Stage A B0 on all inherited DEV positions, at Q0.
+    EvaluateBaseline(EvaluateBaselineArgs),
     /// Merge the six deterministic DEV cell shards into the complete matrix.
     EvalMerge(EvalMergeArgs),
     /// Recompute treatment and composition summaries from per-position evidence.
@@ -140,6 +142,15 @@ pub struct TrainArgs {
     /// Completed Stage A run directory; required for Stage B.
     #[arg(long)]
     stage_a: Option<PathBuf>,
+    /// Passing Q8 engineering drill report.
+    #[arg(long)]
+    drill: PathBuf,
+    /// Conditional Q16 diagnostic; permitted only after informative Q8 failure.
+    #[arg(long)]
+    drill_q16: Option<PathBuf>,
+    /// Final all-DEV Stage A B0 report; required for Stage B.
+    #[arg(long)]
+    stage_a_evaluation: Option<PathBuf>,
     /// Qualified physical layout (only 2, or the pre-authorized fallback 1).
     #[arg(long, default_value_t = 2)]
     microbatch: usize,
@@ -206,6 +217,22 @@ pub struct EvaluateArgs {
 }
 
 #[derive(Args)]
+pub struct EvaluateBaselineArgs {
+    #[arg(long, value_enum)]
+    device: DeviceArg,
+    #[arg(long)]
+    data: PathBuf,
+    #[arg(long)]
+    stage_a: PathBuf,
+    #[arg(long, default_value_t = 2)]
+    microbatch: usize,
+    #[arg(long)]
+    qualification: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+}
+
+#[derive(Args)]
 pub struct EvalMergeArgs {
     #[arg(long, required = true, num_args = 6)]
     input: Vec<PathBuf>,
@@ -231,6 +258,8 @@ pub struct PilotReportArgs {
     cuda_qualification: PathBuf,
     #[arg(long)]
     drill: PathBuf,
+    #[arg(long)]
+    drill_q16: Option<PathBuf>,
     #[arg(long)]
     output: PathBuf,
 }
@@ -394,8 +423,7 @@ fn doctor(a: DoctorArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn git_sha() -> anyhow::Result<String> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+fn git_sha(root: &Path) -> anyhow::Result<String> {
     let sha = std::process::Command::new("git")
         .args([
             "log",
@@ -407,7 +435,7 @@ fn git_sha() -> anyhow::Result<String> {
             "Cargo.lock",
             "configs",
         ])
-        .current_dir(&root)
+        .current_dir(root)
         .output()?;
     anyhow::ensure!(
         sha.status.success(),
@@ -418,11 +446,16 @@ fn git_sha() -> anyhow::Result<String> {
 
 fn source_sha() -> anyhow::Result<String> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let sha = git_sha()?;
-    let code_clean = std::process::Command::new("git")
+    checked_source_sha(&root, env!("RECUR64_V5_BUILD_SOURCE_SHA"))
+}
+
+fn checked_source_sha(root: &Path, built_sha: &str) -> anyhow::Result<String> {
+    let sha = git_sha(root)?;
+    let code_state = std::process::Command::new("git")
         .args([
-            "diff",
-            "--quiet",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
             "--",
             "crates",
             "Cargo.toml",
@@ -430,10 +463,15 @@ fn source_sha() -> anyhow::Result<String> {
             "configs",
         ])
         .current_dir(root)
-        .status()?;
+        .output()?;
     anyhow::ensure!(
-        code_clean.success(),
-        "tracked code/config changes are uncommitted; scientific training is refused"
+        code_state.status.success() && code_state.stdout.is_empty(),
+        "code/config changes are uncommitted (including staged/untracked files); V5 scientific execution is refused"
+    );
+    anyhow::ensure!(
+        sha == built_sha,
+        "V5 executable was built from {}; current scientific source is {sha}; rebuild before scientific execution",
+        built_sha
     );
     Ok(sha)
 }
@@ -497,10 +535,37 @@ where
         qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
     let data = V5Data::load(&a.data)?;
     data.verify_custody()?;
+    let drill: recur64_v5::drill::DrillReport = serde_json::from_slice(&std::fs::read(&a.drill)?)?;
+    let diagnostic: Option<recur64_v5::drill::DrillReport> = a
+        .drill_q16
+        .as_ref()
+        .map(|path| -> anyhow::Result<recur64_v5::drill::DrillReport> {
+            Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+        })
+        .transpose()?;
+    recur64_v5::drill::validated_pilot_prerequisite(
+        &drill,
+        diagnostic.as_ref(),
+        &source,
+        &V5Config::default().scientific_digest()?,
+        a.microbatch,
+    )?;
+    let expected_drill_ids: Vec<_> = recur64_v5::drill::select_positions(&data)?
+        .iter()
+        .map(|&index| data.position(index).id.clone())
+        .collect();
+    anyhow::ensure!(
+        drill.selected_position_ids == expected_drill_ids,
+        "drill positions differ from the preregistered stable FIT selection"
+    );
     let device = B::Device::default();
     let (recipe, initial_model) = match a.stage {
         StageArg::A => {
             anyhow::ensure!(a.stage_a.is_none(), "--stage-a is invalid for Stage A");
+            anyhow::ensure!(
+                a.stage_a_evaluation.is_none(),
+                "--stage-a-evaluation is invalid for Stage A"
+            );
             <B as Backend>::seed(&device, recur64_v5::stage::PILOT_SEED);
             (
                 Recipe::stage_a(source, a.microbatch)?,
@@ -516,7 +581,27 @@ where
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("Stage B requires --stage-a"))?;
             let (model, meta) = load_finished_model::<B>(stage_a, Stage::BaselineA, &device)?;
+            anyhow::ensure!(
+                meta.recipe.source_sha == source && meta.backend == backend,
+                "Stage A source/device differs from Stage B"
+            );
             let fingerprint = baseline_fingerprint(&model, &device)?;
+            let baseline_path = a.stage_a_evaluation.as_ref().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Stage B requires --stage-a-evaluation from the final Stage A checkpoint"
+                )
+            })?;
+            let baseline: recur64_v5::study::BaselineEvaluation =
+                serde_json::from_slice(&std::fs::read(baseline_path)?)?;
+            baseline.validate_against_data(&data)?;
+            anyhow::ensure!(
+                baseline.model_hash == meta.model_hash
+                    && baseline.source_sha == source
+                    && baseline.baseline_fingerprint == fingerprint
+                    && baseline.microbatch == a.microbatch
+                    && baseline.device == backend,
+                "Stage A baseline report differs from its checkpoint/device/layout"
+            );
             (
                 Recipe::stage_b(source, a.microbatch, meta.model_hash, fingerprint)?,
                 Some(model),
@@ -606,7 +691,7 @@ where
     B::Device: Default,
 {
     let device = B::Device::default();
-    let source_sha = git_sha()?;
+    let source_sha = source_sha()?;
     let report =
         recur64_v5::qualification::run::<B>(&source_sha, device_label, a.microbatch, &device)?;
     write_json(&a.output, &report)?;
@@ -664,6 +749,8 @@ where
                 && prior.q == 8
                 && !prior.pass
                 && !prior.initial_below_point_zero_five
+                && prior.finite_training
+                && prior.baseline_exact
                 && prior.source_sha == source,
             "Q16 is authorized only after a finite, informative Q8 drill failure from this source"
         );
@@ -785,6 +872,92 @@ fn evaluate(a: EvaluateArgs) -> anyhow::Result<()> {
     }
 }
 
+fn evaluate_baseline_backend<B>(a: &EvaluateBaselineArgs, backend: &str) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    B::Device: Default,
+{
+    let source = source_sha()?;
+    let qualified_seconds =
+        qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
+    let data = V5Data::load(&a.data)?;
+    let projected = data.dev.len().div_ceil(a.microbatch) as f64 * qualified_seconds;
+    println!(
+        "projected final B0 evaluation: {} DEV positions, conservative {:.2} minutes",
+        data.dev.len(),
+        projected / 60.0
+    );
+    anyhow::ensure!(
+        projected <= 45.0 * 60.0,
+        "baseline projection exceeds one bounded process; review sharding before launch"
+    );
+    let device = B::Device::default();
+    let (model, meta) = load_finished_model::<B>(&a.stage_a, Stage::BaselineA, &device)?;
+    anyhow::ensure!(
+        meta.recipe.source_sha == source
+            && meta.backend == backend
+            && meta.recipe.physical_microbatch == a.microbatch,
+        "final baseline source/device/layout mismatch"
+    );
+    let fingerprint = baseline_fingerprint(&model, &device)?;
+    let identity = recur64_v5::study::EvaluationIdentity {
+        source_sha: source,
+        config_digest: meta.config_digest,
+        model_hash: meta.model_hash,
+        final_update: meta.update,
+        scope: "all_dev_4403".into(),
+        split: "inherited_v4_dev".into(),
+        microbatch: a.microbatch,
+        device: backend.into(),
+    };
+    let report = recur64_v5::study::evaluate_final_baseline(
+        &model.valid(),
+        &data,
+        identity,
+        fingerprint,
+        &device,
+    )?;
+    write_json(&a.output, &report)?;
+    for family in ["KQRvK", "KRRvK"] {
+        for depth in 1..=3 {
+            let rows: Vec<_> = report
+                .records
+                .iter()
+                .filter(|row| row.family == family && row.mate_depth == depth)
+                .collect();
+            let n = rows.len();
+            println!(
+                "B0 {family} M{depth} n={n} top1={:.8} set_loss={:.8}",
+                rows.iter().map(|row| row.metrics.top1).sum::<f64>() / n as f64,
+                rows.iter().map(|row| row.metrics.set_loss).sum::<f64>() / n as f64
+            );
+        }
+    }
+    Ok(())
+}
+
+fn evaluate_baseline(a: EvaluateBaselineArgs) -> anyhow::Result<()> {
+    match a.device {
+        DeviceArg::Cpu => {
+            evaluate_baseline_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu")
+        }
+        DeviceArg::Cuda => {
+            #[cfg(feature = "cuda")]
+            {
+                evaluate_baseline_backend::<burn::backend::Autodiff<burn::backend::Cuda>>(
+                    &a, "cuda",
+                )
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!(
+                    "CUDA support is not compiled; rebuild with --features cuda (no CPU substitution)"
+                )
+            }
+        }
+    }
+}
+
 fn eval_merge(a: EvalMergeArgs) -> anyhow::Result<()> {
     let bundles: Vec<EvaluationBundle> = a
         .input
@@ -838,13 +1011,21 @@ fn pilot_report(a: PilotReportArgs) -> anyhow::Result<()> {
     qualifying_report(&a.cpu_qualification, "cpu", &bundle)?;
     qualifying_report(&a.cuda_qualification, "cuda", &bundle)?;
     let drill: recur64_v5::drill::DrillReport = serde_json::from_slice(&std::fs::read(&a.drill)?)?;
-    let engineering_pass = drill.schema == recur64_v5::drill::DRILL_SCHEMA
-        && drill.source_sha == bundle.source_sha
-        && drill.config_digest == bundle.config_digest
-        && drill.q == 8
-        && drill.pass
-        && drill.baseline_exact
-        && drill.finite_training
+    let diagnostic: Option<recur64_v5::drill::DrillReport> = a
+        .drill_q16
+        .as_ref()
+        .map(|path| -> anyhow::Result<recur64_v5::drill::DrillReport> {
+            Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+        })
+        .transpose()?;
+    let engineering_pass = recur64_v5::drill::validated_pilot_prerequisite(
+        &drill,
+        diagnostic.as_ref(),
+        &bundle.source_sha,
+        &bundle.config_digest,
+        bundle.microbatch,
+    )
+    .is_ok()
         && bundle.normal_replay_exact;
     let report = classify_pilot(&bundle, engineering_pass, true)?;
     write_json(&a.output, &report)?;
@@ -937,6 +1118,9 @@ pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
         V5Cmd::Qualify(a) => big_stack("recur64-v5-qualify", move || qualify(a)),
         V5Cmd::Drill(a) => big_stack("recur64-v5-drill", move || drill(a)),
         V5Cmd::Evaluate(a) => big_stack("recur64-v5-evaluate", move || evaluate(a)),
+        V5Cmd::EvaluateBaseline(a) => {
+            big_stack("recur64-v5-baseline-evaluate", move || evaluate_baseline(a))
+        }
         V5Cmd::EvalMerge(a) => eval_merge(a),
         V5Cmd::Ablation(a) => ablation(a),
         V5Cmd::PilotReport(a) => pilot_report(a),
@@ -954,4 +1138,82 @@ fn big_stack(
         .spawn(task)?
         .join()
         .map_err(|_| anyhow::anyhow!("{name} worker panicked"))?
+}
+
+#[cfg(test)]
+mod source_identity_tests {
+    use super::*;
+
+    #[test]
+    fn source_guard_refuses_staged_untracked_and_stale_builds_but_allows_documentation_commits() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "recur64-v5-source-test-{}-{unique}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(root.join("crates")).unwrap();
+        let git = |args: &[&str]| {
+            let output = std::process::Command::new("git")
+                .args(args)
+                .current_dir(&root)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        };
+        let commit = || {
+            git(&[
+                "-c",
+                "user.name=Recur64 interface test",
+                "-c",
+                "user.email=test@invalid",
+                "commit",
+                "-m",
+                "interface fixture",
+            ])
+        };
+        git(&["init"]);
+        std::fs::write(root.join("crates/source.rs"), "// interface fixture v1\n").unwrap();
+        git(&["add", "crates/source.rs"]);
+        commit();
+        let built = git_sha(&root).unwrap();
+        assert_eq!(checked_source_sha(&root, &built).unwrap(), built);
+        std::fs::write(root.join("documentation.md"), "documentation only\n").unwrap();
+        git(&["add", "documentation.md"]);
+        commit();
+        assert_eq!(checked_source_sha(&root, &built).unwrap(), built);
+        std::fs::write(root.join("crates/untracked.rs"), "// interface fixture\n").unwrap();
+        assert!(
+            checked_source_sha(&root, &built)
+                .unwrap_err()
+                .to_string()
+                .contains("uncommitted")
+        );
+        std::fs::remove_file(root.join("crates/untracked.rs")).unwrap();
+        std::fs::write(root.join("crates/source.rs"), "// interface fixture v2\n").unwrap();
+        assert!(checked_source_sha(&root, &built).is_err());
+        git(&["add", "crates/source.rs"]);
+        assert!(
+            checked_source_sha(&root, &built)
+                .unwrap_err()
+                .to_string()
+                .contains("uncommitted")
+        );
+        commit();
+        assert!(
+            checked_source_sha(&root, &built)
+                .unwrap_err()
+                .to_string()
+                .contains("rebuild")
+        );
+        let rebuilt = git_sha(&root).unwrap();
+        assert_eq!(checked_source_sha(&root, &rebuilt).unwrap(), rebuilt);
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }

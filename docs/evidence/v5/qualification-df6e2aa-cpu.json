@@ -1,0 +1,123 @@
+{
+  "schema": "v5_qualification_report_v1",
+  "source_sha": "df6e2aa650c12726ad7094dae04a7c73339139a8",
+  "pass": true,
+  "device": "cpu",
+  "precision": "fp32",
+  "microbatch": 2,
+  "architecture": "counterfactual_relational_loop_v1",
+  "config_digest": "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c",
+  "parameters": 7160080,
+  "parameter_bytes_fp32": 28640320,
+  "query_seconds": 0.0036029,
+  "matrix": [
+    {
+      "q": 2,
+      "r": 1,
+      "cold_seconds": 0.208081,
+      "warm_seconds": 0.1943337,
+      "loss": 3.5246729850769043,
+      "core_applications_per_example": 4
+    },
+    {
+      "q": 2,
+      "r": 2,
+      "cold_seconds": 0.2622036,
+      "warm_seconds": 0.2628083,
+      "loss": 3.5219569206237793,
+      "core_applications_per_example": 8
+    },
+    {
+      "q": 2,
+      "r": 4,
+      "cold_seconds": 0.404157,
+      "warm_seconds": 0.3959204,
+      "loss": 3.490870475769043,
+      "core_applications_per_example": 16
+    },
+    {
+      "q": 4,
+      "r": 1,
+      "cold_seconds": 0.2828642,
+      "warm_seconds": 0.2827464,
+      "loss": 3.471919536590576,
+      "core_applications_per_example": 4
+    },
+    {
+      "q": 4,
+      "r": 2,
+      "cold_seconds": 0.3595585,
+      "warm_seconds": 0.3584745,
+      "loss": 3.292656898498535,
+      "core_applications_per_example": 8
+    },
+    {
+      "q": 4,
+      "r": 4,
+      "cold_seconds": 0.5099105,
+      "warm_seconds": 0.5103279,
+      "loss": 2.6089768409729004,
+      "core_applications_per_example": 16
+    },
+    {
+      "q": 8,
+      "r": 1,
+      "cold_seconds": 0.4669729,
+      "warm_seconds": 0.4782459,
+      "loss": 2.8578734397888184,
+      "core_applications_per_example": 4
+    },
+    {
+      "q": 8,
+      "r": 2,
+      "cold_seconds": 0.5657429,
+      "warm_seconds": 0.5647633,
+      "loss": 2.4747514724731445,
+      "core_applications_per_example": 8
+    },
+    {
+      "q": 8,
+      "r": 4,
+      "cold_seconds": 0.7660804,
+      "warm_seconds": 0.7602655,
+      "loss": 1.3144383430480957,
+      "core_applications_per_example": 16
+    }
+  ],
+  "worst_update_warm_seconds": 0.769934,
+  "repeated_updates": 50,
+  "repeated_update_first_seconds": 0.7603199,
+  "repeated_update_last_seconds": 0.737223,
+  "null_centered_max_abs": 0.0,
+  "null_tolerance": 0.0,
+  "payload_input_gradient_l2": 0.0003146815,
+  "gradient_groups": [
+    "state",
+    "evidence",
+    "hypothesis",
+    "correction_"
+  ],
+  "baseline_exact_after_reader_updates": true,
+  "checkpoint_restore_exact": true,
+  "r8_forward_seconds": 0.4794547,
+  "detected_vram_mib": null,
+  "device_used_baseline_mib": null,
+  "device_used_peak_mib": null,
+  "device_used_peak_delta_mib": null,
+  "requested_q": [
+    2,
+    4,
+    8
+  ],
+  "requested_r": [
+    1,
+    2,
+    4
+  ],
+  "notes": [
+    "actual paired factual/null graph; both streams differentiated",
+    "R8 is forward-only engineering qualification",
+    "cold shape timings are separated from repeated warm updates",
+    "CUDA memory is the nvidia-smi device-used increase over the pre-run baseline; unrelated GPU workloads were not terminated"
+  ]
+}

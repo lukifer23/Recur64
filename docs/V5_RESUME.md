@@ -85,8 +85,20 @@ permits the fresh disposable diagnostic:
 With release CPU and CUDA qualification passing, the frozen pilot stage commands
 are:
 
-    cargo run --release -p recur64-cli --features cuda -- v5 train --stage a --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json
-    cargo run --release -p recur64-cli --features cuda -- v5 train --stage b --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-b --stage-a runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json
+    cargo run --release -p recur64-cli --features cuda -- v5 train --stage a --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --drill docs/evidence/v5/drill-q8.json
+
+After the completed update-1200 Stage A checkpoint, record its separate Q0 DEV
+baseline before initializing Stage B:
+
+    .\target\release\recur64.exe v5 evaluate-baseline --device cuda --data runs/v25/p25/data/proof-train.json --stage-a runs/v5/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --output runs/v5/seed-5301/stage-a/final-baseline-dev.json
+    cargo run --release -p recur64-cli --features cuda -- v5 train --stage b --device cuda --data runs/v25/p25/data/proof-train.json --run-dir runs/v5/seed-5301/stage-b --stage-a runs/v5/seed-5301/stage-a --stage-a-evaluation runs/v5/seed-5301/stage-a/final-baseline-dev.json --microbatch 2 --qualification docs/evidence/v5/cuda-qualification.json --drill docs/evidence/v5/drill-q8.json
+
+If Q8 failed informatively and the one matched Q16 diagnostic passed, add
+`--drill-q16 docs/evidence/v5/drill-q16.json` to both training stages and
+`pilot-report`. The Q8 report remains required; Q16 is never relabelled as Q8.
+An uninformative, non-finite or baseline-changing drill cannot unlock training.
+Stage B verifies the baseline report against the actual Stage A checkpoint,
+the authoritative DEV labels/actions and the frozen device/layout.
 
 Each invocation projects remaining work before starting and stops after at most
 45 minutes. Add --resume to the identical command to continue the latest

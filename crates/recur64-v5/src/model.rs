@@ -8,6 +8,7 @@ use recur64_core::{ActionId, GameState, candidate_facts, encode_root_relative_ob
 use recur64_model::action::CandidateBatch;
 use recur64_model::candidate::facts_tensor;
 use recur64_model::model::CandidateTensors;
+use sha2::{Digest, Sha256};
 
 use crate::config::V5Config;
 use crate::graph::{AcquiredGraph, AcquiredNode};
@@ -643,6 +644,53 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
     pub fn num_params(&self) -> usize {
         Module::num_params(self)
     }
+    /// Content identity of every FP32 parameter, independent of generated
+    /// ParamIds and recorder map ordering. Used for exact resume verification.
+    pub fn parameter_digest(&self) -> anyhow::Result<String> {
+        self.parameter_digest_scope(false)
+    }
+    pub fn baseline_parameter_digest(&self) -> anyhow::Result<String> {
+        self.parameter_digest_scope(true)
+    }
+    fn parameter_digest_scope(&self, baseline_only: bool) -> anyhow::Result<String> {
+        struct Visitor {
+            hash: Sha256,
+            error: Option<anyhow::Error>,
+        }
+        impl<B: Backend> ModuleVisitor<B> for Visitor {
+            fn visit_float<const N: usize>(&mut self, p: &Param<Tensor<B, N>>) {
+                if self.error.is_some() {
+                    return;
+                }
+                let tensor = p.val();
+                self.hash.update((N as u64).to_le_bytes());
+                for dim in tensor.dims() {
+                    self.hash.update((dim as u64).to_le_bytes());
+                }
+                match tensor.into_data().to_vec::<f32>() {
+                    Ok(values) => {
+                        for value in values {
+                            self.hash.update(value.to_bits().to_le_bytes());
+                        }
+                    }
+                    Err(error) => self.error = Some(anyhow::anyhow!("{error:?}")),
+                }
+            }
+        }
+        let mut visitor = Visitor {
+            hash: Sha256::new(),
+            error: None,
+        };
+        if baseline_only {
+            self.root.visit(&mut visitor);
+        } else {
+            self.visit(&mut visitor);
+        }
+        if let Some(error) = visitor.error {
+            return Err(error);
+        }
+        Ok(format!("{:x}", visitor.hash.finalize()))
+    }
     pub fn param_breakdown(&self) -> Vec<(&'static str, usize)> {
         vec![
             ("root", self.root.num_params()),
@@ -1267,5 +1315,143 @@ impl<B: Backend> V5Inputs<B> {
                 device,
             ),
         })
+    }
+}
+
+#[cfg(test)]
+mod recall_tests {
+    use super::*;
+    use crate::graph::{EpisodeKey, Schedule, acquire};
+    type B = burn::backend::Autodiff<burn::backend::Flex>;
+
+    #[test]
+    fn immutable_anchor_has_a_direct_gradient_path_at_every_loop_in_both_blocks() {
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let device = Default::default();
+        <B as Backend>::seed(&device, 5301);
+        let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+        let root = GameState::from_fen("6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1").unwrap();
+        let graph = acquire(
+            &root,
+            EpisodeKey {
+                position_id: "recall-gradient-fixture".into(),
+                schedule: Schedule::UniformFrontierV1,
+                run_seed: 5301,
+                occurrence_ordinal: 0,
+            },
+            4,
+            None,
+        )
+        .unwrap();
+        let input = V5Inputs::<B>::from_examples(&[(&root, &graph)], &device).unwrap();
+        let base = model.base_frozen(&[(&root, &graph)], &device).unwrap();
+        let anchors = model
+            .state
+            .forward(
+                input.states.clone(),
+                input.flags.clone(),
+                input.node_mask.clone(),
+            )
+            .reshape([1, input.evidence_tokens, 256]);
+        let trace = model.paired_traced_with_base_payload_mask(
+            &input,
+            model.base_frozen(&[(&root, &graph)], &device).unwrap(),
+            4,
+            Treatment::Normal,
+            None,
+        );
+        let root_valid = Tensor::<B, 2, Bool>::ones([1, SQUARES], &device);
+        for (iteration, state) in trace.factual.iter().enumerate() {
+            for evidence in [true, false] {
+                // Freeze mutable state and memory for this read so an anchor
+                // gradient cannot be explained by its initialization or an
+                // earlier loop. Exercise the production block at each actual
+                // loop state, with only its immutable recall input tracked.
+                let (block, anchor, mutable, memory, query_mask, memory_mask, relation) =
+                    if evidence {
+                        (
+                            &model.evidence,
+                            anchors.clone().detach().require_grad(),
+                            state.evidence_before.clone().detach(),
+                            Tensor::cat(
+                                vec![
+                                    state.evidence_before.clone(),
+                                    state.hypothesis_before.clone(),
+                                    base.context.clone(),
+                                ],
+                                1,
+                            )
+                            .detach(),
+                            input.evidence_mask.clone(),
+                            Tensor::cat(
+                                vec![
+                                    input.evidence_mask.clone(),
+                                    input.cands.mask.clone(),
+                                    root_valid.clone(),
+                                ],
+                                1,
+                            ),
+                            input.evidence_rel.clone(),
+                        )
+                    } else {
+                        (
+                            &model.hypothesis,
+                            base.hypotheses.clone().detach().require_grad(),
+                            state.hypothesis_before.clone().detach(),
+                            Tensor::cat(
+                                vec![
+                                    state.hypothesis_before.clone(),
+                                    state.evidence_after.clone(),
+                                    base.context.clone(),
+                                ],
+                                1,
+                            )
+                            .detach(),
+                            input.cands.mask.clone(),
+                            Tensor::cat(
+                                vec![
+                                    input.cands.mask.clone(),
+                                    input.evidence_mask.clone(),
+                                    root_valid.clone(),
+                                ],
+                                1,
+                            ),
+                            input.hypothesis_rel.clone(),
+                        )
+                    };
+                let (output, _) = block.forward_inner(
+                    mutable,
+                    anchor.clone(),
+                    memory,
+                    query_mask,
+                    memory_mask,
+                    relation,
+                    false,
+                    false,
+                );
+                let objective = output.clone().slice([0..1, 0..1, 0..1]).sum()
+                    - output.slice([0..1, 1..2, 1..2]).sum();
+                let grads = objective.backward();
+                let gradient = anchor
+                    .grad(&grads)
+                    .expect("immutable recall input gradient");
+                let values = gradient.into_data().to_vec::<f32>().unwrap();
+                let norm = values.iter().map(|v| v * v).sum::<f32>().sqrt();
+                println!(
+                    "V5_RECALL_EVIDENCE {}",
+                    serde_json::json!({
+                        "loop": iteration + 1, "block": if evidence { "evidence" } else { "hypothesis" },
+                        "direct_anchor_gradient_l2": norm,
+                    })
+                );
+                assert!(
+                    values.iter().all(|v| v.is_finite()) && norm > 1.0e-9,
+                    "direct recall gradient missing: iteration={} evidence={evidence} norm={norm:e}",
+                    iteration + 1
+                );
+            }
+        }
     }
 }

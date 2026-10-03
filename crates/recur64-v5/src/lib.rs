@@ -24,6 +24,11 @@ pub const PAYLOAD_FLAGS: usize = 9;
 pub const STRUCTURAL_FEATURES: usize = 5 + 2 + 4 + ACTION_GEOMETRY;
 pub const MASKED_LOGIT: f32 = -1.0e9;
 
+// Flex seeds its process-global RNG. Serialize the model-building unit tests
+// so parallel test scheduling cannot change their deterministic fixtures.
+#[cfg(test)]
+pub(crate) static CPU_TEST_RNG: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 pub(crate) fn splitmix64(state: &mut u64) -> u64 {
     *state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
     let mut z = *state;

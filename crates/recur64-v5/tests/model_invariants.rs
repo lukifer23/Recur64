@@ -101,13 +101,7 @@ fn composition_mask_zeros_payloads_at_the_encoded_anchor_boundary() {
         .payload_token_mask(&[vec![false; graph.actual_q]], &device)
         .unwrap();
     let base = model.base(&input);
-    let out = model.paired_with_base_payload_mask(
-        &input,
-        base,
-        4,
-        Treatment::Normal,
-        Some(mask),
-    );
+    let out = model.paired_with_base_payload_mask(&input, base, 4, Treatment::Normal, Some(mask));
     assert!(values(out.raw_delta).into_iter().all(|x| x == 0.0));
     assert!(values(out.centered_delta).into_iter().all(|x| x == 0.0));
     assert_eq!(values(out.logits), values(out.z0));
@@ -134,4 +128,56 @@ fn traced_execution_is_the_same_reader_computation_and_exposes_each_loop() {
     assert_eq!(traced.factual.len(), 4);
     assert_eq!(traced.null.len(), 4);
     assert_eq!(traced.factual[0].evidence_attention.dims()[1], 8);
+}
+
+#[test]
+fn loop_prefix_is_identical_and_hypothesis_feedback_reaches_next_evidence_update() {
+    let _guard = RNG.lock().unwrap_or_else(|e| e.into_inner());
+    let device = Default::default();
+    <B as Backend>::seed(&device, 5301);
+    let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+    let root = root();
+    let graph = graph(&root, 4);
+    let input = V5Inputs::<B>::from_examples(&[(&root, &graph)], &device).unwrap();
+    let run = |r, treatment| {
+        model.paired_traced_with_base_payload_mask(&input, model.base(&input), r, treatment, None)
+    };
+    let one = run(1, Treatment::Normal);
+    let four = run(4, Treatment::Normal);
+    let no_feedback = run(4, Treatment::NoHypothesisFeedback);
+    for (short, long) in [(&one.factual, &four.factual), (&one.null, &four.null)] {
+        assert_eq!(
+            values(short[0].evidence_after.clone()),
+            values(long[0].evidence_after.clone())
+        );
+        assert_eq!(
+            values(short[0].hypothesis_after.clone()),
+            values(long[0].hypothesis_after.clone())
+        );
+    }
+    for (normal, intervened) in [
+        (&four.factual, &no_feedback.factual),
+        (&four.null, &no_feedback.null),
+    ] {
+        // H_0 is supplied in both at the first iteration; only the next
+        // evidence read can observe the feedback intervention.
+        assert_eq!(
+            values(normal[0].evidence_after.clone()),
+            values(intervened[0].evidence_after.clone())
+        );
+        assert_eq!(
+            values(normal[0].hypothesis_after.clone()),
+            values(intervened[0].hypothesis_after.clone())
+        );
+        let movement = values(normal[1].evidence_after.clone())
+            .iter()
+            .zip(values(intervened[1].evidence_after.clone()))
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0_f32, f32::max);
+        assert!(
+            movement > 1.0e-6,
+            "feedback has no measurable path to E_2: {movement}"
+        );
+    }
+    assert_eq!(model.num_params(), 7_160_080);
 }
