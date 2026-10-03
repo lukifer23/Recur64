@@ -1438,3 +1438,18 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   This supplies deterministic resumable operational chunks without changing any
   graph, sample, checkpoint, Q/R condition or estimator. R8 remains hard-gated on
   `PILOT_CANDIDATE`.
+
+## V5-D6 - stop at the complete uniform-frontier contract violation
+
+- **Status:** ENGINEERING STOP 2026-10-03.
+- **Evidence:** the production uniform selector omits 19 legal edges below a
+  real depth-five StateQuery node despite remaining Q budget. The regression
+  fails and remains in the test suite. Earlier narrow network qualification
+  does not satisfy this invariant.
+- **Action:** qualification now refuses before model execution. Preserve the
+  old evidence and report `V5_ROOT_CAUSE.md`; no frozen depth representation
+  correction, drill or training is automatically launched.
+- **Proposed review:** separate ranked DFS limit five from graph/representation
+  range sixteen, retaining the complete uniform frontier. Projected parameter
+  increase is 2,816; this is a contract correction requiring a pre-pilot
+  amendment and renewed CPU/CUDA qualification, not a measured result.

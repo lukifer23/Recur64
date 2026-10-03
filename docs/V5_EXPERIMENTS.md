@@ -168,3 +168,30 @@ Corrections are appended; old entries are never rewritten.
   recipe was changed.
 - **Data recheck:** exact P25 TRAIN remains absent. Drill, Stage A, final Stage A
   DEV baseline, Stage B, reader evaluations and pilot diagnostics remain NOT RUN.
+
+## V5-E5 - complete uniform frontier invariant failure
+
+- **Date:** 2026-10-03
+- **Status:** ENGINEERING STOP / CURRENT IMPLEMENTATION UNQUALIFIED.
+- **Affected source:** `97921bdd3cab701dff6478c7f0fdae525f0d6d00` and earlier V5
+  sources. The global depth-five cap incorrectly truncates uniform acquisition.
+- **Measured regression:** five exact transitions from standard start position,
+  path `[400,400,5,5,320]`; depth-five node has 19 unqueried legal edges and three
+  remaining Q units; current uniform selector includes zero. Release regression
+  fails, exit 1. The test remains failing and visible.
+- **Qualification correction:** E2/E3 report real CPU/CUDA network fixture
+  measurements, but do not establish the complete-frontier invariant. Their broad
+  engineering PASS claim is superseded by this stop. The 568-pass release suite
+  at E4 preceded this new failing boundary regression.
+- **Latest CUDA build:** 97921bd release CUDA build succeeded; new measured CPU/
+  CUDA qualification did NOT RUN because the audit found this violation first.
+  Qualification now refuses this known contract violation before model execution.
+- **Root cause and proposed correction:** `docs/V5_ROOT_CAUSE.md`. Removing the
+  selector filter alone is unsafe because the frozen depth representation has
+  only five one-hot fields. No correction to the frozen representation has been
+  implemented pending the required invariant-failure review.
+- **Other evidence retained:** exact resume/optimizer-content checks, loop prefix,
+  feedback, direct recall and finite differences passed on test-only real chess
+  fixtures; compact evidence is `gradient-recall-audit.json`.
+- **NOT RUN:** drill, Stage A/final DEV B0, Stage B, reader matrix, ablations,
+  composition, pilot bootstrap/gates and conditional R8. P25 remains missing.

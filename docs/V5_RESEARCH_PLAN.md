@@ -2,6 +2,12 @@
 
 Status: **PRE-REGISTERED 2026-10-03, before V5 implementation or measurement.**
 
+Current execution status: **ENGINEERING STOP**, not a pilot result. The uniform
+frontier implementation violates the acquisition contract below; see
+`V5_ROOT_CAUSE.md`. No drill, training or DEV evaluation has run. The proposed
+depth-representation correction awaits the required invariant-failure review;
+the original preregistration is preserved.
+
 ## Question
 
 With identical weights and identical acquired states, does applying the same

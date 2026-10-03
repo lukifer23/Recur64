@@ -1,0 +1,99 @@
+{
+  "schema": "v5_cpu_gradient_recall_evidence_v1",
+  "scientific_source_sha": "97921bdd3cab701dff6478c7f0fdae525f0d6d00",
+  "date": "2026-10-03",
+  "device": "cpu",
+  "precision": "fp32",
+  "seed": 5301,
+  "scope": "explicitly test-only real chess fixtures; not pilot evidence",
+  "command": "cargo test -p recur64-v5 --release -- --nocapture",
+  "finite_difference_fixture_fen": "6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1",
+  "finite_difference_q": 2,
+  "finite_difference_r": 2,
+  "finite_difference_objective": "centered_delta(candidate 0) - centered_delta(candidate 1)",
+  "finite_difference_max_relative_error": 0.12,
+  "finite_differences": [
+    {
+      "autodiff": 0.000008746361345401965,
+      "direction_seed": 42241,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": 0.000008046627044677734,
+      "gradient_l2": 0.000009698752364784013,
+      "relative_error": 0.08000290393829346
+    },
+    {
+      "autodiff": 0.0000017021785652104882,
+      "direction_seed": 42242,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": 0.0000016391277313232422,
+      "gradient_l2": 0.000009698752364784013,
+      "relative_error": 0.037041258066892624
+    },
+    {
+      "autodiff": -0.000002378073986619711,
+      "direction_seed": 42243,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": -0.000002384185791015625,
+      "gradient_l2": 0.000009698752364784013,
+      "relative_error": 0.0025634765625
+    },
+    {
+      "autodiff": -0.000021322730390238576,
+      "direction_seed": 42244,
+      "epsilon": 0.05000000074505806,
+      "finite_difference": -0.000020638108253479004,
+      "gradient_l2": 0.000009698752364784013,
+      "relative_error": 0.03210762143135071
+    }
+  ],
+  "immutable_recall": [
+    {
+      "block": "evidence",
+      "direct_anchor_gradient_l2": 0.026259232312440872,
+      "loop": 1
+    },
+    {
+      "block": "hypothesis",
+      "direct_anchor_gradient_l2": 0.030309781432151794,
+      "loop": 1
+    },
+    {
+      "block": "evidence",
+      "direct_anchor_gradient_l2": 0.015737561509013176,
+      "loop": 2
+    },
+    {
+      "block": "hypothesis",
+      "direct_anchor_gradient_l2": 0.01797817088663578,
+      "loop": 2
+    },
+    {
+      "block": "evidence",
+      "direct_anchor_gradient_l2": 0.015310501679778099,
+      "loop": 3
+    },
+    {
+      "block": "hypothesis",
+      "direct_anchor_gradient_l2": 0.017449893057346344,
+      "loop": 3
+    },
+    {
+      "block": "evidence",
+      "direct_anchor_gradient_l2": 0.01494916807860136,
+      "loop": 4
+    },
+    {
+      "block": "hypothesis",
+      "direct_anchor_gradient_l2": 0.017017770558595657,
+      "loop": 4
+    }
+  ],
+  "recall_method": "production blocks at each actual R1..R4 state; mutable state and memory are constants for the isolated read; only immutable recall input is tracked",
+  "prefix_r1_vs_first_r4_exact": true,
+  "no_feedback_first_loop_exact": true,
+  "no_feedback_next_evidence_update_changes": true,
+  "cpu_resume_parameters_schedule_episode_exact": true,
+  "replacement_optimizer_refused": true,
+  "stale_binary_cli_exit": 1,
+  "stale_binary_output_created": false
+}

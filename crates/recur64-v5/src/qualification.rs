@@ -282,6 +282,7 @@ where
     B: AutodiffBackend,
 {
     anyhow::ensure!(!source_sha.is_empty(), "qualification source SHA is empty");
+    crate::graph::validate_uniform_frontier_contract()?;
     anyhow::ensure!(
         matches!(microbatch, 1 | 2),
         "qualification microbatch must be 1 or 2"

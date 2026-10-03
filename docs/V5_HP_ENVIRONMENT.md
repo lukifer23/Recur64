@@ -15,15 +15,18 @@ Recorded 2026-10-03. DETECTED is not TESTED.
 | MSVC | DETECTED: VS 2022 Build Tools with x64 C++ component; not loaded in ordinary shell |
 | CUDA | DETECTED: user-space 12.9.1 under `%LOCALAPPDATA%\Recur64\cuda\12.9.1` |
 | CUDA DLLs | DETECTED: cudart, NVRTC canonical DLL and alias, nvJitLink |
-| V5 graph | TESTED: release CPU and intended RTX 2050 CUDA, FP32, physical microbatch 2 |
+| V5 graph | TESTED HISTORICALLY: release CPU/RTX 2050 network fixtures, FP32, microbatch 2; current complete-frontier invariant fails |
 
 V5 commands use a process-local environment only. They load VS Build Tools and
 prepend the pinned CUDA `bin`; they do not modify PATH, registry, drivers,
 security settings or Windows features.
 
 The preferred resident peak is <=3,072 MiB. The actual paired graph passed at
-physical batch 2, Q8/R4, both streams and full backward; that layout is now
-frozen. The microbatch-1 fallback was not used.
+physical batch 2, Q8/R4, both streams and full backward on the historical
+network fixtures. Full engineering qualification is
+now stopped at the acquisition-contract failure in `V5_ROOT_CAUSE.md`; layout
+must be requalified after the reviewed correction. The microbatch-1 fallback was
+not used.
 
 The CUDA qualification ran through the pinned user-space CUDA path and the
 intended RTX 2050. NVIDIA device-wide used memory rose from 144 MiB before the

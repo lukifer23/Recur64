@@ -217,6 +217,52 @@ struct Meta {
     path: Vec<u16>,
 }
 
+type FrontierEdge = (Vec<u16>, NodeId, u16, usize, Option<u32>);
+
+// Keep the current selector intact while exposing its exact legal frontier to
+// the contract regression. The depth filter below is the reported defect.
+fn uniform_frontier(
+    qm: &QueryManager,
+    metas: &[Option<Meta>],
+    root_actions: &[ActionId],
+) -> anyhow::Result<Vec<FrontierEdge>> {
+    let mut frontier = Vec::new();
+    for qid in 0..qm.node_count() as NodeId {
+        if qm.packet(qid)?.ply_from_root >= u32::from(MAX_DEPTH) {
+            continue;
+        }
+        let (parent_storage, root_candidate, path) = if qid == 0 {
+            (None, usize::MAX, Vec::new())
+        } else {
+            let m = metas[qid as usize]
+                .as_ref()
+                .expect("metadata for acquired node");
+            (Some(m.storage), m.root_candidate, m.path.clone())
+        };
+        for action in qm.unqueried(qid)? {
+            let branch = if qid == 0 {
+                root_candidate_index(root_actions, action)?
+            } else {
+                root_candidate
+            };
+            let mut child_path = path.clone();
+            child_path.push(action);
+            frontier.push((child_path, qid, action, branch, parent_storage));
+        }
+    }
+    Ok(frontier)
+}
+
+/// Fail visibly until the global depth representation can cover the complete
+/// uniform frontier. Only the ranked schedule is authorized to stop at five.
+pub fn validate_uniform_frontier_contract() -> anyhow::Result<()> {
+    anyhow::ensure!(
+        usize::from(MAX_DEPTH) >= MAX_ENGINEERING_Q,
+        "V5 acquisition contract violation: global depth-five cap truncates uniform_frontier_v1; qualification is stopped pending root-cause review"
+    );
+    Ok(())
+}
+
 fn action_geometry(id: ActionId) -> [f32; ACTION_GEOMETRY] {
     let (from, to, promo) = id.decode();
     let ff = (from as usize % 8) as f32;
@@ -364,30 +410,7 @@ pub fn acquire(
         Schedule::UniformFrontierV1 => {
             let mut rng = seed;
             while nodes.len() < requested_q {
-                let mut frontier = Vec::new();
-                for qid in 0..qm.node_count() as NodeId {
-                    if qm.packet(qid)?.ply_from_root >= u32::from(MAX_DEPTH) {
-                        continue;
-                    }
-                    let (parent_storage, root_candidate, path) = if qid == 0 {
-                        (None, usize::MAX, Vec::new())
-                    } else {
-                        let m = metas[qid as usize]
-                            .as_ref()
-                            .expect("metadata for acquired node");
-                        (Some(m.storage), m.root_candidate, m.path.clone())
-                    };
-                    for action in qm.unqueried(qid)? {
-                        let branch = if qid == 0 {
-                            root_candidate_index(&root_actions, action)?
-                        } else {
-                            root_candidate
-                        };
-                        let mut child_path = path.clone();
-                        child_path.push(action);
-                        frontier.push((child_path, qid, action, branch, parent_storage));
-                    }
-                }
+                let mut frontier = uniform_frontier(&qm, &metas, &root_actions)?;
                 if frontier.is_empty() {
                     break;
                 }
@@ -597,6 +620,59 @@ mod tests {
         assert_eq!(
             graph.compute_structure_digest().unwrap(),
             changed.compute_structure_digest().unwrap()
+        );
+    }
+
+    #[test]
+    fn uniform_frontier_includes_legal_edges_below_a_depth_five_acquired_node() {
+        // Explicitly test-only real chess path. All five successor transitions
+        // use the production StateQuery wrapper; no solver/labels are involved.
+        let root = GameState::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
+        let actions = root.legal_actions();
+        let mut qm = QueryManager::new(root.clone()).unwrap().with_budget(8);
+        let mut metas = vec![None];
+        let mut nodes = Vec::new();
+        let mut parent = 0;
+        let mut path = Vec::new();
+        let first_action = qm.unqueried(parent).unwrap()[0];
+        let branch = root_candidate_index(&actions, first_action).unwrap();
+        for _ in 0..5 {
+            let action = qm.unqueried(parent).unwrap()[0];
+            path.push(action);
+            let parent_storage = metas[parent as usize].as_ref().map(|m: &Meta| m.storage);
+            parent = acquire_edge(
+                &mut qm,
+                &mut metas,
+                &mut nodes,
+                parent,
+                action,
+                branch,
+                parent_storage,
+                path.clone(),
+                root.side_to_move(),
+            )
+            .unwrap();
+        }
+        let legal_descendants = qm.unqueried(parent).unwrap().len();
+        assert!(
+            legal_descendants > 0,
+            "depth-five fixture is unexpectedly terminal"
+        );
+        let frontier = uniform_frontier(&qm, &metas, &actions).unwrap();
+        let included = frontier.iter().filter(|edge| edge.1 == parent).count();
+        println!(
+            "V5_FRONTIER_REGRESSION {}",
+            serde_json::json!({
+                "successful_exact_queries": qm.state_transitions(), "available_query_budget": 3,
+                "parent_depth": qm.packet(parent).unwrap().ply_from_root,
+                "legal_unqueried_edges": legal_descendants, "included_by_uniform_selector": included,
+                "path": path,
+            })
+        );
+        assert_eq!(
+            included, legal_descendants,
+            "uniform_frontier_v1 must include every current unqueried legal edge; only ranked DFS has a depth-five limit"
         );
     }
 }

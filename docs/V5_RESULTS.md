@@ -1,5 +1,11 @@
 # V5 results
 
+**CURRENT STATUS: ENGINEERING STOP / UNQUALIFIED IMPLEMENTATION.** The complete
+uniform-frontier invariant fails: the selector omits 19 legal edges below a
+depth-five node despite three remaining query units. See `V5_ROOT_CAUSE.md` and
+the retained failing release regression. The measurements below are historical
+network-fixture evidence, not a passing full engineering gate.
+
 ## Engineering measurements
 
 The implemented frozen graph has 7,160,080 unique parameters:
@@ -14,12 +20,16 @@ The implemented frozen graph has 7,160,080 unique parameters:
 | Shared hypothesis block | 789,872 |
 | Correction readout | 66,048 |
 
-The final formal release qualification is bound to scientific source
+The historical network-fixture qualification is bound to scientific source
 `df6e2aa650c12726ad7094dae04a7c73339139a8`. CPU and the intended RTX 2050 CUDA
 device both passed Q2/Q4/Q8 x R1/R2/R4 forward/backward/AdamW, 50 repeated
 Q8/R4 updates, R8 forward, exact paired-null equality, reader gradient coverage,
-frozen-baseline integrity and full model/optimizer restoration at physical
+frozen-baseline integrity and model-output restoration with optimizer loaded at physical
 microbatch 2.
+
+The later 97921bd CUDA build passed, but its new measured CPU/CUDA qualification
+was stopped before launch by the acquisition-contract failure. No pilot result
+or architectural falsification can be inferred from this implementation defect.
 
 | Measurement | CPU FP32 | CUDA FP32 |
 |---|---:|---:|

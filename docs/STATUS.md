@@ -4,13 +4,16 @@
 
 - Lineage and single-seed fixed-reader pilot are PRE-REGISTERED from accepted V4
   source `17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5`.
-- HP hardware, toolchain and CUDA runtime are DETECTED. The 7,160,080-parameter
-  V5 graph passed release CPU and intended RTX 2050 CUDA qualification in FP32
-  at physical microbatch 2, including the full Q/R matrix, 50 repeated Q8/R4
-  updates, exact null equality, required gradient transmission and exact resume.
+- **ENGINEERING STOP:** the complete uniform-frontier invariant fails. Five
+  exact queries reach a node with 19 legal unqueried edges; the selector omits
+  all 19 despite three remaining Q units. The failing regression is retained.
+  Root cause and one unimplemented correction are in `V5_ROOT_CAUSE.md`.
+- HP hardware, toolchain and CUDA runtime are DETECTED. Historical network
+  fixture checks passed CPU/RTX 2050 in FP32 at microbatch 2. They do not satisfy
+  the full engineering gate. Current qualification refuses the known violation.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
-  qualification may proceed; drill/training/DEV evaluation are BLOCKED until its
-  exact custody contract passes.
+  work may proceed after the required invariant-failure review. Drill/training/
+  DEV evaluation require both corrected engineering qualification and custody.
 - The complete bounded drill, update-0/update-800 reader matrix, interventions,
   composition analysis, exact bootstrap gates and conditional R8 commands are
   implemented and tested at their non-data boundaries. They remain NOT RUN.

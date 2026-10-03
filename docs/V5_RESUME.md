@@ -1,5 +1,11 @@
 # V5 HP resume and artifact transfer
 
+**STOP:** V5-E5 found a complete-uniform-frontier contract violation. Read
+`docs/V5_ROOT_CAUSE.md` before executing the sequence below. Dataset transfer does
+not clear this engineering stop. The current qualification preflight refuses
+the known violation. A reviewed depth-contract correction, passing regression
+and fresh CPU/CUDA qualification are required before any drill or training.
+
 ## Worktree
 
 ```text

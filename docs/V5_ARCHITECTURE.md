@@ -3,6 +3,12 @@
 Status: **FROZEN BEFORE IMPLEMENTATION.** Every named contract below is included
 in the scientific configuration digest.
 
+Current implementation status: **ENGINEERING STOP.** The depth-five global
+representation incorrectly constrains uniform acquisition. The original
+contract below is preserved for audit; the proposed depth-contract amendment in
+`V5_ROOT_CAUSE.md` is not implemented or approved, and requires a new digest
+and fresh qualification before training.
+
 ## Geometry
 
 - width 256; 8 heads; FFN 768 with GELU; dropout 0; RMSNorm epsilon 1e-5
