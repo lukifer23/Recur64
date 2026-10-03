@@ -1,0 +1,28 @@
+{
+  "schema": "v5_hp_preflight_v1",
+  "date": "2026-10-03",
+  "source_sha": "17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5",
+  "branch": "experiment/hp-v5-counterfactual-loop",
+  "environment": {
+    "os": "Windows 11 Home build 26300",
+    "cpu": "AMD Ryzen 5 7535HS",
+    "physical_cores": 6,
+    "logical_threads": 12,
+    "visible_ram_gib": 31.21,
+    "gpu": "NVIDIA GeForce RTX 2050",
+    "gpu_memory_mib": 4096,
+    "gpu_free_mib_at_detection": 3947,
+    "driver": "616.92",
+    "rust": "1.97.1",
+    "cargo": "1.97.1",
+    "cuda_userspace": "12.9.1",
+    "disk_c_free_gib": 76.06
+  },
+  "data": {
+    "required_digest": "3b25dc8549dd2fc9d47c30e294c273b3306aecb3eba91b964715326ddf74f2e6",
+    "found": false,
+    "searched_roots": ["Desktop", "Documents", "Downloads"],
+    "dataset_dependent_status": "BLOCKED"
+  },
+  "v5_graph_tested": false
+}

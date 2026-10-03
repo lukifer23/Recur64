@@ -1,5 +1,16 @@
 # Recur64 — Status
 
+## V5 HP counterfactual relational loop (2026-10-03)
+
+- Lineage and single-seed fixed-reader pilot are PRE-REGISTERED from accepted V4
+  source `17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5`.
+- HP hardware, toolchain and CUDA runtime are DETECTED; the V5 graph is NOT TESTED.
+- The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
+  qualification may proceed; drill/training/DEV evaluation are BLOCKED until its
+  exact custody contract passes.
+- Seeds 5302/5303, controller training, self-play and sealed evaluation are NOT
+  RUN and not authorized.
+
 ## COMPLETED
 
 - Canonical repo identity: project renamed to **Recur64**; specs preserved as

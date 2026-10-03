@@ -1391,3 +1391,26 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   path does not change decisions (G exactly 0; A only +2e-6 nats; B shuffled-content CI includes 0). Suspected cause (INFERRED,
   untested): a multiplicative trust-gate dead-start. Any fix is a new pre-registered TRAIN-only step awaiting the owner. `v4_tune_v1`
   sealed and never evaluated; HOLDOUT_C sealed. Evidence: `docs/V4_P1_RESULTS.md`, `docs/evidence/v4/`.
+
+## V5-D1 - Open `counterfactual_relational_loop_v1`
+
+- **Status:** PRE-REGISTERED 2026-10-03 before implementation or measurement.
+- **Decision:** open a new line from exactly `17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5`.
+  Freeze separate Q and R axes, a 256-wide two-block shared relational loop,
+  root-relative returned states, immutable input recall and a matched factual/null
+  correction. Full equations and identities are in `docs/V5_ARCHITECTURE.md`.
+
+## V5-D2 - Single reader-pilot recipe and stop boundary
+
+- **Status:** PRE-REGISTERED 2026-10-03.
+- **Decision:** seed 5301 only; Stage A 1,200 updates and Stage B 800 updates under
+  `docs/V5_RESEARCH_PLAN.md`. The exact P25 TRAIN artifact is mandatory. Missing
+  data, failed invariants/gradients, >10M parameters, failed drill, or process
+  failure stops progression. No rescue tuning, replication or sealed evaluation.
+
+## V5-D3 - HP physical layout rule
+
+- **Status:** PRE-REGISTERED 2026-10-03; NOT TESTED.
+- **Decision:** CUDA FP32, preferred reader microbatch 2; only microbatch 1 with
+  equivalent accumulation may replace it after real Q8/R4 paired-graph failure or
+  memory excess. The resolved layout is frozen before the pilot.
