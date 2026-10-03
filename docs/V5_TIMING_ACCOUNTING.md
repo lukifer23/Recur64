@@ -78,3 +78,11 @@ temporaries are removed only after their absolute cleanup target is constrained.
 New-source CPU/CUDA measurements: NOT RUN at protocol registration. Compile/API
 errors while adding the observer remain visible in V5_EXPERIMENTS. Final measured
 reports and test counts will be recorded only after their commands complete.
+
+Measured at committed source d970049: CPU PASS; CUDA FAIL at combined exact
+normal/profile output-gradient and AdamW parameter/moment parity. Accounting,
+null, baseline and ordinary resume checks pass but do not clear this failure.
+The gate remains unchanged; no dataset-dependent work was launched. Full release
+suite: 581 passed, zero failed, two preserved ignores, native exit 0. See
+`V5_PROFILING_ROOT_CAUSE.md` and source-tagged reports; diagnostic GPU timings
+are not a qualified performance envelope.

@@ -1,12 +1,15 @@
 # V5 HP resume and artifact transfer
 
-**PRE-PILOT, CUSTODY BLOCKED:** corrected CPU and RTX 2050 CUDA fixture
-qualification both PASS at source `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`,
-FP32, physical microbatch 2. Full release workspace: 578 passed, two ignored.
-The exact P25 TRAIN artifact remains required before the FIT drill or training.
-64c4dd4 is historical functional qualification, not the new synchronized timing
-prerequisite. See `V5_TIMING_ACCOUNTING.md`; current source must be committed,
-rebuilt and CPU/CUDA requalified before using the canonical qualification files.
+**PRE-PILOT, ENGINEERING STOP + CUSTODY BLOCKED:** current source
+`d97004981f52eb077da6bb72584efaca341b8c5b`, FP32, physical microbatch 2:
+synchronized CPU qualification PASS; CUDA qualification FAIL at normal/profile
+exact output-gradient and AdamW parity, exit 1. Other recorded CUDA checks pass
+but cannot override this failure. Full release workspace: 581 passed, zero failed,
+two preserved ignores, native exit 0. Read `V5_PROFILING_ROOT_CAUSE.md` before
+further execution. No gate/tolerance was loosened; no drill/pilot was launched.
+Exact P25 TRAIN is also still required. The bounded GPU replay diagnostic and
+standalone graph-source provenance audit precede any further qualification;
+transferring TRAIN alone does NOT clear the engineering stop.
 Read `V5_ROOT_CAUSE.md`, `V5_NUMERICAL_ROOT_CAUSE.md` and
 `V5_EXECUTION_PARITY.md` for preserved failures and pre-pilot corrections.
 
@@ -102,16 +105,24 @@ historical qualification reports bind to source
 `df6e2aa650c12726ad7094dae04a7c73339139a8` and remain archived under
 `qualification-df6e2aa-{cpu,cuda}.json`. They are not current qualifications.
 
-Current executed commands, after the process-local setup and clean source build:
+Historical executed commands, after the process-local setup and clean source build:
 
     .\target\release\recur64.exe v5 qualify --device cpu --microbatch 2 --output docs/evidence/v5/qualification-64c4dd4-cpu.json
     .\target\release\recur64.exe v5 qualify --device cuda --microbatch 2 --output docs/evidence/v5/qualification-64c4dd4-cuda.json
 
-Both pass; the canonical cpu-qualification-release.json/cuda-qualification.json
-contain these same reports for the dataset-dependent commands below. Physical
+Both passed at 64c4dd4. Current executed commands at committed/rebuilt d970049:
+
+    .\target\release\recur64.exe v5 qualify --device cpu --microbatch 2 --output docs/evidence/v5/qualification-d970049-cpu.json
+    .\target\release\recur64.exe v5 qualify --device cuda --microbatch 2 --output docs/evidence/v5/qualification-d970049-cuda.json
+
+CPU exits 0/PASS; CUDA exits 1/FAIL. Canonical qualification paths now contain
+these current reports, so dataset-dependent CUDA commands below MUST refuse.
+Do not rerun the failed command automatically, bypass the loader, reuse the old
+passing report or launch a drill/LR screen. Physical
 layout is resolved as 2 positions: Stage A accumulation 32, Stage B accumulation
 18. No microbatch-1 fallback was used. Drill qualification is still NOT RUN;
-fixture qualification alone does not authorize bypassing the required drill.
+fixture qualification alone does not authorize bypassing the required drill,
+and the current profiling failure is an additional hard stop.
 
 Scientific source identity is the last commit touching `crates`, Cargo
 manifests/lock or `configs`; staged, unstaged and untracked scientific changes

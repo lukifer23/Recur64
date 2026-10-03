@@ -1,0 +1,50 @@
+{
+  "schema": "v5_accounting_validation_evidence_v1",
+  "source_sha": "d97004981f52eb077da6bb72584efaca341b8c5b",
+  "configuration_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "timing_contract": "v5_synchronized_execution_profile_v1",
+  "timing_contract_digest": "af2a950d922443a73d448fbdc3ab87bfc50a011dea4ea350516ffffa14cad20f",
+  "release_workspace": {
+    "command": "cargo test --release --workspace",
+    "native_exit": 0,
+    "result_blocks": 68,
+    "passed": 581,
+    "failed": 0,
+    "ignored": 2,
+    "ignored_scope": "historical deep perft and explicitly non-qualifying FP32 finite-difference diagnostic",
+    "first_powershell_tee_attempt": "same 581/0/2 reported but wrapper exit 1 without native exit capture; retained, not accepted as the process gate",
+    "logs": ["runs/v5/qualification-accounting/workspace-release.log", "runs/v5/qualification-accounting/workspace-release-native.log"]
+  },
+  "scoped_rustfmt_exit": 0,
+  "v5_all_targets_release_clippy": {"exit": 0, "warnings_denied": true},
+  "cli_all_targets_release_clippy": {
+    "exit": 0,
+    "warnings_denied": true,
+    "preexisting_v4_allowances": ["clippy::collapsible_if", "clippy::manual_is_multiple_of"]
+  },
+  "cuda_build": {
+    "command": "VS 2022 BuildTools VsDevCmd.bat -arch=x64 -host_arch=x64 && cargo build --release -p recur64-cli --features cuda",
+    "native_exit": 0,
+    "reported_elapsed": "3m14s",
+    "cuda": "12.9.1 user-space",
+    "environment": "process-local CUDA_PATH and PATH only",
+    "log": "runs/v5/qualification-accounting/cuda-build-d970049.log"
+  },
+  "cpu": {"report": "qualification-d970049-cpu.json", "exit": 0, "pass": true},
+  "cuda": {
+    "report": "qualification-d970049-cuda.json",
+    "exit": 1,
+    "pass": false,
+    "failed_checks": ["profile_outputs_and_all_gradients_exact", "profile_adamw_parameters_and_moments_exact"],
+    "cause_status": "not yet isolated; combined booleans do not provide per-field numerical differences"
+  },
+  "engineering_classification": "UNQUALIFIED_EXECUTION_STOP",
+  "root_cause_report": "docs/V5_PROFILING_ROOT_CAUSE.md",
+  "gate_or_tolerance_relaxed": false,
+  "automatic_failed_qualification_retry": false,
+  "train_artifact_found": false,
+  "dataset_dependent_work_run": false,
+  "not_run": ["FIT drill", "Q16 drill", "Stage A", "Stage B", "DEV reader evaluation", "pilot gates", "payload/feedback/relation/composition science", "conditional scientific R8", "seeds 5302/5303", "learned query controller", "sealed confirmation"],
+  "sealed_inputs_opened_or_evaluated": false,
+  "standalone_graph_source_provenance": "open implementation/validation audit; current raw graph manifest lacks explicit source SHA"
+}

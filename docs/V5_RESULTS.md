@@ -1,8 +1,53 @@
 # V5 results
 
-**CURRENT STATUS: CORRECTED CPU/CUDA FIXTURE QUALIFICATION PASS; TRAIN MISSING.**
+**CURRENT STATUS: SYNCHRONIZED CPU PASS / CUDA PROFILING PARITY FAIL; STOP.**
 
-Current scientific source: `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
+Current scientific source: `d97004981f52eb077da6bb72584efaca341b8c5b`.
+Full release workspace: **581 passed, zero failed, two preserved ignores**;
+native suite exit 0. Scoped fmt/V5 Clippy and the serial pinned CUDA build pass.
+The new same-device profiling comparison is exact on CPU, but its combined
+output/gradient and post-AdamW parameter/moment checks FAIL on RTX 2050 CUDA.
+The failed qualifier exited 1 and its report is retained. No gate/tolerance was
+loosened. `V5_PROFILING_ROOT_CAUSE.md` separates measured facts from unverified
+causes and specifies the next bounded investigation. This is not a reader pilot.
+
+All nine paired shapes, 50 resident updates, null correction, baseline integrity,
+graph-free reference, full checkpoint/moment restoration and ordinary resumed
+continuation pass on both devices; these cannot override the profiling failure.
+
+| New synchronized fixture measurement | CPU FP32 | CUDA FP32, FAILED qualification |
+|---|---:|---:|
+| Qualifier wall | 50.8978161 s | 32.0531012 s |
+| Worst warm update, final AdamW completion fence | 0.7291423 s | 0.3128205 s |
+| Resident first / last update | 0.7210959 / 0.7019132 s | 0.1977508 / 0.2020739 s |
+| Dedicated instrumented Q8/R4 update wall | 0.7159244 s | 0.1837027 s |
+| Frozen root encoder/candidate path | 0.0301599 s | 0.0051423 s |
+| Returned-state encoder | 0.1201092 s | 0.0061372 s |
+| Factual stream, initialization + four E/H iterations | 0.0669607 s | 0.0175878 s |
+| Null stream, initialization + four E/H iterations | 0.0648321 s | 0.0192178 s |
+| Backward, both streams | 0.4049157 s | 0.0759242 s |
+| AdamW + completion fence | 0.0182239 s | 0.0375022 s |
+
+These single fixture timings include fences; transfer/host work is combined,
+and GPU profiling is unqualified. No full-data stage projection or online
+decision latency is inferred. Per-loop phases and checkpoint measurements are
+in `qualification-d970049-{cpu,cuda}.json`. Requested/actual Q8 was [8,8], depths
+[3,3], branch coverage [4,5], 2 root encoder examples, 16 state encoder examples,
+16 physical state rows/zero padding, 34 legal candidates per position/68 physical
+candidate rows. Both streams execute 16 core applications per example, 32
+example-applications for the batch. Host preparation duplicates 32 raw packet
+preparations and four CandidateFacts calls/136 root successor-board inspections;
+these common root facts do NOT consume Q. Exact reply enumeration is not counted.
+
+CUDA sampled device-wide baseline/peak: 138/1,100 MiB (962 MiB increase); every
+resident sample is 364 MiB. These are not continuous/process-only peaks. Microbatch
+2 fits these fixtures, but the execution failure blocks qualification and training.
+The actual parameter/configuration identities remain unchanged. TRAIN custody,
+FIT drill, baseline/reader training and ALL DEV/pilot science remain NOT RUN.
+
+## Historical 64c4dd4 functional fixture qualification
+
+Historical scientific source: `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
 Full release workspace: **578 passed, zero failed, two explicitly ignored**.
 The corrected paired graph passed CPU and RTX 2050 CUDA in FP32 at physical
 microbatch 2: all nine Q2/Q4/Q8 × R1/R2/R4 forward/backward/AdamW conditions,
@@ -47,7 +92,7 @@ use identical tensors and weights.
 
 Reports: `qualification-64c4dd4-{cpu,cuda}.json`, `gradient-64c4dd4.json` and
 `softmax-execution-parity.json` under `docs/evidence/v5/`. Canonical qualification
-paths now hold the same current reports; historical source reports remain
+paths held the same reports at that milestone; historical source reports remain
 archived. V5-E12/E13 preserve the Windows build-sharing and missing-header runtime
 failures and their serial-build/process-local setup corrections.
 

@@ -434,3 +434,43 @@ Corrections are appended; old entries are never rewritten.
   `-D warnings` PASS. Release CLI all-targets Clippy PASS with only the previously
   documented V4 `collapsible_if` / `manual_is_multiple_of` allowances. Measured
   current-source CPU/CUDA qualification remains pending.
+
+## V5-E15 - synchronized CPU pass / CUDA profiling parity failure, STOP
+
+- **Scientific source pushed before measurement:**
+  `d97004981f52eb077da6bb72584efaca341b8c5b`; branch remote parity 0/0.
+  Unchanged config `849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
+  D9 timing digest `af2a950d922443a73d448fbdc3ab87bfc50a011dea4ea350516ffffa14cad20f`.
+- **Serial CUDA build:** native MSVC/pinned user-space CUDA 12.9.1, FP32,
+  `--features cuda`, native exit 0, reported 3m14s. No version/driver/precision
+  changes or unrelated processes stopped. Source was clean and rebuilt.
+- **CPU:** actual paired nine-shape/50-resident-update qualification PASS,
+  exit 0. Null 0; all current parity/accounting/baseline/restoration/continuation
+  flags true. Whole qualifier 50.8978161 s, synchronized worst warm 0.7291423 s,
+  dedicated profiled update 0.7159244 s. Report `qualification-d970049-cpu.json`.
+- **CUDA:** actual intended RTX 2050 graph ran, but overall FAIL/exit 1.
+  `profile_outputs_and_all_gradients_exact=false` and
+  `profile_adamw_parameters_and_moments_exact=false`. Phase accounting, null 0
+  under unchanged 1e-6, graph-free reference, complete baseline integrity,
+  complete model/moment restoration and ordinary continuation all pass. Finite
+  nonzero gradients reach all four groups. These passes DO NOT clear D9.
+- **Diagnostic envelope only:** whole qualifier 32.0531012 s, synchronized worst
+  warm 0.3128205 s, dedicated profiled update 0.1837027 s. Device-wide sampled
+  baseline/peak 138/1,100 MiB, delta 962; every resident sample 364 MiB. Report
+  `qualification-d970049-cuda.json` is retained, not relabelled PASS.
+- **Stop and diagnosis:** `V5_PROFILING_ROOT_CAUSE.md` separates aggregate failing
+  comparisons from still-unmeasured per-field differences and possible causes.
+  No automatic retry, threshold relaxation, LR screen, drill or training after
+  failure. Next bounded work is per-field/clone-purity/normal-normal/profile-profile
+  diagnosis, plus standalone graph source-provenance validation. No underlying
+  CUDA/framework cause is claimed yet. This is not architectural falsification.
+- **Custody/NOT RUN:** exact TRAIN still missing. FIT drill/Q16, Stage A/B, all
+  DEV/pilot science, conditional scientific R8, seeds 5302/5303, query controller
+  and sealed confirmation NOT RUN. Engineering-only R8 forward was executed;
+  it is not a scientific extra-loop diagnostic. Temporary round-trip artifacts
+  that passed all checkpoint checks were removed; failed reports are preserved.
+- **Report publication safety:** the first canonical-alias guard refused a
+  mistranscribed historical SHA before any write. Corrected the guard by comparing
+  the full parsed old aliases with their preserved 64c4dd4 archives. Current
+  canonical aliases match the d970049 reports exactly as parsed; CUDA remains
+  FAIL and cannot satisfy the qualification loader. No old report was deleted.

@@ -8,11 +8,14 @@ C: free 56.597873687744141 GiB, D: free 69.87890625 GiB. RTX 2050 reports
 GPU client (WDDM process memory N/A); no client was terminated. NVIDIA memory
 fields are direct measurements and may exclude reserved memory. These changing
 availability snapshots are not resource guarantees. New timing/source qualification
-is pending; earlier tested measurements below remain historical.
+is now measured: CPU PASS / CUDA profiling parity FAIL at d970049, so the
+execution envelope is NOT qualified. CUDA sampled baseline/peak 138/1,100 MiB,
+all 50 resident samples 364 MiB; not continuous/process-only peaks. Earlier
+tested measurements below remain historical. See `V5_PROFILING_ROOT_CAUSE.md`.
 
 Recorded 2026-10-03. DETECTED is not TESTED.
 
-Current TESTED functional fixture graph: source
+Historical TESTED pre-profiling functional fixture graph: source
 `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`, FP32, microbatch 2, CPU and the
 intended RTX 2050 CUDA backend. Both-stream Q2/Q4/Q8 × R1/R2/R4 forward/backward/
 AdamW, 50 resident Q8/R4 updates, exact null/baseline/reference/resume checks pass.

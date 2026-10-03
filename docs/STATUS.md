@@ -18,8 +18,11 @@
 - Synchronized real-path profiling and strict qualification-loader checks are
   implemented (`V5_TIMING_ACCOUNTING.md`). New CPU padding parity tests pass
   for all gradients and AdamW state at R1/R2/R4. Full release suite: 581 passed,
-  zero failed, two preserved ignores, native exit 0. Fresh-source CPU/CUDA
-  qualification is pending; 64c4dd4 remains historical evidence.
+  zero failed, two preserved ignores, native exit 0. Current source d970049
+  qualification: CPU PASS, CUDA FAIL at normal/profile exact output-gradient and
+  AdamW parity. Other recorded checks pass but do not clear the gate. STOP before
+  drill/training; `V5_PROFILING_ROOT_CAUSE.md` records the bounded next diagnostic.
+  Standalone graph source provenance also remains an open contract audit.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
   work may proceed under the owner's next-step delegation. Drill/training/
   DEV evaluation require exact custody, the FIT drill and complete accounting.
