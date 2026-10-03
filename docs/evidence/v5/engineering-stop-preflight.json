@@ -1,0 +1,23 @@
+{
+  "schema": "v5_engineering_stop_preflight_v1",
+  "date": "2026-10-03",
+  "scientific_source_sha": "0c52b6e32d44e90107bcf34f3688377a0bc4ce31",
+  "architecture": "counterfactual_relational_loop_v1",
+  "build_command": "cargo build --release -p recur64-cli",
+  "build_exit_code": 0,
+  "build_reported_duration": "1m 54s",
+  "command": ".\\target\\release\\recur64.exe v5 qualify --device cpu --microbatch 2 --output runs/v5/engineering-stop-0c52b6e/qualification-refusal.json",
+  "requested_device": "cpu",
+  "cli_exit_code": 1,
+  "error": "V5 acquisition contract violation: global depth-five cap truncates uniform_frontier_v1; qualification is stopped pending root-cause review",
+  "output_existed_before": false,
+  "output_exists_after": false,
+  "model_construction_reached": false,
+  "qualification_graph_executed": false,
+  "qualification_pass_claimed": false,
+  "scope": "release CLI refusal-path validation only; not CPU/CUDA model qualification",
+  "proposed_depth_correction_implemented": false,
+  "p25_documented_path_present_v5_worktree": false,
+  "p25_documented_path_present_historical_worktree": false,
+  "dataset_dependent_work_run": false
+}

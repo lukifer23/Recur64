@@ -46,6 +46,10 @@ The regression and qualification preflight are preserved in scientific checkpoin
 The new qualification preflight refuses this known contract violation before
 constructing or executing the model. Earlier CPU/CUDA fixture measurements remain
 historical network evidence, but do not satisfy the full engineering gate.
+The release CLI refusal was executed at checkpoint 0c52b6e after a successful
+CPU-capable rebuild: exit 1, the explicit contract error, and no output file.
+`docs/evidence/v5/engineering-stop-preflight.json` records that boundary check;
+it is not a model qualification run.
 
 ## One proposed correction, not implemented
 

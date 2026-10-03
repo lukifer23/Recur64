@@ -199,3 +199,20 @@ Corrections are appended; old entries are never rewritten.
   preserves the failing regression, visible qualification refusal and root-cause
   report on `experiment/hp-v5-counterfactual-loop`. No proposed correction was
   implemented.
+
+## V5-E6 - release qualification refusal-path verification
+
+- **Date:** 2026-10-03
+- **Scientific source:** `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`.
+- **Build:** `cargo build --release -p recur64-cli` passed in a reported 1m 54s.
+- **Executed boundary:** the rebuilt release CLI requested CPU qualification at
+  microbatch 2 and exited 1 with the explicit uniform-frontier contract error.
+  Its new output path existed neither before nor after the command. The source
+  check passed; the invariant preflight failed before model construction.
+- **Scope:** refusal-path validation, not model qualification. No forward,
+  backward, optimizer update, drill, training or DEV evaluation was executed.
+- **Artifact recheck:** P25 TRAIN remains absent at the documented relative path
+  in both local worktrees. Remote fetch confirmed branch parity before the check.
+- **Evidence:** `docs/evidence/v5/engineering-stop-preflight.json`.
+- **Next action unchanged:** required invariant-failure review of the proposed
+  depth-contract correction, then corrected qualification and exact P25 custody.

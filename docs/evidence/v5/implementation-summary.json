@@ -28,6 +28,8 @@
     "historical_fixture_source": "df6e2aa650c12726ad7094dae04a7c73339139a8",
     "current_engineering_gate": "fail",
     "new_measured_qualification": "not_run",
+    "release_refusal_path": "verified_exit_1_no_output_before_model_construction",
+    "release_refusal_evidence": "docs/evidence/v5/engineering-stop-preflight.json",
     "precision": "fp32",
     "physical_microbatch": 2
   },
