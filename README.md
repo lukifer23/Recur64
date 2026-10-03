@@ -40,13 +40,12 @@ state count Q versus repeated shared relational integration R. It uses
 root-relative returned states, bidirectional hypothesis/evidence refinement,
 immutable-input recall and a matched factual/null correction. The architecture and
 single-seed reader pilot are pre-registered in `docs/V5_ARCHITECTURE.md` and
-`docs/V5_RESEARCH_PLAN.md`. The 7,160,080-parameter network passed historical
-release CPU/RTX 2050 fixture checks in FP32 at microbatch 2. The current line is
-at **ENGINEERING STOP**: a real StateQuery regression shows uniform acquisition
-omits legal edges below depth-five nodes. Qualification now refuses this known
-contract violation; see `docs/V5_ROOT_CAUSE.md`. Exact P25 TRAIN is also missing,
-and the drill and dataset-dependent pilot remain NOT RUN. V4_TUNE_V1 and
-HOLDOUT_C remain sealed and unevaluated.
+`docs/V5_RESEARCH_PLAN.md`. The amended model has 7,162,896 parameters. The
+complete-frontier correction and depth-six through depth-sixteen tests pass;
+see `docs/V5_ROOT_CAUSE.md`. Focused CPU contracts pass with an explicitly
+test-only same-weight numerical reference; fresh measured CPU/CUDA qualification
+is pending. Exact P25 TRAIN is still missing, so the drill and dataset-dependent
+pilot remain NOT RUN. V4_TUNE_V1 and HOLDOUT_C remain sealed and unevaluated.
 
 **Branch `experiment/workstation-v35-onpolicy` (Recur64 V3.5, current state).** One on-policy rescue of the V3 architecture: the learner selects every query and the proof oracle only labels the learner-visited states (never chooses). Three seeds, 800 updates each, evaluated once on V3_TUNE_V1 KQRvK M3: the model now uses queried-state content (Content-Use PASS, +0.037 nats, every seed), but Gate II (ACTIVE B8 - B0 = -0.022) and Gate III (ACTIVE B8 - FIXED B8 = -0.023) FAIL. Outcome **PARTIAL - CONTENT**; HOLDOUT_C remains sealed and unevaluated; B16 not run; the lineage stops and a V4 design memo is in `docs/V35_RESULTS.md`. Plan: `docs/V35_RESEARCH_PLAN.md`; evidence: `docs/evidence/v35/`. The V3 branch text below is unchanged history.
 

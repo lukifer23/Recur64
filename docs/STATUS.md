@@ -4,15 +4,15 @@
 
 - Lineage and single-seed fixed-reader pilot are PRE-REGISTERED from accepted V4
   source `17a782f8ebe68d1519ba3dc808c2473f0fd3a9f5`.
-- **ENGINEERING STOP:** the complete uniform-frontier invariant fails. Five
-  exact queries reach a node with 19 legal unqueried edges; the selector omits
-  all 19 despite three remaining Q units. The failing regression is retained.
-  Root cause and one unimplemented correction are in `V5_ROOT_CAUSE.md`.
+- After owner delegation, the complete-frontier correction passes the retained
+  regression: all 19 previously omitted edges are included. Depths 6..16 and
+  disjoint structural fields are tested; the amended count is 7,162,896.
+  `V5_ROOT_CAUSE.md` and `V5_NUMERICAL_ROOT_CAUSE.md` preserve failure evidence.
 - HP hardware, toolchain and CUDA runtime are DETECTED. Historical network
   fixture checks passed CPU/RTX 2050 in FP32 at microbatch 2. They do not satisfy
-  the full engineering gate. Current qualification refuses the known violation.
+  the full engineering gate. Fresh qualification for the amendment is pending.
 - The required P25 TRAIN artifact is not present on this HP. Code and fixture-only
-  work may proceed after the required invariant-failure review. Drill/training/
+  work may proceed under the owner's next-step delegation. Drill/training/
   DEV evaluation require both corrected engineering qualification and custody.
 - The complete bounded drill, update-0/update-800 reader matrix, interventions,
   composition analysis, exact bootstrap gates and conditional R8 commands are

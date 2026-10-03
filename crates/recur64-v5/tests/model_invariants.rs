@@ -53,6 +53,13 @@ fn frozen_model_size_q0_and_paired_null_contracts_hold() {
     <B as Backend>::seed(&device, 5301);
     let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
     let total = model.num_params();
+    println!(
+        "V5_MODEL_IDENTITY {}",
+        serde_json::json!({
+            "config_digest": model.config().scientific_digest().unwrap(),
+            "parameters": total, "parameter_breakdown": model.param_breakdown(),
+        })
+    );
     assert!((6_000_000..=8_000_000).contains(&total), "{total}");
 
     let root = root();
@@ -65,6 +72,15 @@ fn frozen_model_size_q0_and_paired_null_contracts_hold() {
     assert!(values(out.raw_delta).into_iter().all(|x| x == 0.0));
     assert!(values(out.centered_delta).into_iter().all(|x| x == 0.0));
     assert_eq!(values(out.logits), values(out.z0));
+
+    // Explicit-mask-dtype parity with the previous FP32 centering operation.
+    let normal = model.paired(&input, 2, Treatment::Normal);
+    let valid = input.cands.mask.clone().float();
+    let count = valid.clone().sum_dim(1).clamp(1.0, f32::MAX);
+    let mean = (normal.raw_delta.clone() * valid).sum_dim(1) / count;
+    let previous = (normal.raw_delta - mean.expand([input.batch, input.cands.width]))
+        .mask_fill(input.cands.mask.clone().bool_not(), 0.0);
+    assert_eq!(values(normal.centered_delta), values(previous));
 }
 
 #[test]
@@ -179,5 +195,5 @@ fn loop_prefix_is_identical_and_hypothesis_feedback_reaches_next_evidence_update
             "feedback has no measurable path to E_2: {movement}"
         );
     }
-    assert_eq!(model.num_params(), 7_160_080);
+    assert_eq!(model.num_params(), 7_162_896);
 }

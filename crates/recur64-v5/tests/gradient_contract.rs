@@ -109,7 +109,10 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
     let device = Default::default();
     <B as Backend>::seed(&device, 5301);
     let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
-    let inference = model.valid();
+    // FP32 autodiff is the production quantity. Use the identical FP32 weights
+    // promoted exactly to FP64 for a cancellation-resistant numerical arm.
+    // Fixture, directions, epsilon and 12% assertion are unchanged.
+    let inference = model.valid().map(&mut F64ReferenceParameters);
     let (root, graph) = fixture();
     let examples = [(&root, &graph)];
     let mut ad_input = V5Inputs::<B>::from_examples(&examples, &device).unwrap();
@@ -144,29 +147,35 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
             .zip(&direction)
             .map(|(gradient, delta)| gradient * delta)
             .sum();
-        let base_input = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
+        let base_input =
+            reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
         let direction_tensor =
-            Tensor::<I, 4>::from_data(TensorData::new(direction, shape), &device);
-        let mut plus = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
-        plus.states = base_input.states.clone() + direction_tensor.clone().mul_scalar(epsilon);
-        let mut minus = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
-        minus.states = base_input.states - direction_tensor.mul_scalar(epsilon);
+            Tensor::<I, 4>::from_data(TensorData::new(direction, shape), &device)
+                .cast(burn::tensor::FloatDType::F64);
+        let mut plus =
+            reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
+        plus.states =
+            base_input.states.clone() + direction_tensor.clone().mul_scalar(f64::from(epsilon));
+        let mut minus =
+            reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
+        minus.states = base_input.states - direction_tensor.mul_scalar(f64::from(epsilon));
         let p = candidate_relative(&inference, &plus)
             .into_data()
-            .to_vec::<f32>()
+            .to_vec::<f64>()
             .unwrap()[0];
         let m = candidate_relative(&inference, &minus)
             .into_data()
-            .to_vec::<f32>()
+            .to_vec::<f64>()
             .unwrap()[0];
-        let numeric = (p - m) / (2.0 * epsilon);
-        let relative =
-            (derivative - numeric).abs() / derivative.abs().max(numeric.abs()).max(1.0e-6);
+        let numeric = (p - m) / (2.0 * f64::from(epsilon));
+        let relative = (f64::from(derivative) - numeric).abs()
+            / f64::from(derivative).abs().max(numeric.abs()).max(1.0e-6);
         println!(
             "V5_GRADIENT_EVIDENCE {}",
             serde_json::json!({
                 "direction_seed": seed, "epsilon": epsilon, "gradient_l2": gradient_l2,
                 "autodiff": derivative, "finite_difference": numeric, "relative_error": relative,
+                "autodiff_precision": "fp32", "numerical_reference_precision": "fp64_same_weights",
             })
         );
         if derivative.abs() > 1.0e-8 || numeric.abs() > 1.0e-8 {
@@ -178,4 +187,199 @@ fn returned_payload_autodiff_matches_several_finite_differences() {
         }
     }
     assert!(nonzero >= 3, "too few nonsaturated perturbation directions");
+}
+
+/// Bounded numerical root-cause diagnostic, never a qualifying replacement.
+/// The original assertion, fixture, directions and epsilon remain unchanged.
+#[test]
+#[ignore = "explicit root-cause diagnostic; does not satisfy the finite-difference gate"]
+fn returned_payload_finite_difference_numerics_diagnostic() {
+    let _guard = RNG.lock().unwrap_or_else(|error| error.into_inner());
+    let device = Default::default();
+    <B as Backend>::seed(&device, 5301);
+    let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+    let inference = model.valid();
+    let (root, graph) = fixture();
+    let examples = [(&root, &graph)];
+    let mut input = V5Inputs::<B>::from_examples(&examples, &device).unwrap();
+    let tracked = input.states.clone().require_grad();
+    input.states = tracked.clone();
+    let grads = candidate_relative(&model, &input).backward();
+    let analytic = tracked
+        .grad(&grads)
+        .unwrap()
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap();
+    let shape = input.states.dims();
+    let count = shape.iter().product::<usize>();
+    for seed in [0xA501_u64, 0xA502, 0xA503, 0xA504] {
+        let mut rng = seed;
+        let direction: Vec<f32> = (0..count)
+            .map(|_| {
+                if splitmix64(&mut rng) & 1 == 0 {
+                    -1.0
+                } else {
+                    1.0
+                }
+            })
+            .collect();
+        let derivative: f32 = analytic.iter().zip(&direction).map(|(g, d)| g * d).sum();
+        let direction = Tensor::<I, 4>::from_data(TensorData::new(direction, shape), &device);
+        // This fixed ladder is a roundoff/nonlinearity diagnostic, not an
+        // acceptance search: report every point for every original direction.
+        for epsilon in [0.0125_f32, 0.025, 0.05, 0.1, 0.2] {
+            let base = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
+            let mut plus = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
+            let mut minus = V5Inputs::<I>::from_examples(&examples, &device).unwrap();
+            plus.states = base.states.clone() + direction.clone().mul_scalar(epsilon);
+            minus.states = base.states - direction.clone().mul_scalar(epsilon);
+            let p = candidate_relative(&inference, &plus)
+                .into_data()
+                .to_vec::<f32>()
+                .unwrap()[0];
+            let m = candidate_relative(&inference, &minus)
+                .into_data()
+                .to_vec::<f32>()
+                .unwrap()[0];
+            let numeric = (p - m) / (2.0 * epsilon);
+            let relative =
+                (derivative - numeric).abs() / derivative.abs().max(numeric.abs()).max(1.0e-6);
+            assert!(p.is_finite() && m.is_finite() && derivative.is_finite());
+            println!(
+                "V5_FD_NUMERICS {}",
+                serde_json::json!({"direction_seed": seed,
+                "epsilon": epsilon, "autodiff": derivative, "plus": p, "minus": m,
+                "central_difference_numerator": p - m, "finite_difference": numeric,
+                "relative_error": relative, "qualifying": false})
+            );
+        }
+    }
+}
+
+struct F64ReferenceParameters;
+impl<Bk: Backend> burn::module::ModuleMapper<Bk> for F64ReferenceParameters {
+    fn map_float<const D: usize>(
+        &mut self,
+        param: burn::module::Param<Tensor<Bk, D>>,
+    ) -> burn::module::Param<Tensor<Bk, D>> {
+        let (id, value, mapper) = param.consume();
+        burn::module::Param::from_mapped_value(
+            id,
+            value.cast(burn::tensor::FloatDType::F64),
+            mapper,
+        )
+    }
+}
+
+fn reference_input_f64<Bk: Backend>(mut input: V5Inputs<Bk>) -> V5Inputs<Bk> {
+    use burn::tensor::FloatDType;
+    input.root = input.root.cast(FloatDType::F64);
+    input.candidate_geometry = input.candidate_geometry.cast(FloatDType::F64);
+    input.facts = input.facts.cast(FloatDType::F64);
+    input.states = input.states.cast(FloatDType::F64);
+    input.flags = input.flags.cast(FloatDType::F64);
+    input.structural = input.structural.cast(FloatDType::F64);
+    input.evidence_rel = input.evidence_rel.cast(FloatDType::F64);
+    input.hypothesis_rel = input.hypothesis_rel.cast(FloatDType::F64);
+    input
+}
+
+#[test]
+fn same_weight_f64_reference_diagnoses_fp32_finite_difference_failure() {
+    let _guard = RNG.lock().unwrap_or_else(|error| error.into_inner());
+    let device = Default::default();
+    <B as Backend>::seed(&device, 5301);
+    let model = CounterfactualRelationalLoop::<B>::new(V5Config::default(), &device);
+    let original_parameters = model.parameter_digest().unwrap();
+    let reference = model.clone().map(&mut F64ReferenceParameters);
+    let inference = reference.valid();
+    let (root, graph) = fixture();
+    let examples = [(&root, &graph)];
+    let mut input32 = V5Inputs::<B>::from_examples(&examples, &device).unwrap();
+    let tracked32 = input32.states.clone().require_grad();
+    input32.states = tracked32.clone();
+    let grads32 = candidate_relative(&model, &input32).backward();
+    let analytic32 = tracked32
+        .grad(&grads32)
+        .unwrap()
+        .into_data()
+        .to_vec::<f32>()
+        .unwrap();
+    let mut input64 =
+        reference_input_f64(V5Inputs::<B>::from_examples(&examples, &device).unwrap());
+    let tracked64 = input64.states.clone().require_grad();
+    input64.states = tracked64.clone();
+    let grads64 = candidate_relative(&reference, &input64).backward();
+    let analytic64 = tracked64
+        .grad(&grads64)
+        .unwrap()
+        .into_data()
+        .to_vec::<f64>()
+        .unwrap();
+    let shape = input64.states.dims();
+    let epsilon = 0.05_f64;
+    for seed in [0xA501_u64, 0xA502, 0xA503, 0xA504] {
+        let mut rng = seed;
+        let direction: Vec<f64> = (0..analytic64.len())
+            .map(|_| {
+                if splitmix64(&mut rng) & 1 == 0 {
+                    -1.0
+                } else {
+                    1.0
+                }
+            })
+            .collect();
+        let d32 = analytic32
+            .iter()
+            .zip(&direction)
+            .map(|(g, d)| f64::from(*g) * d)
+            .sum::<f64>();
+        let d64 = analytic64
+            .iter()
+            .zip(&direction)
+            .map(|(g, d)| g * d)
+            .sum::<f64>();
+        let direction = Tensor::<I, 4>::from_data(TensorData::new(direction, shape), &device)
+            .cast(burn::tensor::FloatDType::F64);
+        let base = reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
+        let mut plus =
+            reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
+        let mut minus =
+            reference_input_f64(V5Inputs::<I>::from_examples(&examples, &device).unwrap());
+        plus.states = base.states.clone() + direction.clone().mul_scalar(epsilon);
+        minus.states = base.states - direction.mul_scalar(epsilon);
+        let p = candidate_relative(&inference, &plus)
+            .into_data()
+            .to_vec::<f64>()
+            .unwrap()[0];
+        let m = candidate_relative(&inference, &minus)
+            .into_data()
+            .to_vec::<f64>()
+            .unwrap()[0];
+        let numeric = (p - m) / (2.0 * epsilon);
+        let relative = |a: f64, b: f64| (a - b).abs() / a.abs().max(b.abs()).max(1.0e-6);
+        println!(
+            "V5_F64_REFERENCE {}",
+            serde_json::json!({"direction_seed": seed,
+            "epsilon": epsilon, "autodiff_fp32": d32, "autodiff_fp64": d64,
+            "finite_difference_fp64": numeric, "fp32_vs_fp64_relative_error": relative(d32, d64),
+            "fp32_vs_fd64_relative_error": relative(d32, numeric),
+            "fp64_vs_fd64_relative_error": relative(d64, numeric), "production_precision": "fp32"})
+        );
+        assert!(d32.is_finite() && d64.is_finite() && numeric.is_finite());
+        assert!(
+            relative(d32, d64) < 0.001,
+            "FP32/FP64 derivative mismatch for {seed:x}"
+        );
+        assert!(
+            relative(d32, numeric) < 0.12,
+            "FP32 derivative/reference mismatch for {seed:x}"
+        );
+        assert!(
+            relative(d64, numeric) < 0.12,
+            "FP64 derivative/reference mismatch for {seed:x}"
+        );
+    }
+    assert_eq!(model.parameter_digest().unwrap(), original_parameters);
 }

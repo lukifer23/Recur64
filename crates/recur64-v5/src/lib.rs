@@ -21,7 +21,11 @@ pub const IN_FEATURES: usize = 119;
 pub const FACT_FIELDS: usize = 8;
 pub const ACTION_GEOMETRY: usize = 11;
 pub const PAYLOAD_FLAGS: usize = 9;
-pub const STRUCTURAL_FEATURES: usize = 5 + 2 + 4 + ACTION_GEOMETRY;
+pub const DEPTH_FEATURES: usize = 16;
+pub const TURN_FEATURE_OFFSET: usize = DEPTH_FEATURES;
+pub const SLOT_FEATURE_OFFSET: usize = TURN_FEATURE_OFFSET + 2;
+pub const ACTION_FEATURE_OFFSET: usize = SLOT_FEATURE_OFFSET + 4;
+pub const STRUCTURAL_FEATURES: usize = ACTION_FEATURE_OFFSET + ACTION_GEOMETRY;
 pub const MASKED_LOGIT: f32 = -1.0e9;
 
 // Flex seeds its process-global RNG. Serialize the model-building unit tests

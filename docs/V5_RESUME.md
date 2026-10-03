@@ -1,10 +1,10 @@
 # V5 HP resume and artifact transfer
 
-**STOP:** V5-E5 found a complete-uniform-frontier contract violation. Read
-`docs/V5_ROOT_CAUSE.md` before executing the sequence below. Dataset transfer does
-not clear this engineering stop. The current qualification preflight refuses
-the known violation. A reviewed depth-contract correction, passing regression
-and fresh CPU/CUDA qualification are required before any drill or training.
+**PRE-PILOT:** the owner delegated next-step choice and the complete-frontier
+correction now passes its retained regression. Read `docs/V5_ROOT_CAUSE.md` and
+`docs/V5_NUMERICAL_ROOT_CAUSE.md`. Fresh CPU/CUDA qualification for the amended
+configuration and exact P25 custody are required before any drill or training.
+Historical depth-five qualification reports cannot unlock the amended model.
 
 ## Worktree
 
@@ -13,10 +13,11 @@ C:\Users\Caitl\Desktop\Code Projects\Recur64-v5
 ```
 
 Branch: `experiment/hp-v5-counterfactual-loop`.
-Current scientific checkpoint: `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`.
-It contains the retained failing regression and qualification preflight, not a
-depth-representation fix. Subsequent documentation-only commits do not change
-this scientific source identity.
+Historical stop checkpoint: `0c52b6e32d44e90107bcf34f3688377a0bc4ce31`.
+The amended source must be rebuilt after its commit. Scientific identity is the
+last commit touching `crates`, Cargo files or `configs`; documentation-only
+commits do not change it. Configuration digest:
+`d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
 
 ## Required missing artifact
 
@@ -27,6 +28,8 @@ runs\v25\p25\data\proof-train.json
 ```
 
 Required identity:
+
+Machine-readable manifest: `docs/evidence/v5/required-artifacts.json`.
 
 ```text
 positions: 44332
@@ -76,9 +79,9 @@ qualification reports pass and bind to source
 `df6e2aa650c12726ad7094dae04a7c73339139a8`.
 
 Scientific source identity is the last commit touching `crates`, Cargo
-manifests/lock or `configs`; tracked uncommitted changes in those paths are
-refused. Documentation/evidence-only commits therefore do not invalidate the
-qualified executable identity.
+manifests/lock or `configs`; staged, unstaged and untracked scientific changes
+are refused, as is a stale binary built against a different scientific commit.
+Documentation/evidence-only commits do not invalidate the executable identity.
 
 ## Dataset-dependent command sequence (NOT RUN)
 

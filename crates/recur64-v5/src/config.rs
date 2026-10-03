@@ -8,7 +8,7 @@ pub const ROOT_FRAME: &str = "v5_root_frame_v1";
 pub const ROOT_HYPOTHESES: &str = "v5_root_hypotheses_v1";
 pub const RETURNED_PAYLOAD: &str = "v5_returned_payload_v1";
 pub const STATE_TOKENS: &str = "v5_state_tokens4_v1";
-pub const ACQUIRED_GRAPH: &str = "v5_acquired_graph_v1";
+pub const ACQUIRED_GRAPH: &str = "v5_acquired_graph_v2";
 pub const RELATIONAL_LOOP: &str = "v5_relational_loop_v1";
 pub const INPUT_RECALL: &str = "v5_input_recall_v1";
 pub const PAIRED_NULL_READOUT: &str = "v5_paired_null_readout_v1";
@@ -64,6 +64,11 @@ pub struct V5Config {
     pub residual_alpha: f64,
     pub max_query: usize,
     pub max_depth: usize,
+    pub depth_encoding: String,
+    pub structural_features: usize,
+    pub ranked_max_depth: usize,
+    pub ranked_max_branch_edges: usize,
+    pub uniform_frontier_rule: String,
     pub contracts: Contracts,
 }
 
@@ -85,7 +90,12 @@ impl Default for V5Config {
             rms_eps: 1e-5,
             residual_alpha: 0.5,
             max_query: 16,
-            max_depth: 5,
+            max_depth: crate::DEPTH_FEATURES,
+            depth_encoding: "one_hot_nonroot_depth_1_through_16".into(),
+            structural_features: crate::STRUCTURAL_FEATURES,
+            ranked_max_depth: usize::from(crate::graph::RANKED_MAX_DEPTH),
+            ranked_max_branch_edges: crate::graph::MAX_BRANCH_EDGES,
+            uniform_frontier_rule: "complete_unqueried_legal_frontier".into(),
             contracts: Contracts::default(),
         }
     }
@@ -116,7 +126,13 @@ impl V5Config {
             "V5 normalization/residual contract mismatch"
         );
         anyhow::ensure!(
-            self.max_query == 16 && self.max_depth == 5,
+            self.max_query == crate::graph::MAX_ENGINEERING_Q
+                && self.max_depth == crate::DEPTH_FEATURES
+                && self.depth_encoding == "one_hot_nonroot_depth_1_through_16"
+                && self.structural_features == crate::STRUCTURAL_FEATURES
+                && self.ranked_max_depth == usize::from(crate::graph::RANKED_MAX_DEPTH)
+                && self.ranked_max_branch_edges == crate::graph::MAX_BRANCH_EDGES
+                && self.uniform_frontier_rule == "complete_unqueried_legal_frontier",
             "V5 graph bounds mismatch"
         );
         anyhow::ensure!(
@@ -167,5 +183,24 @@ mod tests {
         let mut cfg = V5Config::default();
         cfg.contracts.pilot = "other".into();
         assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn old_global_depth_contract_and_graph_identity_are_refused() {
+        let cfg = V5Config {
+            max_depth: 5,
+            ..V5Config::default()
+        };
+        assert!(cfg.validate().is_err());
+        let mut cfg = V5Config::default();
+        cfg.contracts.acquired_graph = "v5_acquired_graph_v1".into();
+        assert!(cfg.validate().is_err());
+        let mut legacy = serde_json::to_value(V5Config::default()).unwrap();
+        legacy.as_object_mut().unwrap().remove("depth_encoding");
+        assert!(serde_json::from_value::<V5Config>(legacy).is_err());
+        assert_ne!(
+            V5Config::default().scientific_digest().unwrap(),
+            "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c"
+        );
     }
 }

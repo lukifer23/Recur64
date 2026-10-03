@@ -1453,3 +1453,19 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   range sixteen, retaining the complete uniform frontier. Projected parameter
   increase is 2,816; this is a contract correction requiring a pre-pilot
   amendment and renewed CPU/CUDA qualification, not a measured result.
+
+## V5-D7 - delegated pre-pilot depth-contract correction
+
+- **Authority:** owner asked the agent to choose next steps after the V5-D6 report.
+- **Choice:** restore complete uniform frontier; keep ranked DFS depth/branch
+  limits five; use 16 one-hot depth fields and explicit role/slot/action offsets.
+- **Identity:** acquired graph and manifest v2, configuration digest
+  `d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+- **Measured count:** 7,162,896, exactly 2,816 added in the evidence initializer.
+  D/heads/FFN/block counts, FP32, optimizer/loss/updates/seeds/exposures unchanged.
+- **Numerical test correction:** retain the 12% finite-difference assertion and
+  all fixed directions/epsilon; use same-weight FP64 numerical reference against
+  production FP32 autodiff. Add stricter FP32/FP64 derivative parity and exact
+  FP32 centering parity. Preserve failed FP32 differencing evidence and ladder.
+- **No science launched:** exact P25 custody and new CPU/CUDA engineering reports
+  are required. No new architecture, LR/sample sweep, pilot or sealed evaluation.

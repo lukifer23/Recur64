@@ -2,6 +2,14 @@
 
 Recorded 2026-10-03. DETECTED is not TESTED.
 
+Re-detection during the depth amendment: CPU remains Ryzen 5 7535HS, 6/12;
+Windows 11 Home build 26300; visible RAM 31.20835 GiB, available approximately
+19.25930 GiB; C: free approximately 56.265 GiB, D: free approximately 69.879 GiB.
+RTX 2050 reports total 4,096 MiB, used 9 MiB, free 3,954 MiB, driver 616.92.
+NVIDIA's free/used fields exclude some reserved memory and are reported directly.
+ChatGPT is an existing GPU client; no unrelated process was stopped. These are
+DETECTED snapshots, not amended-model CUDA measurements.
+
 | Item | Status |
 |---|---|
 | OS | DETECTED: Windows 11 Home, build 26300 |

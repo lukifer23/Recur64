@@ -35,10 +35,15 @@ fn model_info_reports_the_frozen_identity_and_measured_parameter_total() {
     let out = run(&["v5", "model-info", "--json", json.to_str().unwrap()]);
     assert!(out.ok, "{}", out.stderr);
     assert!(out.stdout.contains("counterfactual_relational_loop_v1"));
-    assert!(out.stdout.contains("7160080"));
+    assert!(out.stdout.contains("7162896"));
     assert!(out.stdout.contains("4R"));
     let doc: serde_json::Value = serde_json::from_slice(&std::fs::read(json).unwrap()).unwrap();
-    assert_eq!(doc["parameters"], 7_160_080);
+    assert_eq!(doc["parameters"], 7_162_896);
+    assert_eq!(
+        doc["scientific_config_digest"],
+        "d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937"
+    );
+    assert_eq!(doc["contracts"]["acquired_graph"], "v5_acquired_graph_v2");
     assert_eq!(doc["architecture"], "counterfactual_relational_loop_v1");
     assert_eq!(
         doc["contracts"]["paired_null_readout"],

@@ -1,6 +1,14 @@
 # V5 acquisition invariant failure
 
-Status: **ENGINEERING STOP, 2026-10-03. No dataset-dependent run has started.**
+Original status: **ENGINEERING STOP, 2026-10-03. No dataset-dependent run started.**
+
+Update after the owner's next-step delegation: the proposed depth correction
+below is now implemented. The retained regression includes all 19 legal edges;
+depth-six through depth-sixteen and non-overlapping field tests pass. The original
+record below describes the superseded depth-five source, not the current code.
+Actual amended parameter count is 7,162,896. A separate numerical unit-test issue
+and its correction are preserved in `V5_NUMERICAL_ROOT_CAUSE.md`. Fresh full
+CPU/CUDA qualification is still required before any training.
 
 The owner authorization says uniform_frontier_v1 chooses uniformly from the
 complete current unqueried legal frontier. Only base_ranked_depth_v1 has the

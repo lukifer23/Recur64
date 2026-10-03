@@ -216,3 +216,59 @@ Corrections are appended; old entries are never rewritten.
 - **Evidence:** `docs/evidence/v5/engineering-stop-preflight.json`.
 - **Next action unchanged:** required invariant-failure review of the proposed
   depth-contract correction, then corrected qualification and exact P25 custody.
+
+## V5-E7 - delegated depth-contract correction before pilot
+
+- **Authority/date:** owner delegated next-step choice, 2026-10-03.
+- **Implementation:** complete uniform frontier restored; ranked depth five and
+  five edges per branch preserved; depth representation expanded to 16 disjoint
+  fields. Graph manifest/subcontract v2 now binds configuration and verifies Q,
+  path, depth, ownership, parent and ranked limits. Old graph/config identities
+  refuse. D/heads/FFN/blocks/precision/loss/seeds/sampling/updates unchanged.
+- **Actual model:** 7,162,896 parameters, evidence initializer 139,776; measured
+  increase 2,816. Configuration digest
+  `d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+- **Retained regression:** five queries, three Q units remaining, 19 legal edges,
+  all 19 included (previously zero). Depths 6..16, invalid depth/Q/path/parent,
+  old-manifest refusal, structural offsets/padding and deep paired-null tested.
+- **Focused release outcome:** 28 passed, zero failed, one explicitly runnable
+  non-qualifying numerical diagnostic ignored by default. Full workspace and
+  new measured CPU/CUDA qualification are separate subsequent gates.
+- **Data:** local matching-filename recheck still finds no P25 TRAIN. Accepted
+  source PR-triggered workflow run lookup returned empty (limited scope, not a
+  global GitHub artifact absence claim). CLI `gh` was unauthenticated; no token
+  was retrieved or login performed. No regeneration/replacement attempted.
+- **Artifact manifest:** `docs/evidence/v5/required-artifacts.json`.
+
+## V5-E8 - finite-difference failure and same-weight numerical reference
+
+- **Initial failure retained:** after E7 geometry, original FP32 epsilon 0.05
+  test failed at direction 0xA502, relative error 0.1643647402524948 versus 0.12.
+  Fixed all-direction ladder exposed 0xA504 error 0.3099137842655182 at that step.
+- **Diagnosis:** no cherry-picked step/direction replaces the gate. Same actual
+  model/weights/graph in test-only FP64 reference gives FP32/FP64 autodiff error
+  <=0.00014744318395504692 and numerical errors below unchanged 0.12. Production
+  FP32 parameters remain unchanged. See `V5_NUMERICAL_ROOT_CAUSE.md`.
+- **Failed reference attempts:** explicit FP64 reference initially hit default
+  FP32 mask/direction dtype mismatches; the backtrace localized them. These are
+  retained failures, not model qualification results or a framework upgrade.
+- **Correction:** numerical reference arm uses exact same weights in FP64.
+  Original fixture, four directions, epsilon and 12% assertion are unchanged.
+  Additional derivative parity <0.001 and exact old/new FP32 centering tests pass.
+  The old FP32 ladder is retained as an explicit diagnostic, not a scientific gate.
+- **Scope:** unit qualification only. No CUDA/CPU measured qualification, drill,
+  training, DEV evaluation, recipe tuning or architecture redesign was launched
+  to compensate for the failure.
+
+## V5-E9 - release workspace boundary expectation updates
+
+- **Initial full-suite attempt:** stopped at the V5 model-info boundary's old
+  exact 7,160,080 expectation. Updated to the measured amended 7,162,896 count;
+  no assertion was removed or widened. New graph identity/config digest checks
+  were added.
+- **Second attempt:** the new digest assertion used the wrong JSON key
+  `config_digest`; actual model-info schema is `scientific_config_digest`.
+  The test key was corrected. This was a test/schema mismatch, not a numerical
+  or model invariant failure. These nonzero exits are retained here.
+- **Current boundary:** the corrected full workspace run is still required.
+  Do not infer a full-suite PASS from the earlier focused 28-test result.

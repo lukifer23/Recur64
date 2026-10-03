@@ -12,7 +12,7 @@ use crate::{ACTION_GEOMETRY, PAYLOAD_FLAGS, splitmix64};
 
 pub const MAX_PILOT_Q: usize = 8;
 pub const MAX_ENGINEERING_Q: usize = 16;
-pub const MAX_DEPTH: u8 = 5;
+pub const RANKED_MAX_DEPTH: u8 = 5;
 pub const MAX_BRANCH_EDGES: usize = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -79,6 +79,7 @@ pub struct AcquiredNode {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AcquiredGraph {
     pub schema: String,
+    pub config_digest: String,
     pub episode: EpisodeKey,
     pub requested_q: usize,
     pub actual_q: usize,
@@ -146,6 +147,7 @@ impl AcquiredGraph {
             .collect();
         let structure = serde_json::json!({
             "schema": self.schema,
+            "config_digest": self.config_digest,
             "episode": self.episode,
             "requested_q": self.requested_q,
             "actual_q": self.actual_q,
@@ -164,8 +166,16 @@ impl AcquiredGraph {
 
     pub fn verify(&self) -> anyhow::Result<()> {
         anyhow::ensure!(
-            self.schema == "v5_graph_manifest_v1",
+            self.schema == "v5_graph_manifest_v2",
             "graph schema mismatch"
+        );
+        anyhow::ensure!(
+            self.config_digest == crate::config::V5Config::default().scientific_digest()?,
+            "graph configuration digest mismatch"
+        );
+        anyhow::ensure!(
+            self.actual_q <= self.requested_q && self.requested_q <= MAX_ENGINEERING_Q,
+            "graph Q out of range"
         );
         anyhow::ensure!(
             self.actual_q == self.nodes.len(),
@@ -176,9 +186,9 @@ impl AcquiredGraph {
             "query accounting mismatch"
         );
         anyhow::ensure!(
-            self.nodes
-                .iter()
-                .all(|n| n.depth > 0 && n.depth <= MAX_DEPTH),
+            self.nodes.iter().all(|n| n.depth > 0
+                && usize::from(n.depth) <= crate::DEPTH_FEATURES
+                && usize::from(n.depth) <= self.actual_q),
             "graph depth out of range"
         );
         anyhow::ensure!(
@@ -189,10 +199,31 @@ impl AcquiredGraph {
         );
         for (i, n) in self.nodes.iter().enumerate() {
             anyhow::ensure!(n.storage_id as usize == i, "storage ids are not dense");
+            anyhow::ensure!(n.path.len() == usize::from(n.depth), "path/depth mismatch");
             if let Some(p) = n.parent {
                 anyhow::ensure!((p as usize) < self.nodes.len(), "parent id is absent");
                 anyhow::ensure!(p != n.storage_id, "node cannot parent itself");
+                let parent = &self.nodes[p as usize];
+                anyhow::ensure!(
+                    n.depth == parent.depth + 1
+                        && n.root_candidate == parent.root_candidate
+                        && n.path[..n.path.len() - 1] == parent.path,
+                    "parent path/depth/ownership mismatch"
+                );
+            } else {
+                anyhow::ensure!(n.depth == 1, "root edge depth must be one");
             }
+        }
+        if self.episode.schedule == Schedule::BaseRankedDepthV1 {
+            let mut branch_counts = std::collections::BTreeMap::new();
+            for n in &self.nodes {
+                anyhow::ensure!(n.depth <= RANKED_MAX_DEPTH, "ranked DFS depth exceeded");
+                *branch_counts.entry(n.root_candidate).or_insert(0usize) += 1;
+            }
+            anyhow::ensure!(
+                branch_counts.values().all(|n| *n <= MAX_BRANCH_EDGES),
+                "ranked DFS branch budget exceeded"
+            );
         }
         for n in &self.nodes {
             let mut cursor = n.parent;
@@ -219,8 +250,8 @@ struct Meta {
 
 type FrontierEdge = (Vec<u16>, NodeId, u16, usize, Option<u32>);
 
-// Keep the current selector intact while exposing its exact legal frontier to
-// the contract regression. The depth filter below is the reported defect.
+// Complete current legal frontier. Depth five limits ranked DFS only; Q bounds
+// the deepest possible acquired uniform path, not frontier enumeration.
 fn uniform_frontier(
     qm: &QueryManager,
     metas: &[Option<Meta>],
@@ -228,9 +259,6 @@ fn uniform_frontier(
 ) -> anyhow::Result<Vec<FrontierEdge>> {
     let mut frontier = Vec::new();
     for qid in 0..qm.node_count() as NodeId {
-        if qm.packet(qid)?.ply_from_root >= u32::from(MAX_DEPTH) {
-            continue;
-        }
         let (parent_storage, root_candidate, path) = if qid == 0 {
             (None, usize::MAX, Vec::new())
         } else {
@@ -253,12 +281,12 @@ fn uniform_frontier(
     Ok(frontier)
 }
 
-/// Fail visibly until the global depth representation can cover the complete
-/// uniform frontier. Only the ranked schedule is authorized to stop at five.
+/// Refuse a representation that cannot cover the complete authorized frontier.
+/// Only the ranked schedule is authorized to stop at five.
 pub fn validate_uniform_frontier_contract() -> anyhow::Result<()> {
     anyhow::ensure!(
-        usize::from(MAX_DEPTH) >= MAX_ENGINEERING_Q,
-        "V5 acquisition contract violation: global depth-five cap truncates uniform_frontier_v1; qualification is stopped pending root-cause review"
+        crate::DEPTH_FEATURES >= MAX_ENGINEERING_Q,
+        "V5 acquisition contract violation: depth representation cannot cover the authorized uniform query budget"
     );
     Ok(())
 }
@@ -471,7 +499,8 @@ pub fn acquire(
 
     let exhausted_frontier = nodes.len() < requested_q;
     let mut graph = AcquiredGraph {
-        schema: "v5_graph_manifest_v1".into(),
+        schema: "v5_graph_manifest_v2".into(),
+        config_digest: crate::config::V5Config::default().scientific_digest()?,
         episode,
         requested_q,
         actual_q: nodes.len(),
@@ -506,7 +535,7 @@ fn expand_dfs(
 ) -> anyhow::Result<()> {
     if nodes.len() >= requested_q
         || *branch_count >= MAX_BRANCH_EDGES
-        || qm.packet(parent)?.ply_from_root >= u32::from(MAX_DEPTH)
+        || qm.packet(parent)?.ply_from_root >= u32::from(RANKED_MAX_DEPTH)
     {
         return Ok(());
     }
@@ -547,6 +576,81 @@ fn expand_dfs(
 }
 
 #[cfg(test)]
+pub(crate) fn depth_chain_fixture(depth: usize) -> (GameState, AcquiredGraph) {
+    // Test-only real opening, acquired via the production StateQuery wrapper.
+    let root =
+        GameState::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+    let moves = [
+        "e2e4", "e7e5", "g1f3", "b8c6", "f1b5", "a7a6", "b5a4", "g8f6", "e1g1", "f8e7", "f1e1",
+        "b7b5", "a4b3", "d7d6", "c2c3", "e8g8",
+    ];
+    assert!((1..=moves.len()).contains(&depth));
+    let root_actions = root.legal_actions();
+    let mut qm = QueryManager::new(root.clone())
+        .unwrap()
+        .with_budget(depth as u32);
+    let mut metas = vec![None];
+    let mut nodes = Vec::new();
+    let mut parent = 0;
+    let mut path = Vec::new();
+    let mut branch = None;
+    for mv in &moves[..depth] {
+        let perspective = qm.state(parent).unwrap().perspective();
+        let action = qm
+            .unqueried(parent)
+            .unwrap()
+            .into_iter()
+            .find(|index| {
+                let (from, to, _) = ActionId::from_index(u32::from(*index))
+                    .unwrap()
+                    .to_physical(perspective);
+                format!("{from}{to}").to_lowercase() == *mv
+            })
+            .expect("legal test opening move");
+        let branch =
+            *branch.get_or_insert_with(|| root_candidate_index(&root_actions, action).unwrap());
+        path.push(action);
+        let parent_storage = metas[parent as usize].as_ref().map(|m: &Meta| m.storage);
+        parent = acquire_edge(
+            &mut qm,
+            &mut metas,
+            &mut nodes,
+            parent,
+            action,
+            branch,
+            parent_storage,
+            path.clone(),
+            root.side_to_move(),
+        )
+        .unwrap();
+    }
+    let mut graph = AcquiredGraph {
+        schema: "v5_graph_manifest_v2".into(),
+        config_digest: crate::config::V5Config::default()
+            .scientific_digest()
+            .unwrap(),
+        episode: EpisodeKey {
+            position_id: "test-only-depth-chain".into(),
+            schedule: Schedule::UniformFrontierV1,
+            run_seed: 5301,
+            occurrence_ordinal: 0,
+        },
+        requested_q: depth,
+        actual_q: nodes.len(),
+        exhausted_frontier: false,
+        root_player: "white".into(),
+        nodes,
+        successful_queries: qm.state_transitions(),
+        legal_generations: qm.legal_generations(),
+        legal_moves_generated: qm.legal_moves_generated(),
+        digest: String::new(),
+    };
+    graph.digest = graph.compute_digest().unwrap();
+    graph.verify().unwrap();
+    (root, graph)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -580,13 +684,48 @@ mod tests {
         z[n - 1] = 2.0;
         let g = acquire(&root, episode(Schedule::BaseRankedDepthV1), 8, Some(&z)).unwrap();
         assert_eq!(g.nodes[0].root_candidate, n - 1);
-        assert!(g.nodes.iter().all(|x| x.depth <= MAX_DEPTH));
+        assert!(g.nodes.iter().all(|x| x.depth <= RANKED_MAX_DEPTH));
     }
 
     #[test]
     fn episode_identity_has_no_r_field() {
         let e = episode(Schedule::UniformFrontierV1);
         assert!(!serde_json::to_string(&e).unwrap().contains("\"r\""));
+    }
+
+    #[test]
+    fn depth_six_through_sixteen_are_valid_and_out_of_contract_graphs_are_refused() {
+        validate_uniform_frontier_contract().unwrap();
+        for depth in 6..=MAX_ENGINEERING_Q {
+            let (_, graph) = depth_chain_fixture(depth);
+            assert_eq!(usize::from(graph.nodes.last().unwrap().depth), depth);
+            assert_eq!(graph.successful_queries as usize, depth);
+            graph.prefix(4).unwrap().verify().unwrap();
+        }
+        let (_, graph) = depth_chain_fixture(16);
+        let check = |mut changed: AcquiredGraph| {
+            changed.digest = changed.compute_digest().unwrap();
+            assert!(changed.verify().is_err());
+        };
+        let mut changed = graph.clone();
+        changed.nodes.last_mut().unwrap().depth = 17;
+        check(changed);
+        let mut changed = graph.clone();
+        changed.requested_q = 15;
+        check(changed);
+        let mut changed = graph.clone();
+        changed.nodes[6].parent = Some(0);
+        check(changed);
+        let mut changed = graph.clone();
+        changed.episode.schedule = Schedule::BaseRankedDepthV1;
+        check(changed);
+        let mut changed = graph.clone();
+        changed.schema = "v5_graph_manifest_v1".into();
+        check(changed);
+        let mut changed = graph;
+        changed.config_digest =
+            "0f1c31d5fb3873ecca356a83c413674442633bdd9e53e9f1744523058b4fb00c".into();
+        check(changed);
     }
 
     #[test]

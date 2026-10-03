@@ -1,14 +1,21 @@
 # V5 results
 
-**CURRENT STATUS: ENGINEERING STOP / UNQUALIFIED IMPLEMENTATION.** The complete
-uniform-frontier invariant fails: the selector omits 19 legal edges below a
-depth-five node despite three remaining query units. See `V5_ROOT_CAUSE.md` and
-the retained failing release regression. The measurements below are historical
-network-fixture evidence, not a passing full engineering gate.
+**CURRENT STATUS: AMENDED CPU UNIT CONTRACTS PASS; FRESH QUALIFICATION PENDING.**
+The complete uniform-frontier correction now includes all 19 legal edges at the
+previous failing boundary. Depths 6..16 and their structural fields are tested.
+The focused release suite passes 28 tests, with one explicitly invoked numerical
+diagnostic ignored by default. Production FP32 autodiff matches a same-weight
+FP64 numerical reference under the unchanged 12% limit in all four fixed
+directions. See `V5_ROOT_CAUSE.md` and `V5_NUMERICAL_ROOT_CAUSE.md` for retained
+failures and corrections. No dataset-dependent result exists.
 
-## Engineering measurements
+The amended model's measured count is **7,162,896**. Its evidence initializer is
+139,776, up by 2,816; all other groups below are unchanged. Config digest:
+`d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
 
-The implemented frozen graph has 7,160,080 unique parameters:
+## Historical pre-amendment engineering measurements
+
+The superseded depth-five graph had 7,160,080 unique parameters:
 
 | Group | Parameters |
 |---|---:|

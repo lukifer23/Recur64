@@ -3,11 +3,11 @@
 Status: **FROZEN BEFORE IMPLEMENTATION.** Every named contract below is included
 in the scientific configuration digest.
 
-Current implementation status: **ENGINEERING STOP.** The depth-five global
-representation incorrectly constrains uniform acquisition. The original
-contract below is preserved for audit; the proposed depth-contract amendment in
-`V5_ROOT_CAUSE.md` is not implemented or approved, and requires a new digest
-and fresh qualification before training.
+Current implementation: the owner delegated next-step choice on 2026-10-03.
+The complete-frontier depth correction is implemented under the amendment below.
+Focused CPU contracts pass; fresh full engineering qualification is pending.
+`V5_ROOT_CAUSE.md` preserves the original acquisition failure and
+`V5_NUMERICAL_ROOT_CAUSE.md` records the finite-difference measurement correction.
 
 ## Geometry
 
@@ -21,9 +21,9 @@ and fresh qualification before training.
 - baseline and correction readout hidden width: 256
 - residual scale alpha: 0.5
 
-The implemented frozen graph contains **7,160,080 unique parameters**:
+The amended graph contains **7,162,896 unique parameters**:
 3,677,728 root/baseline; 1,633,808 returned-state encoder; 65,792 hypothesis
-adapter; 136,960 evidence initializer; 789,872 shared evidence block; 789,872
+adapter; 139,776 evidence initializer; 789,872 shared evidence block; 789,872
 shared hypothesis block; and 66,048 correction readout. No parameters were added
 cosmetically. The parameter count is independent of Q and R.
 
@@ -69,10 +69,22 @@ The composition diagnostic uses the same encoded-anchor boundary with an explici
 per-node four-slot mask; it never attempts to obtain a null anchor by passing a
 zero raw observation through biased encoder layers.
 
-`v5_acquired_graph_v1` is a path-specific tree with no transposition merging. It
+`v5_acquired_graph_v2` is a path-specific tree with no transposition merging. It
 records parent/child direction, siblings, four-slot membership, root-branch
-ownership, turn role and depth 1..5. Node numbers and acquisition order are storage
+ownership, turn role and depth 1..16. Node numbers and acquisition order are storage
 only. No unqueried child state enters the reader.
+
+Pre-pilot amendment: uniform frontier enumeration includes every current
+unqueried legal edge, with no depth filter. Its attainable acquired depth is
+bounded by charged Q. Only ranked DFS is capped at depth five and five edges per
+root branch. Structural context has 33 fields: depth one-hot `[0,16)`, turn role
+`[16,18)`, slot identity `[18,22)`, action geometry `[22,33)`. The graph manifest
+is `v5_graph_manifest_v2` and binds the configuration digest; old manifests and
+old depth-five configurations are refused. Parent/path/depth/ownership and
+depth <= actual Q <= requested Q <= 16 are verified. This adds 2,816 parameters
+only to the evidence initializer. All main geometry, loss and pilot exposures
+remain unchanged. Configuration digest:
+`d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
 
 ## Shared relational loop
 

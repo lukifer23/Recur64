@@ -814,7 +814,13 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
             .squeeze_dim::<2>(2)
         };
         let raw = read(factual_h.clone()) - read(null_h.clone());
-        let valid = input.cands.mask.clone().float();
+        // FP32 is unchanged; match dtype for the test-only FP64 reference.
+        let valid = input
+            .cands
+            .mask
+            .clone()
+            .float()
+            .cast(burn::tensor::FloatDType::from(raw.dtype()));
         let count = valid.clone().sum_dim(1).clamp(1.0, f32::MAX);
         let mean = (raw.clone() * valid).sum_dim(1) / count;
         let centered = (raw.clone() - mean.expand([input.batch, input.cands.width]))
@@ -876,7 +882,12 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
             .squeeze_dim::<2>(2)
         };
         let raw = read(factual_h.clone()) - read(null_h.clone());
-        let valid = input.cands.mask.clone().float();
+        let valid = input
+            .cands
+            .mask
+            .clone()
+            .float()
+            .cast(burn::tensor::FloatDType::from(raw.dtype()));
         let count = valid.clone().sum_dim(1).clamp(1.0, f32::MAX);
         let mean = (raw.clone() * valid).sum_dim(1) / count;
         let centered = (raw.clone() - mean.expand([input.batch, input.cands.width]))
@@ -1220,9 +1231,11 @@ impl<B: Backend> V5Inputs<B> {
                     owner[bi * e + ti] = n.root_candidate as i32;
                     let at = (bi * e + ti) * STRUCTURAL_FEATURES;
                     structural[at + n.depth as usize - 1] = 1.0;
-                    structural[at + 5 + usize::from(!n.root_to_move)] = 1.0;
-                    structural[at + 7 + slot] = 1.0;
-                    structural[at + 11..at + 11 + ACTION_GEOMETRY]
+                    structural[at + crate::TURN_FEATURE_OFFSET + usize::from(!n.root_to_move)] =
+                        1.0;
+                    structural[at + crate::SLOT_FEATURE_OFFSET + slot] = 1.0;
+                    structural[at + crate::ACTION_FEATURE_OFFSET
+                        ..at + crate::ACTION_FEATURE_OFFSET + ACTION_GEOMETRY]
                         .copy_from_slice(&n.action_geometry);
                 }
             }
@@ -1323,6 +1336,60 @@ mod recall_tests {
     use super::*;
     use crate::graph::{EpisodeKey, Schedule, acquire};
     type B = burn::backend::Autodiff<burn::backend::Flex>;
+
+    #[test]
+    fn all_depth_fields_are_disjoint_from_turn_slot_action_and_padding() {
+        type Cpu = burn::backend::Flex;
+        let _guard = crate::CPU_TEST_RNG
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let device = Default::default();
+        let (root, deep) = crate::graph::depth_chain_fixture(16);
+        let shallow = deep.prefix(5).unwrap();
+        let inputs =
+            V5Inputs::<Cpu>::from_examples(&[(&root, &deep), (&root, &shallow)], &device).unwrap();
+        let structural = inputs
+            .structural
+            .clone()
+            .into_data()
+            .to_vec::<f32>()
+            .unwrap();
+        assert_eq!(crate::DEPTH_FEATURES, 16);
+        assert_eq!(STRUCTURAL_FEATURES, 33);
+        for (row, graph) in [&deep, &shallow].into_iter().enumerate() {
+            for node in 0..16 {
+                for slot in 0..4 {
+                    let at = (row * 64 + node * 4 + slot) * STRUCTURAL_FEATURES;
+                    let fields = &structural[at..at + STRUCTURAL_FEATURES];
+                    if let Some(n) = graph.nodes.get(node) {
+                        let mut expected = [0.0; STRUCTURAL_FEATURES];
+                        expected[usize::from(n.depth) - 1] = 1.0;
+                        expected[crate::TURN_FEATURE_OFFSET + usize::from(!n.root_to_move)] = 1.0;
+                        expected[crate::SLOT_FEATURE_OFFSET + slot] = 1.0;
+                        expected[crate::ACTION_FEATURE_OFFSET..]
+                            .copy_from_slice(&n.action_geometry);
+                        assert_eq!(fields, expected, "row={row} node={node} slot={slot}");
+                        assert_eq!(fields[..16].iter().sum::<f32>(), 1.0);
+                    } else {
+                        assert!(fields.iter().all(|v| *v == 0.0));
+                    }
+                }
+            }
+        }
+        <Cpu as Backend>::seed(&device, 5301);
+        let model =
+            CounterfactualRelationalLoop::<Cpu>::new(crate::config::V5Config::default(), &device);
+        let output = model.paired(&inputs, 1, Treatment::AllPayloadNull);
+        assert!(
+            output
+                .centered_delta
+                .into_data()
+                .to_vec::<f32>()
+                .unwrap()
+                .iter()
+                .all(|v| *v == 0.0)
+        );
+    }
 
     #[test]
     fn immutable_anchor_has_a_direct_gradient_path_at_every_loop_in_both_blocks() {

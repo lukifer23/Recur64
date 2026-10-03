@@ -2,11 +2,11 @@
 
 Status: **PRE-REGISTERED 2026-10-03, before V5 implementation or measurement.**
 
-Current execution status: **ENGINEERING STOP**, not a pilot result. The uniform
-frontier implementation violates the acquisition contract below; see
-`V5_ROOT_CAUSE.md`. No drill, training or DEV evaluation has run. The proposed
-depth-representation correction awaits the required invariant-failure review;
-the original preregistration is preserved.
+Current execution status: acquisition correction implemented after the owner's
+2026-10-03 delegation to choose next steps; fresh qualification pending. No drill,
+training or DEV evaluation has run. The original failure is preserved in
+`V5_ROOT_CAUSE.md`; the pre-pilot amendment below changes no training/evaluation
+recipe, seeds, loss, practical gates or authorized research scope.
 
 ## Question
 
@@ -39,6 +39,20 @@ exhaustion. Root edges are depth one and consume Q and branch quota.
 Evaluation seed is `0x7A50_E001`. Q8 is acquired once; Q2/Q4 are exact prefixes.
 Episode identity contains position ID, schedule, run seed and occurrence ordinal,
 never R, label, batch order, microbatch, thread scheduling or loop output.
+
+### Pre-pilot depth-contract amendment, 2026-10-03
+
+The original implementation incorrectly applied ranked DFS's depth-five cap to
+uniform acquisition. Restore the complete uniform frontier and encode depths
+1..16 with explicit non-overlapping one-hot/turn/slot/action fields. Retain ranked
+depth five/five edges per branch. The acquired-graph subcontract and manifest are
+version two, configuration digest
+`d74109e229e49dc9962c348202db3527a5ce4c63da20efcd04a2bbe2577ff937`.
+This is a correction before any drill or pilot result, not result-driven tuning.
+Q16 remains limited to the conditionally authorized FIT engineering diagnostic;
+no Q16 DEV or additional pilot is authorized. A same-weight FP64 numerical unit
+reference diagnoses FP32 finite-difference roundoff; production/training and
+measured qualification remain FP32. Fresh CPU/CUDA qualification is required.
 
 ## Training recipe
 
