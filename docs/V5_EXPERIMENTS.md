@@ -701,3 +701,13 @@ Expected all-true node mask leaves an all-one FP32 tensor unchanged. Record
 output numerical differences, node/inverse mask counts and backend metadata.
 No precision, backend, environment contract or model equations changed.
 CUDA all-target Clippy -D warnings and affected rustfmt PASS.
+
+## V5-E31 - mask readback type correction and stride-preserving control
+
+Source f989478 primitive command exited 1: CUDA boolean readback stores U8,
+while to_vec<bool> requires Native. Preserve operational failure log; no
+numerical result was produced. Use TensorData.iter<bool> host conversion.
+Add single reshape [2,8] -> [2,8,1,1] control and a mask-only example avoiding
+full model diagnostic monomorphization. Model execution is still unchanged.
+Pinned burn-std split_strides source predicts trailing singleton dimensions
+lose pitched batch stride on the second unsqueeze; measure metadata/output.

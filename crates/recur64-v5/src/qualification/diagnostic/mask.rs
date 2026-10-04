@@ -11,6 +11,7 @@ pub fn run<B: AutodiffBackend>(source: &str, device: &B::Device) -> anyhow::Resu
                     "negate_then_expand",
                     "expand_then_negate",
                     "implicit_broadcast",
+                    "single_reshape",
                 ] {
                     B::sync(device).map_err(|e| anyhow::anyhow!("{e:?}"))?;
                     let nodes = vec![true; 16];
@@ -23,6 +24,11 @@ pub fn run<B: AutodiffBackend>(source: &str, device: &B::Device) -> anyhow::Resu
                     }
                     let input = Tensor::<B, 4>::ones([2, 8, 4, 256], device).require_grad();
                     let mask = match variant {
+                        "single_reshape" => node
+                            .clone()
+                            .bool_not()
+                            .reshape([2, 8, 1, 1])
+                            .expand([2, 8, 4, 256]),
                         "expand_then_negate" => node
                             .clone()
                             .unsqueeze_dim::<3>(2)
@@ -46,8 +52,8 @@ pub fn run<B: AutodiffBackend>(source: &str, device: &B::Device) -> anyhow::Resu
                     let actual = output.to_vec::<f32>()?;
                     let expected = TensorData::new(vec![1.0_f32; actual.len()], [2, 8, 4, 256]);
                     let inverse = mask.into_data();
-                    let inverse_values = inverse.to_vec::<bool>()?;
-                    let node_values = node.into_data().to_vec::<bool>()?;
+                    let inverse_values = inverse.iter::<bool>().collect::<Vec<_>>();
+                    let node_values = node.into_data().iter::<bool>().collect::<Vec<_>>();
                     cases.push(json!({"repeat":repeat,"poison_size":poison_size,"fenced":fenced,"variant":variant,"mask_metadata":metadata,"node_true_count":node_values.iter().filter(|&&v|v).count(),"inverse_true_count":inverse_values.iter().filter(|&&v|v).count(),"inverse_first_true":inverse_values.iter().position(|&v|v),"output":diff(&Some(output),&Some(expected))?}));
                 }
             }
