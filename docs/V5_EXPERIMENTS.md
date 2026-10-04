@@ -488,3 +488,21 @@ Corrections are appended; old entries are never rewritten.
   Architecture, math, FP32, model config and learning rates unchanged.
 - Owner excludes workstation P25 transfer; native-data preregistration follows
   before generation. No data-dependent operation or training run in this entry.
+
+## V5-E17 - native data preregistration
+
+PRE-REGISTERED before generation: V5_DATA_PLAN.md. No data-dependent training
+exists. Exact KRvK M1 capacity census must precede complete split generation;
+underfilled canonical cell stops without reducing the requested quota.
+TRAIN/DEV/CONFIRM counts and seeds frozen exactly as owner requested.
+
+## V5-E18 - measured CUDA profile diagnostic CASE C
+
+Source ad80002; serial pinned release CUDA build native exit 0. Diagnostic
+native exit 0, training_authorized=false. All clone purity checks PASS;
+three normal/normal and three profile/profile exact; all cross/reverse differ.
+Single-fence localization reproduces divergence only at frozen root encoder
+completion and frozen-base lift. Detailed numerical results appended in
+V5_PROFILING_ROOT_CAUSE.md. D9 remains FAIL; no harness defect proven.
+Focused numeric report test and V5 all-target clippy -D warnings PASS.
+No qualification, drill, training or evaluation launched.

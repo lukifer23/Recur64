@@ -74,3 +74,62 @@ Exact P25 TRAIN is also still absent. Custody, FIT drill/Q16, Stage A/B, DEV,
 pilot gates, composition/interventions, scientific conditional R8, replication,
 controller training and sealed confirmation remain NOT RUN. No parameters from
 this disposable qualification may initialize the drill or pilot.
+
+## Recovery measurement at ad80002: independent CUDA snapshots
+
+Engineering-only diagnostic, native exit 0; not a qualifying PASS. Source:
+`ad80002`, Burn 0.21.0 / CubeCL 0.10.0, RTX 2050 driver 616.92,
+pinned CUDA 12.9.1, FP32 physical 2, unchanged config. Full report:
+`docs/evidence/v5/profile-diagnostic-ad80002-cuda.json`.
+
+Canonical model and populated AdamW state saved by the tested full-precision
+checkpoint recorder after one ordinary Q8/R4 fixture update. Snapshot includes
+both real fixture graphs, first-legal execution targets (not chess labels), model
+and optimizer digests, config and source. Every replay loads both snapshot files
+and verifies exact initial model/moment identity. This is a fresh diagnostic
+starting state, not a recovered historical d970049 resident-update checkpoint.
+
+All five original fingerprints remain exact: clone forward plus ordinary,
+profiled, reversed profiled/ordinary backward+AdamW. No model/optimizer Clone
+contamination is measured. All three NORMAL/NORMAL pairs and all three
+PROFILE/PROFILE pairs are exact over every recorded field. All three cross-mode
+and three reverse-order pairs differ identically: CASE C.
+
+| Field (first named tensor when applicable) | Max absolute | RMS | Max ULP |
+|---|---:|---:|---:|
+| logits [2,34] | 0.000786900520324707 | 0.00027925268468156 | 105616 |
+| centered delta [2,34] | 0.0007868991233408451 | 0.00027925296461462506 | 13174912 |
+| correct-set loss [1] | 0.00039267539978027344 | same | 1647 |
+| correction_hidden.bias gradient | 0.000015350407920777798 | 0.000003216976790882095 | 1793660161 |
+| correction_hidden.bias post-AdamW | 0.000070914626121521 | 0.000007956640117224964 | 339856 |
+| correction_hidden.bias first moment | 0.000001535042429168243 | 0.00000032169778276294743 | 1744092657 |
+
+Large signed ULP distances include sign crossings near zero; relative denominator
+floor is fixed at 1e-12. They do not certify harmless roundoff. All 34 differing
+logits/centered elements are in the second fixture row. First logits flat index
+34: normal -0.08269035816192627, profiled -0.08347725868225098. First centered
+value: 0.003384978976100683 versus 0.002598079852759838. Scalar loss:
+3.5191752910614014 versus 3.5195679664611816. All optimizer counters exact.
+Report contains every tensor summary/digest and absent marker, not tensor dumps.
+
+Forty fresh single-boundary replays were tested. Only fences at
+`frozen_root_encoder_and_candidate_path` and `frozen_base_lift` reproduce forward,
+gradient, post-AdamW and moment divergence. Earlier upload/model-view fences and
+later reader/loss/backward/optimizer fences are exact against ordinary execution.
+This localizes a fence-sensitive frozen baseline execution/lift boundary; it does
+not isolate an individual Burn/CubeCL kernel or prove its internal cause.
+No permanent diagnostic fence, model-math correction or backend change applied.
+CUBLAS_WORKSPACE_CONFIG and CUDA_LAUNCH_BLOCKING are unset and not tested here.
+
+Historical D9 remains FAIL exactly as measured. Current diagnostic refutes clone
+contamination on this snapshot and does not meet CASE D. No unchanged D9 rerun,
+qualification, drill or training is authorized by this measurement.
+
+Future owner-review proposal (NOT ADOPTED): a separately versioned
+`v5_execution_profile_qualification_v2` could explicitly distinguish ordinary
+execution correctness/repeatability from fence-instrumented profiling semantics.
+It must require a proven baseline-boundary cause and same-weight numerical
+reference, frozen forward/gradient/optimizer limits established before pilot,
+repeatability controls and complete model/moment resume checks. The measured
+~7.9e-4 forward shift must first be explained; no proposed numeric limit or new
+contract is accepted here, and profiling results remain unqualified.
