@@ -617,3 +617,18 @@ all numerical readback, so no new pre-reader fence is introduced.
 This tests activation lifetime/aliasing; it is not a model-math change, fix,
 qualification or training authorization. No result is asserted before running.
 Cargo check and V5 all-target Clippy -D warnings pass. Diagnostic rustfmt passes.
+## V5-E25 - baseline output retention refuted as CUDA parity remedy
+
+Scientific source c98ae68, pinned serial CUDA build PASS (10m26s), default
+CUDA environment (both optional knobs unset). Diagnostic native exit 0,
+schema v2, original CASE_C reproduced. All 15 extra lifetime comparisons fail
+cross-mode forward/gradient/AdamW/moment equality. Retaining context, pooled,
+hypotheses or z0 alone, or all four, does not repair parity. All retained
+baseline outputs themselves are EXACT between modes after the complete replay:
+context [2,64,256], pooled [2,256], hypotheses [2,34,256], z0 [2,34].
+This refutes the tested baseline-output lifetime hypothesis; the fence-sensitive
+reader computation remains unexplained. No production fix or new qualification.
+Full numerical evidence: profile-diagnostic-c98ae68-lifetime.json.gz.
+Next inspect unused graph input uploads in frozen baseline construction: it
+builds full V5Inputs although base() consumes only RootInputs fields. Test input
+retention and an engineering-only root-input path before adopting any change.
