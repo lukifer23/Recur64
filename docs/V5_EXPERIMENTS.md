@@ -606,3 +606,14 @@ CASE_D was not reached; no fresh qualifier, FIT drill, Stage A/B, DEV or sealed
 set evaluation was run. The proposed versioned execution contract remains
 NOT ADOPTED. All six light-family TRAIN quota failures remain a separate mandatory
 STOP, with no native split/seal/custody or scientific recipe-v2 adoption.
+## V5-E24 - frozen baseline lifetime diagnostic registration
+
+Owner explicitly requested work until CUDA D9 is fixed. Source baseline starts
+at 6ef50bd. Add engineering-only diagnostic schema v2; preserve prior reports.
+Ordinary replay is unchanged. New fresh-snapshot normal/profile probes hold
+extra references to context, pooled, hypotheses, z0 separately and together,
+three repetitions each. Read these references only after backward/AdamW and
+all numerical readback, so no new pre-reader fence is introduced.
+This tests activation lifetime/aliasing; it is not a model-math change, fix,
+qualification or training authorization. No result is asserted before running.
+Cargo check and V5 all-target Clippy -D warnings pass. Diagnostic rustfmt passes.

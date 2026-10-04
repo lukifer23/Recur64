@@ -168,6 +168,7 @@ fn moments<B: AutodiffBackend>(
     Ok((t, c))
 }
 struct Replay {
+    baseline: Tensors,
     forward: Tensors,
     gradients: Tensors,
     parameters: Tensors,
@@ -177,11 +178,24 @@ struct Replay {
 }
 fn replay<B: AutodiffBackend>(
     model: CounterfactualRelationalLoop<B>,
+    opt: Opt<B>,
+    roots: &[recur64_core::GameState],
+    graphs: &[AcquiredGraph],
+    device: &B::Device,
+    fences: Option<&str>,
+) -> anyhow::Result<Replay> {
+    replay_retained(model, opt, roots, graphs, device, fences, 0)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn replay_retained<B: AutodiffBackend>(
+    model: CounterfactualRelationalLoop<B>,
     mut opt: Opt<B>,
     roots: &[recur64_core::GameState],
     graphs: &[AcquiredGraph],
     device: &B::Device,
     fences: Option<&str>,
+    retained: u8,
 ) -> anyhow::Result<Replay> {
     let mut profile = SynchronizedProfile::<B>::new(device)?;
     let mut phases = vec![];
@@ -197,6 +211,11 @@ fn replay<B: AutodiffBackend>(
     input.states = tracked.clone();
     phase("input_gradient_tracking");
     let base = model.base_frozen_profiled(&ex, device, &mut phase)?;
+    // Diagnostic references only: no readback/fence until the replay completes.
+    let context = (retained & 1 != 0).then(|| base.context.clone());
+    let pooled = (retained & 2 != 0).then(|| base.pooled.clone());
+    let hypotheses = (retained & 4 != 0).then(|| base.hypotheses.clone());
+    let z0 = (retained & 8 != 0).then(|| base.z0.clone());
     let out = model.paired_profiled(&input, base, 4, Treatment::Normal, None, &mut phase);
     let mut forward = BTreeMap::new();
     forward.insert("logits".into(), Some(out.logits.clone().into_data()));
@@ -228,7 +247,21 @@ fn replay<B: AutodiffBackend>(
     profile.finish()?;
     let parameters = tensors(&next, None)?.0;
     let (moments, counters) = moments(&opt, &ids)?;
+    let mut baseline = BTreeMap::new();
+    if let Some(v) = context {
+        baseline.insert("context".into(), Some(v.into_data()));
+    }
+    if let Some(v) = pooled {
+        baseline.insert("pooled".into(), Some(v.into_data()));
+    }
+    if let Some(v) = hypotheses {
+        baseline.insert("hypotheses".into(), Some(v.into_data()));
+    }
+    if let Some(v) = z0 {
+        baseline.insert("z0".into(), Some(v.into_data()));
+    }
     Ok(Replay {
+        baseline,
         forward,
         gradients,
         parameters,
@@ -239,7 +272,7 @@ fn replay<B: AutodiffBackend>(
 }
 fn pair(a: &Replay, b: &Replay) -> anyhow::Result<Value> {
     Ok(
-        json!({"forward":compare(&a.forward,&b.forward)?,"gradients":compare(&a.gradients,&b.gradients)?,"post_adamw_parameters":compare(&a.parameters,&b.parameters)?,"optimizer_moments":compare(&a.moments,&b.moments)?,"optimizer_counters_exact":a.counters==b.counters,"optimizer_counters_a":a.counters,"optimizer_counters_b":b.counters}),
+        json!({"baseline":compare(&a.baseline,&b.baseline)?,"forward":compare(&a.forward,&b.forward)?,"gradients":compare(&a.gradients,&b.gradients)?,"post_adamw_parameters":compare(&a.parameters,&b.parameters)?,"optimizer_moments":compare(&a.moments,&b.moments)?,"optimizer_counters_exact":a.counters==b.counters,"optimizer_counters_a":a.counters,"optimizer_counters_b":b.counters}),
     )
 }
 fn exact(v: &Value) -> bool {
@@ -367,8 +400,21 @@ pub fn run<B: AutodiffBackend>(
             boundaries.push(json!({"single_fence":n,"comparison":pair(&normal,&fenced)?}));
         }
     }
+    let mut lifetime_probes = vec![];
+    if nn && pp && !cross {
+        for retained in [1, 2, 4, 8, 15] {
+            for rep in 0..3 {
+                let (m, o) = fresh()?;
+                let a = replay_retained(m, o, &roots, &graphs, device, None, retained)?;
+                let (m, o) = fresh()?;
+                let b = replay_retained(m, o, &roots, &graphs, device, Some("all"), retained)?;
+                lifetime_probes
+                    .push(json!({"retained_mask":retained,"repeat":rep,"comparison":pair(&a,&b)?}));
+            }
+        }
+    }
     Ok(
-        json!({"schema":"v5_profile_parity_diagnostic_v1","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
+        json!({"schema":"v5_profile_parity_diagnostic_v2","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"baseline_lifetime_probes":lifetime_probes,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
     )
 }
 
