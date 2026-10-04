@@ -711,3 +711,26 @@ Add single reshape [2,8] -> [2,8,1,1] control and a mask-only example avoiding
 full model diagnostic monomorphization. Model execution is still unchanged.
 Pinned burn-std split_strides source predicts trailing singleton dimensions
 lose pitched batch stride on the second unsqueeze; measure metadata/output.
+
+## V5-E32 - measured pitched-mask defect and equivalent implementation repair
+
+Source 9f3c3d0 mask-only CUDA build PASS (2m24s), native run exit 0.
+Two successive trailing unsqueezes turn the expanded mask batch stride into
+8 rather than allocated pitch 16. Single reshape preserves [16,1,0,0] and
+is exact in all 24 controls. Expanding before negation masks all 8192 second
+fixture values incorrectly in all 24 trials. Negate-first variants happen to
+pass with this primitive allocation history despite malformed stride; this
+is not evidence their padding reads are valid. Archive mask-primitive-9f3c3d0.json.gz.
+Pinned burn-std 0.21.0 split_strides skips new singleton dimensions without
+advancing past old trailing singleton dimensions, losing the pitched stride.
+This explains allocation/fence sensitivity and zeroed second-example payload.
+
+Replace ONLY returned-payload mask's two trailing unsqueezes with one reshape
+[b,qn] -> [b,qn,1,1], then the SAME expansion, negation and mask_fill semantics.
+Architecture, FP32 storage, parameters, config, losses, optimizer, backend,
+precision settings and fence schedules are unchanged. No Clone defect found.
+This is an execution tensor-layout implementation repair, not model redesign
+or a relaxed qualification contract. Full exact parity remains to be measured.
+Add an independent mixed-row host-mask forward/backward regression across
+Q2/4/8/16; extend GPU primitive controls to mixed and invalid second rows.
+Affected rustfmt and all-target CUDA Clippy -D warnings PASS.

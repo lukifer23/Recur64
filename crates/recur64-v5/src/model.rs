@@ -459,15 +459,25 @@ impl<B: Backend> StateEncoder<B> {
             .output_norm
             .forward(rows(&self.o, pooled) + flag)
             .reshape([b, qn, self.cfg.state_slots, d]);
-        out.mask_fill(
-            node_mask
-                .bool_not()
-                .unsqueeze_dim::<3>(2)
-                .unsqueeze_dim::<4>(3)
-                .expand([b, qn, self.cfg.state_slots, d]),
-            0.0,
-        )
+        mask_returned_payload(out, node_mask)
     }
+}
+
+/// Preserve pitched batch strides when inserting both payload axes. In the
+/// pinned backend, a second reshape after a trailing singleton can lose the
+/// original batch stride and address padding as the next example's mask.
+fn mask_returned_payload<B: Backend>(
+    payload: Tensor<B, 4>,
+    node_mask: Tensor<B, 2, Bool>,
+) -> Tensor<B, 4> {
+    let [b, qn, slots, d] = payload.dims();
+    payload.mask_fill(
+        node_mask
+            .bool_not()
+            .reshape([b, qn, 1, 1])
+            .expand([b, qn, slots, d]),
+        0.0,
+    )
 }
 
 #[derive(Module, Debug)]
@@ -1463,6 +1473,37 @@ mod recall_tests {
     use super::*;
     use crate::graph::{EpisodeKey, Schedule, acquire};
     type B = burn::backend::Autodiff<burn::backend::Flex>;
+
+    #[test]
+    fn returned_payload_mask_preserves_each_example_and_backward() {
+        let device = Default::default();
+        for qn in [2, 4, 8, 16] {
+            // Distinct rows expose a wrong batch stride; mixed valid/padding
+            // verifies forward and backward against an independent host mask.
+            let nodes: Vec<bool> = (0..2 * qn).map(|i| i % qn == i / qn).collect();
+            let expected: Vec<f32> = nodes
+                .iter()
+                .flat_map(|&v| vec![if v { 1.0 } else { 0.0 }; 4 * 256])
+                .collect();
+            let mask = Tensor::<B, 2, Bool>::from_data(TensorData::new(nodes, [2, qn]), &device);
+            let input = Tensor::<B, 4>::ones([2, qn, 4, 256], &device).require_grad();
+            let output = mask_returned_payload(input.clone(), mask);
+            assert_eq!(
+                output.clone().into_data().to_vec::<f32>().unwrap(),
+                expected
+            );
+            let grads = output.sum().backward();
+            assert_eq!(
+                input
+                    .grad(&grads)
+                    .unwrap()
+                    .into_data()
+                    .to_vec::<f32>()
+                    .unwrap(),
+                expected
+            );
+        }
+    }
 
     #[test]
     fn all_depth_fields_are_disjoint_from_turn_slot_action_and_padding() {
