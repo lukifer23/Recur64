@@ -525,3 +525,15 @@ V5Data load/verify are locked pending complete measured native DATA-B: retired
 P25 cannot authorize work, and no fabricated native digest is bound. Remaining
 full split/shard/manifest/custody/recipe-v2 integration is conditional on the
 mandatory quota capacity gate; it is not claimed implemented or measured.
+
+## V5-E20 - DATA-A release verification and strengthened audit tests
+
+Full release workspace at source 76ef38e: native Cargo exit 0, 586 passed,
+zero failed, two preserved ignores, 68 result blocks. Graph CLI envelope
+generation/audit and stale/naked refusal passed. V5 all-target Clippy -D
+warnings and affected-file rustfmt checks passed before final test strengthening.
+Final test strengthening explicitly asserts a terminal GameState and distinct
+mirrored-FEN canonical duplication. Diagnostic metadata now stores explicit
+root FENs and legal-action/target-index lists; replay math is unchanged.
+Focused final-source V5 tests and CLI rebuild required before capacity command.
+No native production dataset, qualification, drill or learning run occurred.

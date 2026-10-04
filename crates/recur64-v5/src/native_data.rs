@@ -178,6 +178,26 @@ mod tests {
         assert!(select(&pool, TRAIN_SEED, 3, &empty, &empty).is_err());
         let excluded = BTreeSet::from([pool[0].canon.clone()]);
         assert!(select(&pool, TRAIN_SEED, 2, &empty, &excluded).is_err());
+        let mirror = "k7/8/1K6/8/8/8/8/6Q1 w - - 0 1";
+        let duplicate_class = vec![
+            Candidate {
+                fen: fens[0].into(),
+                canon: canonical_key(fens[0]),
+                depth: 1,
+            },
+            Candidate {
+                fen: mirror.into(),
+                canon: canonical_key(mirror),
+                depth: 1,
+            },
+        ];
+        assert!(
+            select(&duplicate_class, TRAIN_SEED, 1, &empty, &empty)
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("duplicate canonical")
+        );
         pool.push(pool[0].clone());
         assert!(select(&pool, TRAIN_SEED, 2, &empty, &empty).is_err());
     }
@@ -231,7 +251,12 @@ mod tests {
         bad[0].canon = "bad".into();
         assert!(audit_records(&bad).is_err());
         let mut bad = records.clone();
-        bad[0].fen = "7k/8/5KQ1/8/8/8/8/8 w - - 0 1".into();
+        bad[0].fen = "7k/8/5KQ1/8/8/8/8/8 b - - 0 1".into();
+        assert!(
+            recur64_core::GameState::from_fen(&bad[0].fen)
+                .unwrap()
+                .is_terminal()
+        );
         bad[0].canon = canonical_key(&bad[0].fen);
         bad[0].family = "KQvK".into();
         assert!(audit_records(&bad).is_err());

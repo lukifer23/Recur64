@@ -276,7 +276,7 @@ pub fn run<B: AutodiffBackend>(
     model.clone().save_file(dir.join("model"), &recorder)?;
     recorder.record(opt.to_record(), dir.join("optimizer"))?;
     let before = (model.parameter_digest()?, optimizer_digest(&opt)?);
-    let manifest = json!({"schema":"v5_profile_snapshot_v1","source_sha":source,"architecture":crate::config::ARCHITECTURE,"config_digest":V5Config::default().scientific_digest()?,"model_digest":before.0,"optimizer_digest":before.1,"graphs":graphs,"targets":"first legal fixture action, engineering only","r":4,"precision":"fp32"});
+    let manifest = json!({"schema":"v5_profile_snapshot_v1","source_sha":source,"architecture":crate::config::ARCHITECTURE,"config_digest":V5Config::default().scientific_digest()?,"model_digest":before.0,"optimizer_digest":before.1,"graphs":graphs,"root_fens":roots.iter().map(|r|r.to_fen()).collect::<Vec<_>>(),"targets":roots.iter().map(|r|json!({"legal_action_ids":r.legal_actions().iter().map(|a|a.index()).collect::<Vec<_>>(),"correct_root_indices":[0],"role":"first-legal execution fixture, not chess-learning label"})).collect::<Vec<_>>(),"r":4,"precision":"fp32"});
     std::fs::write(
         dir.join("snapshot.json"),
         serde_json::to_vec_pretty(&manifest)?,
