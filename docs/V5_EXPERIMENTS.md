@@ -632,3 +632,19 @@ Full numerical evidence: profile-diagnostic-c98ae68-lifetime.json.gz.
 Next inspect unused graph input uploads in frozen baseline construction: it
 builds full V5Inputs although base() consumes only RootInputs fields. Test input
 retention and an engineering-only root-input path before adopting any change.
+## V5-E26 - unused frozen graph-input probes, schema v3
+
+Add fresh-snapshot diagnostic arms retaining the frozen baseline's unused full
+V5Inputs through the complete step (mask16), and computing the baseline from
+RootInputs only (mask32), with all baseline outputs retained too (mask47).
+Production frozen-baseline execution remains unchanged. RootInputs profiling
+builder visibility is crate-only; its equations and uploads are unchanged.
+These probes test the duplicate graph-packet upload/lifetime hypothesis.
+No remedy, exact gate PASS or backend defect is claimed before measurement.
+
+Add a focused CUDA-only example executing the SAME diagnostic function to avoid
+recompiling unrelated CLI training/evaluation monomorphizations on every probe.
+It rejects CUDA-less execution, dirty scientific code and build/source mismatch,
+requires a fresh output path, uses the same 64MiB worker stack, and has no
+qualification/training command. Build binds RECUR64_DIAGNOSTIC_SOURCE_SHA.
+V5 all-target CUDA Clippy -D warnings and diagnostic rustfmt PASS.

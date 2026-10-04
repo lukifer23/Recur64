@@ -1,6 +1,6 @@
 //! Disposable same-snapshot diagnostic. No qualification or training authority.
 use super::*;
-use burn::module::{ModuleVisitor, Param};
+use burn::module::{AutodiffModule, ModuleVisitor, Param};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
@@ -187,7 +187,6 @@ fn replay<B: AutodiffBackend>(
     replay_retained(model, opt, roots, graphs, device, fences, 0)
 }
 
-#[allow(clippy::too_many_arguments)]
 fn replay_retained<B: AutodiffBackend>(
     model: CounterfactualRelationalLoop<B>,
     mut opt: Opt<B>,
@@ -210,7 +209,39 @@ fn replay_retained<B: AutodiffBackend>(
     let tracked = input.states.clone().require_grad();
     input.states = tracked.clone();
     phase("input_gradient_tracking");
-    let base = model.base_frozen_profiled(&ex, device, &mut phase)?;
+    let mut held_frozen_inputs = None;
+    let mut root_only_inputs = None;
+    let base = if retained & (16 | 32) != 0 {
+        let inner = model.valid();
+        phase("frozen_model_view");
+        let inner_base = if retained & 32 != 0 {
+            let root_refs: Vec<_> = roots.iter().collect();
+            root_only_inputs = Some(
+                crate::model::RootInputs::<B::InnerBackend>::from_roots_profiled(
+                    &root_refs, device, &mut phase,
+                )?,
+            );
+            inner.base_root(root_only_inputs.as_ref().expect("root input probe"))
+        } else {
+            let frozen_inputs =
+                V5Inputs::<B::InnerBackend>::from_examples_profiled(&ex, device, &mut phase)?;
+            let value = inner.base(&frozen_inputs);
+            held_frozen_inputs = Some(frozen_inputs);
+            value
+        };
+        phase("frozen_root_encoder_and_candidate_path");
+        let value = crate::model::BaseOutput {
+            context: Tensor::from_inner(inner_base.context),
+            pooled: Tensor::from_inner(inner_base.pooled),
+            hypotheses: Tensor::from_inner(inner_base.hypotheses),
+            z0: Tensor::from_inner(inner_base.z0),
+        };
+        phase("frozen_base_lift");
+        value
+    } else {
+        model.base_frozen_profiled(&ex, device, &mut phase)?
+    };
+    drop(root_only_inputs);
     // Diagnostic references only: no readback/fence until the replay completes.
     let context = (retained & 1 != 0).then(|| base.context.clone());
     let pooled = (retained & 2 != 0).then(|| base.pooled.clone());
@@ -259,6 +290,10 @@ fn replay_retained<B: AutodiffBackend>(
     }
     if let Some(v) = z0 {
         baseline.insert("z0".into(), Some(v.into_data()));
+    }
+    if let Some(v) = held_frozen_inputs {
+        baseline.insert("unused_frozen_states".into(), Some(v.states.into_data()));
+        baseline.insert("unused_frozen_flags".into(), Some(v.flags.into_data()));
     }
     Ok(Replay {
         baseline,
@@ -402,7 +437,7 @@ pub fn run<B: AutodiffBackend>(
     }
     let mut lifetime_probes = vec![];
     if nn && pp && !cross {
-        for retained in [1, 2, 4, 8, 15] {
+        for retained in [1, 2, 4, 8, 15, 16, 32, 47] {
             for rep in 0..3 {
                 let (m, o) = fresh()?;
                 let a = replay_retained(m, o, &roots, &graphs, device, None, retained)?;
@@ -414,7 +449,7 @@ pub fn run<B: AutodiffBackend>(
         }
     }
     Ok(
-        json!({"schema":"v5_profile_parity_diagnostic_v2","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"baseline_lifetime_probes":lifetime_probes,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
+        json!({"schema":"v5_profile_parity_diagnostic_v3","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"baseline_lifetime_probes":lifetime_probes,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
     )
 }
 

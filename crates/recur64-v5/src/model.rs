@@ -1196,7 +1196,7 @@ impl<B: Backend> RootInputs<B> {
         Self::from_roots_profiled(roots, device, &mut |_| {})
     }
 
-    fn from_roots_profiled(
+    pub(crate) fn from_roots_profiled(
         roots: &[&GameState],
         device: &B::Device,
         phase: &mut dyn FnMut(&str),
