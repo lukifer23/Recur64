@@ -64,3 +64,17 @@ Reports: `evidence/v5/qualification-003d296-{cpu,cuda}.json`.
 Standalone graph CLI provenance/refusal receipt also PASS at this source.
 Historical qualifications remain byte-identical. Repeated independent replay
 and complete workspace results are still pending.
+
+## Independent repeatability and causal controls
+
+All 12 fresh independent CUDA replay pairs are EXACT (three repetitions of
+NORMAL/NORMAL, PROFILE/PROFILE and both cross-mode orders); clone purity PASS.
+Every recorded difference is zero, including ULP distance, across outputs,
+all parameter/payload gradients, post-AdamW parameters, moments and counters.
+The corrected primitive passes 72/72 all-valid, invalid-second-row and mixed
+controls. The old two-step mask fails all 48 invalid/mixed controls, confirming
+the stride cause independently of full model arithmetic.
+Receipt: `evidence/v5/cuda-mask-recovery-003d296.json`; full numerical reports
+are losslessly compressed, with both raw and compressed hashes verified.
+A new execution contract is not required. Historical CASE_C remains recorded;
+this is a layout repair, not a retrospectively invented Clone/harness defect.

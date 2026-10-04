@@ -759,3 +759,27 @@ six required stale/config/tamper/copied/naked/historical-source refusals exit1.
 Full release workspace and repeated independent snapshot diagnostic are still
 in progress. No FIT drill, Stage A/B, DEV or confirmation evaluation run.
 Native data quota infeasibility remains independent of this cleared CUDA gate.
+
+## V5-E34 - independent repeatability and mixed-mask root-cause confirmation
+
+Source 003d296; serial pinned CUDA CLI/examples build native exit0 (16m25s).
+Fresh independent diagnostic native exit0, ALL_EXACT. All three repetitions of
+NORMAL/NORMAL, PROFILE/PROFILE, NORMAL/PROFILE and PROFILE/NORMAL are exact:
+5 forward tensors, 176 gradient entries including absent markers/payload,
+175 post-AdamW parameters, 182 moment entries and all counters. Zero differing
+elements, absolute/RMS/relative differences and ULP distances; no first differing
+tensor. Five original clone-purity fingerprints remain unchanged.
+
+Strengthened primitive native exit0. Correct single-reshape control EXACT in
+72/72 trials across all-valid, invalid-second-row and mixed masks. Old two-step
+negate/expand and implicit-broadcast forms fail 24/24 invalid-second-row and
+24/24 mixed cases. Their all-valid coincidental pass is explained by padding
+contents. This confirms a physical stride defect, not ordinary CUDA numerical
+nondeterminism. Primitive overall FAIL intentionally retains bad negative
+controls; corrected control PASS is separately explicit. No gate relaxation.
+
+Receipt cuda-mask-recovery-003d296.json binds lossless numerical archives and
+verified compressed/decompressed hashes. Current-source qualification PASS
+under unchanged timing contract; historical CASE_C and D9 FAIL preserved.
+No new execution contract is needed to clear this defect. Full workspace tests
+are still compiling; no training/drill/data acceptance claim follows.

@@ -1,0 +1,195 @@
+{
+  "schema": "v5_cuda_mask_recovery_receipt_v1",
+  "source_sha": "003d296e094c28fc488cd56ef0944b60299983f9",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "classification": "ALL_EXACT",
+  "clone_purity": true,
+  "pairs": [
+    {
+      "ordering": "NORMAL_A/NORMAL_B",
+      "repeat": 0,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/PROFILE_B",
+      "repeat": 0,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "NORMAL_A/PROFILE_A",
+      "repeat": 0,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/NORMAL_A",
+      "repeat": 0,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "NORMAL_A/NORMAL_B",
+      "repeat": 1,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/PROFILE_B",
+      "repeat": 1,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "NORMAL_A/PROFILE_A",
+      "repeat": 1,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/NORMAL_A",
+      "repeat": 1,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "NORMAL_A/NORMAL_B",
+      "repeat": 2,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/PROFILE_B",
+      "repeat": 2,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "NORMAL_A/PROFILE_A",
+      "repeat": 2,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    },
+    {
+      "ordering": "PROFILE_A/NORMAL_A",
+      "repeat": 2,
+      "groups_exact": {
+        "forward": true,
+        "gradients": true,
+        "post_adamw_parameters": true,
+        "optimizer_moments": true
+      },
+      "optimizer_counters_exact": true,
+      "differing_elements": 0,
+      "max_absolute_difference": 0,
+      "max_ulp": 0
+    }
+  ],
+  "primitive_control": {
+    "single_reshape_exact": true,
+    "single_reshape_cases": 72,
+    "old_negate_then_expand_mixed_failures": 24
+  },
+  "archives": [
+    {
+      "path": "profile-diagnostic-003d296-fixed.json.gz",
+      "uncompressed_sha256": "35cc180d134f1ff2379c9dd3fdf75f5dead319e39615f4ed26e455ef0d6f4ed3",
+      "compressed_sha256": "a18216877236332b5342a70465aab4c9c40feb92ecf6de767033906bab91eddd"
+    },
+    {
+      "path": "mask-primitive-003d296.json.gz",
+      "uncompressed_sha256": "4dfc8c7e0c83bb694e9c2331edc00844679bda9fe0ae2f1c0328d72b99172095",
+      "compressed_sha256": "1baaec4b7366083ef35ff4699d85eba5c698369e43adbc392bff0829ee333ba2"
+    }
+  ],
+  "training_authorized": false
+}
