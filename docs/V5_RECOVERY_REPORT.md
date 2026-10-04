@@ -166,3 +166,28 @@ Evidence: `evidence/v5/data/capacity-df261ab-all-families-m3.json`.
 No requested count, dataset identity, scientific digest or recipe was amended.
 The required explicit count decision remains pending; requesting an end-to-end
 run cannot make the original unique/canonical quotas possible.
+## Continuation CUDA diagnostics and final stop status
+
+At unchanged scientific source df261ab, the pinned serial CUDA release build
+passed. Separate workspace-config and launch-blocking diagnostics both complete
+and reproduce CASE_C, exact self-repeatability, passing clone purity and the
+same cross-mode numerical failure. Maximum logit difference remains
+0.000786900520324707 (105616 ULP); first flat index 34. The localized frozen
+baseline completion/lift boundary remains the first implicated fence boundary;
+individual kernel cause is not proven. Full source-bound numerical archives
+and compact receipt are under `evidence/v5/profile-environment-df261ab.json`.
+
+Exact D9 remains FAIL. No new execution contract is adopted, no qualification
+is relabelled, and no FIT drill is authorized by these diagnostics. Complete
+TRAIN/DEV/CONFIRM generation remains blocked by the original exact quota
+contract; all six light-family cells fail capacity, not just KRvK M1.
+No native content/set digest, pairwise overlap result, audit PASS, custody PASS
+or confirmation seal is invented. The confirmation artifact is NOT GENERATED,
+NOT SEALED, UNEVALUATED and access-blocked. Recipe-v2/data-v1 remain pending.
+
+V5 STAGE A NOT RUN.
+V5 READER PILOT NOT RUN.
+LEARNED QUERY CONTROLLER NOT TRAINED.
+MULTI-SEED REPLICATION NOT RUN.
+V5_HP_CONFIRM_V1 NOT GENERATED, NOT SEALED AND UNEVALUATED.
+V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.

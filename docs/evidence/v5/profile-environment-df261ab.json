@@ -1,0 +1,628 @@
+{
+    "schema":  "v5_profile_environment_comparison_v1",
+    "scientific_source_sha":  "df261ab328606ce235b9b145070b608046a257c5",
+    "architecture_changed":  false,
+    "model_math_changed":  false,
+    "build_native_exit":  0,
+    "build_duration":  "15m10s",
+    "build":  "serial release recur64-cli --features cuda, MSVC BuildTools, pinned user-space CUDA 12.9.1",
+    "burn_fusion_feature_enabled":  false,
+    "production_environment_changed":  false,
+    "historical_d9":  "FAIL",
+    "fresh_qualification_run":  false,
+    "training_authorized":  false,
+    "proposed_new_execution_contract_adopted":  false,
+    "snapshot_scope":  "Each variant verifies every fresh replica against its own single full model/AdamW checkpoint. Cross-environment optimizer record hashes differ; no shared cross-environment checkpoint identity is claimed.",
+    "variants":  [
+                     {
+                         "variant":  "cublas4096",
+                         "source_sha":  "df261ab328606ce235b9b145070b608046a257c5",
+                         "native_exit":  0,
+                         "environment":  {
+                                             "CUBLAS_WORKSPACE_CONFIG":  ":4096:8",
+                                             "CUDA_LAUNCH_BLOCKING":  null,
+                                             "CUDA_PATH":  "C:\\Users\\Caitl\\AppData\\Local/Recur64/cuda/12.9.1",
+                                             "backend":  "Burn 0.21.0 / CubeCL 0.10.0",
+                                             "gpu":  "NVIDIA GeForce RTX 2050, 616.92\r\n"
+                                         },
+                         "classification":  "CASE_C",
+                         "clone_purity_pass_count":  5,
+                         "clone_purity_total":  5,
+                         "normal_normal_exact":  true,
+                         "profile_profile_exact":  true,
+                         "cross_mode_exact":  false,
+                         "comparisons":  [
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             }
+                                         ],
+                         "first_cross_forward":  {
+                                                     "aggregate_digest_a":  "5ef304d3ccee011fdc8d8ad508d70273259601a20b0ec5d7445fe0945283614e",
+                                                     "aggregate_digest_b":  "53d3d138ac861a61a64a594bf276e07c772809fb4599aff852c7025b69bb54c8",
+                                                     "exact":  false,
+                                                     "first_differing_tensor":  "centered_delta",
+                                                     "tensors":  {
+                                                                     "centered_delta":  {
+                                                                                            "absent_a":  false,
+                                                                                            "absent_b":  false,
+                                                                                            "differing_elements":  34,
+                                                                                            "digest_a":  "9e63f645dc32b0e2ea1d261bbb2aace8b9fae46798f0d0a84ef7e782be1061ec",
+                                                                                            "digest_b":  "e032aad6663e830c059aa3bc1a70cb7384e1cb171a924e1f1c859f5d24dc7668",
+                                                                                            "exact":  false,
+                                                                                            "first_difference":  {
+                                                                                                                     "a":  0.003384978976100683,
+                                                                                                                     "b":  0.002598079852759838,
+                                                                                                                     "flat_index":  34
+                                                                                                                 },
+                                                                                            "max_abs":  0.0007868991233408451,
+                                                                                            "max_relative":  0.6609855074297354,
+                                                                                            "max_ulp":  13174912,
+                                                                                            "relative_denominator_floor":  1E-12,
+                                                                                            "rms":  0.00027925296461462506,
+                                                                                            "shape_a":  [
+                                                                                                            2,
+                                                                                                            34
+                                                                                                        ],
+                                                                                            "shape_b":  [
+                                                                                                            2,
+                                                                                                            34
+                                                                                                        ]
+                                                                                        },
+                                                                     "correct_set_loss":  {
+                                                                                              "absent_a":  false,
+                                                                                              "absent_b":  false,
+                                                                                              "differing_elements":  1,
+                                                                                              "digest_a":  "1b8a8955e48322d6465c7415fde9d7a522eee0218c2405e9a073c6c45d101489",
+                                                                                              "digest_b":  "06e760c89084e04c78b40984fb69f3c23346201fe30b4177438982edec5ca055",
+                                                                                              "exact":  false,
+                                                                                              "first_difference":  {
+                                                                                                                       "a":  3.5191752910614014,
+                                                                                                                       "b":  3.5195679664611816,
+                                                                                                                       "flat_index":  0
+                                                                                                                   },
+                                                                                              "max_abs":  0.00039267539978027344,
+                                                                                              "max_relative":  0.0001115692049484973,
+                                                                                              "max_ulp":  1647,
+                                                                                              "relative_denominator_floor":  1E-12,
+                                                                                              "rms":  0.00039267539978027344,
+                                                                                              "shape_a":  [
+                                                                                                              1
+                                                                                                          ],
+                                                                                              "shape_b":  [
+                                                                                                              1
+                                                                                                          ]
+                                                                                          },
+                                                                     "logits":  {
+                                                                                    "absent_a":  false,
+                                                                                    "absent_b":  false,
+                                                                                    "differing_elements":  34,
+                                                                                    "digest_a":  "54afda37c08843aaeea44dbf3fd0f6566fa48be3f8c88e22366424756059f151",
+                                                                                    "digest_b":  "f8a8905a4af745d04c908c40bf15fde4f699d2448e4642c782a2933ee7d84eb5",
+                                                                                    "exact":  false,
+                                                                                    "first_difference":  {
+                                                                                                             "a":  -0.08269035816192627,
+                                                                                                             "b":  -0.08347725868225098,
+                                                                                                             "flat_index":  34
+                                                                                                         },
+                                                                                    "max_abs":  0.000786900520324707,
+                                                                                    "max_relative":  0.009426525651973987,
+                                                                                    "max_ulp":  105616,
+                                                                                    "relative_denominator_floor":  1E-12,
+                                                                                    "rms":  0.00027925268468156,
+                                                                                    "shape_a":  [
+                                                                                                    2,
+                                                                                                    34
+                                                                                                ],
+                                                                                    "shape_b":  [
+                                                                                                    2,
+                                                                                                    34
+                                                                                                ]
+                                                                                }
+                                                                 }
+                                                 },
+                         "first_cross_named_differences":  {
+                                                               "gradients":  {
+                                                                                 "summary":  {
+                                                                                                 "absent_a":  false,
+                                                                                                 "absent_b":  false,
+                                                                                                 "differing_elements":  256,
+                                                                                                 "digest_a":  "af2c0547089d908d93ac048f96f484357f7cfa7bc10148b3b8f8a49ee4eb740b",
+                                                                                                 "digest_b":  "0058b2484dd8edb33182a53c302dc96bb2afd7f4bdffee8628f420bce7e0dadd",
+                                                                                                 "exact":  false,
+                                                                                                 "first_difference":  {
+                                                                                                                          "a":  2.96812504529953E-06,
+                                                                                                                          "b":  2.3419561330229044E-06,
+                                                                                                                          "flat_index":  0
+                                                                                                                      },
+                                                                                                 "max_abs":  0.000015350407920777798,
+                                                                                                 "max_relative":  1.422156823623304,
+                                                                                                 "max_ulp":  1793660161,
+                                                                                                 "relative_denominator_floor":  1E-12,
+                                                                                                 "rms":  3.2169767908820952E-06,
+                                                                                                 "shape_a":  [
+                                                                                                                 256
+                                                                                                             ],
+                                                                                                 "shape_b":  [
+                                                                                                                 256
+                                                                                                             ]
+                                                                                             },
+                                                                                 "name":  "correction_hidden.bias"
+                                                                             },
+                                                               "post_adamw_parameters":  {
+                                                                                             "summary":  {
+                                                                                                             "absent_a":  false,
+                                                                                                             "absent_b":  false,
+                                                                                                             "differing_elements":  256,
+                                                                                                             "digest_a":  "44366653f219578f380f8ea3e8dbfb98e71e7685a2d4f568870d740d012fe958",
+                                                                                                             "digest_b":  "61021995254ead97469d7083346ed00447516174d2dccd0b81fea02906566ded",
+                                                                                                             "exact":  false,
+                                                                                                             "first_difference":  {
+                                                                                                                                      "a":  0.0040871379896998405,
+                                                                                                                                      "b":  0.0040948642417788506,
+                                                                                                                                      "flat_index":  0
+                                                                                                                                  },
+                                                                                                             "max_abs":  0.000070914626121521,
+                                                                                                             "max_relative":  0.03867444306826474,
+                                                                                                             "max_ulp":  339856,
+                                                                                                             "relative_denominator_floor":  1E-12,
+                                                                                                             "rms":  7.9566401172249642E-06,
+                                                                                                             "shape_a":  [
+                                                                                                                             256
+                                                                                                                         ],
+                                                                                                             "shape_b":  [
+                                                                                                                             256
+                                                                                                                         ]
+                                                                                                         },
+                                                                                             "name":  "correction_hidden.bias"
+                                                                                         },
+                                                               "optimizer_moments":  {
+                                                                                         "summary":  {
+                                                                                                         "absent_a":  false,
+                                                                                                         "absent_b":  false,
+                                                                                                         "differing_elements":  256,
+                                                                                                         "digest_a":  "1a1da5df777734e06e73c644a9ea2192c24564b07e01a22c73ae4abbcac26d13",
+                                                                                                         "digest_b":  "43ace5b25a5dd5669979ea50a742a39eb4f98ac6e9d3a7450b9ffc91126ca928",
+                                                                                                         "exact":  false,
+                                                                                                         "first_difference":  {
+                                                                                                                                  "a":  4.6162199396349024E-08,
+                                                                                                                                  "b":  -1.6454706042168254E-08,
+                                                                                                                                  "flat_index":  0
+                                                                                                                              },
+                                                                                                         "max_abs":  1.535042429168243E-06,
+                                                                                                         "max_relative":  1.882554693166784,
+                                                                                                         "max_ulp":  1744092657,
+                                                                                                         "relative_denominator_floor":  1E-12,
+                                                                                                         "rms":  3.2169778276294743E-07,
+                                                                                                         "shape_a":  [
+                                                                                                                         256
+                                                                                                                     ],
+                                                                                                         "shape_b":  [
+                                                                                                                         256
+                                                                                                                     ]
+                                                                                                     },
+                                                                                         "name":  "correction_hidden.bias.V1.Rank1.momentum.moment_1"
+                                                                                     }
+                                                           },
+                         "differing_forward_single_fences":  [
+                                                                 "frozen_root_encoder_and_candidate_path",
+                                                                 "frozen_base_lift"
+                                                             ],
+                         "canonical_model_digest":  "57faaaff4af92b6fb72aba88c3d0ae9c11b5473aaa9ac5f887c7fece57835325",
+                         "canonical_optimizer_record_digest":  "5a0b5e77581bca88c02b7b4e1b9b5f0287469004b11616a46f6a560bcf907437",
+                         "full_report_archive":  "docs/evidence/v5/profile-diagnostic-df261ab-cublas4096.json.gz",
+                         "full_report_raw_sha256":  "2375e8e6c9cf793458a7bc61cfe50512b0e5e4f9b966fac0bd74aac86ef2fd30",
+                         "archive_sha256":  "6609436e67bdb9087ea23605d43462bf2037d10a938fcf18abe8170a7cbeaec4",
+                         "archive_decompression_bytes_verified":  true
+                     },
+                     {
+                         "variant":  "launch-blocking",
+                         "source_sha":  "df261ab328606ce235b9b145070b608046a257c5",
+                         "native_exit":  0,
+                         "environment":  {
+                                             "CUBLAS_WORKSPACE_CONFIG":  null,
+                                             "CUDA_LAUNCH_BLOCKING":  "1",
+                                             "CUDA_PATH":  "C:\\Users\\Caitl\\AppData\\Local/Recur64/cuda/12.9.1",
+                                             "backend":  "Burn 0.21.0 / CubeCL 0.10.0",
+                                             "gpu":  "NVIDIA GeForce RTX 2050, 616.92\r\n"
+                                         },
+                         "classification":  "CASE_C",
+                         "clone_purity_pass_count":  5,
+                         "clone_purity_total":  5,
+                         "normal_normal_exact":  true,
+                         "profile_profile_exact":  true,
+                         "cross_mode_exact":  false,
+                         "comparisons":  [
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  0,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  1,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "NORMAL_A/NORMAL_B",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  true,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  true,
+                                                 "ordering":  "PROFILE_A/PROFILE_B",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  true,
+                                                 "forward_exact":  true
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "NORMAL_A/PROFILE_A",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             },
+                                             {
+                                                 "gradients_exact":  false,
+                                                 "counters_exact":  true,
+                                                 "moments_exact":  false,
+                                                 "ordering":  "PROFILE_A/NORMAL_A",
+                                                 "repeat":  2,
+                                                 "parameters_exact":  false,
+                                                 "forward_exact":  false
+                                             }
+                                         ],
+                         "first_cross_forward":  {
+                                                     "aggregate_digest_a":  "5ef304d3ccee011fdc8d8ad508d70273259601a20b0ec5d7445fe0945283614e",
+                                                     "aggregate_digest_b":  "53d3d138ac861a61a64a594bf276e07c772809fb4599aff852c7025b69bb54c8",
+                                                     "exact":  false,
+                                                     "first_differing_tensor":  "centered_delta",
+                                                     "tensors":  {
+                                                                     "centered_delta":  {
+                                                                                            "absent_a":  false,
+                                                                                            "absent_b":  false,
+                                                                                            "differing_elements":  34,
+                                                                                            "digest_a":  "9e63f645dc32b0e2ea1d261bbb2aace8b9fae46798f0d0a84ef7e782be1061ec",
+                                                                                            "digest_b":  "e032aad6663e830c059aa3bc1a70cb7384e1cb171a924e1f1c859f5d24dc7668",
+                                                                                            "exact":  false,
+                                                                                            "first_difference":  {
+                                                                                                                     "a":  0.003384978976100683,
+                                                                                                                     "b":  0.002598079852759838,
+                                                                                                                     "flat_index":  34
+                                                                                                                 },
+                                                                                            "max_abs":  0.0007868991233408451,
+                                                                                            "max_relative":  0.6609855074297354,
+                                                                                            "max_ulp":  13174912,
+                                                                                            "relative_denominator_floor":  1E-12,
+                                                                                            "rms":  0.00027925296461462506,
+                                                                                            "shape_a":  [
+                                                                                                            2,
+                                                                                                            34
+                                                                                                        ],
+                                                                                            "shape_b":  [
+                                                                                                            2,
+                                                                                                            34
+                                                                                                        ]
+                                                                                        },
+                                                                     "correct_set_loss":  {
+                                                                                              "absent_a":  false,
+                                                                                              "absent_b":  false,
+                                                                                              "differing_elements":  1,
+                                                                                              "digest_a":  "1b8a8955e48322d6465c7415fde9d7a522eee0218c2405e9a073c6c45d101489",
+                                                                                              "digest_b":  "06e760c89084e04c78b40984fb69f3c23346201fe30b4177438982edec5ca055",
+                                                                                              "exact":  false,
+                                                                                              "first_difference":  {
+                                                                                                                       "a":  3.5191752910614014,
+                                                                                                                       "b":  3.5195679664611816,
+                                                                                                                       "flat_index":  0
+                                                                                                                   },
+                                                                                              "max_abs":  0.00039267539978027344,
+                                                                                              "max_relative":  0.0001115692049484973,
+                                                                                              "max_ulp":  1647,
+                                                                                              "relative_denominator_floor":  1E-12,
+                                                                                              "rms":  0.00039267539978027344,
+                                                                                              "shape_a":  [
+                                                                                                              1
+                                                                                                          ],
+                                                                                              "shape_b":  [
+                                                                                                              1
+                                                                                                          ]
+                                                                                          },
+                                                                     "logits":  {
+                                                                                    "absent_a":  false,
+                                                                                    "absent_b":  false,
+                                                                                    "differing_elements":  34,
+                                                                                    "digest_a":  "54afda37c08843aaeea44dbf3fd0f6566fa48be3f8c88e22366424756059f151",
+                                                                                    "digest_b":  "f8a8905a4af745d04c908c40bf15fde4f699d2448e4642c782a2933ee7d84eb5",
+                                                                                    "exact":  false,
+                                                                                    "first_difference":  {
+                                                                                                             "a":  -0.08269035816192627,
+                                                                                                             "b":  -0.08347725868225098,
+                                                                                                             "flat_index":  34
+                                                                                                         },
+                                                                                    "max_abs":  0.000786900520324707,
+                                                                                    "max_relative":  0.009426525651973987,
+                                                                                    "max_ulp":  105616,
+                                                                                    "relative_denominator_floor":  1E-12,
+                                                                                    "rms":  0.00027925268468156,
+                                                                                    "shape_a":  [
+                                                                                                    2,
+                                                                                                    34
+                                                                                                ],
+                                                                                    "shape_b":  [
+                                                                                                    2,
+                                                                                                    34
+                                                                                                ]
+                                                                                }
+                                                                 }
+                                                 },
+                         "first_cross_named_differences":  {
+                                                               "gradients":  {
+                                                                                 "summary":  {
+                                                                                                 "absent_a":  false,
+                                                                                                 "absent_b":  false,
+                                                                                                 "differing_elements":  256,
+                                                                                                 "digest_a":  "af2c0547089d908d93ac048f96f484357f7cfa7bc10148b3b8f8a49ee4eb740b",
+                                                                                                 "digest_b":  "0058b2484dd8edb33182a53c302dc96bb2afd7f4bdffee8628f420bce7e0dadd",
+                                                                                                 "exact":  false,
+                                                                                                 "first_difference":  {
+                                                                                                                          "a":  2.96812504529953E-06,
+                                                                                                                          "b":  2.3419561330229044E-06,
+                                                                                                                          "flat_index":  0
+                                                                                                                      },
+                                                                                                 "max_abs":  0.000015350407920777798,
+                                                                                                 "max_relative":  1.422156823623304,
+                                                                                                 "max_ulp":  1793660161,
+                                                                                                 "relative_denominator_floor":  1E-12,
+                                                                                                 "rms":  3.2169767908820952E-06,
+                                                                                                 "shape_a":  [
+                                                                                                                 256
+                                                                                                             ],
+                                                                                                 "shape_b":  [
+                                                                                                                 256
+                                                                                                             ]
+                                                                                             },
+                                                                                 "name":  "correction_hidden.bias"
+                                                                             },
+                                                               "post_adamw_parameters":  {
+                                                                                             "summary":  {
+                                                                                                             "absent_a":  false,
+                                                                                                             "absent_b":  false,
+                                                                                                             "differing_elements":  256,
+                                                                                                             "digest_a":  "44366653f219578f380f8ea3e8dbfb98e71e7685a2d4f568870d740d012fe958",
+                                                                                                             "digest_b":  "61021995254ead97469d7083346ed00447516174d2dccd0b81fea02906566ded",
+                                                                                                             "exact":  false,
+                                                                                                             "first_difference":  {
+                                                                                                                                      "a":  0.0040871379896998405,
+                                                                                                                                      "b":  0.0040948642417788506,
+                                                                                                                                      "flat_index":  0
+                                                                                                                                  },
+                                                                                                             "max_abs":  0.000070914626121521,
+                                                                                                             "max_relative":  0.03867444306826474,
+                                                                                                             "max_ulp":  339856,
+                                                                                                             "relative_denominator_floor":  1E-12,
+                                                                                                             "rms":  7.9566401172249642E-06,
+                                                                                                             "shape_a":  [
+                                                                                                                             256
+                                                                                                                         ],
+                                                                                                             "shape_b":  [
+                                                                                                                             256
+                                                                                                                         ]
+                                                                                                         },
+                                                                                             "name":  "correction_hidden.bias"
+                                                                                         },
+                                                               "optimizer_moments":  {
+                                                                                         "summary":  {
+                                                                                                         "absent_a":  false,
+                                                                                                         "absent_b":  false,
+                                                                                                         "differing_elements":  256,
+                                                                                                         "digest_a":  "1a1da5df777734e06e73c644a9ea2192c24564b07e01a22c73ae4abbcac26d13",
+                                                                                                         "digest_b":  "43ace5b25a5dd5669979ea50a742a39eb4f98ac6e9d3a7450b9ffc91126ca928",
+                                                                                                         "exact":  false,
+                                                                                                         "first_difference":  {
+                                                                                                                                  "a":  4.6162199396349024E-08,
+                                                                                                                                  "b":  -1.6454706042168254E-08,
+                                                                                                                                  "flat_index":  0
+                                                                                                                              },
+                                                                                                         "max_abs":  1.535042429168243E-06,
+                                                                                                         "max_relative":  1.882554693166784,
+                                                                                                         "max_ulp":  1744092657,
+                                                                                                         "relative_denominator_floor":  1E-12,
+                                                                                                         "rms":  3.2169778276294743E-07,
+                                                                                                         "shape_a":  [
+                                                                                                                         256
+                                                                                                                     ],
+                                                                                                         "shape_b":  [
+                                                                                                                         256
+                                                                                                                     ]
+                                                                                                     },
+                                                                                         "name":  "correction_hidden.bias.V1.Rank1.momentum.moment_1"
+                                                                                     }
+                                                           },
+                         "differing_forward_single_fences":  [
+                                                                 "frozen_root_encoder_and_candidate_path",
+                                                                 "frozen_base_lift"
+                                                             ],
+                         "canonical_model_digest":  "57faaaff4af92b6fb72aba88c3d0ae9c11b5473aaa9ac5f887c7fece57835325",
+                         "canonical_optimizer_record_digest":  "b1f18bfbd1b3e0976823aa2375fd3c97d94f04dac4c5fa86b05abe5a55da418c",
+                         "full_report_archive":  "docs/evidence/v5/profile-diagnostic-df261ab-launch-blocking.json.gz",
+                         "full_report_raw_sha256":  "825ecc2b2a8538b484bb801c0e799f770ab62f47b2e935fbaf56ca38b69f57bf",
+                         "archive_sha256":  "6b0f84e1b6ed6deab7215221d842d647ee55daeab7cd2d80bedc9bd6dd5926d8",
+                         "archive_decompression_bytes_verified":  true
+                     }
+                 ]
+}

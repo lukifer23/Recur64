@@ -574,3 +574,35 @@ These are exact solver capacity measurements, not independently audited split
 manifests. The original count contract and STOP remain in force pending an
 explicit pre-generation amendment; no quota relaxation is inferred from a
 request to continue. CUDA fusion is disabled in the pinned feature graph.
+## V5-E23 - permitted CUDA environment diagnostics; exact D9 still blocked
+
+Serial pinned CUDA release build at scientific source df261ab passed (native
+exit 0, 15m10s). Independently tested CUBLAS_WORKSPACE_CONFIG=:4096:8 and
+CUDA_LAUNCH_BLOCKING=1, one process-local setting at a time. Both diagnostic
+commands exited 0 (report completion, not qualification PASS). Each uses one
+canonical full model/AdamW snapshot and independently verified fresh replicas.
+
+Both report CASE_C: five clone-purity checks PASS; NORMAL/NORMAL 3/3 exact;
+PROFILE/PROFILE 3/3 exact; NORMAL/PROFILE and reverse 0/3 exact each. Counters
+remain exact. Both reproduce the same 34 differing logits, maximum absolute
+0.000786900520324707, RMS 0.00027925268468156, maximum ULP 105616.
+Only frozen_root_encoder_and_candidate_path and frozen_base_lift single fences
+reproduce the forward divergence. Neither setting clears or materially changes
+the observed repeatability classification. Burn fusion is disabled in the
+actual pinned feature graph; no fusion cause is asserted. Individual kernel or
+storage/stream cause remains unproven. No toolkit, driver, precision, TF32,
+backend, architecture, model math or production fence was changed.
+
+Compact receipt: docs/evidence/v5/profile-environment-df261ab.json. Full
+per-tensor numerical reports are committed as losslessly compressed JSON under
+docs/evidence/v5/profile-diagnostic-df261ab-{cublas4096,launch-blocking}.json.gz.
+Both decompressed byte streams were verified against recorded raw SHA-256.
+Starting model digests are identical across variants; optimizer record hashes
+include process-local ParamIds and differ. No shared cross-environment checkpoint
+identity is claimed; all within-variant replica checks are exact.
+
+Historical qualification-d970049-cuda.json hash unchanged. D9 remains FAIL.
+CASE_D was not reached; no fresh qualifier, FIT drill, Stage A/B, DEV or sealed
+set evaluation was run. The proposed versioned execution contract remains
+NOT ADOPTED. All six light-family TRAIN quota failures remain a separate mandatory
+STOP, with no native split/seal/custody or scientific recipe-v2 adoption.

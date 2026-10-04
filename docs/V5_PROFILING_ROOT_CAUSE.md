@@ -133,3 +133,19 @@ reference, frozen forward/gradient/optimizer limits established before pilot,
 repeatability controls and complete model/moment resume checks. The measured
 ~7.9e-4 forward shift must first be explained; no proposed numeric limit or new
 contract is accepted here, and profiling results remain unqualified.
+
+## Separate environment-only diagnostic results (source df261ab)
+
+CUBLAS_WORKSPACE_CONFIG=:4096:8 and CUDA_LAUNCH_BLOCKING=1 were tested separately,
+not adopted as production settings. Both preserve CASE_C and the same numerical
+forward divergence and two frozen-baseline fence boundaries. Each mode is exact
+within itself in all three repetitions; both cross-mode orders fail all three.
+Clone-purity checks PASS. These tests do not prove a kernel-level cause and do
+not clear exact D9. Actual pinned Cargo features do not enable Burn fusion.
+
+Receipt: `evidence/v5/profile-environment-df261ab.json`. Full numerical reports
+are committed as losslessly compressed JSON with verified decompression hashes.
+Each variant has its own independently verified model/AdamW starting snapshot;
+no cross-environment optimizer checkpoint identity is asserted.
+No fresh qualification, permanent fence, production environment amendment or
+new execution contract was adopted. Historical D9 remains FAIL.
