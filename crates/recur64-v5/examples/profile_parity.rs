@@ -54,17 +54,30 @@ fn run() -> anyhow::Result<()> {
         "diagnostic build/source mismatch; rebuild with RECUR64_DIAGNOSTIC_SOURCE_SHA={source}"
     );
     let mut args = std::env::args_os().skip(1);
-    let output = PathBuf::from(
+    let first = args
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("expected fresh output path"))?;
+    let mask_only = first == "--mask";
+    let output = PathBuf::from(if mask_only {
         args.next()
-            .ok_or_else(|| anyhow::anyhow!("expected fresh output path"))?,
-    );
+            .ok_or_else(|| anyhow::anyhow!("expected mask output path"))?
+    } else {
+        first
+    });
     anyhow::ensure!(
         args.next().is_none() && !output.exists(),
         "expected one fresh output path"
     );
-    let report = recur64_v5::qualification::diagnostic::run::<
-        burn::backend::Autodiff<burn::backend::Cuda>,
-    >(&source, "cuda", &Default::default())?;
+    let report =
+        if mask_only {
+            recur64_v5::qualification::diagnostic::mask::run::<
+                burn::backend::Autodiff<burn::backend::Cuda>,
+            >(&source, &Default::default())?
+        } else {
+            recur64_v5::qualification::diagnostic::run::<
+                burn::backend::Autodiff<burn::backend::Cuda>,
+            >(&source, "cuda", &Default::default())?
+        };
     std::fs::write(output, serde_json::to_vec_pretty(&report)?)?;
     println!(
         "Engineering diagnostic completed: {} (training_authorized=false)",

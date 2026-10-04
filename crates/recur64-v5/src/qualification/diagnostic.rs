@@ -1,4 +1,5 @@
 //! Disposable same-snapshot diagnostic. No qualification or training authority.
+pub mod mask;
 use super::*;
 use burn::module::{AutodiffModule, ModuleVisitor, Param};
 use serde_json::{Value, json};

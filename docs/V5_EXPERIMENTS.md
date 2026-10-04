@@ -679,3 +679,25 @@ Diagnostic-only accessor calls existing StateEncoder.forward, unchanged.
 Measure encoded payload, original states/flags, baseline context/hypotheses.
 This is forward-only localization, not a gradient/optimizer qualification.
 V5 all-target CUDA Clippy -D warnings and rustfmt PASS. No fix claimed yet.
+## V5-E29 - payload masking is the first measured divergence
+
+Source f61bdb0, serial focused CUDA build PASS, diagnostic native exit 0.
+Original CASE_C persists. All three encoder-only comparisons differ at flat
+index 8192: normal -1.1473956108093262 versus profiled zero. Exactly 2048
+encoded payload values differ; max absolute 2.9452357292175293, RMS
+0.3535476223471146. Input states/flags and baseline context/hypotheses are
+EXACT. Entire temporary frozen-input retention still clears every group in
+three repetitions; individual field/group retention does not. This localizes
+the error before E/H, with unexpectedly zeroed payload blocks suggesting
+masking. It does not yet prove which primitive is defective. No production
+fix or qualification PASS. Full report: profile-diagnostic-f61bdb0-fields.json.gz.
+
+## V5-E30 - minimal CUDA boolean-mask reproduction
+
+Engineering-only mask primitive command (--mask in focused example), no model
+training or authorization. Three repeats, four allocation sizes, fenced and
+unfenced upload, three mathematically equivalent mask/broadcast orders.
+Expected all-true node mask leaves an all-one FP32 tensor unchanged. Record
+output numerical differences, node/inverse mask counts and backend metadata.
+No precision, backend, environment contract or model equations changed.
+CUDA all-target Clippy -D warnings and affected rustfmt PASS.
