@@ -648,3 +648,18 @@ It rejects CUDA-less execution, dirty scientific code and build/source mismatch,
 requires a fresh output path, uses the same 64MiB worker stack, and has no
 qualification/training command. Build binds RECUR64_DIAGNOSTIC_SOURCE_SHA.
 V5 all-target CUDA Clippy -D warnings and diagnostic rustfmt PASS.
+## V5-E27 - temporary frozen input retention clears diagnostic parity
+
+Scientific source 6f8a3d8, focused CUDA build PASS (12m31s including a fresh
+feature-union dependency build). Same CUDA backend type as CLI, schema v3,
+default CUDA environment, native diagnostic exit 0. Original CASE_C reproduced.
+Retaining the full temporary frozen V5Inputs through the complete replay
+(mask16) makes forward, every gradient, post-AdamW parameters, moments and
+counters EXACT in all three normal/profile pairs. Its unused states/flags are
+also exact. RootInputs-only construction (mask32) and RootInputs-only plus
+baseline-output retention (mask47) retain the original cross-mode discrepancy
+in all three repetitions. No production fix adopted. This isolates a positive
+input-lifetime/allocation intervention, not the specific faulty field or kernel.
+Full numerical evidence: profile-diagnostic-6f8a3d8-frozen-input.json.gz.
+Next compare the returned-state encoder before E/H computation using the same
+checkpoint and input preparation, then narrow which temporary input matters.
