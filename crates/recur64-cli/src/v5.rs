@@ -33,6 +33,8 @@ pub enum V5Cmd {
     Train(TrainArgs),
     /// Exercise the actual paired graph over Q2/Q4/Q8 and R1/R2/R4.
     Qualify(QualifyArgs),
+    /// Engineering-only repeatability diagnostic; never authorizes training.
+    DiagnoseProfileParity(QualifyArgs),
     /// Run the disposable 24-position reader optimization drill.
     Drill(DrillArgs),
     /// Evaluate one inherited DEV family/depth cell at update 0 or 800.
@@ -712,6 +714,39 @@ where
     Ok(())
 }
 
+fn diagnose_backend<B>(a: &QualifyArgs, label: &str) -> anyhow::Result<()>
+where
+    B: burn::tensor::backend::AutodiffBackend,
+    B::Device: Default,
+{
+    anyhow::ensure!(!a.output.exists(), "diagnostic output already exists");
+    anyhow::ensure!(
+        a.microbatch == 2,
+        "diagnostic requires the same two fixtures"
+    );
+    let report = recur64_v5::qualification::diagnostic::run::<B>(
+        &source_sha()?,
+        label,
+        &B::Device::default(),
+    )?;
+    write_json(&a.output, &report)
+}
+fn diagnose(a: QualifyArgs) -> anyhow::Result<()> {
+    match a.device {
+        DeviceArg::Cpu => diagnose_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu"),
+        DeviceArg::Cuda => {
+            #[cfg(feature = "cuda")]
+            {
+                diagnose_backend::<burn::backend::Autodiff<burn::backend::Cuda>>(&a, "cuda")
+            }
+            #[cfg(not(feature = "cuda"))]
+            {
+                anyhow::bail!("CUDA support absent; no fallback")
+            }
+        }
+    }
+}
+
 fn qualify(a: QualifyArgs) -> anyhow::Result<()> {
     match a.device {
         DeviceArg::Cpu => qualify_backend::<recur64_model::train::CpuTrainBackend>(&a, "cpu"),
@@ -1129,6 +1164,9 @@ pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
         V5Cmd::Custody(a) => custody(a),
         V5Cmd::Graph(c) => graph(c),
         V5Cmd::Train(a) => big_stack("recur64-v5-train", move || train(a)),
+        V5Cmd::DiagnoseProfileParity(a) => {
+            big_stack("recur64-v5-profile-diagnostic", move || diagnose(a))
+        }
         V5Cmd::Qualify(a) => big_stack("recur64-v5-qualify", move || qualify(a)),
         V5Cmd::Drill(a) => big_stack("recur64-v5-drill", move || drill(a)),
         V5Cmd::Evaluate(a) => big_stack("recur64-v5-evaluate", move || evaluate(a)),

@@ -474,3 +474,17 @@ Corrections are appended; old entries are never rewritten.
   the full parsed old aliases with their preserved 64c4dd4 archives. Current
   canonical aliases match the d970049 reports exactly as parsed; CUDA remains
   FAIL and cannot satisfy the qualification loader. No old report was deleted.
+
+## V5-E16 - recovery handoff and profile diagnostic registration
+
+- Verified clean V5 worktree at dca2d900e05729d1f9fda484912218ed9a94561d;
+  fetched origin and measured branch parity 0/0. R15 worktree untouched.
+- Historical reports, including qualification-d970049-cuda.json, unchanged.
+- Added engineering-only diagnose-profile-parity; no training authority.
+  Canonical full-precision model/AdamW snapshot, clone fingerprints, three
+  repetitions of all four orderings, independent checkpoint-loaded replicas,
+  named numerical tensor/gradient/parameter/moment differences and counters.
+- Exact D9 remains FAIL until unchanged qualification legitimately passes.
+  Architecture, math, FP32, model config and learning rates unchanged.
+- Owner excludes workstation P25 transfer; native-data preregistration follows
+  before generation. No data-dependent operation or training run in this entry.

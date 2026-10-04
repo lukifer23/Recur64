@@ -1,5 +1,7 @@
 //! CPU/CUDA qualification for the actual paired V5 graph.
 
+pub mod diagnostic;
+
 use std::path::PathBuf;
 use std::time::Instant;
 
