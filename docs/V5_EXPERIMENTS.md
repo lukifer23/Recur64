@@ -556,3 +556,21 @@ Current-source standalone Q8 graph envelope/audit and five negative boundaries
 PASS; source-bound receipt committed. Historical D9 report unchanged.
 No fresh qualifier, drill, Stage A/B, DEV or sealed evaluation after either
 engineering or data failure. Full report: V5_RECOVERY_REPORT.md.
+
+## V5-E22 - complete exact pool capacity census after owner continuation
+
+Owner requested continuation/end-to-end execution. Before changing any quota,
+ran existing `proof pool` exhaustive enumeration at scientific source df261ab,
+max depth 3, two threads. Both native processes exited 0. No accepted native
+split, training, DEV or CONFIRM evaluation occurred.
+
+Eligible M1/M2/M3 classes: KQQvK 95649/174163/4409;
+KQRvK 111273/306595/211215; KRRvK 41612/122082/108086;
+KQvK 306/576/1076; KRvK 189/532/438. All six light-family cells
+fail the requested 2000 quota. The earlier single-cell reduction proposal would
+still be infeasible. Complete census receipt:
+`docs/evidence/v5/data/capacity-df261ab-all-families-m3.json`.
+These are exact solver capacity measurements, not independently audited split
+manifests. The original count contract and STOP remain in force pending an
+explicit pre-generation amendment; no quota relaxation is inferred from a
+request to continue. CUDA fusion is disabled in the pinned feature graph.

@@ -1,0 +1,114 @@
+{
+    "schema":  "v5_hp_full_capacity_census_v1",
+    "source_sha":  "df261ab328606ce235b9b145070b608046a257c5",
+    "method":  "Existing proof pool exhaustive canonical enumeration and exact mate solver, max-depth 3, two threads",
+    "native_exit_codes":  [
+                              0,
+                              0
+                          ],
+    "dataset_generation":  false,
+    "independent_full_pool_audit":  false,
+    "training_authorized":  false,
+    "mandatory_stop":  "Original TRAIN cell quotas remain infeasible; no counts amended",
+    "families":  [
+                     {
+                         "family":  "KQQvK",
+                         "raw_placements":  15249024,
+                         "legal_live":  5657120,
+                         "canonical_classes":  353793,
+                         "classes_by_depth":  {
+                                                  "1":  95649,
+                                                  "2":  213317,
+                                                  "3":  44709,
+                                                  "none":  118
+                                              },
+                         "eligible_by_depth":  {
+                                                   "1":  95649,
+                                                   "2":  174163,
+                                                   "3":  4409
+                                               },
+                         "wall_s":  27.692762600000002
+                     },
+                     {
+                         "family":  "KQRvK",
+                         "raw_placements":  15249024,
+                         "legal_live":  6911296,
+                         "canonical_classes":  864052,
+                         "classes_by_depth":  {
+                                                  "1":  111273,
+                                                  "2":  342437,
+                                                  "3":  268681,
+                                                  "none":  141661
+                                              },
+                         "eligible_by_depth":  {
+                                                   "1":  111273,
+                                                   "2":  306595,
+                                                   "3":  211215
+                                               },
+                         "wall_s":  85.4626435
+                     },
+                     {
+                         "family":  "KRRvK",
+                         "raw_placements":  15249024,
+                         "legal_live":  8325184,
+                         "canonical_classes":  520702,
+                         "classes_by_depth":  {
+                                                  "1":  41612,
+                                                  "2":  144696,
+                                                  "3":  123112,
+                                                  "none":  211282
+                                              },
+                         "eligible_by_depth":  {
+                                                   "1":  41612,
+                                                   "2":  122082,
+                                                   "3":  108086
+                                               },
+                         "wall_s":  45.2280245
+                     },
+                     {
+                         "family":  "KQvK",
+                         "raw_placements":  249984,
+                         "legal_live":  144508,
+                         "canonical_classes":  18081,
+                         "classes_by_depth":  {
+                                                  "1":  306,
+                                                  "2":  629,
+                                                  "3":  1135,
+                                                  "none":  16011
+                                              },
+                         "eligible_by_depth":  {
+                                                   "1":  306,
+                                                   "2":  576,
+                                                   "3":  1076
+                                               },
+                         "wall_s":  0.703362
+                     },
+                     {
+                         "family":  "KRvK",
+                         "raw_placements":  249984,
+                         "legal_live":  175168,
+                         "canonical_classes":  21959,
+                         "classes_by_depth":  {
+                                                  "1":  189,
+                                                  "2":  587,
+                                                  "3":  484,
+                                                  "none":  20699
+                                              },
+                         "eligible_by_depth":  {
+                                                   "1":  189,
+                                                   "2":  532,
+                                                   "3":  438
+                                               },
+                         "wall_s":  0.6882354
+                     }
+                 ],
+    "requested_train_per_cell":  2000,
+    "light_family_eligible_total":  3117,
+    "requested_light_family_total":  12000,
+    "light_family_shortfall":  8883,
+    "candidate_amendments_pending_owner_decision":  [
+                                                        "21117 total: all eligible light-family classes plus 2000 per heavy cell before exclusions",
+                                                        "30000 total: all eligible light-family classes plus 2987 per heavy cell before exclusions"
+                                                    ],
+    "cross_disjointness_from_unavailable_workstation_raw_datasets_verified":  false
+}

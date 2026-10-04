@@ -151,3 +151,18 @@ LEARNED QUERY CONTROLLER NOT TRAINED.
 MULTI-SEED REPLICATION NOT RUN.
 V5_HP_CONFIRM_V1 NOT GENERATED OR SEALED; UNEVALUATED AND ACCESS BLOCKED.
 V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.
+
+## Owner continuation: complete capacity census
+
+Continuation began from `5c74230c4810ce2fd3dbe00ae14a03f34a24facb`.
+Architecture, scientific math, config and historical D9 are unchanged.
+The full exact generator census finds all six light-family TRAIN cells below
+2000 eligible canonical classes: KQvK 306/576/1076; KRvK 189/532/438.
+Heavy-family capacities are KQQvK 95649/174163/4409,
+KQRvK 111273/306595/211215, KRRvK 41612/122082/108086.
+The six light cells total 3117, a shortfall of 8883. Both exhaustive census
+processes exited 0; these are capacity results, not audited accepted splits.
+Evidence: `evidence/v5/data/capacity-df261ab-all-families-m3.json`.
+No requested count, dataset identity, scientific digest or recipe was amended.
+The required explicit count decision remains pending; requesting an end-to-end
+run cannot make the original unique/canonical quotas possible.

@@ -81,3 +81,11 @@ controller, self-play, replication or confirmation evaluation authorized.
 Current-source CPU/CUDA exact qualification, provenance, all datasets/audits,
 TRAIN/DEV custody and sealed CONFIRM custody must all pass before the disposable
 drill. Even a passing drill ends this authorization before Stage A.
+
+## Continuation capacity census (not a data-contract amendment)
+
+The full M1/M2/M3 census additionally finds KQvK eligible capacities
+306/576/1076 and KRvK 189/532/438. All six light-family quotas are infeasible,
+not only KRvK M1. Heavy-family capacities suffice for their original quotas.
+See `evidence/v5/data/capacity-df261ab-all-families-m3.json`.
+No lower count, reallocation, generation identity or recipe has been adopted.
