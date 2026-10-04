@@ -757,6 +757,17 @@ impl<B: Backend> CounterfactualRelationalLoop<B> {
         })
     }
 
+    /// Engineering localization only; calls the existing returned-state encoder.
+    pub(crate) fn diagnostic_encoded_payload(&self, input: &V5Inputs<B>) -> Tensor<B, 3> {
+        self.state
+            .forward(
+                input.states.clone(),
+                input.flags.clone(),
+                input.node_mask.clone(),
+            )
+            .reshape([input.batch, input.evidence_tokens, self.cfg.width])
+    }
+
     /// Q0 path: exactly one root/candidate execution and no state encoder or
     /// relational-loop execution.
     pub fn base_root(&self, input: &RootInputs<B>) -> BaseOutput<B> {

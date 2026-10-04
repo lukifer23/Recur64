@@ -194,7 +194,7 @@ fn replay_retained<B: AutodiffBackend>(
     graphs: &[AcquiredGraph],
     device: &B::Device,
     fences: Option<&str>,
-    retained: u8,
+    retained: u16,
 ) -> anyhow::Result<Replay> {
     let mut profile = SynchronizedProfile::<B>::new(device)?;
     let mut phases = vec![];
@@ -211,7 +211,7 @@ fn replay_retained<B: AutodiffBackend>(
     phase("input_gradient_tracking");
     let mut held_frozen_inputs = None;
     let mut root_only_inputs = None;
-    let base = if retained & (16 | 32) != 0 {
+    let base = if retained & !15 != 0 {
         let inner = model.valid();
         phase("frozen_model_view");
         let inner_base = if retained & 32 != 0 {
@@ -242,6 +242,36 @@ fn replay_retained<B: AutodiffBackend>(
         model.base_frozen_profiled(&ex, device, &mut phase)?
     };
     drop(root_only_inputs);
+    let mut field_guards: Vec<Box<dyn std::any::Any>> = vec![];
+    if retained >= 64 {
+        let v = held_frozen_inputs.take().expect("frozen input field probe");
+        if retained == 64 {
+            field_guards.push(Box::new((v.root, v.cands, v.candidate_geometry, v.facts)));
+        } else if retained == 128 {
+            field_guards.push(Box::new((
+                v.states,
+                v.flags,
+                v.node_mask,
+                v.evidence_mask,
+                v.structural,
+                v.owner_idx,
+                v.evidence_rel,
+                v.hypothesis_rel,
+            )));
+        } else if retained == 256 {
+            field_guards.push(Box::new(v.states));
+        } else if retained == 512 {
+            field_guards.push(Box::new(v.flags));
+        } else if retained == 1024 {
+            field_guards.push(Box::new(v.structural));
+        } else if retained == 2048 {
+            field_guards.push(Box::new(v.owner_idx));
+        } else if retained == 4096 {
+            field_guards.push(Box::new((v.evidence_rel, v.hypothesis_rel)));
+        } else if retained == 8192 {
+            field_guards.push(Box::new((v.node_mask, v.evidence_mask)));
+        }
+    }
     // Diagnostic references only: no readback/fence until the replay completes.
     let context = (retained & 1 != 0).then(|| base.context.clone());
     let pooled = (retained & 2 != 0).then(|| base.pooled.clone());
@@ -278,6 +308,9 @@ fn replay_retained<B: AutodiffBackend>(
     profile.finish()?;
     let parameters = tensors(&next, None)?.0;
     let (moments, counters) = moments(&opt, &ids)?;
+    forward.insert("factual_final_h".into(), Some(out.factual_h.into_data()));
+    forward.insert("null_final_h".into(), Some(out.null_h.into_data()));
+    drop(field_guards);
     let mut baseline = BTreeMap::new();
     if let Some(v) = context {
         baseline.insert("context".into(), Some(v.into_data()));
@@ -320,6 +353,41 @@ fn exact(v: &Value) -> bool {
     .iter()
     .all(|k| v[k]["exact"] == true)
         && v["optimizer_counters_exact"] == true
+}
+
+fn payload_only<B: AutodiffBackend>(
+    model: &CounterfactualRelationalLoop<B>,
+    roots: &[recur64_core::GameState],
+    graphs: &[AcquiredGraph],
+    device: &B::Device,
+    profiled: bool,
+) -> anyhow::Result<Tensors> {
+    let mut profile = SynchronizedProfile::<B>::new(device)?;
+    let mut phase = |n: &str| {
+        if profiled {
+            profile.mark(n);
+        }
+    };
+    let ex: Vec<_> = roots.iter().zip(graphs).collect();
+    let mut input = V5Inputs::<B>::from_examples_profiled(&ex, device, &mut phase)?;
+    let tracked = input.states.clone().require_grad();
+    input.states = tracked.clone();
+    phase("input_gradient_tracking");
+    let base = model.base_frozen_profiled(&ex, device, &mut phase)?;
+    let payload = model.diagnostic_encoded_payload(&input);
+    phase("returned_state_encoder");
+    let mut rows = BTreeMap::new();
+    // First readback is after the encoder; never fence its inputs prematurely.
+    rows.insert("encoded_payload".into(), Some(payload.into_data()));
+    rows.insert("input_states".into(), Some(tracked.into_data()));
+    rows.insert("input_flags".into(), Some(input.flags.into_data()));
+    rows.insert("baseline_context".into(), Some(base.context.into_data()));
+    rows.insert(
+        "baseline_hypotheses".into(),
+        Some(base.hypotheses.into_data()),
+    );
+    profile.finish()?;
+    Ok(rows)
 }
 
 pub fn run<B: AutodiffBackend>(
@@ -436,8 +504,16 @@ pub fn run<B: AutodiffBackend>(
         }
     }
     let mut lifetime_probes = vec![];
+    let mut payload_probes = vec![];
     if nn && pp && !cross {
-        for retained in [1, 2, 4, 8, 15, 16, 32, 47] {
+        for rep in 0..3 {
+            let (m, _) = fresh()?;
+            let a = payload_only(&m, &roots, &graphs, device, false)?;
+            let (m, _) = fresh()?;
+            let b = payload_only(&m, &roots, &graphs, device, true)?;
+            payload_probes.push(json!({"repeat":rep,"scope":"forward stops after returned-state encoder, before E/H","comparison":compare(&a,&b)?}));
+        }
+        for retained in [15, 16, 32, 47, 64, 128, 256, 512, 1024, 2048, 4096, 8192] {
             for rep in 0..3 {
                 let (m, o) = fresh()?;
                 let a = replay_retained(m, o, &roots, &graphs, device, None, retained)?;
@@ -449,7 +525,7 @@ pub fn run<B: AutodiffBackend>(
         }
     }
     Ok(
-        json!({"schema":"v5_profile_parity_diagnostic_v3","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"baseline_lifetime_probes":lifetime_probes,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
+        json!({"schema":"v5_profile_parity_diagnostic_v4","training_authorized":false,"source_sha":source,"device":label,"precision":"fp32","config_digest":V5Config::default().scientific_digest()?,"canonical_snapshot":manifest,"clone_purity":purity,"normal_normal_exact":nn,"profile_profile_exact":pp,"cross_mode_exact":cross,"classification":if !nn {"CASE_A"}else if !pp {"CASE_B"}else if !cross {"CASE_C"}else{"ALL_EXACT"},"pairs":pairs,"single_fence_localization":boundaries,"baseline_lifetime_probes":lifetime_probes,"payload_encoder_probes":payload_probes,"environment":{"CUBLAS_WORKSPACE_CONFIG":std::env::var("CUBLAS_WORKSPACE_CONFIG").ok(),"CUDA_LAUNCH_BLOCKING":std::env::var("CUDA_LAUNCH_BLOCKING").ok(),"CUDA_PATH":std::env::var("CUDA_PATH").ok(),"backend":"Burn 0.21.0 / CubeCL 0.10.0","gpu":std::process::Command::new("nvidia-smi").args(["--query-gpu=name,driver_version","--format=csv,noheader"]).output().ok().map(|v|String::from_utf8_lossy(&v.stdout).into_owned())}}),
     )
 }
 

@@ -663,3 +663,19 @@ input-lifetime/allocation intervention, not the specific faulty field or kernel.
 Full numerical evidence: profile-diagnostic-6f8a3d8-frozen-input.json.gz.
 Next compare the returned-state encoder before E/H computation using the same
 checkpoint and input preparation, then narrow which temporary input matters.
+## V5-E28 - narrow temporary input ownership and payload encoder localization
+
+Engineering schema v4. Retain only root fields (64), graph fields (128), states
+(256), flags (512), structural features (1024), owner indices (2048), relation
+planes (4096), or bool masks (8192), through full backward/AdamW; no early
+readback, copies, altered equations or extra fences. Existing full retention
+and unmodified mode controls remain. Also record final factual/null H tensors
+only after AdamW completion, preserving their original lifetime.
+
+Three additional fresh-checkpoint pairs stop after the SAME returned-state
+encoder, before E/H. Use the same payload-gradient leaf/reference ownership,
+input construction and baseline preparation; first readback after encoding.
+Diagnostic-only accessor calls existing StateEncoder.forward, unchanged.
+Measure encoded payload, original states/flags, baseline context/hypotheses.
+This is forward-only localization, not a gradient/optimizer qualification.
+V5 all-target CUDA Clippy -D warnings and rustfmt PASS. No fix claimed yet.
