@@ -1,5 +1,16 @@
 # V5 results
 
+> CURRENT CUDA RECOVERY (003d296): fresh CPU/CUDA qualification PASS under the
+> unchanged exact D9 and synchronized execution contract. Three repetitions of
+> each independent normal/profile order are EXACT; the proven cause was a
+> pitched boolean-mask reshape stride defect. See V5_CUDA_MASK_RECOVERY.md.
+> Historical failed reports are unchanged. Release workspace: 587 passed,
+> zero failed, two preserved ignores. Changed-file rustfmt/V5 Clippy PASS;
+> workspace-wide formatting has pre-existing drift in 16 unchanged files.
+> Native dataset quota STOP remains; no drill, Stage A/B, DEV or pilot authorized.
+> Historical status/commands below do not override this recovery or data lock.
+
+
 > MEASURED DATA STOP (df261ab): exhaustive KRvK M1 capacity is only 189
 > canonical classes, required 2000. Two full enumerations reproduce exactly;
 > 189 independent audits, zero failures. No TRAIN/DEV/CONFIRM dataset accepted,
@@ -16,9 +27,9 @@
 > FAIL. No Stage A/B, DEV science or drill authorized by this recovery result.
 
 
-**CURRENT STATUS: SYNCHRONIZED CPU PASS / CUDA PROFILING PARITY FAIL; STOP.**
+**HISTORICAL d970049 STATUS: SYNCHRONIZED CPU PASS / CUDA PROFILING PARITY FAIL; STOP.**
 
-Current scientific source: `d97004981f52eb077da6bb72584efaca341b8c5b`.
+Historical scientific source: `d97004981f52eb077da6bb72584efaca341b8c5b`.
 Full release workspace: **581 passed, zero failed, two preserved ignores**;
 native suite exit 0. Scoped fmt/V5 Clippy and the serial pinned CUDA build pass.
 The new same-device profiling comparison is exact on CPU, but its combined

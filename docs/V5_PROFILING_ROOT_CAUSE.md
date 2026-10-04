@@ -149,3 +149,15 @@ Each variant has its own independently verified model/AdamW starting snapshot;
 no cross-environment optimizer checkpoint identity is asserted.
 No fresh qualification, permanent fence, production environment amendment or
 new execution contract was adopted. Historical D9 remains FAIL.
+
+## 2026-10-04 pitched-mask recovery (source 003d296)
+
+The subsequent independent diagnosis proves a returned-payload boolean-mask
+layout defect: the pinned backend loses pitched batch stride during two
+successive trailing dimension insertions. One mathematically equivalent reshape
+preserves the stride. CPU and CUDA qualification now PASS under the unchanged
+exact D9 contract. All independent normal/normal, profile/profile and both
+cross-mode orders are EXACT in three repetitions. Historical measurements and
+failed reports above remain unchanged. No new execution contract is adopted.
+Detailed source, controls, archives and validation: V5_CUDA_MASK_RECOVERY.md.
+Native data quota prerequisites remain unresolved; no drill or learning run.

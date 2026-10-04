@@ -72,3 +72,16 @@ The failed source report is retained at
 `docs/evidence/v5/qualification-7737640-cpu.json`. Its passing null, gradient,
 baseline-after-update and complete restoration checks do not make the aggregate
 report PASS. No CUDA qualification was launched at that failed source.
+
+
+## 2026-10-04 pitched-mask recovery (source 003d296)
+
+The subsequent independent diagnosis proves a returned-payload boolean-mask
+layout defect: the pinned backend loses pitched batch stride during two
+successive trailing dimension insertions. One mathematically equivalent reshape
+preserves the stride. CPU and CUDA qualification now PASS under the unchanged
+exact D9 contract. All independent normal/normal, profile/profile and both
+cross-mode orders are EXACT in three repetitions. Historical measurements and
+failed reports above remain unchanged. No new execution contract is adopted.
+Detailed source, controls, archives and validation: V5_CUDA_MASK_RECOVERY.md.
+Native data quota prerequisites remain unresolved; no drill or learning run.

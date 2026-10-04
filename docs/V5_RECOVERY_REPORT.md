@@ -1,5 +1,14 @@
 # V5 recovery report - mandatory data-capacity STOP
 
+> CURRENT CUDA RECOVERY (source 003d296): exact D9 CPU/CUDA qualification PASS,
+> all repeated independent normal/profile comparisons EXACT. The proven cause
+> was a pitched boolean-mask reshape stride defect, repaired without changing
+> intended model equations, architecture, precision settings or execution contract.
+> Release workspace: 587 passed, zero failed, two preserved ignores. Native data
+> quota STOP remains. See V5_CUDA_MASK_RECOVERY.md; older CUDA status below is
+> historical. No FIT drill, Stage A/B, DEV, pilot or confirmation evaluation run.
+
+
 Start HEAD: `dca2d900e05729d1f9fda484912218ed9a94561d`, clean V5 worktree,
 fetched remote parity 0/0. Final scientific code:
 `df261ab328606ce235b9b145070b608046a257c5`. Evidence publication follows as a

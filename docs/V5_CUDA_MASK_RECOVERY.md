@@ -78,3 +78,50 @@ Receipt: `evidence/v5/cuda-mask-recovery-003d296.json`; full numerical reports
 are losslessly compressed, with both raw and compressed hashes verified.
 A new execution contract is not required. Historical CASE_C remains recorded;
 this is a layout repair, not a retrospectively invented Clone/harness defect.
+
+## Completed validation and handoff scope
+
+Start of this D9-focused continuation:
+`6ef50bd417a9585284f30001e64716310ea23525`.
+Repair scientific source:
+`003d296e094c28fc488cd56ef0944b60299983f9`.
+Subsequent evidence/documentation commits do not change the scientific source.
+
+- Full release workspace: native exit 0, 587 passed, 0 failed, 2 preserved ignores.
+- V5 all-target CUDA Clippy with -D warnings and changed-file rustfmt: PASS.
+- Workspace-wide fmt: FAIL from 16 unchanged files; independently verified byte
+  equality to starting HEAD, recorded in format-limitation-003d296.json.
+- Serial pinned CUDA CLI/examples build: PASS, 16m25s.
+- Fresh CPU qualification: PASS, FP32, physical microbatch2.
+- Fresh RTX2050 CUDA qualification: PASS, same precision/layout/contract.
+- All nine Q/R shapes, 50 resident Q8/R4 updates, checkpoint/moments/resume: PASS.
+- Independent replay: all 12 pairs EXACT; clone purity PASS; every recorded
+  numerical difference and ULP distance zero, no first differing tensor.
+- Standalone graph source/config/content/refusal checks: PASS.
+- All seven historical qualification reports: byte-identical, including failed
+  d970049 CUDA SHA256 F4AFE1DF8E13CBFDD5CC3CF1E67DD535E87D5E043C1CA8787D16CE2B199337AC.
+
+No new execution contract, precision state, backend upgrade or permanent fence
+is required. The first historical fence-sensitive boundary remains the frozen
+baseline completion/lift; the actual faulty reader operation is now isolated to
+returned-payload mask dimension insertion. Original failure numerics remain in
+previous archives; the repaired exact comparisons use fresh canonical snapshots.
+
+Native TRAIN/DEV/CONFIRM generation and custody are not complete: the original
+2,000 unique canonical positions per light-family cell exceeds measured capacity.
+No counts, family/depth assignments, labels or selection rules were relaxed.
+P25 dependency remains retired. Recipe-v2/data-v1 measured binding is pending;
+production scientific data loaders remain locked. Requested DEV total4500 and
+primary-cell750 are preregistered expectations, not measured accepted artifacts.
+No content/FEN/canonical digest, pairwise overlap, full split audit or seal is
+invented. Cross-disjointness from unavailable workstation-only raw datasets was
+NOT verified. All preconditions for the FIT drill consequently do not hold.
+
+V5 STAGE A NOT RUN.
+V5 READER PILOT NOT RUN.
+LEARNED QUERY CONTROLLER NOT TRAINED.
+MULTI-SEED REPLICATION NOT RUN.
+SELF-PLAY AND DEV EVALUATION NOT RUN.
+24-POSITION FIT DRILL NOT RUN.
+V5_HP_CONFIRM_V1 NOT GENERATED, NOT SEALED AND UNEVALUATED; ACCESS BLOCKED.
+V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.

@@ -50,13 +50,20 @@ execution correction passes its unchanged exact unit comparisons
 qualification passed at FP32/microbatch 2 (578 release tests passed). CUDA sampled
 device-wide peak is 1,068 MiB; 50 resident update samples stay at 364 MiB.
 Detailed component/online timing and the FIT drill are separate remaining gates.
-The synchronized profiling continuation at d970049 passes CPU but FAILS CUDA
-normal/profile exact output-gradient and AdamW parity. Qualification/training
-STOPPED; see `docs/V5_PROFILING_ROOT_CAUSE.md`. The exact D9 gate remains unchanged.
-Release workspace: 581 passed, zero failed, two preserved ignores. Instrumented
-timing is not online decision latency or a qualified CUDA performance result.
-Exact P25 TRAIN is still missing, so the drill and dataset-dependent
-pilot remain NOT RUN. V4_TUNE_V1 and HOLDOUT_C remain sealed and unevaluated.
+The historical synchronized qualification at d970049 passed CPU and failed CUDA
+exact normal/profile output-gradient and AdamW parity; its failed report remains
+unchanged. At source 003d296, a returned-payload boolean-mask stride repair clears
+the SAME exact D9 gate on CPU and CUDA. Three repeated independent comparisons
+of each execution order are exact, including all gradients, parameters and
+optimizer moments. All nine Q/R shapes, 50 resident updates and complete
+checkpoint continuation pass. Architecture and execution contract are unchanged;
+see `docs/V5_CUDA_MASK_RECOVERY.md`. Full release workspace: 587 passed, zero failed, two preserved ignores.
+P25 transfer/dependency is retired. Native TRAIN/DEV/CONFIRM generation is blocked
+by the frozen 2,000-per-cell unique canonical quotas: all six light-family cells
+have insufficient capacity (`docs/V5_RECOVERY_REPORT.md`). Scientific data loaders
+remain locked. No FIT drill, Stage A/B, DEV evaluation or reader pilot has run.
+V5 confirmation is not generated or sealed; it remains inaccessible and unevaluated.
+V4_TUNE_V1 and HOLDOUT_C remain unevaluated.
 
 **Branch `experiment/workstation-v35-onpolicy` (Recur64 V3.5, current state).** One on-policy rescue of the V3 architecture: the learner selects every query and the proof oracle only labels the learner-visited states (never chooses). Three seeds, 800 updates each, evaluated once on V3_TUNE_V1 KQRvK M3: the model now uses queried-state content (Content-Use PASS, +0.037 nats, every seed), but Gate II (ACTIVE B8 - B0 = -0.022) and Gate III (ACTIVE B8 - FIXED B8 = -0.023) FAIL. Outcome **PARTIAL - CONTENT**; HOLDOUT_C remains sealed and unevaluated; B16 not run; the lineage stops and a V4 design memo is in `docs/V35_RESULTS.md`. Plan: `docs/V35_RESEARCH_PLAN.md`; evidence: `docs/evidence/v35/`. The V3 branch text below is unchanged history.
 

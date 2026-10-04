@@ -783,3 +783,23 @@ verified compressed/decompressed hashes. Current-source qualification PASS
 under unchanged timing contract; historical CASE_C and D9 FAIL preserved.
 No new execution contract is needed to clear this defect. Full workspace tests
 are still compiling; no training/drill/data acceptance claim follows.
+
+## V5-E35 - completed source-bound release validation
+
+Full release workspace native exit0: 587 passed, zero failed, two preserved
+ignores, 68 test-result blocks. New mixed-row returned-payload forward/backward
+regression PASS. All original representation/null/recall/feedback/permutation,
+complete frontier depth1-16, loss/gradient/baseline/resume/refusal tests retained.
+Source remains 003d296e094c28fc488cd56ef0944b60299983f9; no code changes after
+CPU/CUDA qualification and repeated independent numerical reports.
+V5 all-target CUDA Clippy -D warnings native0, affected-file rustfmt native0.
+Workspace-wide fmt native1 identifies 16 untouched files; all independently
+verified byte-identical to starting HEAD. This limitation is recorded explicitly,
+not hidden or called PASS. Validation receipt and complete compressed suite log
+are committed. No test assertions deleted or weakened.
+
+D9 repair objective achieved under the existing contract. Dataset quotas remain
+infeasible under the frozen canonical uniqueness requirement; no accepted native
+TRAIN/DEV/CONFIRM, custody/seal or recipe-v2 binding. No 24-FIT drill, Stage A/B,
+DEV evaluation, learned controller, seeds5302/5303, self-play, confirmation,
+V4_TUNE or HOLDOUT_C evaluation. No chess-learning result is claimed.

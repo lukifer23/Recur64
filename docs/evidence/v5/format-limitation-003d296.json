@@ -1,0 +1,72 @@
+{
+  "schema": "v5_format_scope_receipt_v1",
+  "source_sha": "003d296e094c28fc488cd56ef0944b60299983f9",
+  "affected_rustfmt_exit_code": 0,
+  "workspace_rustfmt_exit_code": 1,
+  "unchanged_legacy_files": [
+    {
+      "path": "crates/recur64-cli/src/v4.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-cli/tests/v4_boundary.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-runtime/src/proof/custody.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/base.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/belief.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/content.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/data.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/ledger.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/model.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/session.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/stage.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/study.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/train.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/src/utility.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/tests/invariants.rs",
+      "unchanged_from_start": true
+    },
+    {
+      "path": "crates/recur64-v4/tests/training.rs",
+      "unchanged_from_start": true
+    }
+  ]
+}

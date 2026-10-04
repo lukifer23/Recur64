@@ -1,0 +1,15 @@
+{
+  "schema": "v5_workspace_validation_receipt_v1",
+  "source_sha": "003d296e094c28fc488cd56ef0944b60299983f9",
+  "command": "cargo test --release --workspace",
+  "native_exit_code": 0,
+  "passed": 587,
+  "failed": 0,
+  "preserved_ignored": 2,
+  "test_result_blocks": 68,
+  "log_sha256": "9ce37939350bdb837dbc5ea117936d7017e805db917fa37a70d9d918f5f9fcec",
+  "affected_cuda_clippy_exit_code": 0,
+  "affected_rustfmt_exit_code": 0,
+  "workspace_rustfmt_exit_code": 1,
+  "workspace_rustfmt_limitation": "16 untouched files, independently verified byte-identical to starting HEAD"
+}

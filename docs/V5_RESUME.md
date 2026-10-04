@@ -1,5 +1,16 @@
 # V5 HP resume and artifact transfer
 
+> CURRENT CUDA RECOVERY (003d296): fresh CPU/CUDA qualification PASS under the
+> unchanged exact D9 and synchronized execution contract. Three repetitions of
+> each independent normal/profile order are EXACT; the proven cause was a
+> pitched boolean-mask reshape stride defect. See V5_CUDA_MASK_RECOVERY.md.
+> Historical failed reports are unchanged. Release workspace: 587 passed,
+> zero failed, two preserved ignores. Changed-file rustfmt/V5 Clippy PASS;
+> workspace-wide formatting has pre-existing drift in 16 unchanged files.
+> Native dataset quota STOP remains; no drill, Stage A/B, DEV or pilot authorized.
+> Historical status/commands below do not override this recovery or data lock.
+
+
 > MEASURED DATA STOP (df261ab): exhaustive KRvK M1 capacity is only 189
 > canonical classes, required 2000. Two full enumerations reproduce exactly;
 > 189 independent audits, zero failures. No TRAIN/DEV/CONFIRM dataset accepted,
