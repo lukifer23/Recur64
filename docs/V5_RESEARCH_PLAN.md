@@ -1,5 +1,11 @@
 # V5 fixed-graph reader research plan
 
+> MEASURED DATA STOP (df261ab): exhaustive KRvK M1 capacity is only 189
+> canonical classes, required 2000. Two full enumerations reproduce exactly;
+> 189 independent audits, zero failures. No TRAIN/DEV/CONFIRM dataset accepted,
+> no custody/seal or recipe-v2 integration. See V5_RECOVERY_REPORT.md. D9 FAIL.
+
+
 > CURRENT OWNER AMENDMENT: P25 transfer/dependency is retired. New requested
 > lineage is V5_HP_TRAIN_V1/DEV_V1/CONFIRM_V1; see V5_DATA_PLAN.md, registered
 > before generation. Production scientific data loaders are locked until complete

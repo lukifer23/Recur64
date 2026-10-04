@@ -1477,3 +1477,13 @@ measurement. V5_DATA_PLAN.md freezes seeds, exact counts, existing canonical
 identity, exact solver/independent audit, stable selection and mandatory capacity
 stop. No old P25 digest is adopted as new data identity. DATA-B/recipe-v2 remain
 conditional on complete generated artifacts. Stage A/B not authorized here.
+
+## V5-D11 - stop at impossible native TRAIN cell quota
+
+Measured current-source exhaustive KRvK M1 pool is 189 canonical classes,
+not the requested 2000, before exclusions. Preserve the owner-required exact
+counts and authoritative equivalence; do not lower counts, substitute material,
+change depth, duplicate symmetries or adopt partial artifacts. Capacity evidence
+is independently audited and fully regenerated. No DATA-B/recipe-v2 binding,
+qualification bypass, drill or learning run. Confirmation remains ungenerated
+and unevaluated; no physical seal/custody PASS is claimed.

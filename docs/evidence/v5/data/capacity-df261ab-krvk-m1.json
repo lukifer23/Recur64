@@ -1,0 +1,58 @@
+{
+  "accepted_confirm_records": 0,
+  "accepted_dev_records": 0,
+  "accepted_train_records": 0,
+  "architecture": "counterfactual_relational_loop_v1",
+  "audit_checked": 189,
+  "audit_contract": "v5_hp_independent_audit_v1",
+  "audit_failures": 0,
+  "available_canonical_classes": 189,
+  "canonical_set_digest": "75a4eefe7b6bb333c24d921845764aa0bd5d47634519f05005301912d8d1650f",
+  "capacity_is_upper_bound_before_exclusions": true,
+  "complete_dataset_generated": false,
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "confirm_evaluated": false,
+  "dataset_family": "v5_hp_exact_endgames_v1",
+  "enumeration": {
+    "canonical_classes": 21959,
+    "classes_by_depth": {
+      "1": 189,
+      "none": 21770
+    },
+    "eligible_by_depth": {
+      "1": 189
+    },
+    "family": "KRvK",
+    "legal_live": 175168,
+    "raw_placements": 249984,
+    "wall_s": 0.2918743
+  },
+  "exact_fen_set_digest": "19b8c66718de59dfe8acc25266086e6f8354546a2462f6917736511737dd510a",
+  "exclusions_applied": 0,
+  "family": "KRvK",
+  "generation_seed": 2052067329,
+  "mate_depth": 1,
+  "quota_pass": false,
+  "record_content_digest": "5af24246587e12e82f2e8472f42c01138c7f48287cdc7fc1e60bdbe5c51fd71b",
+  "regeneration": {
+    "canonical_classes": 21959,
+    "classes_by_depth": {
+      "1": 189,
+      "none": 21770
+    },
+    "eligible_by_depth": {
+      "1": 189
+    },
+    "family": "KRvK",
+    "legal_live": 175168,
+    "raw_placements": 249984,
+    "wall_s": 0.489469
+  },
+  "regeneration_identical": true,
+  "requested_dataset": "V5_HP_TRAIN_V1",
+  "required_count": 2000,
+  "schema": "v5_hp_dataset_capacity_v1",
+  "selection_contract": "v5_hp_dataset_select_v1",
+  "source_sha": "df261ab328606ce235b9b145070b608046a257c5",
+  "training_authorized": false
+}

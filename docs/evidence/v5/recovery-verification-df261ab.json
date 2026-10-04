@@ -1,0 +1,58 @@
+{
+  "schema": "v5_recovery_verification_v1",
+  "final_scientific_source": "df261ab328606ce235b9b145070b608046a257c5",
+  "full_release_workspace": {
+    "source_sha": "76ef38e",
+    "native_exit": 0,
+    "passed": 586,
+    "failed": 0,
+    "ignored": 2,
+    "result_blocks": 68
+  },
+  "final_v5_release": {
+    "native_exit": 0,
+    "passed": 40,
+    "failed": 0,
+    "ignored": 1
+  },
+  "final_v5_clippy": {
+    "native_exit": 0,
+    "all_targets": true,
+    "warnings_denied": true
+  },
+  "final_cli_clippy": {
+    "native_exit": 0,
+    "all_targets": true,
+    "warnings_denied": true,
+    "historical_v4_allowances": [
+      "clippy::collapsible_if",
+      "clippy::manual_is_multiple_of"
+    ]
+  },
+  "affected_rustfmt_check": {
+    "native_exit": 0
+  },
+  "cuda_diagnostic_build": {
+    "source_sha": "ad80002",
+    "native_exit": 0,
+    "precision": "fp32",
+    "toolkit": "12.9.1"
+  },
+  "final_cpu_cli_build": {
+    "native_exit": 0
+  },
+  "standalone_graph_provenance_pass": true,
+  "capacity_command_native_exit": 1,
+  "capacity_quota_pass": false,
+  "historical_D9": "FAIL",
+  "fresh_cpu_qualification": "NOT_RUN",
+  "fresh_cuda_qualification": "NOT_RUN",
+  "drill": "NOT_RUN",
+  "stage_a": "NOT_RUN",
+  "stage_b": "NOT_RUN",
+  "dev_evaluation": "NOT_RUN",
+  "confirmation_generated": false,
+  "confirmation_sealed": false,
+  "confirmation_evaluated": false,
+  "architecture_or_model_math_changed": false
+}

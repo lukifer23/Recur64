@@ -1,0 +1,44 @@
+{
+  "schema": "v5_graph_provenance_evidence_v1",
+  "source_sha": "df261ab328606ce235b9b145070b608046a257c5",
+  "architecture": "counterfactual_relational_loop_v1",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "graph_digest": "a9668a2228468c169f2167775125872943bc8a53aa93a3af7f9a9d0801b819e5",
+  "structure_digest": "be0363c2e84a1490ba76d2302936ef275e7947cc6c9328a92807ea45f8f866c2",
+  "requested_q": 8,
+  "actual_q": 8,
+  "scientific_graph_semantics_changed": false,
+  "pass": true,
+  "checks": {
+    "valid": {
+      "native_exit": 0,
+      "expected_accept": true,
+      "stderr": ""
+    },
+    "stale": {
+      "native_exit": 1,
+      "expected_accept": false,
+      "stderr": "Error: stale or unversioned graph source provenance"
+    },
+    "tamper": {
+      "native_exit": 1,
+      "expected_accept": false,
+      "stderr": "Error: graph manifest digest mismatch"
+    },
+    "copied_metadata": {
+      "native_exit": 1,
+      "expected_accept": false,
+      "stderr": "Error: graph artifact metadata/content mismatch"
+    },
+    "naked": {
+      "native_exit": 1,
+      "expected_accept": false,
+      "stderr": "Error: unknown field `episode`, expected one of `schema`, `source_sha`, `architecture`, `config_digest`, `graph_digest`, `structure_digest`, `generation_role`, `graph` at line 1 column 129"
+    },
+    "wrong_config": {
+      "native_exit": 1,
+      "expected_accept": false,
+      "stderr": "Error: graph artifact configuration mismatch"
+    }
+  }
+}

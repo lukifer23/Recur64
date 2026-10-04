@@ -537,3 +537,22 @@ mirrored-FEN canonical duplication. Diagnostic metadata now stores explicit
 root FENs and legal-action/target-index lists; replay math is unchanged.
 Focused final-source V5 tests and CLI rebuild required before capacity command.
 No native production dataset, qualification, drill or learning run occurred.
+
+## V5-E21 - exact native TRAIN capacity failure; mandatory STOP
+
+Scientific source df261ab; rebuilt current CPU CLI exit 0. Data plan/code/tests
+pushed before measured capacity command. Complete KRvK M1 census: 249984
+placements, 175168 legal/live, 21959 canonical classes, only 189 M1 classes.
+Required 2000, exclusions zero, no M1 fraction/ambiguity filter. Two full
+enumerations (2 threads/1 thread) reproduce exactly; all 189 labels pass
+independent audit. Capacity command exits 1 and accepts zero datasets.
+Section 23 STOP applies; no quota/family/depth/exactness relaxation.
+Report docs/evidence/v5/data/capacity-df261ab-krvk-m1.json is capacity-only,
+not a TRAIN manifest. Dataset files, DATA-B digests, pairwise overlaps, custody,
+CONFIRM seal and recipe-v2 integration NOT COMPLETE/NOT RUN.
+Final V5 tests 40 passed/one preserved ignore/native exit 0. Final V5 Clippy
+-D warnings, CLI Clippy with the two documented V4 allowances, affected fmt PASS.
+Current-source standalone Q8 graph envelope/audit and five negative boundaries
+PASS; source-bound receipt committed. Historical D9 report unchanged.
+No fresh qualifier, drill, Stage A/B, DEV or sealed evaluation after either
+engineering or data failure. Full report: V5_RECOVERY_REPORT.md.
