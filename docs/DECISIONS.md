@@ -1469,3 +1469,11 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   FP32 centering parity. Preserve failed FP32 differencing evidence and ladder.
 - **No science launched:** exact P25 custody and new CPU/CUDA engineering reports
   are required. No new architecture, LR/sample sweep, pilot or sealed evaluation.
+
+## V5-D10 - native HP lineage replaces missing workstation dependency
+
+Owner explicitly replaces P25 with V5_HP_TRAIN_V1/DEV_V1/CONFIRM_V1 before
+measurement. V5_DATA_PLAN.md freezes seeds, exact counts, existing canonical
+identity, exact solver/independent audit, stable selection and mandatory capacity
+stop. No old P25 digest is adopted as new data identity. DATA-B/recipe-v2 remain
+conditional on complete generated artifacts. Stage A/B not authorized here.

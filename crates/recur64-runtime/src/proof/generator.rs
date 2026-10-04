@@ -1132,6 +1132,17 @@ pub fn enumerate_pool(
     Ok((rep, cands))
 }
 
+/// Label an exact canonical pool through the historical authoritative target path.
+/// Wrappers may choose a new lineage; solver/action/label semantics stay shared.
+pub fn label_exact_pool(
+    chosen: &[Candidate],
+    family: &str,
+    split: Split,
+    seed: u64,
+) -> anyhow::Result<Vec<ProofPosition>> {
+    label_positions(chosen, family, split, seed, &mut 0)
+}
+
 /// Split sizes for one (family, depth) cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct CellPlan {

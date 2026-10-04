@@ -92,6 +92,64 @@ pub struct AcquiredGraph {
     pub digest: String,
 }
 
+/// Persistence-only envelope: AcquiredGraph scientific semantics are unchanged.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GraphArtifact {
+    pub schema: String,
+    pub source_sha: String,
+    pub architecture: String,
+    pub config_digest: String,
+    pub graph_digest: String,
+    pub structure_digest: String,
+    pub generation_role: String,
+    pub graph: AcquiredGraph,
+}
+impl GraphArtifact {
+    pub fn new(graph: AcquiredGraph, source_sha: &str) -> anyhow::Result<Self> {
+        graph.verify()?;
+        anyhow::ensure!(
+            source_sha.len() == 40 && source_sha.bytes().all(|c| c.is_ascii_hexdigit()),
+            "invalid graph source SHA"
+        );
+        Ok(Self {
+            schema: "v5_graph_artifact_v1".into(),
+            source_sha: source_sha.into(),
+            architecture: crate::config::ARCHITECTURE.into(),
+            config_digest: graph.config_digest.clone(),
+            graph_digest: graph.digest.clone(),
+            structure_digest: graph.compute_structure_digest()?,
+            generation_role: "v5 graph generate".into(),
+            graph,
+        })
+    }
+    pub fn verify(&self, current_source: &str) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.schema == "v5_graph_artifact_v1" && self.source_sha == current_source,
+            "stale or unversioned graph source provenance"
+        );
+        anyhow::ensure!(
+            self.architecture == crate::config::ARCHITECTURE
+                && self.config_digest == crate::config::V5Config::default().scientific_digest()?,
+            "graph artifact configuration mismatch"
+        );
+        self.graph.verify()?;
+        anyhow::ensure!(
+            self.graph.config_digest == self.config_digest
+                && self.graph.digest == self.graph_digest
+                && self.graph.compute_structure_digest()? == self.structure_digest
+                && self.generation_role == "v5 graph generate",
+            "graph artifact metadata/content mismatch"
+        );
+        Ok(())
+    }
+    pub fn load(path: &std::path::Path, source: &str) -> anyhow::Result<Self> {
+        let artifact: Self = serde_json::from_slice(&std::fs::read(path)?)?;
+        artifact.verify(source)?;
+        Ok(artifact)
+    }
+}
+
 impl AcquiredGraph {
     pub fn prefix(&self, q: usize) -> anyhow::Result<Self> {
         anyhow::ensure!(
@@ -812,6 +870,48 @@ mod tests {
         assert_eq!(
             included, legal_descendants,
             "uniform_frontier_v1 must include every current unqueried legal edge; only ranked DFS has a depth-five limit"
+        );
+    }
+}
+
+#[cfg(test)]
+mod artifact_tests {
+    use super::*;
+    #[test]
+    fn provenance_envelope_refuses_stale_config_tamper_and_copied_metadata() {
+        let root = GameState::from_fen("6k1/8/8/8/8/8/4Q3/3RK3 w - - 0 1").unwrap();
+        let episode = EpisodeKey {
+            position_id: "provenance".into(),
+            schedule: Schedule::UniformFrontierV1,
+            run_seed: 5301,
+            occurrence_ordinal: 0,
+        };
+        let graph = acquire(&root, episode.clone(), 8, None).unwrap();
+        let sha = "a".repeat(40);
+        let a = GraphArtifact::new(graph.clone(), &sha).unwrap();
+        a.verify(&sha).unwrap();
+        assert!(a.verify(&"b".repeat(40)).is_err());
+        assert_eq!(a.graph, graph); // envelope did not change scientific graph/hash/config
+        let mut bad = a.clone();
+        bad.config_digest = "bad".into();
+        assert!(bad.verify(&sha).is_err());
+        let mut bad = a.clone();
+        bad.graph.nodes[0].payload.flags[0] += 1.0;
+        assert!(bad.verify(&sha).is_err());
+        let mut bad = a.clone();
+        bad.graph = acquire(
+            &root,
+            EpisodeKey {
+                occurrence_ordinal: 1,
+                ..episode
+            },
+            8,
+            None,
+        )
+        .unwrap();
+        assert!(bad.verify(&sha).is_err());
+        assert!(
+            serde_json::from_value::<GraphArtifact>(serde_json::to_value(graph).unwrap()).is_err()
         );
     }
 }

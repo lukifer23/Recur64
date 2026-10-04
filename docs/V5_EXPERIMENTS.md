@@ -506,3 +506,22 @@ completion and frozen-base lift. Detailed numerical results appended in
 V5_PROFILING_ROOT_CAUSE.md. D9 remains FAIL; no harness defect proven.
 Focused numeric report test and V5 all-target clippy -D warnings PASS.
 No qualification, drill, training or evaluation launched.
+
+## V5-E19 - persistence-only graph provenance closure
+
+Audited persisted paths: CLI graph generate/audit is the standalone JSON
+producer/consumer; stage/study acquired graphs are reconstructed in memory,
+while qualification bundles carry source SHA. Added v5_graph_artifact_v1
+envelope with source/architecture/config/full/structure digests and role.
+Scientific AcquiredGraph and config digest unchanged. Loaders refuse naked,
+stale, mismatched or tampered envelopes. No sidecar copying path exists.
+Initial compile failed E0599 because the existing method is named
+compute_structure_digest; corrected the caller without changing graph math.
+
+DATA-A implementation includes existing exact-pool/label reuse, stable seeded
+selection with strict counts/dedup/exclusions, independent material/canonical
+validation and audit, and exhaustive capacity/regeneration report. Production
+V5Data load/verify are locked pending complete measured native DATA-B: retired
+P25 cannot authorize work, and no fabricated native digest is bound. Remaining
+full split/shard/manifest/custody/recipe-v2 integration is conditional on the
+mandatory quota capacity gate; it is not claimed implemented or measured.

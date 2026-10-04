@@ -1,5 +1,15 @@
 # V5 fixed-graph reader research plan
 
+> CURRENT OWNER AMENDMENT: P25 transfer/dependency is retired. New requested
+> lineage is V5_HP_TRAIN_V1/DEV_V1/CONFIRM_V1; see V5_DATA_PLAN.md, registered
+> before generation. Production scientific data loaders are locked until complete
+> measured native DATA-B and recipe-v2 integration. The legacy P25 counts, digests,
+> partition and commands below are historical and cannot authorize current work.
+> CUDA diagnostic ad80002 is CASE C: clone purity PASS, each mode self-exact,
+> cross-mode FAIL localized to frozen-root completion/lift fences. D9 remains
+> FAIL. No Stage A/B, DEV science or drill authorized by this recovery result.
+
+
 Status: **PRE-REGISTERED 2026-10-03, before V5 implementation or measurement.**
 
 Previous execution status: acquisition correction implemented after the owner's

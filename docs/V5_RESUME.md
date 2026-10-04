@@ -1,5 +1,15 @@
 # V5 HP resume and artifact transfer
 
+> CURRENT OWNER AMENDMENT: P25 transfer/dependency is retired. New requested
+> lineage is V5_HP_TRAIN_V1/DEV_V1/CONFIRM_V1; see V5_DATA_PLAN.md, registered
+> before generation. Production scientific data loaders are locked until complete
+> measured native DATA-B and recipe-v2 integration. The legacy P25 counts, digests,
+> partition and commands below are historical and cannot authorize current work.
+> CUDA diagnostic ad80002 is CASE C: clone purity PASS, each mode self-exact,
+> cross-mode FAIL localized to frozen-root completion/lift fences. D9 remains
+> FAIL. No Stage A/B, DEV science or drill authorized by this recovery result.
+
+
 **PRE-PILOT, ENGINEERING STOP + CUSTODY BLOCKED:** current source
 `d97004981f52eb077da6bb72584efaca341b8c5b`, FP32, physical microbatch 2:
 synchronized CPU qualification PASS; CUDA qualification FAIL at normal/profile

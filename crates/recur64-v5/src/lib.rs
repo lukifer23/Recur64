@@ -12,6 +12,7 @@ pub mod evaluation;
 pub mod graph;
 pub mod loss;
 pub mod model;
+pub mod native_data;
 pub mod profile;
 pub mod qualification;
 pub mod stage;

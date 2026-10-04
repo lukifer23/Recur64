@@ -1,4 +1,5 @@
-//! P25 TRAIN custody and the inherited V4 FIT/DEV partition.
+//! Retired P25 loader retained for historical contracts only.
+//! Production entry points are locked pending complete measured native DATA-B.
 
 use std::path::Path;
 
@@ -42,6 +43,7 @@ pub struct V5Data {
 
 impl V5Data {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
+        crate::native_data::require_measured_binding()?;
         let targets = load_working_split(path, &[Split::Train])?;
         anyhow::ensure!(
             targets.digest == TRAIN_DIGEST,
@@ -90,6 +92,7 @@ impl V5Data {
     }
 
     pub fn verify_custody(&self) -> anyhow::Result<()> {
+        crate::native_data::require_measured_binding()?;
         anyhow::ensure!(
             self.targets.digest == TRAIN_DIGEST
                 && self.targets.positions.len() == TRAIN_POSITIONS

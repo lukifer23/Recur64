@@ -11,7 +11,7 @@ use recur64_v5::data::V5Data;
 use recur64_v5::evaluation::{
     EvaluationBundle, ablation_report, classify_pilot, merge_cell_bundles,
 };
-use recur64_v5::graph::{AcquiredGraph, EpisodeKey, Schedule, acquire};
+use recur64_v5::graph::{EpisodeKey, GraphArtifact, Schedule, acquire};
 use recur64_v5::model::CounterfactualRelationalLoop;
 use recur64_v5::stage::{
     Recipe, Stage, Trainer, baseline_fingerprint, load_finished_model, load_model_at,
@@ -22,9 +22,11 @@ use serde::Serialize;
 pub enum V5Cmd {
     /// Detect the local execution environment; this does not qualify a backend.
     Doctor(DoctorArgs),
+    /// Mandatory exhaustive native-data capacity stop gate; emits no split.
+    DataCapacity(DataCapacityArgs),
     /// Print exact V5 model and contract identity.
     ModelInfo(ModelInfoArgs),
-    /// Verify the one permitted P25 TRAIN artifact and inherited FIT/DEV partition.
+    /// Verify measured HP-native custody (locked until complete DATA-B binding).
     Custody(CustodyArgs),
     /// Generate or audit exact acquired-graph manifests.
     #[command(subcommand)]
@@ -55,6 +57,14 @@ pub enum V5Cmd {
 pub struct DoctorArgs {
     #[arg(long)]
     output: Option<PathBuf>,
+}
+
+#[derive(Args)]
+pub struct DataCapacityArgs {
+    #[arg(long)]
+    output: PathBuf,
+    #[arg(long, default_value_t = 2)]
+    threads: usize,
 }
 
 #[derive(Args)]
@@ -378,7 +388,8 @@ fn graph(c: GraphCmd) -> anyhow::Result<()> {
                 a.q,
                 logits.as_deref(),
             )?;
-            write_json(&a.output, &manifest)?;
+            let artifact = GraphArtifact::new(manifest.clone(), &source_sha()?)?;
+            write_json(&a.output, &artifact)?;
             println!(
                 "graph {}: requested Q{}, actual Q{}, digest {}",
                 manifest.episode.schedule.id(),
@@ -389,8 +400,7 @@ fn graph(c: GraphCmd) -> anyhow::Result<()> {
             Ok(())
         }
         GraphCmd::Audit(a) => {
-            let graph: AcquiredGraph = serde_json::from_slice(&std::fs::read(&a.graph)?)?;
-            graph.verify()?;
+            let graph = GraphArtifact::load(&a.graph, &source_sha()?)?.graph;
             println!(
                 "valid {} Q{} graph {}, exact transitions {}",
                 graph.episode.schedule.id(),
@@ -1160,6 +1170,17 @@ fn extra_loops(a: ExtraLoopsArgs) -> anyhow::Result<()> {
 pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
     match cmd {
         V5Cmd::Doctor(a) => doctor(a),
+        V5Cmd::DataCapacity(a) => {
+            anyhow::ensure!(!a.output.exists(), "capacity report already exists");
+            let report = recur64_v5::native_data::capacity(&source_sha()?, a.threads)?;
+            write_json(&a.output, &report)?;
+            anyhow::ensure!(
+                report["quota_pass"] == true,
+                "STOP: KRvK M1 has only {} canonical classes; V5_HP_TRAIN_V1 requires 2000. No dataset accepted.",
+                report["available_canonical_classes"]
+            );
+            Ok(())
+        }
         V5Cmd::ModelInfo(a) => model_info(a),
         V5Cmd::Custody(a) => custody(a),
         V5Cmd::Graph(c) => graph(c),

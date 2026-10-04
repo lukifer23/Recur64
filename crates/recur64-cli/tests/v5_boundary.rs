@@ -74,6 +74,18 @@ fn graph_generate_and_audit_execute_the_real_statequery_path() {
     let audited = run(&["v5", "graph", "audit", "--graph", graph.to_str().unwrap()]);
     assert!(audited.ok, "{}", audited.stderr);
     assert!(audited.stdout.contains("exact transitions 4"));
+    let mut doc: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&graph).unwrap()).unwrap();
+    assert_eq!(doc["schema"], "v5_graph_artifact_v1");
+    assert_eq!(doc["source_sha"].as_str().unwrap().len(), 40);
+    assert_eq!(doc["graph_digest"], doc["graph"]["digest"]);
+    doc["source_sha"] = serde_json::json!("0".repeat(40));
+    let stale = dir.join("stale.json");
+    std::fs::write(&stale, serde_json::to_vec(&doc).unwrap()).unwrap();
+    assert!(!run(&["v5", "graph", "audit", "--graph", stale.to_str().unwrap()]).ok);
+    let naked = dir.join("naked.json");
+    std::fs::write(&naked, serde_json::to_vec(&doc["graph"]).unwrap()).unwrap();
+    assert!(!run(&["v5", "graph", "audit", "--graph", naked.to_str().unwrap()]).ok);
 }
 
 #[test]
