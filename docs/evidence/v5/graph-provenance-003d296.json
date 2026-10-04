@@ -1,0 +1,79 @@
+{
+  "schema": "v5_graph_provenance_recovery_v1",
+  "source_sha": "003d296e094c28fc488cd56ef0944b60299983f9",
+  "architecture": "counterfactual_relational_loop_v1",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "passed": true,
+  "checks": [
+    {
+      "name": "generate-graph-003d296-a",
+      "exit_code": 0,
+      "expected_success": true,
+      "matched": true,
+      "output": "graph uniform_frontier_v1: requested Q8, actual Q8, digest 0535cb30f32460f8816a7b2212decd298f5e19da05dcf6ff49e6c484b533c5e5"
+    },
+    {
+      "name": "audit-graph-003d296-a",
+      "exit_code": 0,
+      "expected_success": true,
+      "matched": true,
+      "output": "valid uniform_frontier_v1 Q8 graph 0535cb30f32460f8816a7b2212decd298f5e19da05dcf6ff49e6c484b533c5e5, exact transitions 8"
+    },
+    {
+      "name": "generate-graph-003d296-b",
+      "exit_code": 0,
+      "expected_success": true,
+      "matched": true,
+      "output": "graph uniform_frontier_v1: requested Q8, actual Q8, digest edcae5476702a70929f8a08bac924e04776ac7a5eb9973ca4c74e3747c46ce1a"
+    },
+    {
+      "name": "audit-graph-003d296-b",
+      "exit_code": 0,
+      "expected_success": true,
+      "matched": true,
+      "output": "valid uniform_frontier_v1 Q8 graph edcae5476702a70929f8a08bac924e04776ac7a5eb9973ca4c74e3747c46ce1a, exact transitions 8"
+    },
+    {
+      "name": "refuse-stale",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: stale or unversioned graph source provenance"
+    },
+    {
+      "name": "refuse-wrong-config",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: graph artifact configuration mismatch"
+    },
+    {
+      "name": "refuse-tampered",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: graph manifest digest mismatch"
+    },
+    {
+      "name": "refuse-copied-metadata",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: graph artifact metadata/content mismatch"
+    },
+    {
+      "name": "refuse-naked",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: unknown field `episode`, expected one of `schema`, `source_sha`, `architecture`, `config_digest`, `graph_digest`, `structure_digest`, `generation_role`, `graph` at line 1 column 129"
+    },
+    {
+      "name": "refuse-historical-source",
+      "exit_code": 1,
+      "expected_success": false,
+      "matched": true,
+      "output": "Error: stale or unversioned graph source provenance"
+    }
+  ]
+}

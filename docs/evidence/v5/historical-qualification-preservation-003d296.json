@@ -1,0 +1,41 @@
+{
+  "schema": "v5_historical_report_preservation_v1",
+  "start_head": "6ef50bd417a9585284f30001e64716310ea23525",
+  "reports": [
+    {
+      "path": "docs/evidence/v5/qualification-64c4dd4-cpu.json",
+      "unchanged": true,
+      "sha256": "5e456a4e27643e25b8fa3eb6339c043055fe75a9dae4dc0c61ec206039533c1d"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-64c4dd4-cuda.json",
+      "unchanged": true,
+      "sha256": "5f1f93dff812f6647a142567e3cf156006c8e828dd9a7f3e1fce78d14e1c27ee"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-7737640-cpu.json",
+      "unchanged": true,
+      "sha256": "9919343d46d7555955bd9ac218a5e4a2feeade93a71ece0b935b891010e035f6"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-d970049-cpu.json",
+      "unchanged": true,
+      "sha256": "9f483bc058921b3e2cccb989e3f5944ef2c01605fbb2b222a9282bdf2369b7cc"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-d970049-cuda.json",
+      "unchanged": true,
+      "sha256": "f4afe1df8e13cbfdd5cc3cf1e67dd535e87d5e043c1ca8787d16ce2b199337ac"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-df6e2aa-cpu.json",
+      "unchanged": true,
+      "sha256": "9beb3229cc3d4346cbc78a47c5f0b6e36cfac58b8a565312b5b5ee71688f5d3e"
+    },
+    {
+      "path": "docs/evidence/v5/qualification-df6e2aa-cuda.json",
+      "unchanged": true,
+      "sha256": "c122aca1e21f31b2b7370c1889627d5e25da29fe6e6e5626f716fb9c1c271057"
+    }
+  ]
+}

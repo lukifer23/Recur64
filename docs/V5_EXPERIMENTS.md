@@ -734,3 +734,28 @@ or a relaxed qualification contract. Full exact parity remains to be measured.
 Add an independent mixed-row host-mask forward/backward regression across
 Q2/4/8/16; extend GPU primitive controls to mixed and invalid second rows.
 Affected rustfmt and all-target CUDA Clippy -D warnings PASS.
+
+## V5-E33 - unchanged current-source D9 and CPU/CUDA qualification PASS
+
+Source 003d296e094c28fc488cd56ef0944b60299983f9. Fresh actual CLI qualifiers:
+CPU native exit 0/PASS; CUDA native exit 0/PASS. Both original D9 fields are
+true: exact outputs/all gradients and post-AdamW parameters/moments. Historical
+d970049 D9 remains FAIL. All seven prior qualification reports are byte-identical.
+No tolerance, precision setting, environment knob, architecture, parameter,
+config or execution-contract change. The repair is tensor-layout implementation;
+Clone contamination remains refuted, not retroactively claimed as the cause.
+
+Both qualifiers cover all nine Q2/4/8 x R1/2/4 shapes, 50 resident Q8/R4
+updates, zero null error, frozen baseline parameters, graph-free baseline,
+complete checkpoint/moment restoration and exact continued AdamW update.
+FP32, microbatch2, 7,162,896 parameters, unchanged configuration and
+v5_synchronized_execution_profile_v1 contract/digest. No learning data used.
+Qualifiers ran while the remaining focused-example compilation was active;
+timings are engineering observations under that operational condition, not
+online latency or a pilot practical-gate result. CUDA wall 37.6270178s.
+
+Fresh standalone graph CLI checks PASS: two current-source valid artifacts;
+six required stale/config/tamper/copied/naked/historical-source refusals exit1.
+Full release workspace and repeated independent snapshot diagnostic are still
+in progress. No FIT drill, Stage A/B, DEV or confirmation evaluation run.
+Native data quota infeasibility remains independent of this cleared CUDA gate.
