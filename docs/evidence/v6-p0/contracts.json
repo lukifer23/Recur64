@@ -1,0 +1,15 @@
+{
+ "schema":"v6_p0_contracts_v1",
+ "architecture":"v6_branch_full_information_backup_v1",
+ "packet_schema":"v6_evidence_packet_v2",
+ "reader_contract":"full_information_initialization_then_shared_refinement",
+ "auxiliary_contract":"eligible_observed_branches_available_class_mean_v1",
+ "null_contract":"exact_B0_invariance_not_structural_benefit",
+ "policy_contract":"v6_ranked_two_hash_two_reply_v1",
+ "p0_arms":["shared_backup","one_pass"],
+ "future_compute_control_implemented":false,
+ "seed":6300,"updates":200,"effective_batch":24,"physical_microbatch":2,
+ "corrected_root_unit":"correct_in_both_policies",
+ "harmed_root_unit":"wrong_in_either_policy",
+ "scientific_campaign_authorized":false
+}
