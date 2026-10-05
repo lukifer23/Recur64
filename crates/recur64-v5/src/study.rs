@@ -30,7 +30,7 @@ pub struct EvaluationIdentity {
     pub device: String,
 }
 
-pub const BASELINE_EVAL_SCHEMA: &str = "v5_final_baseline_evaluation_v1";
+pub const BASELINE_EVAL_SCHEMA: &str = "v5_final_baseline_evaluation_v2";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BaselineRecord {
@@ -73,6 +73,7 @@ pub struct BaselineEvaluation {
 impl BaselineEvaluation {
     pub fn validate_against_data(&self, data: &V5Data) -> anyhow::Result<()> {
         self.validate()?;
+        data.require_role(crate::native_data_v2::Role::Dev)?;
         data.verify_custody()?;
         let positions: BTreeMap<_, _> = data
             .dev
@@ -82,13 +83,13 @@ impl BaselineEvaluation {
         for row in &self.records {
             let position = positions
                 .get(row.position_id.as_str())
-                .ok_or_else(|| anyhow::anyhow!("baseline record is not inherited DEV"))?;
+                .ok_or_else(|| anyhow::anyhow!("baseline record is not V5_HP_DEV_V2"))?;
             anyhow::ensure!(
                 row.legal_actions == position.legal
                     && row.correct_indices == position.correct
                     && row.family == position.family
                     && row.mate_depth == position.mate_depth,
-                "baseline labels/actions/cell disagree with authoritative P25 data"
+                "baseline labels/actions/cell disagree with authoritative V5_HP_DEV_V2 data"
             );
         }
         Ok(())
@@ -105,9 +106,9 @@ impl BaselineEvaluation {
                 && self.seed == crate::stage::PILOT_SEED
                 && matches!(self.microbatch, 1 | 2)
                 && self.precision == "fp32"
-                && self.scope == "all_dev_4403"
-                && self.records.len() == 4_403
-                && self.root_encoder_examples == 4_403
+                && self.scope == "all_dev_4500"
+                && self.records.len() == 4_500
+                && self.root_encoder_examples == 4_500
                 && self.returned_encoder_examples == 0
                 && self.exact_queries == 0
                 && self.shared_core_applications == 0,
@@ -133,8 +134,8 @@ impl BaselineEvaluation {
             }
         }
         anyhow::ensure!(
-            primary == 507,
-            "final baseline primary cell must contain 507 positions"
+            primary == 750,
+            "final baseline primary cell must contain 750 positions"
         );
         let mut sorted: Vec<_> = ids.into_iter().collect();
         sorted.sort_unstable();
@@ -160,6 +161,7 @@ pub fn evaluate_final_baseline<B: Backend>(
     fingerprint: String,
     device: &B::Device,
 ) -> anyhow::Result<BaselineEvaluation> {
+    data.require_role(crate::native_data_v2::Role::Dev)?;
     data.verify_custody()?;
     anyhow::ensure!(
         matches!(identity.microbatch, 1 | 2),
@@ -732,6 +734,7 @@ pub fn evaluate_reader<B: Backend>(
         "evaluation microbatch must be the frozen 2 or authorized fallback 1"
     );
     anyhow::ensure!(!indices.is_empty(), "empty evaluation scope");
+    data.require_role(crate::native_data_v2::Role::Dev)?;
     data.verify_custody()?;
     let mut by_cell: BTreeMap<(String, u8), Vec<usize>> = BTreeMap::new();
     for &index in indices {
@@ -957,9 +960,11 @@ pub fn evaluate_r8<B: Backend>(
     mut identity: EvaluationIdentity,
     device: &B::Device,
 ) -> anyhow::Result<EvaluationBundle> {
+    data.require_role(crate::native_data_v2::Role::Dev)?;
+    data.verify_custody()?;
     anyhow::ensure!(
-        indices.len() == 507,
-        "R8 diagnostic requires all 507 KQRvK M3 positions"
+        indices.len() == 750,
+        "R8 diagnostic requires all 750 KQRvK M3 positions"
     );
     anyhow::ensure!(
         indices.iter().all(|&index| {

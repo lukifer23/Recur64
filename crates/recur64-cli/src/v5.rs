@@ -20,6 +20,8 @@ use serde::Serialize;
 
 #[derive(Subcommand)]
 pub enum V5Cmd {
+    /// Print the frozen recipe-v3 contract without initializing or training a model.
+    Recipe(RecipeArgs),
     /// Detect the local execution environment; this does not qualify a backend.
     Doctor(DoctorArgs),
     /// Mandatory exhaustive native-data capacity stop gate; emits no split.
@@ -29,7 +31,7 @@ pub enum V5Cmd {
     Data(DataCmd),
     /// Print exact V5 model and contract identity.
     ModelInfo(ModelInfoArgs),
-    /// Verify measured HP-native custody (locked until complete DATA-B binding).
+    /// Verify exact local bytes against a measured V2 role manifest and seal.
     Custody(CustodyArgs),
     /// Generate or audit exact acquired-graph manifests.
     #[command(subcommand)]
@@ -42,9 +44,9 @@ pub enum V5Cmd {
     DiagnoseProfileParity(QualifyArgs),
     /// Run the disposable 24-position reader optimization drill.
     Drill(DrillArgs),
-    /// Evaluate one inherited DEV family/depth cell at update 0 or 800.
+    /// Evaluate one V5_HP_DEV_V2 family/depth cell at update 0 or 800.
     Evaluate(EvaluateArgs),
-    /// Record final Stage A B0 on all inherited DEV positions, at Q0.
+    /// Record final Stage A B0 on all V5_HP_DEV_V2 positions, at Q0.
     EvaluateBaseline(EvaluateBaselineArgs),
     /// Merge the six deterministic DEV cell shards into the complete matrix.
     EvalMerge(EvalMergeArgs),
@@ -54,6 +56,12 @@ pub enum V5Cmd {
     PilotReport(PilotReportArgs),
     /// Run the conditionally authorized primary-cell Q8/R8 forward diagnostic.
     ExtraLoops(ExtraLoopsArgs),
+}
+
+#[derive(Args)]
+pub struct RecipeArgs {
+    #[arg(long)]
+    output: PathBuf,
 }
 
 #[derive(Args)]
@@ -76,6 +84,19 @@ pub enum DataCmd {
     Pool(DataPoolArgs),
     /// Select, label and independently audit an exact split.
     Generate(DataGenerateArgs),
+    /// Verify actual local bytes, role refusals and sealed custody; no model.
+    Verify(DataVerifyArgs),
+}
+#[derive(Args)]
+pub struct DataVerifyArgs {
+    #[arg(long)]
+    train: PathBuf,
+    #[arg(long)]
+    dev: PathBuf,
+    #[arg(long)]
+    confirm: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
 }
 #[derive(Args)]
 pub struct DataPoolArgs {
@@ -110,6 +131,8 @@ pub struct ModelInfoArgs {
 
 #[derive(Args)]
 pub struct CustodyArgs {
+    #[arg(long, default_value = "train")]
+    split: String,
     #[arg(long)]
     data: PathBuf,
     #[arg(long)]
@@ -178,6 +201,9 @@ enum StageArg {
 
 #[derive(Args)]
 pub struct TrainArgs {
+    /// Independent DEV file; required only to validate Stage B baseline evidence.
+    #[arg(long)]
+    dev_data: Option<PathBuf>,
     #[arg(long, value_enum)]
     stage: StageArg,
     #[arg(long, value_enum)]
@@ -224,6 +250,12 @@ pub struct QualifyArgs {
 
 #[derive(Args)]
 pub struct DrillArgs {
+    #[arg(long)]
+    cpu_qualification: PathBuf,
+    #[arg(long)]
+    dev_data: PathBuf,
+    #[arg(long)]
+    confirm_data: PathBuf,
     #[arg(long, value_enum)]
     device: DeviceArg,
     #[arg(long)]
@@ -382,19 +414,10 @@ fn model_info(a: ModelInfoArgs) -> anyhow::Result<()> {
 }
 
 fn custody(a: CustodyArgs) -> anyhow::Result<()> {
-    let data = V5Data::load(&a.data)?;
-    let report = serde_json::json!({
-        "schema": "v5_custody_report_v1",
-        "source": a.data,
-        "train_digest": data.targets.digest,
-        "positions": data.targets.positions.len(),
-        "fit": data.fit.len(),
-        "dev": data.dev.len(),
-        "fit_digest": recur64_v5::data::FIT_DIGEST,
-        "dev_digest": recur64_v5::data::DEV_DIGEST,
-        "canonical_disjoint": true,
-        "sealed_inputs_evaluated": false
-    });
+    let source = source_sha()?;
+    let role = recur64_v5::native_data_v2::Role::parse(&a.split)?;
+    let manifest = recur64_v5::data::custody(&a.data, role)?;
+    let report = serde_json::json!({"schema":"v5_hp_custody_report_v2","consumer_source_sha":source,"manifest":manifest,"pass":true,"sealed_inputs_evaluated":false});
     println!("{}", serde_json::to_string_pretty(&report)?);
     if let Some(path) = a.output {
         write_json(&path, &report)?;
@@ -641,7 +664,11 @@ where
             })?;
             let baseline: recur64_v5::study::BaselineEvaluation =
                 serde_json::from_slice(&std::fs::read(baseline_path)?)?;
-            baseline.validate_against_data(&data)?;
+            let dev_path = a.dev_data.as_deref().ok_or_else(|| {
+                anyhow::anyhow!("Stage B requires the independent --dev-data V5_HP_DEV_V2 file")
+            })?;
+            let dev = recur64_v5::data::V5Data::load_dev(dev_path)?;
+            baseline.validate_against_data(&dev)?;
             anyhow::ensure!(
                 baseline.model_hash == meta.model_hash
                     && baseline.source_sha == source
@@ -817,6 +844,12 @@ where
 {
     let source = source_sha()?;
     let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
+    let _ = qualification_seconds(&a.cpu_qualification, DeviceArg::Cpu, a.microbatch, &source)?;
+    anyhow::ensure!(
+        matches!(a.device, DeviceArg::Cuda),
+        "this pre-training drill requires the current qualified RTX 2050 CUDA backend"
+    );
+    recur64_v5::data::lineage_custody(&a.data, &a.dev_data, &a.confirm_data)?;
     anyhow::ensure!(matches!(a.q, 8 | 16), "--q must be 8 or the conditional 16");
     if a.q == 16 {
         let q8_path = a
@@ -887,7 +920,7 @@ where
     );
     let source = source_sha()?;
     let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
-    let data = V5Data::load(&a.data)?;
+    let data = V5Data::load_dev(&a.data)?;
     let indices: Vec<usize> = data
         .dev
         .iter()
@@ -897,11 +930,11 @@ where
                 && data.position(index).mate_depth == a.mate_depth
         })
         .collect();
-    anyhow::ensure!(!indices.is_empty(), "selected inherited DEV cell is empty");
+    anyhow::ensure!(!indices.is_empty(), "selected V5_HP_DEV_V2 cell is empty");
     if a.family == "KQRvK" && a.mate_depth == 3 {
         anyhow::ensure!(
-            indices.len() == 507,
-            "primary KQRvK M3 cell must contain 507 positions"
+            indices.len() == 750,
+            "primary KQRvK M3 cell must contain 750 positions"
         );
     }
     let device = B::Device::default();
@@ -917,7 +950,7 @@ where
         model_hash: meta.model_hash,
         final_update: a.update,
         scope: format!("{}_M{}", a.family, a.mate_depth),
-        split: "inherited_v4_dev".into(),
+        split: "V5_HP_DEV_V2".into(),
         microbatch: a.microbatch,
         device: backend.into(),
     };
@@ -961,7 +994,7 @@ where
     let source = source_sha()?;
     let qualified_seconds =
         qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
-    let data = V5Data::load(&a.data)?;
+    let data = V5Data::load_dev(&a.data)?;
     let projected = data.dev.len().div_ceil(a.microbatch) as f64 * qualified_seconds;
     println!(
         "projected final B0 evaluation: {} DEV positions, conservative {:.2} minutes",
@@ -986,8 +1019,8 @@ where
         config_digest: meta.config_digest,
         model_hash: meta.model_hash,
         final_update: meta.update,
-        scope: "all_dev_4403".into(),
-        split: "inherited_v4_dev".into(),
+        scope: "all_dev_4500".into(),
+        split: "V5_HP_DEV_V2".into(),
         microbatch: a.microbatch,
         device: backend.into(),
     };
@@ -1048,7 +1081,7 @@ fn eval_merge(a: EvalMergeArgs) -> anyhow::Result<()> {
     let merged = merge_cell_bundles(bundles)?;
     write_json(&a.output, &merged)?;
     println!(
-        "merged {} records over all 4,403 DEV positions; graph {}",
+        "merged {} records over all 4,500 DEV positions; graph {}",
         merged.records.len(),
         merged.graph_manifest_hash
     );
@@ -1099,7 +1132,7 @@ fn require_synchronized_qualification(value: &serde_json::Value) -> anyhow::Resu
 fn pilot_report(a: PilotReportArgs) -> anyhow::Result<()> {
     let bundle: EvaluationBundle = serde_json::from_slice(&std::fs::read(&a.evaluation)?)?;
     anyhow::ensure!(
-        bundle.scope == "all_dev_4403" && bundle.final_update == 800,
+        bundle.scope == "all_dev_4500" && bundle.final_update == 800,
         "pilot classification requires the complete fixed update-800 DEV evaluation"
     );
     qualifying_report(&a.cpu_qualification, "cpu", &bundle)?;
@@ -1141,12 +1174,12 @@ where
     );
     let main: EvaluationBundle = serde_json::from_slice(&std::fs::read(&a.evaluation)?)?;
     anyhow::ensure!(
-        main.scope == "all_dev_4403" && main.final_update == 800,
+        main.scope == "all_dev_4500" && main.final_update == 800,
         "R8 requires the complete update-800 evaluation"
     );
     let source = source_sha()?;
     let _ = qualification_seconds(&a.qualification, a.device, a.microbatch, &source)?;
-    let data = V5Data::load(&a.data)?;
+    let data = V5Data::load_dev(&a.data)?;
     let indices: Vec<usize> = data
         .dev
         .iter()
@@ -1169,7 +1202,7 @@ where
         model_hash: meta.model_hash,
         final_update: 800,
         scope: String::new(),
-        split: "inherited_v4_dev".into(),
+        split: "V5_HP_DEV_V2".into(),
         microbatch: a.microbatch,
         device: backend.into(),
     };
@@ -1204,6 +1237,13 @@ fn extra_loops(a: ExtraLoopsArgs) -> anyhow::Result<()> {
 
 pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
     match cmd {
+        V5Cmd::Recipe(a) => {
+            let source = source_sha()?;
+            let recipe = Recipe::stage_a(source.clone(), 2)?;
+            let contract = recur64_v5::stage::frozen_recipe_contract(&source)?;
+            let report = serde_json::json!({"schema":"v5_recipe_preregistration_v3","contract_digest":recur64_v5::native_data_v2::digest(&contract)?,"contract":contract,"stage_a_recipe_digest":recipe.digest()?,"stage_a_recipe":recipe,"stage_b_initialization":"unbound until future authorized Stage A; no weights initialized","training_run":false});
+            write_json(&a.output, &report)
+        }
         V5Cmd::Doctor(a) => doctor(a),
         V5Cmd::Data(DataCmd::Pool(a)) => recur64_v5::native_data_v2::pool_shard(
             &source_sha()?,
@@ -1223,6 +1263,14 @@ pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
                 a.threads,
             )?;
             Ok(())
+        }
+        V5Cmd::Data(DataCmd::Verify(a)) => {
+            let source = source_sha()?;
+            let report = recur64_v5::data::verify_local_boundaries(&a.train, &a.dev, &a.confirm)?;
+            write_json(
+                &a.output,
+                &serde_json::json!({"consumer_source_sha":source,"tests":report}),
+            )
         }
         V5Cmd::DataCapacity(a) => {
             anyhow::ensure!(!a.output.exists(), "capacity report already exists");

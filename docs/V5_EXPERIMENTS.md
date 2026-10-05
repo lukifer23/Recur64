@@ -811,3 +811,7 @@ Owner authorizes v5_hp_data_v2, heavy-only 27000/4500/4500, new seeds and split 
 ## V5-E37 - measured V2 generation and independent regeneration
 
 Producer 738db983084a998664ce962f87fa3c4a6153f526 generated TRAIN27000, DEV4500 and CONFIRM4500 with exact cell quotas. 36000 independent original audits and 36000 fresh regeneration audits; zero failures. All three regenerated artifacts are byte-identical after full re-selection/re-labeling/re-audit from verified exhaustive pools. All three FEN/canonical intersections are zero. CONFIRM sealed=true/evaluated=false. Compact manifests, exact-byte bindings, audits, disjointness and seal are under docs/evidence/v5/data/v2/. Raw files remain ignored under runs/v5/data/v2/. No production loader binding or fresh consumer qualification claimed yet.
+
+## V5-E38 - measured data-v2/recipe-v3 integration
+
+After pushed DATA-V2-B, production constants bind exact measured V2 bytes/manifests. TRAIN-only/DEV-only scientific entry points, sealed CONFIRM custody, nine-cell sampler exposure and independent DEV4500/primary750 expectations are implemented. Recipe-v3 and evaluation/drill schema amendments are explicit. Model/math/configuration/mask repair are unchanged. Current-source qualification and final custody/drill remain pending; no Stage A/B or DEV science run.

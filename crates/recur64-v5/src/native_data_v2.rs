@@ -316,6 +316,17 @@ fn expected_cells(role: Role) -> BTreeMap<String, usize> {
         .flat_map(|f| (1..=3).map(move |d| (format!("{f} M{d}"), role.quota())))
         .collect()
 }
+fn validate_quotas(
+    role: Role,
+    counts: &BTreeMap<String, usize>,
+    total: usize,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        *counts == expected_cells(role) && total == role.families().len() * 3 * role.quota(),
+        "wrong total/cell quota"
+    );
+    Ok(())
+}
 pub fn overlap(a: &Dataset, b: &Dataset) -> Overlap {
     let af: BTreeSet<_> = a.targets.positions.iter().map(|p| &p.fen).collect();
     let ac: BTreeSet<_> = a.targets.positions.iter().map(|p| &p.canon).collect();
@@ -375,12 +386,11 @@ impl Dataset {
                 && m.sealed == (role == Role::Confirm),
             "incomplete audit/seal or evaluated artifact"
         );
+        validate_quotas(role, &m.cell_counts, m.records)?;
         anyhow::ensure!(
-            m.cell_counts == expected_cells(role)
-                && cell_counts(&self.targets.positions) == m.cell_counts
-                && self.targets.positions.len() == m.records
-                && m.records == role.families().len() * 3 * role.quota(),
-            "wrong total/cell quota"
+            cell_counts(&self.targets.positions) == m.cell_counts
+                && self.targets.positions.len() == m.records,
+            "records disagree with measured quotas"
         );
         anyhow::ensure!(
             digest(&self.targets.positions)? == m.content_digest
@@ -670,8 +680,21 @@ mod tests {
         assert!(merge_shards(&[], "source", "KQRvK").is_err());
     }
     fn shards() -> Vec<PoolShard> {
-        let canon = crate::native_data::selection_key(1, "test");
-        assert_eq!(canon.len(), 64);
+        let mut candidates: Vec<_> = [
+            "7k/5Q2/5K2/6R1/8/8/8/8 w - - 0 1",
+            "7k/5Q2/5K2/1R6/8/8/8/8 w - - 0 1",
+        ]
+        .into_iter()
+        .map(|fen| {
+            let canon = recur64_runtime::proof::generator::canonical_key(fen);
+            Candidate {
+                fen: fen_from_canon(&canon),
+                canon,
+                depth: 1,
+            }
+        })
+        .collect();
+        candidates.sort_by(|a, b| a.canon.cmp(&b.canon));
         (0..64)
             .step_by(8)
             .map(|start| {
@@ -689,7 +712,7 @@ mod tests {
                         family: "KQRvK".into(),
                         ..Default::default()
                     },
-                    candidates: vec![],
+                    candidates: candidates.clone(),
                     candidate_digest: String::new(),
                 };
                 s.candidate_digest = s.scientific_digest().unwrap();
@@ -706,6 +729,7 @@ mod tests {
             merge_shards(&a, &"a".repeat(40), "KQRvK").unwrap(),
             merge_shards(&b, &"a".repeat(40), "KQRvK").unwrap()
         );
+        assert_eq!(merge_shards(&a, &"a".repeat(40), "KQRvK").unwrap().len(), 2);
         let restored: PoolShard =
             serde_json::from_slice(&serde_json::to_vec(&a[0]).unwrap()).unwrap();
         assert_eq!(restored.scientific_digest().unwrap(), a[0].candidate_digest);
@@ -740,5 +764,26 @@ mod tests {
         let mut bad = good.clone();
         bad[0].fen = bad[0].fen.replace("0 1", "1 1");
         assert!(audit_records(&bad).is_err());
+        let mut bad = good.clone();
+        bad[0].family = "KRRvK".into();
+        assert!(audit_records(&bad).is_err());
+        let mut bad = good.clone();
+        bad[0].mate_depth = 2;
+        assert!(audit_records(&bad).is_err());
+        let mut bad = good.clone();
+        bad.push(bad[0].clone());
+        bad[1].id = "other".into();
+        assert!(audit_records(&bad).is_err());
+    }
+    #[test]
+    fn strict_total_and_cell_quota_enforcement() {
+        let counts = expected_cells(Role::Train);
+        validate_quotas(Role::Train, &counts, 27000).unwrap();
+        assert!(validate_quotas(Role::Train, &counts, 26999).is_err());
+        let mut bad = counts;
+        bad.insert("KQQvK M1".into(), 2999);
+        bad.insert("KQQvK M2".into(), 3001);
+        assert!(validate_quotas(Role::Train, &bad, 27000).is_err());
+        assert!(validate_quotas(Role::Dev, &bad, 27000).is_err());
     }
 }

@@ -20,7 +20,7 @@ use crate::loss::correct_set_loss;
 use crate::model::{BaseOutput, CounterfactualRelationalLoop, RootInputs, Treatment, V5Inputs};
 use crate::stage::{PILOT_SEED, baseline_fingerprint};
 
-pub const DRILL_SCHEMA: &str = "v5_engineering_drill_v1";
+pub const DRILL_SCHEMA: &str = "v5_engineering_drill_v2";
 pub const DRILL_UPDATES: u64 = 200;
 pub const DRILL_LR: f64 = 1.0e-3;
 pub const DRILL_WARMUP: u64 = 20;
@@ -136,6 +136,7 @@ fn selection_hash(id: &str) -> [u8; 32] {
 }
 
 pub fn select_positions(data: &V5Data) -> anyhow::Result<Vec<usize>> {
+    data.require_role(crate::native_data_v2::Role::Train)?;
     let mut cells: BTreeMap<(String, u8), Vec<usize>> = BTreeMap::new();
     for &index in &data.fit {
         let position = data.position(index);
@@ -247,6 +248,7 @@ pub fn run<B: AutodiffBackend>(
         matches!(microbatch, 1 | 2),
         "drill microbatch must be 1 or 2"
     );
+    data.require_role(crate::native_data_v2::Role::Train)?;
     data.verify_custody()?;
     let selected = select_positions(data)?;
     <B as Backend>::seed(device, PILOT_SEED);

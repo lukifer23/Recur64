@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::graph::Schedule;
 use crate::splitmix64;
 
-pub const EVAL_SCHEMA: &str = "v5_reader_evaluation_v1";
-pub const REPORT_SCHEMA: &str = "v5_reader_pilot_report_v1";
+pub const EVAL_SCHEMA: &str = "v5_reader_evaluation_v2";
+pub const REPORT_SCHEMA: &str = "v5_reader_pilot_report_v2";
 pub const EVAL_SEED: u64 = 0x7A50_E001;
 pub const SHUFFLE_SEED: u64 = 0x7A50_E002;
 pub const COMPOSITION_SEED: u64 = 0x7A50_E003;
@@ -388,8 +388,8 @@ pub fn classify_pilot(
     positions.dedup();
     if require_full_dev {
         anyhow::ensure!(
-            positions.len() == 4_403,
-            "pilot report requires all 4,403 DEV positions"
+            positions.len() == 4_500,
+            "pilot report requires all 4,500 DEV positions"
         );
     }
     let schedules = [Schedule::UniformFrontierV1, Schedule::BaseRankedDepthV1];
@@ -609,8 +609,8 @@ pub fn merge_cell_bundles(mut bundles: Vec<EvaluationBundle>) -> anyhow::Result<
         composition_partitions.extend(bundle.composition_partitions);
     }
     anyhow::ensure!(
-        positions.len() == 4_403,
-        "merged evaluation is not the 4,403-position DEV set"
+        positions.len() == 4_500,
+        "merged evaluation is not the 4,500-position DEV set"
     );
     let primary: std::collections::HashSet<&str> = records
         .iter()
@@ -618,8 +618,28 @@ pub fn merge_cell_bundles(mut bundles: Vec<EvaluationBundle>) -> anyhow::Result<
         .map(|x| x.position_id.as_str())
         .collect();
     anyhow::ensure!(
-        primary.len() == 507,
-        "KQRvK M3 count is not the expected 507"
+        primary.len() == 750,
+        "KQRvK M3 count is not the expected 750"
+    );
+    let mut cells: BTreeMap<(String, u8), std::collections::BTreeSet<String>> = BTreeMap::new();
+    for row in &records {
+        cells
+            .entry((row.family.clone(), row.mate_depth))
+            .or_default()
+            .insert(row.position_id.clone());
+    }
+    let expected: std::collections::BTreeSet<_> = ["KQRvK", "KRRvK"]
+        .into_iter()
+        .flat_map(|f| (1..=3).map(move |d| (f.to_string(), d)))
+        .collect();
+    anyhow::ensure!(
+        cells
+            .keys()
+            .cloned()
+            .collect::<std::collections::BTreeSet<_>>()
+            == expected
+            && cells.values().all(|s| s.len() == 750),
+        "DEV merge requires all six exact 750-record cells"
     );
     Ok(EvaluationBundle {
         schema: EVAL_SCHEMA.into(),
@@ -630,7 +650,7 @@ pub fn merge_cell_bundles(mut bundles: Vec<EvaluationBundle>) -> anyhow::Result<
         dev_digest: first.dev_digest,
         model_hash: first.model_hash,
         graph_manifest_hash: format!("{:x}", shard_hash.finalize()),
-        scope: "all_dev_4403".into(),
+        scope: "all_dev_4500".into(),
         split: first.split,
         seed: first.seed,
         final_update: first.final_update,
@@ -697,7 +717,7 @@ pub fn r8_report(main: &EvaluationBundle, r8: &EvaluationBundle) -> anyhow::Resu
     anyhow::ensure!(
         main.schema == EVAL_SCHEMA
             && r8.schema == EVAL_SCHEMA
-            && main.scope == "all_dev_4403"
+            && main.scope == "all_dev_4500"
             && r8.scope == "KQRvK_M3_R8_conditional"
             && main.final_update == 800
             && r8.final_update == 800
@@ -729,7 +749,7 @@ pub fn r8_report(main: &EvaluationBundle, r8: &EvaluationBundle) -> anyhow::Resu
             .filter(|record| record.schedule == schedule && record.q == 8 && record.r == 8)
             .collect();
         anyhow::ensure!(
-            r4.len() == 507 && r8_records.len() == 507,
+            r4.len() == 750 && r8_records.len() == 750,
             "incomplete R4/R8 schedule"
         );
         let r4_map: HashMap<&str, &EvalRecord> = r4

@@ -1,4 +1,4 @@
-//! HP-native data contracts and exact feasibility gate. Emits no accepted split.
+//! Historical V1 capacity gate and shared selection/independent audit semantics.
 use recur64_runtime::proof::audit::{AuditMemo, audit_position};
 use recur64_runtime::proof::generator::{
     Candidate, canonical_key, enumerate_pool, label_exact_pool,
@@ -8,12 +8,10 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// No production V5 data identity can be bound before complete measured DATA-B.
-/// P25 is retired, and no replacement digest is fabricated.
+/// V2 production bindings were adopted only after complete measured DATA-V2-B.
+/// The V1 capacity census and P25 retirement remain historical.
 pub fn require_measured_binding() -> anyhow::Result<()> {
-    anyhow::bail!(
-        "V5 HP-native lineage is not completely generated/audited/bound; all scientific data loaders are locked. P25 is no longer a V5 prerequisite or accepted replacement"
-    )
+    crate::data::verify_preregistered_bindings()
 }
 
 pub const FAMILY: &str = "v5_hp_exact_endgames_v1";

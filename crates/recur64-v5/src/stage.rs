@@ -22,7 +22,7 @@ use crate::graph::{EpisodeKey, Schedule, acquire};
 use crate::loss::correct_set_loss;
 use crate::model::{BaseOutput, CounterfactualRelationalLoop, RootInputs, Treatment, V5Inputs};
 
-pub const RECIPE_SCHEMA: &str = "v5_stage_recipe_v1";
+pub const RECIPE_SCHEMA: &str = "v5_stage_recipe_v3";
 pub const CHECKPOINT_SCHEMA: &str = "v5_training_checkpoint_v1";
 pub const STAGE_A_UPDATES: u64 = 1_200;
 pub const STAGE_B_UPDATES: u64 = 800;
@@ -63,6 +63,29 @@ pub fn reader_conditions() -> Vec<Condition> {
     out
 }
 
+/// Preregistered contract identity; future Stage B weight bindings do not exist
+/// until the owner separately authorizes and completes Stage A.
+pub fn frozen_recipe_contract(source: &str) -> anyhow::Result<serde_json::Value> {
+    crate::data::verify_preregistered_bindings()?;
+    Ok(serde_json::json!({
+        "schema":"v5_stage_recipe_v3_contract", "scientific_recipe":RECIPE_SCHEMA,
+        "source_sha":source,"architecture":ARCHITECTURE,
+        "config_digest":V5Config::default().scientific_digest()?,
+        "data_contract":crate::native_data_v2::CONTRACT,
+        "train_identity":crate::native_data_v2::Role::Train.identity(),
+        "dev_identity":crate::native_data_v2::Role::Dev.identity(),
+        "train_digest":TRAIN_DIGEST,"train_record_content_digest":crate::data::TRAIN_CONTENT_DIGEST,
+        "dev_digest":DEV_DIGEST,"dev_record_content_digest":crate::data::DEV_CONTENT_DIGEST,
+        "train_count":27000,"train_cells":crate::data::binding(crate::native_data_v2::Role::Train)?.manifest.cell_counts,
+        "dev_count":4500,"primary_cell_count":750,"sampler":CELL_SAMPLER,
+        "seed":PILOT_SEED,"precision":"fp32","optimizer":OPTIMIZER_CONTRACT,
+        "loss":crate::config::CORRECT_SET_LOSS,"warmup":80,"peak_lr":3e-4,
+        "physical_microbatch":2,
+        "stage_a":{"updates":1200,"effective_batch":64,"q":0,"reader_execution":false},
+        "stage_b":{"updates":800,"effective_batch":36,"conditions":reader_conditions(),"examples_per_condition":2}
+    }))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipe {
     pub schema: String,
@@ -82,6 +105,10 @@ pub struct Recipe {
     pub optimizer: String,
     pub loss: String,
     pub sampler: String,
+    pub data_contract: String,
+    pub train_identity: String,
+    pub dev_identity: String,
+    pub train_cell_count: usize,
     pub train_digest: String,
     pub fit_digest: String,
     pub dev_digest: String,
@@ -150,6 +177,10 @@ impl Recipe {
             optimizer: OPTIMIZER_CONTRACT.into(),
             loss: crate::config::CORRECT_SET_LOSS.into(),
             sampler: CELL_SAMPLER.into(),
+            data_contract: crate::native_data_v2::CONTRACT.into(),
+            train_identity: crate::native_data_v2::Role::Train.identity().into(),
+            dev_identity: crate::native_data_v2::Role::Dev.identity().into(),
+            train_cell_count: 9,
             train_digest: TRAIN_DIGEST.into(),
             fit_digest: FIT_DIGEST.into(),
             dev_digest: DEV_DIGEST.into(),
@@ -189,7 +220,11 @@ impl Recipe {
             "optimizer, schedule, precision, loss or sampler differs from the frozen recipe"
         );
         anyhow::ensure!(
-            self.train_digest == TRAIN_DIGEST
+            self.data_contract == crate::native_data_v2::CONTRACT
+                && self.train_identity == crate::native_data_v2::Role::Train.identity()
+                && self.dev_identity == crate::native_data_v2::Role::Dev.identity()
+                && self.train_cell_count == 9
+                && self.train_digest == TRAIN_DIGEST
                 && self.fit_digest == FIT_DIGEST
                 && self.dev_digest == DEV_DIGEST,
             "dataset identity differs from the frozen recipe"
@@ -226,7 +261,7 @@ impl Recipe {
     pub fn digest(&self) -> anyhow::Result<String> {
         self.validate()?;
         let mut hash = Sha256::new();
-        hash.update(b"recur64.v5.stage_recipe.v1\0");
+        hash.update(b"recur64.v5.stage_recipe.v3\0");
         hash.update(serde_json::to_vec(self)?);
         Ok(format!("{:x}", hash.finalize()))
     }
@@ -239,6 +274,9 @@ pub struct StepRecord {
     pub loss: f64,
     pub wall_seconds: f64,
     pub graph_manifest_digests: Vec<String>,
+    pub cell_exposure: std::collections::BTreeMap<String, u64>,
+    pub condition_cell_exposure:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, u64>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -387,6 +425,7 @@ impl<B: AutodiffBackend> Trainer<B> {
             self.updates_done < self.recipe.updates,
             "the frozen stage is complete"
         );
+        data.require_role(crate::native_data_v2::Role::Train)?;
         data.verify_custody()?;
         let started = Instant::now();
         let update = self.updates_done;
@@ -399,11 +438,19 @@ impl<B: AutodiffBackend> Trainer<B> {
         let mut accumulator = GradientsAccumulator::<CounterfactualRelationalLoop<B>>::new();
         let mut loss_total = 0.0;
         let mut graph_digests = Vec::new();
+        let mut cell_exposure = std::collections::BTreeMap::new();
+        let mut condition_cell_exposure = std::collections::BTreeMap::new();
 
         match self.recipe.stage {
             Stage::BaselineA => {
                 let indices =
                     stage_a_indices(data, update, self.recipe.seed, self.recipe.effective_batch);
+                for &index in &indices {
+                    let p = data.position(index);
+                    *cell_exposure
+                        .entry(format!("{} M{}", p.family, p.mate_depth))
+                        .or_insert(0) += 1;
+                }
                 for chunk in indices.chunks(self.recipe.physical_microbatch) {
                     let roots = data.roots(chunk)?;
                     for (&index, root) in chunk.iter().zip(&roots) {
@@ -427,6 +474,14 @@ impl<B: AutodiffBackend> Trainer<B> {
                 for (condition_index, condition) in self.recipe.conditions.iter().enumerate() {
                     let selected =
                         condition_indices(data, update, self.recipe.seed, condition_index);
+                    let mut exposure = std::collections::BTreeMap::new();
+                    for &(index, _) in &selected {
+                        let p = data.position(index);
+                        let cell = format!("{} M{}", p.family, p.mate_depth);
+                        *cell_exposure.entry(cell.clone()).or_insert(0) += 1;
+                        *exposure.entry(cell).or_insert(0) += 1;
+                    }
+                    condition_cell_exposure.insert(format!("{condition_index:02}"), exposure);
                     for selected_chunk in selected.chunks(self.recipe.physical_microbatch) {
                         let indices: Vec<usize> = selected_chunk.iter().map(|x| x.0).collect();
                         let roots = data.roots(&indices)?;
@@ -507,6 +562,8 @@ impl<B: AutodiffBackend> Trainer<B> {
             loss: loss_total,
             wall_seconds: started.elapsed().as_secs_f64(),
             graph_manifest_digests: graph_digests,
+            cell_exposure,
+            condition_cell_exposure,
         };
         self.updates_done += 1;
         self.history.push(record.clone());
@@ -737,6 +794,41 @@ mod tests {
     use burn::optim::{GradientsParams, Optimizer};
 
     type B = burn::backend::Autodiff<burn::backend::Flex>;
+
+    #[test]
+    fn recipe_v3_and_nine_cell_exposure_are_frozen_without_training() {
+        let a = Recipe::stage_a("test-source".into(), 2).unwrap();
+        assert_eq!(a.schema, "v5_stage_recipe_v3");
+        assert_eq!(a.train_cell_count, 9);
+        assert_eq!((a.updates, a.effective_batch, a.warmup), (1200, 64, 80));
+        assert_eq!(a.peak_lr, 3e-4);
+        assert!(a.conditions.is_empty());
+        let b =
+            Recipe::stage_b("test-source".into(), 2, "initial".into(), "baseline".into()).unwrap();
+        assert_eq!(
+            (b.updates, b.effective_batch, b.conditions.len()),
+            (800, 36, 18)
+        );
+        assert_eq!(b.peak_lr, a.peak_lr);
+        let mut old = a.clone();
+        old.schema = "v5_stage_recipe_v1".into();
+        assert!(old.validate().is_err());
+        let cells: Vec<_> = crate::native_data_v2::FAMILIES
+            .iter()
+            .flat_map(|f| (1..=3).flat_map(move |d| std::iter::repeat_n((f.to_string(), d), 3000)))
+            .collect();
+        for condition in 0..18 {
+            let mut sampler = CellSampler::new(&cells, mix(PILOT_SEED, condition));
+            let mut counts = std::collections::BTreeMap::new();
+            for _ in 0..1000 {
+                *counts
+                    .entry(cells[sampler.next_index()].clone())
+                    .or_insert(0u64) += 1;
+            }
+            assert_eq!(counts.len(), 9);
+            assert!(counts.values().max().unwrap() - counts.values().min().unwrap() <= 1);
+        }
+    }
 
     #[test]
     fn training_acquisition_seed_is_independent_of_r() {
