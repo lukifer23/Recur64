@@ -286,7 +286,7 @@ Corrections are appended; old entries are never rewritten.
   payload gradient L2 0.003922534, all four reader groups nonzero; every baseline
   parameter and baseline output remained exact after reader updates. Complete
   parameter/moment restoration and one resumed parameter/moment update exact.
-- **Executed work:** Q2/Q4/Q8 × R1/R2/R4, both streams differentiated,
+- **Executed work:** Q2/Q4/Q8 Ã— R1/R2/R4, both streams differentiated,
   50 resident Q8/R4 updates; worst warm 0.7456381 s. R8 was engineering-only
   forward, 0.4578827 s. These are test-only fixtures, NOT a drill or pilot.
 - **Evidence:** `qualification-7737640-cpu.json`, numerical gradient evidence
@@ -823,3 +823,16 @@ Source d11659eca0774e0064bed0ef64ead2b725886d93: full release workspace596 PASS/
 ## V5-E40 - conditional Q8/R4 engineering drill completed; STOP
 
 Every prerequisite passed before the run. Source d11659e, CUDA FP32/microbatch2,24 frozen stable-hash TRAIN positions (four per six KQR/KRR depth cells),48 schedule graphs,200 reader-only updates,peak LR1e-3/warmup20. Mean correct-set loss2.987107088 ->0.026624600,99.1086828% reduction: PASS. Baseline fingerprint exact, training finite, disposable parameters not reused. Q16 NOT RUN. Post-drill three-split raw custody and CONFIRM seal/evaluated=false PASS. STOP before Stage A; no Stage A/B, DEV science/pilot/controller/replication/self-play/LR screen/historical or native confirmation evaluation. V5_DATA_V2_REPORT.md is the complete handoff.
+
+## V5-E41 - Stage A-only owner authorization and current V2 handoff
+
+Starting remote HEAD 066270cc8818c528c1eeaca0217e85664449ac78; clean branch
+parity 0/0. Scientific source remains d11659eca0774e0064bed0ef64ead2b725886d93.
+Documentation-only current-V2 clarification preserves historical preregistration.
+Fresh actual local TRAIN/DEV/CONFIRM custody, exact recipe receipt and saved
+current-source CPU/CUDA exact D9/drill prerequisites verified before model
+initialization. Stage A seed5301, fixed1200 updates, <=45-minute resumable chunks,
+fresh random model, followed by exactly one final DEV4500 B0 evaluation is
+explicitly authorized. No Stage B/update0/graphs/optimizer, reader pilot, Q/R DEV,
+controller, replication, self-play or sealed-set evaluation is authorized.
+No measured training result is asserted by this entry.

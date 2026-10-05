@@ -1,5 +1,47 @@
 # V5 fixed-graph reader research plan
 
+## Current V2 operation and Stage A-only authorization (2026-10-05)
+
+The owner authorizes the complete frozen seed-5301 Stage A (1200 updates),
+then exactly one final all-DEV B0 evaluation and owner review. Stage B, its
+update-0 initialization, reader training and Q/R DEV science are NOT authorized.
+Scientific source remains `d11659eca0774e0064bed0ef64ead2b725886d93`;
+this amendment changes documentation only.
+
+All lower references to active P25, 44,332 inherited positions, DEV 4,403,
+KQRvK M3 n=507 and `runs/v25/p25/` commands are preserved HISTORICAL material.
+They are superseded operationally by the measured native V2 lineage:
+
+- TRAIN `V5_HP_TRAIN_V2`: 27,000, nine KQQvK/KQRvK/KRRvK x M1/M2/M3
+  cells of 3,000; all records feed nine-cell balanced training.
+- DEV `V5_HP_DEV_V2`: 4,500, six KQRvK/KRRvK x M1/M2/M3 cells of 750;
+  primary KQRvK M3 n=750. Independent from TRAIN; never used during training.
+- CONFIRM `V5_HP_CONFIRM_V2`: 4,500, sealed=true, evaluated=false.
+- Active data contract `v5_hp_data_v2`; recipe `v5_stage_recipe_v3`.
+- Stage A recipe digest
+  `6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70`.
+
+Current commands from the V5 worktree after the documented process-local CUDA
+setup and fresh three-split custody/recipe verification:
+
+```powershell
+.\target\release\recur64.exe v5 train --stage a --device cuda --data runs/v5/data/v2/v5-hp-train-v2.json --run-dir runs/v5/v2/seed-5301/stage-a --drill docs/evidence/v5/drill-d11659e-q8.json --microbatch 2 --qualification docs/evidence/v5/qualification-d11659e-cuda.json --max-minutes 45
+if ($LASTEXITCODE -ne 0) { throw 'Stage A failed; preserve evidence and STOP' }
+# Only after a clean bounded stop before update 1200:
+.\target\release\recur64.exe v5 train --stage a --device cuda --data runs/v5/data/v2/v5-hp-train-v2.json --run-dir runs/v5/v2/seed-5301/stage-a --drill docs/evidence/v5/drill-d11659e-q8.json --microbatch 2 --qualification docs/evidence/v5/qualification-d11659e-cuda.json --max-minutes 45 --resume
+if ($LASTEXITCODE -ne 0) { throw 'Stage A resume failed; STOP' }
+# Exactly once, only after validated update 1200:
+.\target\release\recur64.exe v5 evaluate-baseline --device cuda --data runs/v5/data/v2/v5-hp-dev-v2.json --stage-a runs/v5/v2/seed-5301/stage-a --microbatch 2 --qualification docs/evidence/v5/qualification-d11659e-cuda.json --output runs/v5/v2/seed-5301/stage-a/final-baseline-dev.json
+if ($LASTEXITCODE -ne 0) { throw 'Final B0 evaluation failed; STOP' }
+```
+
+Fresh random initialization, FP32, physical2 x accumulation32, effective64,
+seed5301, warmup80, peakLR3e-4, existing AdamW/loss/schedule; Q0, reader not
+executed. No intermediate DEV, early stopping, checkpoint selection, adaptation
+or extra updates. Preserve all checkpoints and failures. After final B0 and
+post-run custody, STOP for owner review before any Stage B work.
+
+
 > MEASURED DATA STOP (df261ab): exhaustive KRvK M1 capacity is only 189
 > canonical classes, required 2000. Two full enumerations reproduce exactly;
 > 189 independent audits, zero failures. No TRAIN/DEV/CONFIRM dataset accepted,
