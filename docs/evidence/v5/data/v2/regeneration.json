@@ -1,0 +1,30 @@
+{
+  "schema": "v5_hp_regeneration_v2",
+  "method": "Full re-selection, authoritative re-labeling and independent re-audit from verified exhaustive pools, separate output paths; no cell checkpoints reused; pool census not independently regenerated.",
+  "splits": [
+    {
+      "identity": "V5_HP_TRAIN_V2",
+      "records": 27000,
+      "content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+      "original_raw_sha256": "ab34a0d098c5c2a1985f76967c62cd803b04419b31cda41166e819d389b77823",
+      "regenerated_raw_sha256": "ab34a0d098c5c2a1985f76967c62cd803b04419b31cda41166e819d389b77823",
+      "bit_identical": true
+    },
+    {
+      "identity": "V5_HP_DEV_V2",
+      "records": 4500,
+      "content_digest": "aac1be9d74af801ea2fb32e88a1f3eb9e4e93062f6a49ada8512b953c91847c5",
+      "original_raw_sha256": "15a645f4dc94e263ec55009989f4f052cf4fadebed27f3d824e15d73f6ca75ec",
+      "regenerated_raw_sha256": "15a645f4dc94e263ec55009989f4f052cf4fadebed27f3d824e15d73f6ca75ec",
+      "bit_identical": true
+    },
+    {
+      "identity": "V5_HP_CONFIRM_V2",
+      "records": 4500,
+      "content_digest": "6a4e355fdb38d46cefb8b25974938432dd2979b893c788a537ada9e1b60aa4f0",
+      "original_raw_sha256": "825fae2b6da27678597e46527dc2a729abad7c648637f0b9113031215c1de9bf",
+      "regenerated_raw_sha256": "825fae2b6da27678597e46527dc2a729abad7c648637f0b9113031215c1de9bf",
+      "bit_identical": true
+    }
+  ]
+}

@@ -807,3 +807,7 @@ V4_TUNE or HOLDOUT_C evaluation. No chess-learning result is claimed.
 ## V5-E36 - native heavy-family V2 preregistration
 
 Owner authorizes v5_hp_data_v2, heavy-only 27000/4500/4500, new seeds and split identities. V1 stays infeasible historical preregistration. See V5_DATA_V2_PLAN.md. DATA-V2-A implementation and tests precede accepted generation; no model/architecture changes or learning authorized.
+
+## V5-E37 - measured V2 generation and independent regeneration
+
+Producer 738db983084a998664ce962f87fa3c4a6153f526 generated TRAIN27000, DEV4500 and CONFIRM4500 with exact cell quotas. 36000 independent original audits and 36000 fresh regeneration audits; zero failures. All three regenerated artifacts are byte-identical after full re-selection/re-labeling/re-audit from verified exhaustive pools. All three FEN/canonical intersections are zero. CONFIRM sealed=true/evaluated=false. Compact manifests, exact-byte bindings, audits, disjointness and seal are under docs/evidence/v5/data/v2/. Raw files remain ignored under runs/v5/data/v2/. No production loader binding or fresh consumer qualification claimed yet.

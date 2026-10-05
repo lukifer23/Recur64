@@ -1,0 +1,163 @@
+{
+  "schema": "v5_hp_generation_audit_receipt_v2",
+  "producer_source_sha": "738db983084a998664ce962f87fa3c4a6153f526",
+  "original_audits": 36000,
+  "regeneration_audits": 36000,
+  "audit_failures": 0,
+  "split_invocations": [
+    {
+      "split": "original-train",
+      "wall_seconds": 97.23344999999999,
+      "exit_code": 0
+    },
+    {
+      "split": "original-dev",
+      "wall_seconds": 27.7409769,
+      "exit_code": 0
+    },
+    {
+      "split": "original-confirm",
+      "wall_seconds": 25.823864399999998,
+      "exit_code": 0
+    },
+    {
+      "split": "regenerated-train",
+      "wall_seconds": 98.53037359999999,
+      "exit_code": 0
+    },
+    {
+      "split": "regenerated-dev",
+      "wall_seconds": 25.2352509,
+      "exit_code": 0
+    },
+    {
+      "split": "regenerated-confirm",
+      "wall_seconds": 25.059444199999998,
+      "exit_code": 0
+    }
+  ],
+  "pool_invocations": [
+    {
+      "wall_seconds": 0.43183859999999996,
+      "shard": "KQQvK-00",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 9.8221911,
+      "shard": "KQQvK-08",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 9.5647475,
+      "shard": "KQQvK-16",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 5.7761097,
+      "shard": "KQQvK-24",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 6.130881899999999,
+      "shard": "KQQvK-32",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 9.485220499999999,
+      "shard": "KQQvK-40",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 9.6781376,
+      "shard": "KQQvK-48",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 8.4931456,
+      "shard": "KQQvK-56",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 28.6395797,
+      "shard": "KQRvK-00",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 33.4231033,
+      "shard": "KQRvK-08",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 34.1059355,
+      "shard": "KQRvK-16",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 34.598243,
+      "shard": "KQRvK-24",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 33.567929,
+      "shard": "KQRvK-32",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 32.9341988,
+      "shard": "KQRvK-40",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 33.065714799999995,
+      "shard": "KQRvK-48",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 27.710995099999998,
+      "shard": "KQRvK-56",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 12.4695742,
+      "shard": "KRRvK-00",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.613222899999998,
+      "shard": "KRRvK-08",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.5174425,
+      "shard": "KRRvK-16",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.9946974,
+      "shard": "KRRvK-24",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.968781499999999,
+      "shard": "KRRvK-32",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.905009,
+      "shard": "KRRvK-40",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 15.126075199999999,
+      "shard": "KRRvK-48",
+      "exit_code": 0
+    },
+    {
+      "wall_seconds": 12.2745274,
+      "shard": "KRRvK-56",
+      "exit_code": 0
+    }
+  ],
+  "local_historical_inventory": "No P25/V3_TUNE/V4_TUNE/HOLDOUT_C raw proof dataset found in either HP worktree runs inventory. R15 holdout run manifests are unrelated and unused.",
+  "unavailable_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified."
+}

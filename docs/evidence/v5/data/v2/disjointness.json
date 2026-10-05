@@ -1,0 +1,24 @@
+{
+  "schema": "v5_hp_disjointness_v2",
+  "pairwise": [
+    {
+      "left": "train",
+      "right": "dev",
+      "exact_fen": 0,
+      "canonical": 0
+    },
+    {
+      "left": "train",
+      "right": "confirm",
+      "exact_fen": 0,
+      "canonical": 0
+    },
+    {
+      "left": "dev",
+      "right": "confirm",
+      "exact_fen": 0,
+      "canonical": 0
+    }
+  ],
+  "historical_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified."
+}

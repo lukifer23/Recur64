@@ -1,0 +1,53 @@
+{
+  "schema": "v5_hp_measured_binding_v2",
+  "raw_sha256": "15a645f4dc94e263ec55009989f4f052cf4fadebed27f3d824e15d73f6ca75ec",
+  "record_id_digest": "8e52094f6e2ec32726efc675acca408b8e2ff4f63a73910d0d00aefe97bc1b5e",
+  "manifest": {
+    "schema": "v5_hp_dataset_manifest_v2",
+    "identity": "V5_HP_DEV_V2",
+    "role": "dev",
+    "source_sha": "738db983084a998664ce962f87fa3c4a6153f526",
+    "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+    "dataset_family": "v5_hp_heavy_endgames_v2",
+    "data_contract": "v5_hp_data_v2",
+    "selection_contract": "v5_hp_dataset_select_v1",
+    "audit_contract": "v5_hp_independent_audit_v1",
+    "generation_seed": 2052071426,
+    "cell_counts": {
+      "KQRvK M1": 750,
+      "KQRvK M2": 750,
+      "KQRvK M3": 750,
+      "KRRvK M1": 750,
+      "KRRvK M2": 750,
+      "KRRvK M3": 750
+    },
+    "records": 4500,
+    "content_digest": "aac1be9d74af801ea2fb32e88a1f3eb9e4e93062f6a49ada8512b953c91847c5",
+    "target_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+    "fen_set_digest": "4c2f3bb3bd2b594ee0921974a151ad71a19e149457b59c9061977fffd96f0e06",
+    "canonical_set_digest": "1201ea0c6dc8789b1d9cf0212bfb088590b4473948e28355c9ecd0523d4e37ec",
+    "exclusions": [
+      {
+        "identity": "V5_HP_TRAIN_V2",
+        "content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+        "fen_set_digest": "b7ebc90955fd8959c8e7266d1afac7a913c94959f3bca7a353b80e9cbc30f61a",
+        "canonical_set_digest": "6170bee242a7af46d4b3959f34d52a01e189c3a6b7d06f85925673e218c5f987"
+      }
+    ],
+    "overlaps": [
+      {
+        "left": "V5_HP_TRAIN_V2",
+        "right": "V5_HP_DEV_V2",
+        "exact_fen": 0,
+        "canonical": 0
+      }
+    ],
+    "audit_count": 4500,
+    "audit_failures": 0,
+    "generated": true,
+    "audited": true,
+    "sealed": false,
+    "evaluated": false,
+    "historical_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified."
+  }
+}
