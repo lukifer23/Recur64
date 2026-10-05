@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 use crate::graph::Schedule;
 use crate::splitmix64;
 
-pub const EVAL_SCHEMA: &str = "v5_reader_evaluation_v2";
-pub const REPORT_SCHEMA: &str = "v5_reader_pilot_report_v2";
+pub const SHUFFLE_CONTRACT: &str = "v5_payload_shuffle_widening_v1";
+pub const EVAL_SCHEMA: &str = "v5_reader_evaluation_v3";
+pub const REPORT_SCHEMA: &str = "v5_reader_pilot_report_v3";
 pub const EVAL_SEED: u64 = 0x7A50_E001;
 pub const SHUFFLE_SEED: u64 = 0x7A50_E002;
 pub const COMPOSITION_SEED: u64 = 0x7A50_E003;
@@ -190,6 +191,7 @@ pub struct EvalRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EvaluationBundle {
     pub schema: String,
+    pub shuffle_contract: String,
     pub architecture: String,
     pub source_sha: String,
     pub config_digest: String,
@@ -218,9 +220,14 @@ pub struct ShuffleMapping {
     pub recipient_position_id: String,
     pub recipient_path: Vec<u16>,
     pub recipient_depth: u8,
+    pub recipient_root_to_move: bool,
+    pub widening_tier: String,
+    pub candidate_pool_size: usize,
+    pub absolute_depth_delta: u8,
     pub donor_position_id: String,
     pub donor_path: Vec<u16>,
     pub donor_depth: u8,
+    pub donor_root_to_move: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -327,6 +334,7 @@ pub struct TransitionCounts {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PilotClassification {
     pub schema: String,
+    pub shuffle_contract: String,
     pub classification: String,
     pub loop_benefit: PilotContrast,
     pub b0_benefit: PilotContrast,
@@ -359,12 +367,35 @@ fn find<'a>(map: &'a HashMap<Key, &'a EvalRecord>, key: &Key) -> anyhow::Result<
     })
 }
 
+pub fn validate_shuffle_mappings(mappings: &[ShuffleMapping]) -> anyhow::Result<()> {
+    for m in mappings {
+        anyhow::ensure!(
+            m.recipient_position_id != m.donor_position_id
+                && m.recipient_root_to_move == m.donor_root_to_move
+                && m.candidate_pool_size > 0
+                && m.absolute_depth_delta == m.recipient_depth.abs_diff(m.donor_depth)
+                && m.widening_tier
+                    == if m.absolute_depth_delta == 0 {
+                        "exact_depth"
+                    } else {
+                        "nearest_same_turn_depth"
+                    },
+            "shuffle mapping audit mismatch"
+        );
+    }
+    Ok(())
+}
+
 pub fn classify_pilot(
     bundle: &EvaluationBundle,
     engineering_integrity_accounting_pass: bool,
     require_full_dev: bool,
 ) -> anyhow::Result<PilotClassification> {
-    anyhow::ensure!(bundle.schema == EVAL_SCHEMA, "evaluation schema mismatch");
+    anyhow::ensure!(
+        bundle.schema == EVAL_SCHEMA && bundle.shuffle_contract == SHUFFLE_CONTRACT,
+        "evaluation schema mismatch"
+    );
+    validate_shuffle_mappings(&bundle.shuffle_mappings)?;
     let mut map = HashMap::new();
     for record in &bundle.records {
         let key = Key {
@@ -521,6 +552,7 @@ pub fn classify_pilot(
         };
     Ok(PilotClassification {
         schema: REPORT_SCHEMA.into(),
+        shuffle_contract: SHUFFLE_CONTRACT.into(),
         classification: classification.into(),
         loop_benefit: PilotContrast {
             name: "top1_q8_r4_minus_q8_r1".into(),
@@ -569,8 +601,10 @@ pub fn merge_cell_bundles(mut bundles: Vec<EvaluationBundle>) -> anyhow::Result<
     let mut shard_hash = sha2::Sha256::new();
     use sha2::Digest;
     for bundle in bundles.drain(..) {
+        validate_shuffle_mappings(&bundle.shuffle_mappings)?;
         anyhow::ensure!(
             bundle.schema == EVAL_SCHEMA
+                && bundle.shuffle_contract == SHUFFLE_CONTRACT
                 && bundle.architecture == first.architecture
                 && bundle.source_sha == first.source_sha
                 && bundle.config_digest == first.config_digest
@@ -643,6 +677,7 @@ pub fn merge_cell_bundles(mut bundles: Vec<EvaluationBundle>) -> anyhow::Result<
     );
     Ok(EvaluationBundle {
         schema: EVAL_SCHEMA.into(),
+        shuffle_contract: SHUFFLE_CONTRACT.into(),
         architecture: first.architecture,
         source_sha: first.source_sha,
         config_digest: first.config_digest,
@@ -806,7 +841,10 @@ pub fn r8_report(main: &EvaluationBundle, r8: &EvaluationBundle) -> anyhow::Resu
 }
 
 pub fn ablation_report(bundle: &EvaluationBundle) -> anyhow::Result<AblationReport> {
-    anyhow::ensure!(bundle.schema == EVAL_SCHEMA, "evaluation schema mismatch");
+    anyhow::ensure!(
+        bundle.schema == EVAL_SCHEMA && bundle.shuffle_contract == SHUFFLE_CONTRACT,
+        "evaluation schema mismatch"
+    );
     anyhow::ensure!(bundle.normal_replay_exact, "normal replay parity failed");
     let mut groups: BTreeMap<String, Vec<&EvalRecord>> = BTreeMap::new();
     for record in &bundle.records {
@@ -1036,6 +1074,7 @@ mod tests {
         }
         let bundle = EvaluationBundle {
             schema: EVAL_SCHEMA.into(),
+            shuffle_contract: SHUFFLE_CONTRACT.into(),
             architecture: "counterfactual_relational_loop_v1".into(),
             source_sha: "source".into(),
             config_digest: "config".into(),

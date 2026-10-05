@@ -294,6 +294,9 @@ pub struct EvaluateArgs {
     qualification: PathBuf,
     #[arg(long)]
     output: PathBuf,
+    /// Census all DEV acquisition nodes without reader measurements.
+    #[arg(long)]
+    donor_census_only: bool,
 }
 
 #[derive(Args)]
@@ -909,6 +912,54 @@ fn drill(a: DrillArgs) -> anyhow::Result<()> {
     }
 }
 
+fn validate_reader_evaluation_predecessor(
+    meta: &recur64_v5::stage::CheckpointMeta,
+    backend: &str,
+    microbatch: usize,
+) -> anyhow::Result<()> {
+    let initial = "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00";
+    let expected = match meta.update {
+        0 => (
+            initial,
+            "11e3c6fc5b58ca6204b4843b1aa01be5f667ae7dc7fd6253ab1be383e9603d40",
+        ),
+        800 => (
+            "c7f6b10a0b60982199cd352c157a377115c6f00a46c699a6a9b3bb859e8bd273",
+            "bb4138e1dc6ff83dcdc065dbd768b403b6e7f0f995d28968b56317c4862fe929",
+        ),
+        _ => anyhow::bail!("evaluation bridge accepts only update0/800"),
+    };
+    anyhow::ensure!(
+        meta.stage == Stage::ReaderB
+            && meta.recipe.stage == Stage::ReaderB
+            && meta.recipe.source_sha == "3db24a926815159d592e93b60a8ae51852abad13"
+            && meta.recipe_digest
+                == "55533c9a9d9125fd166542667d619b1d40b95119b5129d9a1c63072e296018fb"
+            && meta.model_hash == expected.0
+            && meta.optimizer_hash == expected.1
+            && meta.config_digest == V5Config::default().scientific_digest()?
+            && meta.recipe.config_digest == meta.config_digest
+            && meta.recipe.seed == 5301
+            && meta.backend == "cuda"
+            && backend == "cuda"
+            && meta.precision == "fp32"
+            && meta.recipe.precision == "fp32"
+            && microbatch == 2
+            && meta.recipe.physical_microbatch == 2
+            && meta.init_model_hash.as_deref() == Some(initial)
+            && meta.recipe.init_model_hash.as_deref() == Some(initial)
+            && meta.recipe.baseline_fingerprint.as_deref()
+                == Some("12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9")
+            && meta.recipe.data_contract == "v5_hp_data_v2"
+            && meta.recipe.train_identity == "V5_HP_TRAIN_V2"
+            && meta.recipe.dev_identity == "V5_HP_DEV_V2"
+            && meta.recipe.train_digest == recur64_v5::data::TRAIN_DIGEST
+            && meta.recipe.dev_digest == recur64_v5::data::DEV_DIGEST,
+        "evaluation-only bridge refuses any other Stage B artifact"
+    );
+    Ok(())
+}
+
 fn evaluate_backend<B>(a: &EvaluateArgs, backend: &str) -> anyhow::Result<()>
 where
     B: burn::tensor::backend::AutodiffBackend,
@@ -943,11 +994,16 @@ where
     }
     let device = B::Device::default();
     let (model, meta) = load_model_at::<B>(&a.stage_b, Stage::ReaderB, a.update, &device)?;
-    anyhow::ensure!(
-        meta.recipe.source_sha == source
-            && meta.config_digest == V5Config::default().scientific_digest()?,
-        "evaluation source/config differs from the checkpoint recipe"
-    );
+    validate_reader_evaluation_predecessor(&meta, backend, a.microbatch)?;
+    if a.donor_census_only {
+        anyhow::ensure!(a.update == 0, "census uses the immutable baseline/update0");
+        let census =
+            recur64_v5::study::shuffle_donor_census(&model.valid(), &data, a.microbatch, &device)?;
+        return write_json(
+            &a.output,
+            &serde_json::json!({"source_sha":source,"checkpoint_model_hash":meta.model_hash,"census":census}),
+        );
+    }
     let identity = recur64_v5::study::EvaluationIdentity {
         source_sha: source,
         config_digest: meta.config_digest,
@@ -1281,11 +1337,10 @@ where
     let device = B::Device::default();
     let (model, meta) = load_model_at::<B>(&a.stage_b, Stage::ReaderB, 800, &device)?;
     anyhow::ensure!(
-        meta.model_hash == main.model_hash
-            && meta.recipe.source_sha == source
-            && main.source_sha == source,
+        meta.model_hash == main.model_hash && main.source_sha == source,
         "R8 checkpoint/main evaluation/source identity mismatch"
     );
+    validate_reader_evaluation_predecessor(&meta, backend, a.microbatch)?;
     let identity = recur64_v5::study::EvaluationIdentity {
         source_sha: source,
         config_digest: meta.config_digest,
@@ -1692,5 +1747,95 @@ mod source_identity_tests {
         let rebuilt = git_sha(&root).unwrap();
         assert_eq!(checked_source_sha(&root, &rebuilt).unwrap(), rebuilt);
         std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod reader_recovery_bridge_tests {
+    use super::*;
+    #[test]
+    fn only_exact_frozen_reader_checkpoints_can_be_evaluated() {
+        let initial = "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00";
+        let recipe = Recipe::stage_b(
+            "3db24a926815159d592e93b60a8ae51852abad13".into(),
+            2,
+            initial.into(),
+            "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9".into(),
+        )
+        .unwrap();
+        let meta = recur64_v5::stage::CheckpointMeta {
+            schema: recur64_v5::stage::CHECKPOINT_SCHEMA.into(),
+            architecture: ARCHITECTURE.into(),
+            stage: Stage::ReaderB,
+            recipe_digest: recipe.digest().unwrap(),
+            config_digest: recipe.config_digest.clone(),
+            recipe,
+            update: 0,
+            model_hash: initial.into(),
+            optimizer_hash: "11e3c6fc5b58ca6204b4843b1aa01be5f667ae7dc7fd6253ab1be383e9603d40"
+                .into(),
+            init_model_hash: Some(initial.into()),
+            backend: "cuda".into(),
+            precision: "fp32".into(),
+            factual_null_gradient_semantics: "both_streams_differentiated_v1".into(),
+            history: vec![],
+            resume_events: vec![],
+        };
+        validate_reader_evaluation_predecessor(&meta, "cuda", 2).unwrap();
+        let mut final_meta = meta.clone();
+        final_meta.update = 800;
+        final_meta.model_hash =
+            "c7f6b10a0b60982199cd352c157a377115c6f00a46c699a6a9b3bb859e8bd273".into();
+        final_meta.optimizer_hash =
+            "bb4138e1dc6ff83dcdc065dbd768b403b6e7f0f995d28968b56317c4862fe929".into();
+        validate_reader_evaluation_predecessor(&final_meta, "cuda", 2).unwrap();
+        for pointer in [
+            "/stage",
+            "/update",
+            "/model_hash",
+            "/optimizer_hash",
+            "/recipe_digest",
+            "/config_digest",
+            "/backend",
+            "/precision",
+            "/init_model_hash",
+            "/recipe/source_sha",
+            "/recipe/config_digest",
+            "/recipe/seed",
+            "/recipe/precision",
+            "/recipe/physical_microbatch",
+            "/recipe/init_model_hash",
+            "/recipe/baseline_fingerprint",
+            "/recipe/data_contract",
+            "/recipe/train_identity",
+            "/recipe/dev_identity",
+            "/recipe/train_digest",
+            "/recipe/dev_digest",
+        ] {
+            let mut value = serde_json::to_value(&meta).unwrap();
+            let field = value.pointer_mut(pointer).unwrap();
+            if field.is_number() {
+                *field = serde_json::json!(99);
+            } else if pointer == "/stage" {
+                *field = serde_json::json!("baseline_a");
+            } else {
+                *field = serde_json::json!("wrong");
+            }
+            let changed: recur64_v5::stage::CheckpointMeta = serde_json::from_value(value).unwrap();
+            assert!(
+                validate_reader_evaluation_predecessor(&changed, "cuda", 2).is_err(),
+                "{pointer}"
+            );
+        }
+        assert!(validate_reader_evaluation_predecessor(&meta, "cpu", 2).is_err());
+        assert!(validate_reader_evaluation_predecessor(&meta, "cuda", 1).is_err());
+        let current = Recipe::stage_b(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into(),
+            2,
+            initial.into(),
+            meta.recipe.baseline_fingerprint.clone().unwrap(),
+        )
+        .unwrap();
+        assert_ne!(current.digest().unwrap(), meta.recipe_digest); // Trainer's unchanged exact recipe guard refuses resume.
     }
 }

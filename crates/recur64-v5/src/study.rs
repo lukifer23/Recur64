@@ -364,6 +364,59 @@ fn prepare_cell<B: Backend>(
     })
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct DonorCandidate {
+    position_id: String,
+    family: String,
+    mate_depth: u8,
+    depth: u8,
+    root_to_move: bool,
+    path: Vec<u16>,
+    storage_id: u32,
+    location: (usize, usize),
+}
+fn donor_pool<'a>(
+    recipient: &DonorCandidate,
+    candidates: &'a [DonorCandidate],
+) -> anyhow::Result<Vec<&'a DonorCandidate>> {
+    let mut pool: Vec<_> = candidates
+        .iter()
+        .filter(|c| {
+            c.position_id != recipient.position_id
+                && c.family == recipient.family
+                && c.mate_depth == recipient.mate_depth
+                && c.root_to_move == recipient.root_to_move
+        })
+        .collect();
+    let delta = pool
+        .iter()
+        .map(|c| c.depth.abs_diff(recipient.depth))
+        .min()
+        .ok_or_else(|| anyhow::anyhow!("shuffle widening has no same-turn different-root donor"))?;
+    pool.retain(|c| c.depth.abs_diff(recipient.depth) == delta);
+    pool.sort_by(|a, b| {
+        (&a.position_id, a.depth, &a.path, a.storage_id).cmp(&(
+            &b.position_id,
+            b.depth,
+            &b.path,
+            b.storage_id,
+        ))
+    });
+    Ok(pool)
+}
+
+fn replace_payload_only(
+    recipient: &mut crate::graph::AcquiredNode,
+    donor: &crate::graph::AcquiredNode,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        recipient.root_to_move == donor.root_to_move,
+        "shuffle turn role mismatch"
+    );
+    recipient.payload = donor.payload.clone();
+    Ok(())
+}
+
 fn shuffled_graphs(
     data: &V5Data,
     cell: &PreparedCell,
@@ -372,29 +425,39 @@ fn shuffled_graphs(
     let source = &cell.graphs[schedule.id()];
     let mut out = source.clone();
     let mut mappings = Vec::new();
+    let mut all_candidates = Vec::new();
+    for (d, graph) in source.iter().enumerate() {
+        let p = data.position(cell.indices[d]);
+        for (n, node) in graph.nodes.iter().enumerate() {
+            all_candidates.push(DonorCandidate {
+                position_id: p.id.clone(),
+                family: p.family.clone(),
+                mate_depth: p.mate_depth,
+                depth: node.depth,
+                root_to_move: node.root_to_move,
+                path: node.path.clone(),
+                storage_id: node.storage_id,
+                location: (d, n),
+            });
+        }
+    }
+
     for (recipient, graph) in source.iter().enumerate() {
         let recipient_id = &data.position(cell.indices[recipient]).id;
         for (node_index, node) in graph.nodes.iter().enumerate() {
-            let candidates: Vec<(usize, usize)> = source
-                .iter()
-                .enumerate()
-                .filter(|(donor, _)| *donor != recipient)
-                .flat_map(|(donor, graph)| {
-                    graph
-                        .nodes
-                        .iter()
-                        .enumerate()
-                        .filter(move |(_, candidate)| candidate.depth == node.depth)
-                        .map(move |(donor_node, _)| (donor, donor_node))
-                })
-                .collect();
-            anyhow::ensure!(
-                !candidates.is_empty(),
-                "cannot derange {} {:?} depth {} within family/depth cell",
-                recipient_id,
-                schedule,
-                node.depth
-            );
+            let position = data.position(cell.indices[recipient]);
+            let recipient_key = DonorCandidate {
+                position_id: recipient_id.clone(),
+                family: position.family.clone(),
+                mate_depth: position.mate_depth,
+                depth: node.depth,
+                root_to_move: node.root_to_move,
+                path: node.path.clone(),
+                storage_id: node.storage_id,
+                location: (recipient, node_index),
+            };
+            let candidates = donor_pool(&recipient_key, &all_candidates)?;
+            let delta = candidates[0].depth.abs_diff(node.depth);
             let path_bytes: Vec<u8> = node.path.iter().flat_map(|x| x.to_le_bytes()).collect();
             let seed = SHUFFLE_SEED.to_le_bytes();
             let pick = stable_hash(&[
@@ -404,19 +467,29 @@ fn shuffled_graphs(
                 &seed,
             ]) as usize
                 % candidates.len();
-            let (donor, donor_node) = candidates[pick];
+            let (donor, donor_node) = candidates[pick].location;
             let donor_position_id = data.position(cell.indices[donor]).id.clone();
             anyhow::ensure!(donor_position_id != *recipient_id, "shuffle self-mapping");
             let donor_record = &source[donor].nodes[donor_node];
-            out[recipient].nodes[node_index].payload = donor_record.payload.clone();
+            replace_payload_only(&mut out[recipient].nodes[node_index], donor_record)?;
             mappings.push(ShuffleMapping {
                 schedule,
                 recipient_position_id: recipient_id.clone(),
                 recipient_path: node.path.clone(),
                 recipient_depth: node.depth,
+                recipient_root_to_move: node.root_to_move,
+                widening_tier: if delta == 0 {
+                    "exact_depth"
+                } else {
+                    "nearest_same_turn_depth"
+                }
+                .into(),
+                candidate_pool_size: candidates.len(),
+                absolute_depth_delta: delta,
                 donor_position_id,
                 donor_path: donor_record.path.clone(),
                 donor_depth: donor_record.depth,
+                donor_root_to_move: donor_record.root_to_move,
             });
         }
         out[recipient].digest.clear();
@@ -424,6 +497,70 @@ fn shuffled_graphs(
         out[recipient].verify()?;
     }
     Ok((out, mappings))
+}
+
+/// Acquisition-only census: baseline logits supply the already frozen ranked schedule;
+/// no reader measurement, treatment metrics or checkpoint mutation is performed.
+pub fn shuffle_donor_census<B: Backend>(
+    model: &CounterfactualRelationalLoop<B>,
+    data: &V5Data,
+    microbatch: usize,
+    device: &B::Device,
+) -> anyhow::Result<serde_json::Value> {
+    let mut mappings = Vec::new();
+    let mut by_cell = BTreeMap::new();
+    for family in ["KQRvK", "KRRvK"] {
+        for depth in 1..=3 {
+            let indices: Vec<_> = data
+                .dev
+                .iter()
+                .copied()
+                .filter(|&i| {
+                    data.position(i).family == family && data.position(i).mate_depth == depth
+                })
+                .collect();
+            anyhow::ensure!(indices.len() == 750, "census requires exact DEV cells");
+            let cell = prepare_cell(model, data, &indices, microbatch, device)?;
+            let mut counts = [0usize; 2];
+            for schedule in [Schedule::UniformFrontierV1, Schedule::BaseRankedDepthV1] {
+                let (_, rows) = shuffled_graphs(data, &cell, schedule)?;
+                for m in &rows {
+                    counts[usize::from(m.absolute_depth_delta != 0)] += 1;
+                }
+                mappings.extend(rows);
+            }
+            by_cell.insert(format!("{family} M{depth}"), counts);
+        }
+    }
+    let mut by_schedule = BTreeMap::<String, [usize; 2]>::new();
+    let mut recipient_depth = BTreeMap::<u8, usize>::new();
+    let mut donor_depth = BTreeMap::<u8, usize>::new();
+    for m in &mappings {
+        anyhow::ensure!(
+            m.recipient_position_id != m.donor_position_id
+                && m.recipient_root_to_move == m.donor_root_to_move,
+            "invalid census mapping"
+        );
+        by_schedule.entry(m.schedule.id().into()).or_default()
+            [usize::from(m.absolute_depth_delta != 0)] += 1;
+        *recipient_depth.entry(m.recipient_depth).or_default() += 1;
+        *donor_depth.entry(m.donor_depth).or_default() += 1;
+    }
+    let widened = mappings
+        .iter()
+        .filter(|m| m.absolute_depth_delta != 0)
+        .count();
+    Ok(
+        serde_json::json!({"schema":"v5_shuffle_donor_census_v1", "control_contract":"v5_payload_shuffle_widening_v1",
+        "total_recipient_nodes":mappings.len(),"exact_depth_recipients":mappings.len()-widened,"widened_recipients":widened,
+        "widened_fraction":widened as f64/mappings.len() as f64,"by_cell_exact_widened":by_cell,"by_schedule_exact_widened":by_schedule,
+        "by_recipient_depth":recipient_depth,"by_selected_donor_depth":donor_depth,
+        "maximum_depth_delta":mappings.iter().map(|m|m.absolute_depth_delta).max(),
+        "candidate_pool_min":mappings.iter().map(|m|m.candidate_pool_size).min(),
+        "candidate_pool_max":mappings.iter().map(|m|m.candidate_pool_size).max(),
+        "candidate_pool_mean":mappings.iter().map(|m|m.candidate_pool_size as f64).sum::<f64>()/mappings.len() as f64,
+        "unresolved_recipients":0,"no_self_mapping":true,"all_turn_roles_match":true}),
+    )
 }
 
 fn composition_partition(
@@ -963,6 +1100,7 @@ pub fn evaluate_reader<B: Backend>(
     );
     Ok(EvaluationBundle {
         schema: EVAL_SCHEMA.into(),
+        shuffle_contract: crate::evaluation::SHUFFLE_CONTRACT.into(),
         architecture: ARCHITECTURE.into(),
         source_sha: identity.source_sha,
         config_digest: identity.config_digest,
@@ -1034,6 +1172,7 @@ pub fn evaluate_r8<B: Backend>(
     }
     Ok(EvaluationBundle {
         schema: EVAL_SCHEMA.into(),
+        shuffle_contract: crate::evaluation::SHUFFLE_CONTRACT.into(),
         architecture: ARCHITECTURE.into(),
         source_sha: identity.source_sha,
         config_digest: identity.config_digest,
@@ -1185,5 +1324,115 @@ mod baseline_identity_tests {
             .unwrap()
             .remove("stage_a_source_sha");
         assert!(serde_json::from_value::<BaselineEvaluation>(missing).is_err());
+    }
+}
+
+#[cfg(test)]
+mod shuffle_widening_tests {
+    use super::*;
+    fn c(id: &str, depth: u8, turn: bool) -> DonorCandidate {
+        DonorCandidate {
+            position_id: id.into(),
+            family: "KRRvK".into(),
+            mate_depth: 1,
+            depth,
+            root_to_move: turn,
+            path: vec![depth as u16],
+            storage_id: 0,
+            location: (0, 0),
+        }
+    }
+    #[test]
+    fn payload_replacement_and_metadata_audit_preserve_recipient_structure() {
+        let node = crate::graph::AcquiredNode {
+            storage_id: 0,
+            parent: None,
+            root_candidate: 0,
+            incoming_action_root_frame: 1,
+            action_geometry: [0.0; crate::ACTION_GEOMETRY],
+            depth: 6,
+            root_to_move: true,
+            path: vec![1],
+            cumulative_legal_generations: 3,
+            cumulative_legal_moves_generated: 7,
+            payload: crate::graph::ReturnedPayload {
+                observation: vec![1.0],
+                flags: [0.0; crate::PAYLOAD_FLAGS],
+                state_digest: "a".into(),
+                semantic_id: "a".into(),
+            },
+        };
+        let mut donor = node.clone();
+        donor.depth = 4;
+        donor.payload.observation = vec![2.0];
+        donor.path = vec![2];
+        let mut recipient = node.clone();
+        replace_payload_only(&mut recipient, &donor).unwrap();
+        let mut expected = node.clone();
+        expected.payload = donor.payload.clone();
+        assert_eq!(recipient, expected);
+        donor.root_to_move = false;
+        assert!(replace_payload_only(&mut recipient, &donor).is_err());
+        let mapping = ShuffleMapping {
+            schedule: Schedule::UniformFrontierV1,
+            recipient_position_id: "r".into(),
+            recipient_path: node.path,
+            recipient_depth: 6,
+            recipient_root_to_move: true,
+            widening_tier: "nearest_same_turn_depth".into(),
+            candidate_pool_size: 1,
+            absolute_depth_delta: 2,
+            donor_position_id: "d".into(),
+            donor_path: vec![2],
+            donor_depth: 4,
+            donor_root_to_move: true,
+        };
+        crate::evaluation::validate_shuffle_mappings(std::slice::from_ref(&mapping)).unwrap();
+        let mut bad = mapping;
+        bad.absolute_depth_delta = 1;
+        assert!(crate::evaluation::validate_shuffle_mappings(&[bad]).is_err());
+    }
+    #[test]
+    fn exact_preferred_and_same_turn_nearest_ties_are_stable() {
+        let r = c("r", 6, true);
+        let mut candidates = vec![
+            c("b", 8, true),
+            c("a", 4, true),
+            c("exact", 6, true),
+            c("opposite", 6, false),
+            r.clone(),
+        ];
+        let exact = donor_pool(&r, &candidates).unwrap();
+        assert_eq!(exact.len(), 1);
+        assert_eq!(exact[0].position_id, "exact");
+        candidates.retain(|x| x.position_id != "exact");
+        let pool = donor_pool(&r, &candidates).unwrap();
+        assert_eq!(
+            pool.iter()
+                .map(|x| x.position_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a", "b"]
+        );
+        let expected: Vec<_> = pool.into_iter().cloned().collect();
+        candidates.reverse();
+        assert_eq!(
+            expected,
+            donor_pool(&r, &candidates)
+                .unwrap()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>()
+        );
+        let mut wrong_family = c("wrong", 6, true);
+        wrong_family.family = "KQRvK".into();
+        let mut wrong_cell = c("wrong2", 6, true);
+        wrong_cell.mate_depth = 2;
+        assert!(
+            donor_pool(
+                &r,
+                &[wrong_family, wrong_cell, c("opposite", 6, false), r.clone()]
+            )
+            .is_err()
+        );
     }
 }
