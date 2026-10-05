@@ -1,0 +1,13 @@
+{
+  "schema": "v5_stage_b_baseline_parameter_digest_v1",
+  "pass": true,
+  "tensor_count": 84,
+  "digests": {
+    "stage_a": "83180ee9c6069029608fbfa43f067e65c83f0a08dee767906cc2d2450982c9d9",
+    "update0": "83180ee9c6069029608fbfa43f067e65c83f0a08dee767906cc2d2450982c9d9",
+    "update800": "83180ee9c6069029608fbfa43f067e65c83f0a08dee767906cc2d2450982c9d9"
+  },
+  "contract": "SHA256 domain recur64.v5.baseline_parameter_bytes.v1 plus zero byte; sorted stable MPK tensor structural path plus zero byte, compact JSON shape plus zero byte, dtype plus zero byte, raw little-endian FP32 bytes; no ParamIds or operational metadata",
+  "baseline_fingerprint": "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9",
+  "capture": "read-only digest of immutable producer, saved initialization and completed checkpoint; all81 checkpoint tensor comparisons independently passed"
+}

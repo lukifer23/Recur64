@@ -1,5 +1,19 @@
 # V5 results
 
+> CURRENT STAGE B HANDOFF (2026-10-05): seed5301 training COMPLETE and VALID,
+> all800 updates, final scientific source3db24a926815159d592e93b60a8ae51852abad13.
+> Stage A and published B0 unchanged. Three update0 KQRvK DEV cells completed;
+> KRRvK M1 refused its shuffle control (no other-root donor at node depth6).
+> Further evaluation STOPPED. No update800 DEV, merges or pilot classification.
+> No source repair/retry authorized under the frozen experiment. Next review:
+> owner authorization for a prospective evaluation-control amendment preserving
+> completed update0/800 checkpoints. Do not retrain or launch more evaluation.
+> Run: runs/v5/v2/seed-5301/stage-b; partial controls: eval-000/.
+> Post custody PASS; CONFIRM sealed=true/evaluated=false.
+> See [V5_STAGE_B_RESULTS.md](V5_STAGE_B_RESULTS.md).
+> Lower handoffs remain historical records and are superseded by this status.
+
+
 > CURRENT STAGE A HANDOFF (2026-10-05): seed5301 Stage A completed1200 updates
 > in one bounded CUDA FP32 invocation, no resumes; final model2d1c770a...ae0bb00.
 > Final checkpoint integrity and post-run three-split custody PASS. Scientific

@@ -915,3 +915,29 @@ Fresh Q8/R4 disposable drill200 updates PASS:2.987107 ->0.097752 mean loss,
 Stage A/B0 files remain unchanged. Lineage receipt binds full artifact and
 qualification/drill hashes. Stage B remains uninitialized until this evidence
 is committed/pushed. Fixed800 updates and post-completion-only DEV controls.
+
+
+## V5-E47 - Stage B seed5301 fixed training COMPLETE
+
+Final source3db24a9, recipe-v3 digest55533c9a...9618fb, exact authorized
+predecessor initialization. All800 updates completed in one bounded CUDA FP32
+microbatch2 invocation,1140.8644862 seconds,native exit0,no resumes. 28800 TRAIN
+examples; all losses finite,first50mean0.6186572669,last50mean0.5513546269.
+All81 checkpoints retain exact baseline tensors/fingerprint12b272a9...75c9.
+Update0model2d1c770a...ae0bb00; finalmodelc7f6b10a...8bd273. No DEV until completion.
+Read-only checkpoint/moment/history/exposure evidence in stage-b-training-summary.json.
+
+## V5-E48 - update0 DEV shuffle donor refusal; operational STOP
+
+Three KQRvK update0 cells completed750 positions each,normal replay PASS,
+common B0 metrics/actions exact against immutable published baseline. Fourth
+cell KRRvK M1 failed nativeexit1 at UniformFrontierV1 acquired-node depth6:
+zero other-root same-depth donors within its frozen family/root-mate-depth cell.
+No failed-cell report serialized or metrics recovered. Original log/receipt
+preserved. Further evaluation STOPPED under final-source lock; no retry/control
+change/source repair. All update800 DEV,merges,final interventions/composition,
+pilot classifier and R8 NOT RUN; no classifier label assigned. Training remains
+complete/VALID,reader task benefit unmeasured. All608 preserved files unchanged;
+post actual three-split custody PASS,zero overlaps,CONFIRM sealed/evaluated=false.
+A future versioned evaluation-control amendment requires owner authorization.
+Full report: V5_STAGE_B_RESULTS.md. No rescue or additional training.

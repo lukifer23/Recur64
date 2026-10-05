@@ -1,0 +1,9 @@
+{
+  "schema": "v5_stage_b_optimizer_integrity_v1",
+  "fresh_optimizer_update0_empty": true,
+  "final_reader_moment_states": 91,
+  "all_reader_counters": 800,
+  "frozen_root_optimizer_states": 0,
+  "all_moments_finite": true,
+  "root_parameter_gradients_absent_evidence": "graph-free training path unchanged; no root optimizer states across full 800-step reader-only optimizer; exact root tensors at all81 saved checkpoints"
+}

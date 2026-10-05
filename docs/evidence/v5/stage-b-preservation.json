@@ -1,0 +1,15 @@
+{
+  "schema": "v5_stage_b_preservation_v1",
+  "pass": true,
+  "files_verified": 608,
+  "stage_a_files": 360,
+  "stage_b_checkpoint_files": 243,
+  "historical_failure_and_baseline_files": 5,
+  "stage_a_file_set_unchanged": true,
+  "stage_a_model_sha256": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+  "baseline_report_sha256": "b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4",
+  "stage_b_final_model_sha256": "c7f6b10a0b60982199cd352c157a377115c6f00a46c699a6a9b3bb859e8bd273",
+  "scientific_source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "confirmation_sealed": true,
+  "confirmation_evaluated": false
+}

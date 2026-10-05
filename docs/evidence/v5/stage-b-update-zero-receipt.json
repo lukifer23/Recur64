@@ -1,0 +1,11 @@
+{
+  "schema": "v5_stage_b_update_zero_receipt_v1",
+  "update": 0,
+  "source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "recipe_digest": "55533c9a9d9125fd166542667d619b1d40b95119b5129d9a1c63072e296018fb",
+  "model_hash": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+  "optimizer_hash": "11e3c6fc5b58ca6204b4843b1aa01be5f667ae7dc7fd6253ab1be383e9603d40",
+  "baseline_fingerprint": "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9",
+  "history_empty": true,
+  "stage_a_model_bytes_exact": true
+}
