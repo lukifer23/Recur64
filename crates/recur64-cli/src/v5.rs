@@ -17,6 +17,7 @@ use recur64_v5::stage::{
     Recipe, Stage, Trainer, baseline_fingerprint, load_finished_model, load_model_at,
 };
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 #[derive(Subcommand)]
 pub enum V5Cmd {
@@ -652,18 +653,21 @@ where
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("Stage B requires --stage-a"))?;
             let (model, meta) = load_finished_model::<B>(stage_a, Stage::BaselineA, &device)?;
-            anyhow::ensure!(
-                meta.recipe.source_sha == source && meta.backend == backend,
-                "Stage A source/device differs from Stage B"
-            );
+            validate_stage_b_predecessor(&meta, backend, a.microbatch)?;
             let fingerprint = baseline_fingerprint(&model, &device)?;
             let baseline_path = a.stage_a_evaluation.as_ref().ok_or_else(|| {
                 anyhow::anyhow!(
                     "Stage B requires --stage-a-evaluation from the final Stage A checkpoint"
                 )
             })?;
+            let baseline_bytes = std::fs::read(baseline_path)?;
             let baseline: recur64_v5::study::BaselineEvaluation =
-                serde_json::from_slice(&std::fs::read(baseline_path)?)?;
+                serde_json::from_slice(&baseline_bytes)?;
+            validate_stage_b_publication(
+                &baseline,
+                &format!("{:x}", Sha256::digest(&baseline_bytes)),
+                &fingerprint,
+            )?;
             let dev_path = a.dev_data.as_deref().ok_or_else(|| {
                 anyhow::anyhow!("Stage B requires the independent --dev-data V5_HP_DEV_V2 file")
             })?;
@@ -671,7 +675,7 @@ where
             baseline.validate_against_data(&dev)?;
             anyhow::ensure!(
                 baseline.model_hash == meta.model_hash
-                    && baseline.source_sha == source
+                    && baseline.stage_a_source_sha == meta.recipe.source_sha
                     && baseline.baseline_fingerprint == fingerprint
                     && baseline.microbatch == a.microbatch
                     && baseline.device == backend,
@@ -984,6 +988,52 @@ fn evaluate(a: EvaluateArgs) -> anyhow::Result<()> {
             }
         }
     }
+}
+
+// Owner-authorized v5_stage_b_predecessor_bridge_v1. Initialization only:
+// completed-checkpoint integrity is checked before this exact boundary.
+fn validate_stage_b_predecessor(
+    meta: &recur64_v5::stage::CheckpointMeta,
+    backend: &str,
+    microbatch: usize,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        meta.recipe.source_sha == "d11659eca0774e0064bed0ef64ead2b725886d93",
+        "Stage B refuses any other predecessor source"
+    );
+    // Reuse the exact frozen artifact boundary, never its current-source branch.
+    validate_baseline_checkpoint_source(meta, "stage-b-predecessor-boundary", backend, microbatch)
+}
+
+fn validate_stage_b_publication(
+    baseline: &recur64_v5::study::BaselineEvaluation,
+    raw_sha256: &str,
+    fingerprint: &str,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        raw_sha256 == "b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4"
+            && baseline.schema == recur64_v5::study::BASELINE_EVAL_SCHEMA
+            && baseline.source_sha == "b00569b33ced75a0169804a4a3d5b746a1e0e654"
+            && baseline.stage_a_source_sha == "d11659eca0774e0064bed0ef64ead2b725886d93"
+            && baseline.model_hash
+                == "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00"
+            && baseline.baseline_fingerprint
+                == "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9"
+            && baseline.baseline_fingerprint == fingerprint
+            && baseline.final_update == 1200
+            && baseline.dev_digest == recur64_v5::data::DEV_DIGEST
+            && baseline.dev_record_id_digest
+                == recur64_v5::data::binding(recur64_v5::native_data_v2::Role::Dev)?
+                    .record_id_digest
+            && baseline.config_digest == V5Config::default().scientific_digest()?
+            && baseline.train_digest == recur64_v5::data::TRAIN_DIGEST
+            && baseline.seed == 5301
+            && baseline.microbatch == 2
+            && baseline.device == "cuda"
+            && baseline.precision == "fp32",
+        "Stage B refuses any other baseline publication"
+    );
+    Ok(())
 }
 
 // Evaluation-only owner-authorized bridge for the one immutable predecessor run.
@@ -1450,9 +1500,125 @@ mod source_identity_tests {
         }
         assert!(validate_baseline_checkpoint_source(&meta, evaluator, "cpu", 2).is_err());
         assert!(validate_baseline_checkpoint_source(&meta, evaluator, "cuda", 1).is_err());
-        // This is the unchanged production Stage B equality prerequisite.
-        // The baseline-only helper is never called by train_backend.
+        // Source equality alone still refuses this predecessor. The new Stage B
+        // boundary requires the separately authorized exact artifact binding.
         assert!(!(meta.recipe.source_sha == evaluator && meta.backend == "cuda"));
+    }
+
+    #[test]
+    fn stage_b_bridge_checks_every_predecessor_field_and_cannot_resume_stage_a() {
+        let recipe = Recipe::stage_a("d11659eca0774e0064bed0ef64ead2b725886d93".into(), 2).unwrap();
+        let original = serde_json::json!({
+            "schema": recur64_v5::stage::CHECKPOINT_SCHEMA, "architecture": ARCHITECTURE,
+            "stage":"baseline_a", "recipe_digest":recipe.digest().unwrap(),
+            "config_digest":recipe.config_digest, "recipe":recipe,
+            "update":1200,
+            "model_hash":"2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+            "optimizer_hash":"cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d",
+            "init_model_hash":null, "backend":"cuda", "precision":"fp32",
+            "factual_null_gradient_semantics":"both_streams_differentiated_v1",
+            "history":[],"resume_events":[]
+        });
+        let meta = serde_json::from_value(original.clone()).unwrap();
+        assert!(validate_stage_b_predecessor(&meta, "cuda", 2).is_ok());
+        for pointer in [
+            "/recipe/source_sha",
+            "/model_hash",
+            "/optimizer_hash",
+            "/recipe_digest",
+            "/config_digest",
+            "/recipe/config_digest",
+            "/backend",
+            "/precision",
+            "/recipe/precision",
+            "/recipe/data_contract",
+            "/recipe/train_identity",
+            "/recipe/dev_identity",
+            "/recipe/train_digest",
+            "/recipe/dev_digest",
+        ] {
+            let mut changed = original.clone();
+            *changed.pointer_mut(pointer).unwrap() = "wrong".into();
+            let meta = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_stage_b_predecessor(&meta, "cuda", 2).is_err(),
+                "{pointer}"
+            );
+        }
+        for (pointer, value) in [
+            ("/update", 1199),
+            ("/recipe/seed", 5302),
+            ("/recipe/physical_microbatch", 1),
+        ] {
+            let mut changed = original.clone();
+            *changed.pointer_mut(pointer).unwrap() = value.into();
+            let meta = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_stage_b_predecessor(&meta, "cuda", 2).is_err(),
+                "{pointer}"
+            );
+        }
+        assert!(validate_stage_b_predecessor(&meta, "cpu", 2).is_err());
+        assert!(validate_stage_b_predecessor(&meta, "cuda", 1).is_err());
+        // Stage A resume still uses its exact current-source recipe digest, not this bridge.
+        let current_a =
+            Recipe::stage_a("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into(), 2).unwrap();
+        assert_ne!(current_a.digest().unwrap(), meta.recipe_digest);
+    }
+
+    #[test]
+    fn stage_b_publication_bridge_refuses_each_changed_identity() {
+        let original = serde_json::json!({
+            "schema":recur64_v5::study::BASELINE_EVAL_SCHEMA,"architecture":ARCHITECTURE,
+            "source_sha":"b00569b33ced75a0169804a4a3d5b746a1e0e654",
+            "stage_a_source_sha":"d11659eca0774e0064bed0ef64ead2b725886d93",
+            "dev_record_id_digest":recur64_v5::data::binding(recur64_v5::native_data_v2::Role::Dev).unwrap().record_id_digest,
+            "config_digest":V5Config::default().scientific_digest().unwrap(),
+            "train_digest":recur64_v5::data::TRAIN_DIGEST,"dev_digest":recur64_v5::data::DEV_DIGEST,
+            "model_hash":"2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+            "baseline_fingerprint":"12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9",
+            "final_update":1200,"seed":5301,"microbatch":2,"precision":"fp32","device":"cuda",
+            "scope":"all_dev_4500","root_encoder_examples":4500,"returned_encoder_examples":0,
+            "exact_queries":0,"shared_core_applications":0,"records":[]
+        });
+        let raw = "b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4";
+        let fp = "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9";
+        let baseline = serde_json::from_value(original.clone()).unwrap();
+        assert!(validate_stage_b_publication(&baseline, raw, fp).is_ok());
+        assert!(validate_stage_b_publication(&baseline, "wrong", fp).is_err());
+        assert!(validate_stage_b_publication(&baseline, raw, "wrong").is_err());
+        for field in [
+            "schema",
+            "source_sha",
+            "stage_a_source_sha",
+            "model_hash",
+            "baseline_fingerprint",
+            "dev_digest",
+            "dev_record_id_digest",
+            "config_digest",
+            "train_digest",
+            "precision",
+            "device",
+        ] {
+            let mut changed = original.clone();
+            changed[field] = "wrong".into();
+            let baseline = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_stage_b_publication(&baseline, raw, fp).is_err(),
+                "{field}"
+            );
+        }
+        for (field, value) in [("final_update", 1199), ("seed", 5302), ("microbatch", 1)] {
+            let mut changed = original.clone();
+            changed[field] = value.into();
+            let baseline = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_stage_b_publication(&baseline, raw, fp).is_err(),
+                "{field}"
+            );
+        }
+        // Identity validation does not replace full actual-DEV record validation.
+        assert!(baseline.validate().is_err());
     }
 
     #[test]
