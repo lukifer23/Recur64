@@ -1,5 +1,24 @@
 # V5 HP resume and artifact transfer
 
+## CURRENT STATE: frozen Stage-B experiment COMPLETE — NO_SIGNAL
+
+Owner review required. Recommend CLOSE V5 AND DESIGN V6, without implementing
+it in this pass. No training/evaluation process remains active after publication.
+Stage B remains800/800 source3db24a926815159d592e93b60a8ae51852abad13,
+run `runs/v5/v2/seed-5301/stage-b`; modelc7f6b10a0b60982199cd352c157a377115c6f00a46c699a6a9b3bb859e8bd273.
+Evaluator source7fb7461e94fa4819404913d9a51e91d4d154c167, v3 controls.
+Complete raw matrices: `runs/v5/v2/seed-5301/eval-v3-000/all-dev.json` and
+`runs/v5/v2/seed-5301/eval-v3-800/all-dev.json`. Both4500 unique DEV positions.
+Current compact receipts: `docs/evidence/v5/stage-b-v3-summary.json`,
+`stage-b-v3-pilot.json`, `stage-b-v3-ablation.json`, `stage-b-v3-post-custody.json`.
+[Full result](V5_STAGE_B_RESULTS.md) includes primary matrices and diagnostics.
+B0 exact; TRAIN/DEV/CONFIRM custody PASS; CONFIRM sealed=true,evaluated=false.
+R8 notrun(NO_SIGNAL); no retraining/extraupdates/replication/controller/selfplay.
+Historical v2 partials and failure remain preserved and are not final evidence.
+The following older handoffs,StageA/P25 commands and blocked status are HISTORY,
+not current instructions. Do not resume old training through the evaluator bridge.
+
+
 > LATEST CONTINUATION REVIEW: no scientific process active; update800 complete.
 > Existing update0 shuffle donor failure still blocks DEV completion. Recommend
 > HARNESS REPAIR, subject to owner approval of a versioned evaluation-control

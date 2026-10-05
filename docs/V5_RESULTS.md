@@ -1,5 +1,17 @@
 # V5 results
 
+## Current completed V5 pilot (v3)
+
+MEASURED **NO_SIGNAL** at immutable seed5301 update800. Engineering passed;
+all12 fresh v3 DEV cells completed with exact B0/replay,4500 positions per update.
+No reader treatment changed an action. Loop/B0 top1 effects0; shuffle-loss contrast
+-1.6042064e-7 (95% CI[-9.8252673e-7,6.5496789e-7]). Recommend CLOSE V5 AND
+DESIGN V6 under owner matrix; no rescue or next architecture implemented.
+Training source3db24a9, evaluator7fb7461; StageA/B/B0 artifacts unchanged.
+CONFIRM sealed/unevaluated. Full results: [V5_STAGE_B_RESULTS](V5_STAGE_B_RESULTS.md).
+Lower historical blocked/partial accounts are preserved and superseded.
+
+
 > LATEST CONTINUATION REVIEW: no scientific process active; update800 complete.
 > Existing update0 shuffle donor failure still blocks DEV completion. Recommend
 > HARNESS REPAIR, subject to owner approval of a versioned evaluation-control

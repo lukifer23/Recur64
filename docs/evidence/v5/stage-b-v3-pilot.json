@@ -1,0 +1,86 @@
+{
+  "schema": "v5_reader_pilot_report_v3",
+  "shuffle_contract": "v5_payload_shuffle_widening_v1",
+  "classification": "NO_SIGNAL",
+  "loop_benefit": {
+    "name": "top1_q8_r4_minus_q8_r1",
+    "estimate": {
+      "mean": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "resamples": 20000,
+      "lo_rank": 499,
+      "hi_rank": 19499
+    },
+    "threshold": 0.03,
+    "per_schedule": {
+      "base_ranked_depth_v1": 0.0,
+      "uniform_frontier_v1": 0.0
+    },
+    "pass": false
+  },
+  "b0_benefit": {
+    "name": "top1_q8_r4_minus_b0",
+    "estimate": {
+      "mean": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "resamples": 20000,
+      "lo_rank": 499,
+      "hi_rank": 19499
+    },
+    "threshold": 0.03,
+    "per_schedule": {
+      "base_ranked_depth_v1": 0.0,
+      "uniform_frontier_v1": 0.0
+    },
+    "pass": false
+  },
+  "payload_shuffle_loss": {
+    "name": "set_loss_shuffle_minus_real_q8_r4",
+    "estimate": {
+      "mean": -1.6042064047009502e-7,
+      "lo": -9.825267319713105e-7,
+      "hi": 6.549678919599297e-7,
+      "resamples": 20000,
+      "lo_rank": 499,
+      "hi_rank": 19499
+    },
+    "threshold": 0.01,
+    "per_schedule": {
+      "base_ranked_depth_v1": -5.015344287156474e-7,
+      "uniform_frontier_v1": 1.8069314777545728e-7
+    },
+    "pass": false
+  },
+  "payload_loop_interaction": {
+    "name": "real_loop_benefit_minus_shuffled_loop_benefit",
+    "estimate": {
+      "mean": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "resamples": 20000,
+      "lo_rank": 499,
+      "hi_rank": 19499
+    },
+    "threshold": 0.0,
+    "per_schedule": {},
+    "pass": false
+  },
+  "engineering_integrity_accounting_pass": true,
+  "wrong_to_right_vs_right_to_wrong": {
+    "base_ranked_depth_v1": {
+      "wrong_to_right": 0,
+      "right_to_wrong": 0,
+      "unchanged_right": 3568,
+      "unchanged_wrong": 932
+    },
+    "uniform_frontier_v1": {
+      "wrong_to_right": 0,
+      "right_to_wrong": 0,
+      "unchanged_right": 3568,
+      "unchanged_wrong": 932
+    }
+  },
+  "exact_unrounded_comparisons": true
+}

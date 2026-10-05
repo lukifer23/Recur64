@@ -975,3 +975,32 @@ measurement; unresolved=0 mandatory. Version evaluation/pilot schemas to v3;
 freeze treatments/gates/bootstrap/composition/R8. Preserve partialv2 and failure.
 Commit/push before code. New evaluator must pass full validation, CPU/CUDA exact
 D9, fresh disposable Q8 drill and custody before fresh six-cell0/800 measurements.
+
+
+## V5-E51 - source7fb7461 shuffle-control completion and engineering gates
+
+Preregistrationbd1e946 pushed before implementation7fb7461; only CLI/evaluation/
+study changed, no model/training math. Exact-depth then nearest same-turn donor
+pool, never cross-cell/turn/self. Full Q8 census72000 recipients,71997 exact,
+3 widened depth 6 -> 4,unresolved 0. Fresh CPU/CUDA exact D9 and fullworkspace
+604/0/2 PASS; fresh disposable Q8/R4 drill99.3675% reduction,baseline exact.
+Actual pre-custody PASS,CONFIRM sealed/unevaluated. Engineering evidence9923552
+pushed before any repaired DEV measurement. Evaluation-only exact3db checkpoint
+bridge; Trainer sourceguard remains unchanged.
+
+## V5-E52 - complete fixed v3 DEV pilot: NO_SIGNAL; close V5/design V6
+
+All 12 bounded fresh v3 cell invocations exited0: update 0 and800 each4500 unique
+positions/six cells750. Normalreplay exact,complete treatment and mapping audits.
+B0 shared per-position actions/metrics exact over18000 schedule records; graphs
+and shuffle mappings identical across checkpoints. No partialv2 reuse. Fixed
+classifier unchanged20k bootstrap(all 4,500 scope) returned NO_SIGNAL: loop/B0
+top1 benefit0 CI[0,0]; shuffle-minus-real setloss-1.6042064e-7 CI
+[-9.8252673e-7,6.5496789e-7]; loop/payload interaction0 CI[0,0]; engineeringPASS.
+Every treatment/condition action unchanged fromB0. Nonzero reader corrections
+produce tiny probability shifts without content-specific decision improvement.
+R8 NOT RUN. Per owner matrix recommend CLOSE V5 AND DESIGN V6; no rescue or
+next architecture implementation. PostcustodyPASS/zerooverlaps,CONFIRM sealed
+and unevaluated;614 files unchanged including completed training/B0/failures.
+Historical CUDA cross-process drill variance retained without defect attribution
+or repeatedseed 5301. FullreportV5_STAGE_B_RESULTS.md; owner review next.

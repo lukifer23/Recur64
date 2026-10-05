@@ -1,0 +1,10 @@
+{
+  "schema": "v5_post_evaluation_preservation_v1",
+  "evaluator_source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+  "preserved_file_count": 614,
+  "all_files_byte_identical": true,
+  "stage_a_file_set_unchanged": true,
+  "stage_b_file_set_unchanged": true,
+  "historical_failure_and_partial_reports_unchanged": true,
+  "stage_b_training_repeated": false
+}
