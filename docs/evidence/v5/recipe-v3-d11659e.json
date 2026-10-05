@@ -1,0 +1,210 @@
+{
+  "contract": {
+    "architecture": "counterfactual_relational_loop_v1",
+    "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+    "data_contract": "v5_hp_data_v2",
+    "dev_count": 4500,
+    "dev_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+    "dev_identity": "V5_HP_DEV_V2",
+    "dev_record_content_digest": "aac1be9d74af801ea2fb32e88a1f3eb9e4e93062f6a49ada8512b953c91847c5",
+    "loss": "v5_correct_set_loss_v1",
+    "optimizer": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "peak_lr": 0.0003,
+    "physical_microbatch": 2,
+    "precision": "fp32",
+    "primary_cell_count": 750,
+    "sampler": "cell_balanced_v1",
+    "schema": "v5_stage_recipe_v3_contract",
+    "scientific_recipe": "v5_stage_recipe_v3",
+    "seed": 5301,
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "stage_a": {
+      "effective_batch": 64,
+      "q": 0,
+      "reader_execution": false,
+      "updates": 1200
+    },
+    "stage_b": {
+      "conditions": [
+        {
+          "q": 2,
+          "r": 1,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 4,
+          "r": 1,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 4,
+          "r": 2,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 4,
+          "r": 4,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 8,
+          "r": 1,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 8,
+          "r": 2,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 8,
+          "r": 4,
+          "schedule": "uniform_frontier_v1"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 4,
+          "r": 1,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 4,
+          "r": 2,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 4,
+          "r": 4,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 8,
+          "r": 1,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 8,
+          "r": 2,
+          "schedule": "base_ranked_depth_v1"
+        },
+        {
+          "q": 8,
+          "r": 4,
+          "schedule": "base_ranked_depth_v1"
+        }
+      ],
+      "effective_batch": 36,
+      "examples_per_condition": 2,
+      "updates": 800
+    },
+    "train_cells": {
+      "KQQvK M1": 3000,
+      "KQQvK M2": 3000,
+      "KQQvK M3": 3000,
+      "KQRvK M1": 3000,
+      "KQRvK M2": 3000,
+      "KQRvK M3": 3000,
+      "KRRvK M1": 3000,
+      "KRRvK M2": 3000,
+      "KRRvK M3": 3000
+    },
+    "train_count": 27000,
+    "train_digest": "d7918b7a138b9aab17de24842dd5bf511cb0b95aeccbcbf07cb48921a81d86b9",
+    "train_identity": "V5_HP_TRAIN_V2",
+    "train_record_content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+    "warmup": 80
+  },
+  "contract_digest": "4485032edfc1de9a106d66009ccacb33d20e593d7408e9cef218790a5cbba9de",
+  "schema": "v5_recipe_preregistration_v3",
+  "stage_a_recipe": {
+    "accumulation_steps": 32,
+    "architecture": "counterfactual_relational_loop_v1",
+    "baseline_fingerprint": null,
+    "conditions": [],
+    "config": {
+      "architecture": "counterfactual_relational_loop_v1",
+      "attention_execution": "burn_0_21_explicit_detached_max_exp_sum_div_v1",
+      "candidate_blocks": 1,
+      "contracts": {
+        "acquired_graph": "v5_acquired_graph_v2",
+        "correct_set_loss": "v5_correct_set_loss_v1",
+        "input_recall": "v5_input_recall_v1",
+        "paired_null_readout": "v5_paired_null_readout_v1",
+        "pilot": "v5_fixed_graph_reader_pilot_v1",
+        "relational_loop": "v5_relational_loop_v1",
+        "returned_payload": "v5_returned_payload_v1",
+        "root_frame": "v5_root_frame_v1",
+        "root_hypotheses": "v5_root_hypotheses_v1",
+        "state_tokens": "v5_state_tokens4_v1"
+      },
+      "depth_encoding": "one_hot_nonroot_depth_1_through_16",
+      "dropout": 0.0,
+      "evidence_blocks": 1,
+      "ffn": 768,
+      "heads": 8,
+      "hypothesis_blocks": 1,
+      "max_depth": 16,
+      "max_query": 16,
+      "ranked_max_branch_edges": 5,
+      "ranked_max_depth": 5,
+      "readout_hidden": 256,
+      "residual_alpha": 0.5,
+      "rms_eps": 0.00001,
+      "root_blocks": 4,
+      "state_blocks": 2,
+      "state_slots": 4,
+      "structural_features": 33,
+      "uniform_frontier_rule": "complete_unqueried_legal_frontier",
+      "width": 256
+    },
+    "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+    "data_contract": "v5_hp_data_v2",
+    "dev_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+    "dev_identity": "V5_HP_DEV_V2",
+    "effective_batch": 64,
+    "fit_digest": "2adc94d4725acd34959578fd31c23af852a4fe3f10f56aa1259dbcb55dcaa726",
+    "init_model_hash": null,
+    "loss": "v5_correct_set_loss_v1",
+    "optimizer": "adamw-v1:burn=0.21.0,beta1=0.9,beta2=0.999,eps=1e-5,weight_decay=1e-4,cautious_wd=false,amsgrad=false,clip=per_parameter_l2_norm@1.0,grad_reduction=example_weighted_mean_over_effective_batch",
+    "peak_lr": 0.0003,
+    "physical_microbatch": 2,
+    "precision": "fp32",
+    "sampler": "cell_balanced_v1",
+    "schema": "v5_stage_recipe_v3",
+    "seed": 5301,
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "stage": "baseline_a",
+    "train_cell_count": 9,
+    "train_digest": "d7918b7a138b9aab17de24842dd5bf511cb0b95aeccbcbf07cb48921a81d86b9",
+    "train_identity": "V5_HP_TRAIN_V2",
+    "updates": 1200,
+    "warmup": 80
+  },
+  "stage_a_recipe_digest": "6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70",
+  "stage_b_initialization": "unbound until future authorized Stage A; no weights initialized",
+  "training_run": false
+}

@@ -1,0 +1,192 @@
+{
+  "schema": "v5_current_source_validation_v2",
+  "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "starting_head": "0930ac6895ff27e24b37c037ce66512754fc8880",
+  "model_implementation_source": "003d296e094c28fc488cd56ef0944b60299983f9",
+  "unchanged_math_files": [
+    "model.rs",
+    "config.rs",
+    "profile.rs",
+    "qualification.rs",
+    "graph.rs"
+  ],
+  "workspace": {
+    "schema": "v5_release_workspace_receipt_v2",
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "native_exit_code": 0,
+    "passed": 596,
+    "failed": 0,
+    "ignored": 2,
+    "test_result_blocks": 68,
+    "focused_v5_included": true
+  },
+  "format": {
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "workspace_rustfmt_exit_code": 1,
+    "affected_rustfmt_exit_code": 0,
+    "schema": "v5_format_scope_receipt_v2",
+    "unchanged_legacy_files": [
+      {
+        "path": "crates/recur64-cli/src/v4.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-cli/tests/v4_boundary.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-runtime/src/proof/custody.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/base.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/belief.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/content.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/data.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/ledger.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/model.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/session.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/stage.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/study.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/train.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/src/utility.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/tests/invariants.rs",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "crates/recur64-v4/tests/training.rs",
+        "unchanged_from_start": true
+      }
+    ]
+  },
+  "cuda_clippy": {
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "command": "cargo clippy --release -p recur64-v5 --all-targets --features cuda -- -D warnings",
+    "native_exit_code": 0,
+    "serial_build_jobs": 1
+  },
+  "cuda_build": {
+    "native_exit_code": 0,
+    "cuda_launch_blocking": null,
+    "precision": "fp32",
+    "wall_seconds": 746.3778731,
+    "tf32_feature_enabled": false,
+    "command": "cargo build --release -p recur64-cli --features cuda",
+    "serial_build_jobs": 1,
+    "cuda_toolkit": "12.9.1",
+    "cublas_workspace_config": null,
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93"
+  },
+  "cpu_qualification_pass": true,
+  "cuda_qualification_pass": true,
+  "unchanged_exact_d9_pass": true,
+  "normal_normal_exact": true,
+  "profile_profile_exact": true,
+  "cross_mode_and_reverse_exact": true,
+  "clone_purity_pass": true,
+  "independent_comparison_pairs": 12,
+  "graph_provenance_pass": true,
+  "all_local_custody_pass": true,
+  "confirmation_evaluated": false,
+  "archives": [
+    {
+      "file": "workspace-release.log.gz",
+      "raw_sha256": "8400e5d53cd582d374337de342b8540b670ff6bd37957a9bd001a812be29dbbf",
+      "compressed_sha256": "81bf956919c538bfd32039269b8747782e6f44d2e9b7135ce58691cf6c61ddce",
+      "decompressed_sha256": "8400e5d53cd582d374337de342b8540b670ff6bd37957a9bd001a812be29dbbf"
+    },
+    {
+      "file": "profile-parity-d11659e-cuda.json.gz",
+      "raw_sha256": "513bfd748c578de4d32386651c98984808918ec78ec3417103a251597c6a46a9",
+      "compressed_sha256": "6a9e07ea549a8d9c2d96ab18a7722fa6198d0a7ba910f98b1d29c70383840eaf",
+      "decompressed_sha256": "513bfd748c578de4d32386651c98984808918ec78ec3417103a251597c6a46a9"
+    }
+  ],
+  "historical_reports": {
+    "schema": "v5_historical_qualification_preservation_v2",
+    "consumer_source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "reports": [
+      {
+        "path": "docs/evidence/v5/qualification-003d296-cpu.json",
+        "sha256": "f662c06585802c3b03232b31b8e6a785e4851e6ce24032aad621b6c3ba22a2ca",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-003d296-cuda.json",
+        "sha256": "5d3c46790f6b8ecf686658bb9ce2859def8e6b7d4925802be7f0b68b9e115b61",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-64c4dd4-cpu.json",
+        "sha256": "5e456a4e27643e25b8fa3eb6339c043055fe75a9dae4dc0c61ec206039533c1d",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-64c4dd4-cuda.json",
+        "sha256": "5f1f93dff812f6647a142567e3cf156006c8e828dd9a7f3e1fce78d14e1c27ee",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-7737640-cpu.json",
+        "sha256": "9919343d46d7555955bd9ac218a5e4a2feeade93a71ece0b935b891010e035f6",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-d970049-cpu.json",
+        "sha256": "9f483bc058921b3e2cccb989e3f5944ef2c01605fbb2b222a9282bdf2369b7cc",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-d970049-cuda.json",
+        "sha256": "f4afe1df8e13cbfdd5cc3cf1e67dd535e87d5e043c1ca8787d16ce2b199337ac",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-df6e2aa-cpu.json",
+        "sha256": "9beb3229cc3d4346cbc78a47c5f0b6e36cfac58b8a565312b5b5ee71688f5d3e",
+        "unchanged_from_start": true
+      },
+      {
+        "path": "docs/evidence/v5/qualification-df6e2aa-cuda.json",
+        "sha256": "c122aca1e21f31b2b7370c1889627d5e25da29fe6e6e5626f716fb9c1c271057",
+        "unchanged_from_start": true
+      }
+    ]
+  },
+  "drill_run": false,
+  "stage_a_run": false,
+  "stage_b_run": false
+}

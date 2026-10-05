@@ -1,0 +1,44 @@
+{
+  "schema": "v5_graph_provenance_receipt_v2",
+  "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "cases": [
+    {
+      "case": "valid",
+      "native_exit_code": 0,
+      "expected_result": true,
+      "stderr": ""
+    },
+    {
+      "case": "stale_source",
+      "native_exit_code": 1,
+      "expected_result": true,
+      "stderr": "Error: stale or unversioned graph source provenance"
+    },
+    {
+      "case": "wrong_config",
+      "native_exit_code": 1,
+      "expected_result": true,
+      "stderr": "Error: graph artifact configuration mismatch"
+    },
+    {
+      "case": "tampered_graph",
+      "native_exit_code": 1,
+      "expected_result": true,
+      "stderr": "Error: graph Q out of range"
+    },
+    {
+      "case": "copied_metadata",
+      "native_exit_code": 1,
+      "expected_result": true,
+      "stderr": "Error: graph artifact metadata/content mismatch"
+    },
+    {
+      "case": "naked_graph",
+      "native_exit_code": 1,
+      "expected_result": true,
+      "stderr": "Error: unknown field `episode`, expected one of `schema`, `source_sha`, `architecture`, `config_digest`, `graph_digest`, `structure_digest`, `generation_role`, `graph` at line 1 column 129"
+    }
+  ],
+  "pass": true
+}

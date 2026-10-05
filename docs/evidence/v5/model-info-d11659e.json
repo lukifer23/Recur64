@@ -1,0 +1,49 @@
+{
+  "architecture": "counterfactual_relational_loop_v1",
+  "scientific_config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "parameters": 7162896,
+  "parameter_bytes_fp32": 28651584,
+  "parameter_breakdown": [
+    [
+      "root",
+      3677728
+    ],
+    [
+      "state_encoder",
+      1633808
+    ],
+    [
+      "hypothesis_adapter",
+      65792
+    ],
+    [
+      "evidence_initializer",
+      139776
+    ],
+    [
+      "evidence_block",
+      789872
+    ],
+    [
+      "hypothesis_block",
+      789872
+    ],
+    [
+      "correction_readout",
+      66048
+    ]
+  ],
+  "contracts": {
+    "root_frame": "v5_root_frame_v1",
+    "root_hypotheses": "v5_root_hypotheses_v1",
+    "returned_payload": "v5_returned_payload_v1",
+    "state_tokens": "v5_state_tokens4_v1",
+    "acquired_graph": "v5_acquired_graph_v2",
+    "relational_loop": "v5_relational_loop_v1",
+    "input_recall": "v5_input_recall_v1",
+    "paired_null_readout": "v5_paired_null_readout_v1",
+    "correct_set_loss": "v5_correct_set_loss_v1",
+    "pilot": "v5_fixed_graph_reader_pilot_v1"
+  },
+  "paired_core_block_applications_per_example": "4R"
+}

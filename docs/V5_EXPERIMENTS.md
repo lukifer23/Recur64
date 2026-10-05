@@ -815,3 +815,7 @@ Producer 738db983084a998664ce962f87fa3c4a6153f526 generated TRAIN27000, DEV4500 
 ## V5-E38 - measured data-v2/recipe-v3 integration
 
 After pushed DATA-V2-B, production constants bind exact measured V2 bytes/manifests. TRAIN-only/DEV-only scientific entry points, sealed CONFIRM custody, nine-cell sampler exposure and independent DEV4500/primary750 expectations are implemented. Recipe-v3 and evaluation/drill schema amendments are explicit. Model/math/configuration/mask repair are unchanged. Current-source qualification and final custody/drill remain pending; no Stage A/B or DEV science run.
+
+## V5-E39 - current-source final engineering gate
+
+Source d11659eca0774e0064bed0ef64ead2b725886d93: full release workspace596 PASS/zero failures/two preserved ignores; current CPU and RTX2050 CUDA qualification PASS unchanged exact D9 at FP32/microbatch2, nine Q/R shapes, 50 resident Q8/R4 updates and complete checkpoint/moment/resume. Twelve repeated independent normal/profile comparisons ALL_EXACT; clone purity PASS. Fresh persisted graph provenance six cases PASS. All three actual local raw-file custody/seal/disjointness and role refusal checks PASS. V5 CUDA Clippy -D warnings/serial pinned CUDA build/changed-file rustfmt PASS. Global formatting drift remains in16 verified unchanged files. Model/config/profiler/qualification/graph blobs match003d296; historical failed reports preserved. Conditional 24-position drill is now eligible; Stage A/B and DEV science remain unrun.
