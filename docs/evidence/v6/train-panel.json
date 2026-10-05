@@ -1,0 +1,1308 @@
+{
+  "schema": "v6_design_diagnostic_panel_v1",
+  "selection_contract": "recur64.v6_diagnose_train_panel_v1",
+  "selection_seed": 2053165057,
+  "train_identity": "V5_HP_TRAIN_V2",
+  "count": 216,
+  "per_cell_count": 24,
+  "gradient_pairs": "first two selected IDs per cell; 9 fixed pairs",
+  "positions": [
+    {
+      "index": 2786,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-..............Q.K..................................Q...........k",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2648,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-..............K...........................Q......Q.........k....",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 725,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-...............................Q...k.........Q.................K",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2058,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.....................K..........k................Q..Q...........",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 721,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-...............................Q...K....Q..........k............",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2056,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.....................K..........Q..................Q..........k.",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 462,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-....................................Q..........kKQ..............",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 226,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.......................................Q.Q.....K..........k.....",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 509,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-....................................k....Q....Q.......K.........",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 331,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-......................................Q.K.....Q..........k......",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1711,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.......................k............Q....................Q....K.",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2252,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-....................K.Q...........Q............................k",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2665,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-..............K.................Q.........k..........Q..........",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1603,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.......................Q.......Q........k.K.....................",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2963,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.......k.....................K..........Q.....................Q.",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 30,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-...............................................Q.........QK...k.",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1860,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-......................Q........................k....Q....K......",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 781,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-...............................k........K........Q....Q.........",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1328,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-............................Q...K...Q...........k...............",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1048,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.............................Q......................k.....Q....K",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 2068,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.....................K........Q..Q..............k...............",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 544,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-...................................Q.K..........Q..............k",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 950,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-..............................Q.K............k..............Q...",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 1014,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m1-.............................K..Q..............k....Q...........",
+      "family": "KQQvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 5738,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.............Q...........k...................Q.................K",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3487,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-..............................Q...k.........K..............Q....",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5462,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-..............K.................k.....................Q.......Q.",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5939,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.......Q.....................Q..................K.............k.",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5890,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.......K......................................k.........Q......Q",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5236,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............Q........k..................K.........Q..........",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3323,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............................Q......K........Q...........k....",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3263,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-..................................K.Q..Q.........k..............",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5042,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.................Q.Q...K.....................................k..",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4737,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.....................k..................Q.............Q.......K.",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4889,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-....................Q.....Q...................k...K.............",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3451,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-..............................Q..................k....K......Q..",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4043,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.......................Q.....K............k..........Q..........",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3304,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............................Q.................k..........K.Q.",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3336,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............................Q....K.Q...................k.....",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4162,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.......................k............K...........Q.......Q.......",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4793,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-....................K.............Q.....Q.............k.........",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4937,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-....................k..................................QK....Q..",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5417,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............k..Q......................Q...............K......",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5981,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-......K.........Q......Q.................................k......",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 5645,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-..............k.................K..........Q.................Q..",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3388,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-...............................k..........Q..K..............Q...",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 3178,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-.....................................k...........K..Q......Q....",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 4848,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m2-....................Q.............K...........k.........Q.......",
+      "family": "KQQvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 7633,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.........................K....k.Q..........................Q....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6250,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-....................................k.........Q..........K....Q.",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6589,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-..............................k.K...............Q.Q.............",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6787,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.............................k..................Q...K.......Q...",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8674,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-...............Q...k....................................K......Q",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6882,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.............................k...........K......Q..Q............",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6380,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-...............................kQ.K.......................Q.....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8715,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-..............KQ.........k.................................Q....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 7136,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-............................k............................Q.Q...K",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6599,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-..............................k.Q.........K..............Q......",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6677,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.............................k.....................K......Q.Q...",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8486,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-....................k............K.......................Q.....Q",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8055,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.....................K.Q..k....................................Q",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 7876,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-......................k....................K....Q.Q.............",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8783,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-..............k..........................Q...............Q.K....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8551,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.................k...K.Q............................Q...........",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6844,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.............................k............Q...............Q.K...",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8407,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-....................k.........................K.......Q..Q......",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 7261,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-............................k...................Q....Q...K......",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 7986,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-......................k.........Q..K.......................Q....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8144,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.....................k.....................K.............Q..Q...",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 8214,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.....................k..................Q.............K........Q",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 7994,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-......................k.........QK.............................Q",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 6668,
+      "position_id": "V5_HP_TRAIN_V2-KQQvK-m3-.............................k........................Q.Q.K.....",
+      "family": "KQQvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 10508,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.......................K.......................Q......R.k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11200,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.....................R..............K...........Q.........k.....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11238,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-....................K...............k..........Q........R.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 9021,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-....................................................RQ...K.k....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11050,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.....................K.......................R...Q.............k",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 10570,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.......................K.R.............k...Q....................",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11331,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-..................K....k..............................R.Q.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 10284,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.............................R..k..........Q.....K..............",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 10670,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.......................R.....Q...........K..............k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11319,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-....................k.K..........................R.........Q....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11328,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...................R..K.........k........................Q......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11351,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.................Q.....R......................K..............k..",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 9602,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-....................................KR................Q..k......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11463,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............Q.R...........................K..........k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11362,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............K......................................QRk.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 9517,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.....................................Q.....k.........R.....K....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 10226,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.............................Q..k...............K.R.............",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11470,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............R.....................................QK.k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11406,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............K.Q......................k.................R.....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11479,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............R.........................K..Q..............k....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 9109,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-.............................................K...R.Q....k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11375,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-...............K....................R.................Q.k.......",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 11836,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-............Q...................................R......K..k.....",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 10396,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m1-............................R.....Q......K.........k............",
+      "family": "KQRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 13379,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................k..........K......................R..Q...",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12625,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-..............................K...R...Q..................k......",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 14536,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-..............K....Q............................k............R..",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13433,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................k...Q.....R....................K.........",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12632,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-..............................K.k............RQ.................",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13100,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.........................Q.....K...R........................k...",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12206,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................................Q...................RK.k...",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13991,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-....................R........k...........Q.............K........",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12786,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.............................Q.......R................k...K.....",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13031,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...........................Q..K.k...........R...................",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13250,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................R..................Q..............k...K..",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13682,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-......................k..R............K......Q..................",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13150,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................K.....Q..k.........R.....................",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 14207,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...............Q.........k..........................K.....R.....",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13385,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................k..........R.....Q...................K...",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12492,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...............................RK.Q..............k..............",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13763,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................Q...............R.....K....k...............",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 14094,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...............K........................R............k.....Q....",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12195,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................................K.....k..........Q......R..",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13910,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-....................K....Q.....R............................k...",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 13498,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-......................K..............Q................k..R......",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 14879,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-.......Kk............R.........................................Q",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 12580,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...............................k.Q....R.............K...........",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 14119,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m2-...............K.........Q.............R......................k.",
+      "family": "KQRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 17015,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.....................k...R.....K.........................Q......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17479,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-...............R................Q.................K..........k..",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 16566,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-......................k..................R.................K...Q",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15021,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-..............................................R.K....k...Q......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 16421,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-......................Q.....................k.........R..K......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17996,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.......R........Q.............k..........................K......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17432,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-...............Q....K................R...........k..............",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17192,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-....................k..........Q..K......................R......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17636,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-..............Q.....k..........R........................K.......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15784,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.............................R..........k...........Q.......K...",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17017,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.....................k..K.............................Q.....R...",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17189,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-....................k..........K.............Q...R..............",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15269,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-....................................R........K.Qk...............",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15730,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.............................KQ.k..................R............",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 16786,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.....................K....k............................Q...R....",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15264,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-....................................Q.K..........k..........R...",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 16081,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.........................R.....Q...............K.....k..........",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17260,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-..................Q....K............................k....R......",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17855,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.............k...........K............R.....................Q...",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15008,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-...............................................k.........RQ.K...",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 17772,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k..K................................Q............R",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 16335,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................k.R.K......................Q.............",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15380,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-...............................K.k.........Q...................R",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 15044,
+      "position_id": "V5_HP_TRAIN_V2-KQRvK-m3-............................................k.........Q..K.....R",
+      "family": "KQRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 20056,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.....................R..K..............................Rk.......",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20065,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.....................k.K..........R.........R...................",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18857,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..............................K.....................R..R..k.....",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19363,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..........................K...R..........R.....................k",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19213,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-............................K...........R........R............k.",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18647,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..................................R..R......k.....K.............",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20862,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.......K.........................R..............R...........k...",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18915,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..............................KR.....................R...k......",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18387,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.....................................K..........R...R.....k.....",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18576,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-....................................R...K.R.............k.......",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19068,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.............................K...R...........k..R...............",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20231,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-................R....K.k..............................R.........",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18281,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.......................................RK.............R....k....",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18865,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..............................K................k...R........R...",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19400,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.........................R.....K.........R..............k.......",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18401,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.....................................K......R....R.............k",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19903,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-......................R..R.............K........k...............",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20069,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-....................K...........................R......R....k...",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20700,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..............R.R..................................K...........k",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20691,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-..............R..R..................................K..k........",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 18488,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.....................................R.R................k.K.....",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19187,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.............................R..k.K..........................R..",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 20831,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-.........K.....k..............................R.........R.......",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 19280,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m1-............................R.........R...........K............k",
+      "family": "KRRvK",
+      "mate_depth": 1
+    },
+    {
+      "index": 22938,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-....................R..........k.K................R.............",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 22223,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................R..........K...R.........k...............",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21875,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.............................RK.............R............k......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23622,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-..............k..............................R..........K......R",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23604,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-..............R......RK.................................k.......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21854,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.............................R...KR...........................k.",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21941,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-............................R..............R..............k.K...",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21365,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...................................KR.......R..........k........",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23612,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-..............R.R............K...............................k..",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21473,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............................R.............K.....k....R.......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 22492,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-......................K...........R...........R.k...............",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23464,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............kK...........................R............R......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21185,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-......................................K.........k........RR.....",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23918,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.......R...........R............................k............K..",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23293,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............k................................R.........K.R...",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23932,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.......R....R...................................k.............K.",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 23857,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.......K..............k....R............................R.......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 22972,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-....................R.K.k..............................R........",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21446,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............................K.....k..R..................R....",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 22070,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-..........................K..k........R.......................R.",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21518,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............................R.k........R..............K......",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21477,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-...............................R............R.....k.K...........",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 22587,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-......................R........kR..........K....................",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 21115,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................................R......k.........R....K..",
+      "family": "KRRvK",
+      "mate_depth": 2
+    },
+    {
+      "index": 25679,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-......................k................KR.................R.....",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24314,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-....................................R..R..................K...k.",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26791,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.............K...........R.....................k...........R....",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24716,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..............................k.K............R.....R............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24379,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..................................R...R..........K..........k...",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 25661,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-......................RR.........k................K.............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26222,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-...............K..........RR....................k...............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 25632,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-......................R..K.........R.....................k......",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26408,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-...............RR.............................K..k..............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24257,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.....................................k....R..........K.......R..",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24693,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..............................k.........R..........K.........R..",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26516,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-...............k........R.........................R.....K.......",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26963,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.......R........................k.................R.........K...",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 25765,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.....................K................................k.RR......",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24570,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-...............................k..R.R........K..................",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24276,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-....................................K..RR.................k.....",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 25313,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.......................RR..............K......................k.",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26982,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-.......R....R...........................K.....................k.",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 24951,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-............................R....k.................K.R..........",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26022,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-....................KR.................R.........k..............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26531,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..............K..........................R....R....k............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26641,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..............R.........K......................R............k...",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 26746,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-..............k..............R...........K.........R............",
+      "family": "KRRvK",
+      "mate_depth": 3
+    },
+    {
+      "index": 25729,
+      "position_id": "V5_HP_TRAIN_V2-KRRvK-m3-......................k....K...................R........R.......",
+      "family": "KRRvK",
+      "mate_depth": 3
+    }
+  ],
+  "selected_id_digest": "33831f8a6c80d27899714362a12dacba31fe7095dcc1601934e96927b99739b5"
+}
