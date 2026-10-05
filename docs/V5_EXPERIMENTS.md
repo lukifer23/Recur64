@@ -853,3 +853,17 @@ Post-run actual three-split custody, zero FEN/canonical overlaps and CONFIRM
 sealed/evaluated=false PASS. Owner failure stop/source-preservation rules applied:
 no code repair or further model execution. Stage B NOT AUTHORIZED. See
 V5_STAGE_A_RESULTS.md and compact summary/failure/custody evidence.
+
+## V5-E43 - evaluation identity-contract repair preregistration
+
+Owner explicitly authorizes EVALUATION IDENTITY-CONTRACT REPAIR and exactly one
+replacement final B0 publication after source commit/push, full tests, new CPU/CUDA
+qualification and actual custody. Freeze completed d11659e Stage A update1200,
+recipe6642579e...47e70, model2d1c770a...ae0bb00, optimizercbef56e5...68f03d,
+DEV V2 unchanged, CUDA/FP32/microbatch2, seed5301. The first attempt completed all
+inference but exposed zero metrics. Separate ProofTargets and sorted-record-ID
+contracts, baseline schema v3, evaluator/model-source provenance and exact
+predecessor-only evaluation bridge. No model/inference/training/data math changes,
+checkpoint selection or performance threshold. Stage B source guard unchanged.
+No Stage B/drill/pilot/CONFIRM. Output outside immutable Stage A run, under
+runs/v5/v2/seed-5301/baseline-recovery/. Decision receipt records full bindings.
