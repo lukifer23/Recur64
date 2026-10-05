@@ -30,7 +30,7 @@ pub struct EvaluationIdentity {
     pub device: String,
 }
 
-pub const BASELINE_EVAL_SCHEMA: &str = "v5_final_baseline_evaluation_v2";
+pub const BASELINE_EVAL_SCHEMA: &str = "v5_final_baseline_evaluation_v3";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BaselineRecord {
@@ -51,7 +51,11 @@ pub struct BaselineRecord {
 pub struct BaselineEvaluation {
     pub schema: String,
     pub architecture: String,
+    /// Scientific source of the evaluator publishing this report.
     pub source_sha: String,
+    /// Scientific source that produced the immutable Stage A checkpoint.
+    pub stage_a_source_sha: String,
+    pub dev_record_id_digest: String,
     pub config_digest: String,
     pub train_digest: String,
     pub dev_digest: String,
@@ -68,6 +72,34 @@ pub struct BaselineEvaluation {
     pub exact_queries: usize,
     pub shared_core_applications: usize,
     pub records: Vec<BaselineRecord>,
+}
+
+/// SHA256 of lexicographically sorted record IDs, each followed by newline.
+/// Multiplicity is retained; report validation independently refuses duplicates.
+pub fn sorted_record_id_digest<'a>(ids: impl IntoIterator<Item = &'a str>) -> String {
+    let mut sorted: Vec<_> = ids.into_iter().collect();
+    sorted.sort_unstable();
+    let mut hash = Sha256::new();
+    for id in sorted {
+        hash.update(id.as_bytes());
+        hash.update(b"\n");
+    }
+    format!("{:x}", hash.finalize())
+}
+
+fn validate_baseline_record_ids(records: &[BaselineRecord], expected: &str) -> anyhow::Result<()> {
+    let mut unique = HashSet::new();
+    anyhow::ensure!(
+        records
+            .iter()
+            .all(|row| unique.insert(row.position_id.as_str())),
+        "duplicate final baseline record ID"
+    );
+    anyhow::ensure!(
+        sorted_record_id_digest(records.iter().map(|row| row.position_id.as_str())) == expected,
+        "baseline sorted DEV identity digest mismatch"
+    );
+    Ok(())
 }
 
 impl BaselineEvaluation {
@@ -102,6 +134,11 @@ impl BaselineEvaluation {
                 && self.config_digest == crate::config::V5Config::default().scientific_digest()?
                 && self.train_digest == TRAIN_DIGEST
                 && self.dev_digest == DEV_DIGEST
+                && self.dev_record_id_digest
+                    == crate::data::binding(crate::native_data_v2::Role::Dev)?.record_id_digest
+                && [self.source_sha.as_str(), self.stage_a_source_sha.as_str()]
+                    .iter()
+                    .all(|sha| sha.len() == 40 && sha.bytes().all(|b| b.is_ascii_hexdigit()))
                 && self.final_update == crate::stage::STAGE_A_UPDATES
                 && self.seed == crate::stage::PILOT_SEED
                 && matches!(self.microbatch, 1 | 2)
@@ -137,17 +174,10 @@ impl BaselineEvaluation {
             primary == 750,
             "final baseline primary cell must contain 750 positions"
         );
-        let mut sorted: Vec<_> = ids.into_iter().collect();
-        sorted.sort_unstable();
-        let mut hash = Sha256::new();
-        for id in sorted {
-            hash.update(id.as_bytes());
-            hash.update(b"\n");
-        }
-        anyhow::ensure!(
-            format!("{:x}", hash.finalize()) == DEV_DIGEST,
-            "baseline sorted DEV identity digest mismatch"
-        );
+        validate_baseline_record_ids(
+            &self.records,
+            &crate::data::binding(crate::native_data_v2::Role::Dev)?.record_id_digest,
+        )?;
         Ok(())
     }
 }
@@ -158,6 +188,7 @@ pub fn evaluate_final_baseline<B: Backend>(
     model: &CounterfactualRelationalLoop<B>,
     data: &V5Data,
     identity: EvaluationIdentity,
+    stage_a_source_sha: String,
     fingerprint: String,
     device: &B::Device,
 ) -> anyhow::Result<BaselineEvaluation> {
@@ -212,6 +243,9 @@ pub fn evaluate_final_baseline<B: Backend>(
         schema: BASELINE_EVAL_SCHEMA.into(),
         architecture: ARCHITECTURE.into(),
         source_sha: identity.source_sha,
+        stage_a_source_sha,
+        dev_record_id_digest: crate::data::binding(crate::native_data_v2::Role::Dev)?
+            .record_id_digest,
         config_digest: identity.config_digest,
         train_digest: TRAIN_DIGEST.into(),
         dev_digest: DEV_DIGEST.into(),
@@ -1021,4 +1055,135 @@ pub fn evaluate_r8<B: Backend>(
         composition_partitions: Vec::new(),
         records,
     })
+}
+
+#[cfg(test)]
+mod baseline_identity_tests {
+    use super::*;
+
+    fn record(id: &str) -> BaselineRecord {
+        BaselineRecord {
+            position_id: id.into(),
+            family: "KQRvK".into(),
+            mate_depth: 3,
+            legal_actions: vec![1],
+            correct_indices: vec![0],
+            logits: vec![0.0],
+            metrics: base_metrics(&[0.0], &[0]).unwrap(),
+            candidate_facts_evaluated: 2,
+            candidate_facts_probe_evaluated: 1,
+            candidate_facts_probe_seconds: 0.0,
+            root_path_wall_seconds: 0.0,
+        }
+    }
+
+    fn report() -> BaselineEvaluation {
+        let mut records: Vec<_> = (0..4500)
+            .map(|i| record(&format!("identity-test-{i}")))
+            .collect();
+        for row in records.iter_mut().skip(750) {
+            row.mate_depth = 1;
+        }
+        BaselineEvaluation {
+            schema: BASELINE_EVAL_SCHEMA.into(),
+            architecture: ARCHITECTURE.into(),
+            source_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into(),
+            stage_a_source_sha: "d11659eca0774e0064bed0ef64ead2b725886d93".into(),
+            dev_record_id_digest: crate::data::binding(crate::native_data_v2::Role::Dev)
+                .unwrap()
+                .record_id_digest,
+            config_digest: crate::config::V5Config::default()
+                .scientific_digest()
+                .unwrap(),
+            train_digest: TRAIN_DIGEST.into(),
+            dev_digest: DEV_DIGEST.into(),
+            model_hash: "identity-test-only".into(),
+            baseline_fingerprint: "identity-test-only".into(),
+            final_update: 1200,
+            seed: 5301,
+            microbatch: 2,
+            precision: "fp32".into(),
+            device: "cuda".into(),
+            scope: "all_dev_4500".into(),
+            root_encoder_examples: 4500,
+            returned_encoder_examples: 0,
+            exact_queries: 0,
+            shared_core_applications: 0,
+            records,
+        }
+    }
+
+    #[test]
+    fn baseline_sorted_ids_have_deterministic_distinct_membership_identity() {
+        let expected = sorted_record_id_digest(["a", "b", "c"]);
+        assert_eq!(expected, sorted_record_id_digest(["c", "a", "b"]));
+        for ids in [
+            vec!["a", "b"],
+            vec!["a", "b", "c", "d"],
+            vec!["a", "b", "changed"],
+            vec!["a", "b", "c", "c"],
+        ] {
+            assert_ne!(expected, sorted_record_id_digest(ids));
+        }
+        let rows = vec![record("a"), record("b"), record("c")];
+        assert!(validate_baseline_record_ids(&rows, &expected).is_ok());
+        assert!(validate_baseline_record_ids(&rows, "wrong").is_err());
+        for changed in [
+            vec![record("a"), record("b")],
+            vec![record("a"), record("b"), record("c"), record("d")],
+            vec![record("a"), record("b"), record("changed")],
+            vec![record("a"), record("b"), record("c"), record("c")],
+        ] {
+            assert!(validate_baseline_record_ids(&changed, &expected).is_err());
+        }
+    }
+
+    #[test]
+    fn baseline_v3_validates_artifact_and_record_identity_separately() {
+        let binding = crate::data::binding(crate::native_data_v2::Role::Dev).unwrap();
+        assert_ne!(DEV_DIGEST, binding.record_id_digest);
+        let original = report();
+        // Fixture IDs are deliberately not scientific DEV IDs: all preceding
+        // header/metrics/alignment gates pass, but exact scientific membership refuses.
+        assert_eq!(
+            original.validate().unwrap_err().to_string(),
+            "baseline sorted DEV identity digest mismatch"
+        );
+        let mut wrong = original.clone();
+        wrong.dev_digest = binding.record_id_digest.clone();
+        assert_eq!(
+            wrong.validate().unwrap_err().to_string(),
+            "final baseline identity/accounting mismatch"
+        );
+        let mut wrong = original.clone();
+        wrong.dev_record_id_digest = DEV_DIGEST.into();
+        assert_eq!(
+            wrong.validate().unwrap_err().to_string(),
+            "final baseline identity/accounting mismatch"
+        );
+        let mut wrong = original.clone();
+        wrong.records[1] = wrong.records[0].clone();
+        assert_eq!(
+            wrong.validate().unwrap_err().to_string(),
+            "duplicate or misaligned final baseline record"
+        );
+        let mut wrong = original.clone();
+        wrong.schema = "v5_final_baseline_evaluation_v2".into();
+        assert!(wrong.validate().is_err());
+        let mut wrong = original.clone();
+        wrong.stage_a_source_sha.clear();
+        assert!(wrong.validate().is_err());
+        let encoded = serde_json::to_value(&original).unwrap();
+        assert_eq!(encoded["schema"], "v5_final_baseline_evaluation_v3");
+        assert_ne!(encoded["source_sha"], encoded["stage_a_source_sha"]);
+        assert_eq!(encoded["dev_record_id_digest"], binding.record_id_digest);
+        let decoded: BaselineEvaluation = serde_json::from_value(encoded.clone()).unwrap();
+        assert_eq!(serde_json::to_value(decoded).unwrap(), encoded);
+        let mut missing = encoded;
+        missing
+            .as_object_mut()
+            .unwrap()
+            .remove("stage_a_source_sha");
+        assert!(serde_json::from_value::<BaselineEvaluation>(missing).is_err());
+    }
 }

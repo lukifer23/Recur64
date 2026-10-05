@@ -986,6 +986,50 @@ fn evaluate(a: EvaluateArgs) -> anyhow::Result<()> {
     }
 }
 
+// Evaluation-only owner-authorized bridge for the one immutable predecessor run.
+// The normal completed-checkpoint loader validates file hashes and recipe first.
+fn validate_baseline_checkpoint_source(
+    meta: &recur64_v5::stage::CheckpointMeta,
+    evaluator_source: &str,
+    backend: &str,
+    microbatch: usize,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        meta.backend == backend && meta.recipe.physical_microbatch == microbatch,
+        "final baseline source/device/layout mismatch"
+    );
+    if meta.recipe.source_sha == evaluator_source {
+        return Ok(());
+    }
+    anyhow::ensure!(
+        meta.stage == Stage::BaselineA
+            && meta.recipe.stage == Stage::BaselineA
+            && meta.update == 1200
+            && meta.recipe.source_sha == "d11659eca0774e0064bed0ef64ead2b725886d93"
+            && meta.recipe_digest
+                == "6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70"
+            && meta.model_hash
+                == "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00"
+            && meta.optimizer_hash
+                == "cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d"
+            && meta.config_digest
+                == "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee"
+            && meta.recipe.config_digest == meta.config_digest
+            && meta.recipe.seed == 5301
+            && backend == "cuda"
+            && microbatch == 2
+            && meta.precision == "fp32"
+            && meta.recipe.precision == "fp32"
+            && meta.recipe.data_contract == "v5_hp_data_v2"
+            && meta.recipe.train_identity == "V5_HP_TRAIN_V2"
+            && meta.recipe.dev_identity == "V5_HP_DEV_V2"
+            && meta.recipe.train_digest == recur64_v5::data::TRAIN_DIGEST
+            && meta.recipe.dev_digest == recur64_v5::data::DEV_DIGEST,
+        "baseline recovery refuses any other predecessor Stage A artifact"
+    );
+    Ok(())
+}
+
 fn evaluate_baseline_backend<B>(a: &EvaluateBaselineArgs, backend: &str) -> anyhow::Result<()>
 where
     B: burn::tensor::backend::AutodiffBackend,
@@ -1007,12 +1051,7 @@ where
     );
     let device = B::Device::default();
     let (model, meta) = load_finished_model::<B>(&a.stage_a, Stage::BaselineA, &device)?;
-    anyhow::ensure!(
-        meta.recipe.source_sha == source
-            && meta.backend == backend
-            && meta.recipe.physical_microbatch == a.microbatch,
-        "final baseline source/device/layout mismatch"
-    );
+    validate_baseline_checkpoint_source(&meta, &source, backend, a.microbatch)?;
     let fingerprint = baseline_fingerprint(&model, &device)?;
     let identity = recur64_v5::study::EvaluationIdentity {
         source_sha: source,
@@ -1028,6 +1067,7 @@ where
         &model.valid(),
         &data,
         identity,
+        meta.recipe.source_sha,
         fingerprint,
         &device,
     )?;
@@ -1345,6 +1385,74 @@ mod source_identity_tests {
         }
         value["profile_outputs_and_all_gradients_exact"] = false.into();
         assert!(require_synchronized_qualification(&value).is_err());
+    }
+
+    #[test]
+    fn baseline_recovery_bridge_accepts_only_the_frozen_predecessor_and_not_stage_b() {
+        use recur64_v5::stage::CheckpointMeta;
+        let recipe = Recipe::stage_a("d11659eca0774e0064bed0ef64ead2b725886d93".into(), 2).unwrap();
+        let meta = CheckpointMeta {
+            schema: recur64_v5::stage::CHECKPOINT_SCHEMA.into(),
+            architecture: ARCHITECTURE.into(),
+            stage: Stage::BaselineA,
+            recipe_digest: recipe.digest().unwrap(),
+            config_digest: recipe.config_digest.clone(),
+            recipe,
+            update: 1200,
+            model_hash: "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00".into(),
+            optimizer_hash: "cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d"
+                .into(),
+            init_model_hash: None,
+            backend: "cuda".into(),
+            precision: "fp32".into(),
+            factual_null_gradient_semantics: "both_streams_differentiated_v1".into(),
+            history: Vec::new(),
+            resume_events: Vec::new(),
+        };
+        let evaluator = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assert!(validate_baseline_checkpoint_source(&meta, evaluator, "cuda", 2).is_ok());
+        for field in [
+            "source",
+            "model",
+            "optimizer",
+            "recipe",
+            "update",
+            "config",
+            "backend",
+            "layout",
+            "precision",
+            "seed",
+            "train",
+            "dev",
+            "stage",
+        ] {
+            let mut changed = meta.clone();
+            match field {
+                "source" => changed.recipe.source_sha = "wrong".into(),
+                "model" => changed.model_hash = "wrong".into(),
+                "optimizer" => changed.optimizer_hash = "wrong".into(),
+                "recipe" => changed.recipe_digest = "wrong".into(),
+                "update" => changed.update = 1199,
+                "config" => changed.config_digest = "wrong".into(),
+                "backend" => changed.backend = "cpu".into(),
+                "layout" => changed.recipe.physical_microbatch = 1,
+                "precision" => changed.precision = "bf16".into(),
+                "seed" => changed.recipe.seed = 5302,
+                "train" => changed.recipe.train_identity = "P25_DATA_V1".into(),
+                "dev" => changed.recipe.dev_identity = "V5_HP_CONFIRM_V2".into(),
+                "stage" => changed.stage = Stage::ReaderB,
+                _ => unreachable!(),
+            }
+            assert!(
+                validate_baseline_checkpoint_source(&changed, evaluator, "cuda", 2).is_err(),
+                "{field}"
+            );
+        }
+        assert!(validate_baseline_checkpoint_source(&meta, evaluator, "cpu", 2).is_err());
+        assert!(validate_baseline_checkpoint_source(&meta, evaluator, "cuda", 1).is_err());
+        // This is the unchanged production Stage B equality prerequisite.
+        // The baseline-only helper is never called by train_backend.
+        assert!(!(meta.recipe.source_sha == evaluator && meta.backend == "cuda"));
     }
 
     #[test]
