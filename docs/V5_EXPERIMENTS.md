@@ -884,3 +884,18 @@ All364 preserved files and full Stage A file set unchanged; first failed attempt
 exposed zero metrics and remains recorded. CONFIRM sealed/evaluated=false.
 Full policy/cell/provenance/diagnostics in baseline-v3-seed5301-summary.json and
 V5_STAGE_A_RESULTS.md. Stage B/update0/optimizer/graphs NOT RUN; owner review STOP.
+
+## V5-E45 - Stage B exact predecessor bridge preregistration
+
+Owner accepts published Stage A B0 and authorizes the first fixed seed5301
+reader experiment. Contract v5_stage_b_predecessor_bridge_v1 accepts only the
+immutable d11659e update1200 Stage A model/optimizer/recipe and b00569b v3
+publication whose complete hashes are frozen in stage-b-bridge-decision.json.
+Completed-checkpoint integrity and actual DEV validation remain mandatory.
+No generic historical-source allowance, Stage A resume bridge, model/training
+math, data, recipe semantics or thresholds change. Commit/push this decision
+before implementation. Final implementation source must pass fresh full tests,
+CPU/CUDA exact D9, custody and the disposable frozen Q8/R4 drill before Stage B.
+Stage B is fixed800 updates; update0 and800 DEV measurements occur only after
+training finishes. Existing pilot classifier controls conditional forward-only R8.
+No rescue, extra seed, controller, self-play or sealed-set evaluation.
