@@ -293,3 +293,17 @@ example or resume completed Stage A. Read V5_STAGE_A_RESULTS.md and the compact
 baseline-failure receipt. Next step is owner review of the narrow evaluation
 identity-contract defect; no source amendment or repeat evaluation is authorized
 by this handoff. Stage B/update0/graphs/optimizer remain NOT RUN.
+
+## Current handoff: baseline v3 publication complete; owner review STOP
+
+Evaluator source b00569b33ced75a0169804a4a3d5b746a1e0e654; immutable Stage A source
+d11659eca0774e0064bed0ef64ead2b725886d93. Completed Stage A checkpoint/model/optimizer
+and every existing run file are unchanged. The first failed attempt is preserved.
+Replacement overall attempt2 published exactly one v3 result outside the old run:
+runs/v5/v2/seed-5301/baseline-recovery/final-baseline-dev-v3.json.
+Compact result: docs/evidence/v5/baseline-v3-seed5301-summary.json.
+Fresh current CPU/CUDA qualification and pre/post raw-file custody PASS.
+CONFIRM sealed=true/evaluated=false. Do not repeat baseline evaluation or resume
+Stage A. Stage B's original source equality guard is unchanged and refuses this
+predecessor artifact. Owner review and separate authorization are required for
+any next phase; no Stage B update0, optimizer or training graphs exist.

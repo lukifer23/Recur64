@@ -1,0 +1,195 @@
+{
+  "schema": "v5_baseline_recovery_validation_v1",
+  "source_sha": "b00569b33ced75a0169804a4a3d5b746a1e0e654",
+  "checks": [
+    {
+      "native_exit": 0,
+      "arguments": [
+        "--edition",
+        "2024",
+        "--check",
+        "crates/recur64-v5/src/study.rs",
+        "crates/recur64-cli/src/v5.rs"
+      ],
+      "name": "affected-rustfmt",
+      "wall_seconds": 0.1573811,
+      "executable": "rustfmt"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-v5"
+      ],
+      "name": "focused-v5-release",
+      "wall_seconds": 65.1915929,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "v5::"
+      ],
+      "name": "cli-v5-unit",
+      "wall_seconds": 87.88643189999999,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--test",
+        "v5_boundary"
+      ],
+      "name": "cli-v5-boundary",
+      "wall_seconds": 77.6311784,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "--workspace"
+      ],
+      "name": "workspace-release",
+      "wall_seconds": 357.1458975,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-v5",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "name": "v5-cuda-clippy",
+      "wall_seconds": 63.7473062,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings",
+        "-A",
+        "clippy::collapsible_if",
+        "-A",
+        "clippy::manual_is_multiple_of"
+      ],
+      "name": "cli-cuda-clippy",
+      "wall_seconds": 88.89171739999999,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "/d",
+        "/s",
+        "/c",
+        "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat\" -no_logo -arch=x64 -host_arch=x64 && cargo build --release -p recur64-cli --features cuda"
+      ],
+      "name": "serial-cuda-build",
+      "wall_seconds": 988.1172626,
+      "executable": "cmd.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cpu",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-b00569b-cpu.json"
+      ],
+      "name": "cpu-qualification",
+      "wall_seconds": 57.1240738,
+      "executable": ".\\target\\release\\recur64.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cuda",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-b00569b-cuda.json"
+      ],
+      "name": "cuda-qualification",
+      "wall_seconds": 36.1083545,
+      "executable": ".\\target\\release\\recur64.exe"
+    }
+  ],
+  "test_counts": {
+    "focused-v5-release": {
+      "passed": 52,
+      "failed": 0,
+      "ignored": 1,
+      "result_blocks": 5
+    },
+    "cli-v5-unit": {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "result_blocks": 9
+    },
+    "cli-v5-boundary": {
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0,
+      "result_blocks": 1
+    },
+    "workspace-release": {
+      "passed": 599,
+      "failed": 0,
+      "ignored": 2,
+      "result_blocks": 68
+    }
+  },
+  "archives": [
+    {
+      "file": "baseline-recovery-workspace.log.gz",
+      "raw_sha256": "c1bf4fc6f631cdb11c2188858aedfd1e48e8da0dccac6709109478ba7c124e29",
+      "compressed_sha256": "cdd2b0f6f09350f70c742c2f4fef3ef4c3b7807302baedf54c7b90b7c1c5c0cd"
+    }
+  ],
+  "cpu_pass": true,
+  "cuda_pass": true,
+  "exact_d9_unchanged": true,
+  "v5_clippy_warnings_denied": true,
+  "cli_existing_v4_lint_allowances": [
+    "clippy::collapsible_if",
+    "clippy::manual_is_multiple_of"
+  ],
+  "workspace_format_limitation": "Only affected files checked; 16 historical untouched formatting files remain unchanged; no workspace reformatting."
+}

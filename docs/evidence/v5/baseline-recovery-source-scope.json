@@ -1,0 +1,29 @@
+{
+  "schema": "v5_baseline_recovery_source_scope_v1",
+  "predecessor_source": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "evaluator_source": "b00569b33ced75a0169804a4a3d5b746a1e0e654",
+  "changed_scientific_files": [
+    "crates/recur64-cli/src/v5.rs",
+    "crates/recur64-v5/src/study.rs"
+  ],
+  "unchanged_blob_sha256": {
+    "crates/recur64-v5/src/model.rs": "7420b5261f2d5288bcab9b03dab86caf9ae8bcc8ec6a137e9c7ebd50c271a3c6",
+    "crates/recur64-v5/src/stage.rs": "996a0c2526be018877ed313599c11fc215a615dbc82fcfc6c45cbd91e9a11641",
+    "crates/recur64-v5/src/graph.rs": "99c4c8ca38344cccb14b3ce71551c26aa99034b70e292071741d0335aab630cc",
+    "crates/recur64-v5/src/data.rs": "789e2489681d40ac511947841aadf7c87758c7839da0f852d31d2c02e4c7d133",
+    "crates/recur64-v5/src/native_data.rs": "6874dfb3fd711cf866c74e10c3a6528be233411e6603d9d7651ddef1aa83977b",
+    "crates/recur64-v5/src/native_data_v2.rs": "c3c2c4dbe4d297d2863395077f8070f31fb4e9f0480a2bd923fca482a6bf7359",
+    "crates/recur64-v5/src/loss.rs": "08ea1562ceaf55d1e644f52427309c1e6f6b75ed7902d1e323fea9774de3f1ef",
+    "crates/recur64-v5/src/config.rs": "10365b647970209f85aa92d7e4a36d0812e7cb22544b364a4a5414b345d0f1d5",
+    "crates/recur64-v5/src/profile.rs": "fd5d76261f039b2cf916bca4766783b994ca4f8b81dd83883f1d6af389652ce6",
+    "crates/recur64-v5/src/qualification.rs": "704bc3116e96770a03c262b04045cfe0929abb3dadbcbc67dcd51b734565d71d",
+    "Cargo.toml": "241664c0185dde27cee48cda84d31c8a417c4980c05bd696dd979586c3207fda",
+    "Cargo.lock": "3fe41f0a308c6d545166b0c958f54de1feecfbdf3bd9c114eef4327729cd8d45"
+  },
+  "training_cli_body_byte_identical": true,
+  "study_inference_and_reader_math_byte_identical": true,
+  "stage_b_source_guard_unchanged": true,
+  "model_parameter_count_unchanged": 7162896,
+  "config_digest_unchanged": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "baseline_forward_loop_byte_identical": true
+}

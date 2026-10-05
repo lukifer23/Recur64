@@ -225,3 +225,16 @@ interventions, composition analysis, exact bootstrap gates and conditional R8.
 Implementation is not a result: none of those dataset-dependent commands ran.
 
 V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.
+
+## Current recovery result: final Stage A B0 published
+
+The earlier failed B0 publication remains historical. Owner-authorized narrow
+identity-contract repair at b00569b passed current-source full validation and
+fresh CPU/CUDA exact D9 qualification. Exactly one replacement published v3 on
+immutable d11659e update1200 weights: overall DEV4500 top1 79.2889%, correct-set
+mass0.723600115, set loss0.663078197, uniform-correct CE1.470871026, entropy0.871348876.
+Primary KQRvK M3 n750: top1 57.6%, mass0.448158435, loss1.272790006.
+No strength gate or further evaluation. All Stage A/failed evidence byte-identical;
+post-custody PASS; CONFIRM sealed and unevaluated. See V5_STAGE_A_RESULTS.md and
+baseline-v3-seed5301-summary.json. STOP: Stage B remains source-incompatible and
+unauthorized; no Stage B/update0/graphs/optimizer, pilot, controller or replication.

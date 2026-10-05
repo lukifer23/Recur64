@@ -867,3 +867,20 @@ predecessor-only evaluation bridge. No model/inference/training/data math change
 checkpoint selection or performance threshold. Stage B source guard unchanged.
 No Stage B/drill/pilot/CONFIRM. Output outside immutable Stage A run, under
 runs/v5/v2/seed-5301/baseline-recovery/. Decision receipt records full bindings.
+
+## V5-E44 - final B0 publication recovery measured; STOP
+
+Repair source b00569b33ced75a0169804a4a3d5b746a1e0e654, predecessor Stage A d11659e.
+Evaluation identity-contract repair only; all model/training/inference math and
+Stage B guard byte-identical. Full release workspace599 passed/0 failed/2 ignores;
+focused52 passed/1 ignore, CLI unit3/boundary7, affected fmt/V5 CUDA Clippy/serial
+build PASS. Fresh CPU/CUDA exact D9 qualification PASS, all nine shapes/50 resident
+updates/checkpoint-moment continuation. Pre/post three-split actual custody PASS.
+One replacement attempt (overall2) successfully serialized v3 all4500 DEV B0:
+top1 0.7928888888888889, correct mass0.7236001150595983, set loss0.6630781972025659,
+uniform-correct CE1.470871026301632, entropy0.8713488758519007. Primary KQRvK M3:
+432/750 top1, set loss1.2727900057878612. No strength gate, selection or retry.
+All364 preserved files and full Stage A file set unchanged; first failed attempt
+exposed zero metrics and remains recorded. CONFIRM sealed/evaluated=false.
+Full policy/cell/provenance/diagnostics in baseline-v3-seed5301-summary.json and
+V5_STAGE_A_RESULTS.md. Stage B/update0/optimizer/graphs NOT RUN; owner review STOP.

@@ -135,3 +135,105 @@ LEARNED QUERY CONTROLLER NOT TRAINED.
 MULTI-SEED REPLICATION NOT RUN.
 V5_HP_CONFIRM_V2 REMAINS SEALED AND UNEVALUATED.
 V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.
+
+## V5-E44 / Decision: baseline v3 publication recovery completed
+
+Classification: **EVALUATION IDENTITY-CONTRACT REPAIR**. The first failed attempt
+and all prior text above remain historical and unchanged. Owner authorization
+for this recovery supersedes only the prior code-repair/replacement-measurement
+stop; Stage B remains prohibited.
+
+Starting remote HEAD `8bd4971e8635e94ebb0aea5bbf4dbf75a7647362`.
+Preregistration `14318e7`; repair/evaluator scientific source
+`b00569b33ced75a0169804a4a3d5b746a1e0e654`. Stage A producer source remains
+`d11659eca0774e0064bed0ef64ead2b725886d93`. Only scientific files changed:
+`crates/recur64-v5/src/study.rs` and `crates/recur64-cli/src/v5.rs`.
+Hash-contract validation, baseline report/provenance, baseline-only exact
+predecessor compatibility and focused tests changed. Model/config/mask/training,
+loss/optimizer/sampler/data/graph/inference math are byte-identical. Stage B's
+source equality path is byte-identical and still refuses the predecessor source.
+No Stage B run directory, update0, optimizer or training graphs were created.
+
+Schema `v5_final_baseline_evaluation_v3` explicitly separates evaluator `source_sha`
+from model `stage_a_source_sha`, and separates DEV ProofTargets digest
+`82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0` from measured record-ID digest
+`8e52094f6e2ec32726efc675acca408b8e2ff4f63a73910d0d00aefe97bc1b5e`. The latter comes from the measured DEV role binding;
+report IDs are independently recomputed, sorted with newline framing, and checked.
+The normal completed-checkpoint integrity loader still precedes the exact
+predecessor bridge. Other predecessor source/model/optimizer/recipe/update/config/
+backend/layout/precision/seed/data bindings refuse in focused tests.
+
+Validation: affected rustfmt PASS; focused V5 release52 passed/zero failed/one
+preserved ignore; CLI V5 unit3 passed; CLI V5 boundaries7 passed; full release
+workspace599 passed/zero failed/two preserved ignores (68 result blocks).
+V5 all-target CUDA Clippy -D warnings PASS; CLI CUDA Clippy PASS with only the
+existing V4 collapsible_if/manual_is_multiple_of allowances. Serial pinned CUDA
+release build PASS. Only affected formatting checked; the known16 unchanged
+historical formatting files were not rewritten. Fresh CPU and RTX2050 CUDA
+qualification PASS at the evaluator source: FP32/microbatch2,7,162,896 parameters,
+unchanged config/exact D9, all nine Q/R shapes, null error0,50 resident updates,
+complete checkpoint/moment restore and exact continuation. No older report
+was used to authorize new-source measurement.
+
+Exactly one replacement invocation: overall evaluation_attempt=2,
+published_baseline_measurement=1, prior_attempt_metrics_exposed=false,
+recovery_reason=identity_contract_validator_failure. Native exit0; wall
+21.5802839s. No performance-driven retry or threshold.
+Raw report is ignored at `runs/v5/v2/seed-5301/baseline-recovery/final-baseline-dev-v3.json` (outside the completed Stage A
+run); SHA256 `b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4`.
+Final update1200, model `2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00`, optimizer
+`cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d` unchanged. Baseline fingerprint
+`12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9`.
+
+| DEV cell | n | Top1 | Correct mass | Set loss | Uniform-correct CE | Entropy |
+|---|---:|---:|---:|---:|---:|---:|
+| Overall | 4500 | 0.792888889 | 0.723600115 | 0.663078197 | 1.470871026 | 0.871348876 |
+| KQRvK M1 | 750 | 1.000000000 | 0.999951952 | 0.000048089 | 0.543484446 | 0.192209719 |
+| KQRvK M2 | 750 | 0.726666667 | 0.644706410 | 0.821942259 | 1.875614160 | 1.127769660 |
+| KQRvK M3 | 750 | 0.576000000 | 0.448158435 | 1.272790006 | 2.569922149 | 1.580259616 |
+| KRRvK M1 | 750 | 1.000000000 | 0.999954517 | 0.000045488 | 0.138887868 | 0.063289175 |
+| KRRvK M2 | 750 | 0.750666667 | 0.663929857 | 0.829609338 | 1.622745508 | 0.989415134 |
+| KRRvK M3 | 750 | 0.704000000 | 0.584899519 | 1.054034004 | 2.074572028 | 1.275149951 |
+
+Primary KQRvK M3:432/750 top1 (**57.6%**), correct mass0.448158435,
+set loss1.272790006, uniform-correct CE2.569922149, entropy1.580259616.
+Overall3568/4500 correct (**79.2889%**); legal width mean35.400666667,
+range18..49; mean correct-action count1.784000000.
+All per-cell width/action/timing diagnostics are in the compact summary. Root
+encoder examples4500; returned encoder examples, exact queries and reader core
+applications all0. These are B0 baseline measurements for owner interpretation;
+no Stage A strength pass/fail threshold is imposed.
+
+TRAIN context is unchanged: first-update loss3.064389243721962; first50 mean
+2.7265847026184202; last50 mean0.5700689039449207; final update loss
+0.6377226538024843;1200 updates/76800 sampled examples/all finite. Reader parameter
+tensors remained bit-identical. Sampled TRAIN losses are not held-out evidence.
+
+Fresh pre/post actual TRAIN/DEV/CONFIRM custody PASS; all FEN/canonical pairwise
+intersections0. CONFIRM remains sealed=true/evaluated=false; no model ran on it.
+All364 preserved Stage A/failed-attempt files match their pre-repair hashes;
+all360 Stage A run files and the entire file set are unchanged. Failed first
+attempt JSON/operational evidence remains byte-for-byte intact. Full run files,
+weights/optimizer blobs/raw data and raw4500-record report remain ignored.
+
+Compact evidence: `baseline-recovery-decision.json`,
+`baseline-recovery-source-scope.json`, `baseline-recovery-validation.json`,
+`qualification-b00569b-cpu.json`, `qualification-b00569b-cuda.json`,
+`baseline-recovery-pre-custody.json`, `baseline-recovery-post-custody.json`,
+`baseline-recovery-preservation.json`, `baseline-v3-seed5301-summary.json`
+under docs/evidence/v5/. Full workspace log is losslessly compressed there.
+
+NOT RUN: Stage A retraining/resume; Stage B/update0/optimizer/graphs; reader
+pilot; Q/R DEV; pilot report/classification; ablations; scientific R8; drill
+rerun; learned query controller; LR screen; checkpoint selection; seeds5302/5303;
+self-play; CONFIRM/V4_TUNE/HOLDOUT_C evaluation; evaluation attempt3.
+STOP for owner review. Stage B compatibility has not been amended.
+
+V5 STAGE A TRAINING REMAINS COMPLETE AND UNMODIFIED.
+V5 FINAL B0 MEASUREMENT PUBLISHED - OWNER REVIEW REQUIRED.
+V5 STAGE B NOT RUN.
+V5 READER PILOT NOT RUN.
+LEARNED QUERY CONTROLLER NOT TRAINED.
+MULTI-SEED REPLICATION NOT RUN.
+V5_HP_CONFIRM_V2 REMAINS SEALED AND UNEVALUATED.
+V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.

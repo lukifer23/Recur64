@@ -1,0 +1,10 @@
+{
+  "schema": "v5_baseline_recovery_preservation_v1",
+  "all_existing_files_byte_identical": true,
+  "verified_file_count": 364,
+  "stage_a_file_set_unchanged": true,
+  "stage_a_file_count": 360,
+  "inventory_sha256": "82ff3db93285a1858ae5942b22b8b50fbc297a2e212d706690a1466d85248d59",
+  "failed_first_attempt_preserved": true,
+  "stage_b_directory_exists": false
+}
