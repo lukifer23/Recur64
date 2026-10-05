@@ -98,3 +98,13 @@ records per KQR/KRR M1/M2/M3 cell. Q8/R4 <=200 updates, LR1e-3/warmup20, >=20%
 mean correct-set loss reduction unless start<0.05. Q16 only under the existing
 informative Q8-failure rule. Then STOP. No Stage A/B, DEV science, pilot,
 controller, replication, self-play or confirmation evaluation.
+
+## Post-result closure note ? population discrepancy (2026-10-05)
+
+The original primary KQR M3 n750 bootstrap statement above is preserved.
+The frozen implementation actually bootstrapped all4500 positions after
+within-position schedule averaging. Its published NO_SIGNAL report is retained,
+not relabelled as that original primary analysis. [Closure](V5_CLOSURE.md) records
+this discrepancy and an explicitly retrospective supplementary750 analysis from
+serialized records only. Future V6 primary code must filter and verify750 IDs.
+This note does not amend the historical preregistration after measurement.

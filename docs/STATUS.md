@@ -1,5 +1,26 @@
 # Recur64 — Status
 
+## Current V5 closure / proposed V6 (2026-10-05)
+
+V5 is **CLOSED ? NO_SIGNAL**, with the frozen seed5301 experiment unchanged.
+The owner-authorized closure investigation used existing DEV records and a frozen
+216-position TRAIN panel; no retraining, new DEV inference or optimizer steps.
+The V2 primary750 versus implemented pooled4500 discrepancy is now explicit.
+Producer `3db24a9`, evaluator `7fb7461`, reviewed publication `3efce66` are separate
+identities; later documentation commits do not replace them.
+
+Start with [V5 closure](V5_CLOSURE.md), [measured diagnosis](V6_DIAGNOSTICS.md),
+[one V6 proposal](V6_EXPERIMENT_PROPOSAL.md) and
+[future P0 implementation prompt](V6_IMPLEMENTATION_PROMPT.md).
+Recommendation: branch-local adversarial evidence backup with direct TRAIN
+branch supervision, competent frozen B0, and same-information nonrecurrent
+controls. This is a proposal: **V6 NOT IMPLEMENTED / NOT TRAINED**.
+Gradient probes stopped at scratch preflight failure; backward results NOT RUN.
+TRAIN/DEV/CONFIRM bytes remain unchanged; CONFIRM sealed and unevaluated.
+Next step is owner design review, not a V5 resume or automatic V6 execution.
+
+All lower status accounts and command blocks are preserved HISTORICAL material.
+
 ## V5 HP counterfactual relational loop (2026-10-03)
 
 - Lineage and single-seed fixed-reader pilot are PRE-REGISTERED from accepted V4

@@ -1,5 +1,21 @@
 # Recur64
 
+## Current HP research branch: V5 closed, V6 design proposed
+
+The frozen V5 pilot is **NO_SIGNAL**: all reader conditions left DEV actions
+unchanged. Its model producer (`3db24a9`), evaluator (`7fb7461`) and reviewed result
+publication (`3efce66`) are distinct. Stage A/B weights remain immutable.
+The closure investigation reconciles primary750 versus pooled4500 statistics and
+measures sparse error-branch information and ineffective corrections over trained B0.
+
+Read [closure](docs/V5_CLOSURE.md), [diagnosis](docs/V6_DIAGNOSTICS.md),
+[prospective V6 design](docs/V6_EXPERIMENT_PROPOSAL.md), and
+[next implementation ticket](docs/V6_IMPLEMENTATION_PROMPT.md).
+V6 is not implemented or trained. CONFIRM remains sealed/unevaluated.
+The older branch/Phase4/V5 handoffs below are historical context, not instructions
+for continuing the closed V5 run. Current operational entry point:
+[HP resume/status](docs/V5_RESUME.md).
+
 A Rust-first chess-learning research laboratory. The eventual question: at
 matched end-to-end compute, does a small **recurrent** square-token transformer
 that spends compute on internal refinement beat spending the same compute on

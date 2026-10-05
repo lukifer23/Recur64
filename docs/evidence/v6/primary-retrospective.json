@@ -1,0 +1,51 @@
+{
+  "averaging_unit": "position, mean of paired schedule contrasts",
+  "contrasts": {
+    "b0": {
+      "hi": 0.0,
+      "hi_rank": 19499,
+      "lo": 0.0,
+      "lo_rank": 499,
+      "mean": 0.0,
+      "resamples": 20000
+    },
+    "interaction": {
+      "hi": 0.0,
+      "hi_rank": 19499,
+      "lo": 0.0,
+      "lo_rank": 499,
+      "mean": 0.0,
+      "resamples": 20000
+    },
+    "loop": {
+      "hi": 0.0,
+      "hi_rank": 19499,
+      "lo": 0.0,
+      "lo_rank": 499,
+      "mean": 0.0,
+      "resamples": 20000
+    },
+    "shuffle_loss": {
+      "hi": 5.292040717934673e-06,
+      "hi_rank": 19499,
+      "lo": -2.226824736014932e-07,
+      "lo_rank": 499,
+      "mean": 2.565325624528057e-06,
+      "resamples": 20000
+    }
+  },
+  "n": 750,
+  "new_model_invocations": 0,
+  "original_classifier_scope": "all 4500 DEV positions",
+  "schema": "v5_primary_retrospective_v1",
+  "scope": "KQRvK M3",
+  "source_report_sha256": "5b6b7d3977e8aabda091a94cad2537a8ce072ba61463c341cbf1c81ce1b9336d",
+  "status": "RETROSPECTIVE SUPPLEMENTARY ANALYSIS",
+  "bootstrap_seeds": {
+    "loop": 2052063489,
+    "b0": 2052063490,
+    "shuffle_loss": 2052063491,
+    "interaction": 2052063492
+  },
+  "implementation": "existing recur64_v5::evaluation::paired_bootstrap linked unchanged; lexicographically sorted position IDs"
+}

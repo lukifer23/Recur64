@@ -1,0 +1,13 @@
+{
+  "schema": "v6_design_gradient_preflight_failure_v1",
+  "native_exit": 1,
+  "error": "head visitor absent",
+  "backward_executed": false,
+  "optimizer_steps": 0,
+  "gradient_0": "NOT RUN - preflight refused",
+  "gradient_800": "NOT RUN - amended stop rule",
+  "factual_null_gradient_attribution": "NOT RUN",
+  "further_model_probes": "NOT RUN",
+  "log_sha256": "0a90e3b3c8302015f5f6e0b61a351118dd281a31c9f1c0899e4018c4e77ab5e3",
+  "status": "diagnostic instrumentation limitation, not a demonstrated production model defect"
+}

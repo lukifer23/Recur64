@@ -1004,3 +1004,29 @@ next architecture implementation. PostcustodyPASS/zerooverlaps,CONFIRM sealed
 and unevaluated;614 files unchanged including completed training/B0/failures.
 Historical CUDA cross-process drill variance retained without defect attribution
 or repeatedseed 5301. FullreportV5_STAGE_B_RESULTS.md; owner review next.
+
+## V5 closure / V6 design investigation (2026-10-05)
+
+- Owner decision: accept frozen V5 NO_SIGNAL and close the research line; design
+  only, no V6 implementation or fitting. Reviewed start3efce66; producer3db24a9,
+  evaluator7fb7461 remain separate from documentation publication.
+- PRE-REGISTERED panel/definitions in25c8968; no performance-based selection.
+  Instrumentation-only resource recovery amendment3d9ac84 preserved the first
+  native101 failure. Recovery forward0/800 native0; gradient preflight native1,
+  backward/gradient800 NOT RUN; no further GPU probes after hard stop.
+- MEASURED216 TRAIN roots,24/cell, two policies, R1/R4 real/shuffle/null: no action
+  changes, before/after weights exact. Coverage sparse on33 B0 errors; correction
+  ranges mostly below action margins and real/shuffle effects tiny. Full named
+  gradients were not measured; inference limits are explicit.
+- MEASURED independent614-file preservation/raw hashes and fresh native custody;
+  zero overlaps, CONFIRM sealed=true/evaluated=false. No optimizer steps or new
+  DEV model invocation. Historical qualifications inspected, not rerun.
+- RECONCILED primary750 plan versus implemented pooled4500 classifier. Existing
+  NO_SIGNAL unchanged; supplementary primary calculation uses only stored records,
+  original seeds/ranks/20k schedule-paired bootstrap, clearly retrospective.
+- INFERRED recommendation: V6 branch-local adversarial evidence learning with
+  direct TRAIN branch supervision, explicit unknowns, frozen B0 and nonrecurrent
+  matched-information/compute controls. Not a localized V5.5 production repair.
+- Proposed prospective gates/budgets/lineage and complete future P0 prompt are
+  in V6_EXPERIMENT_PROPOSAL.md and V6_IMPLEMENTATION_PROMPT.md. No V6 code or
+  training, no seeds/extra loops/controller/selfplay/sealed-set evaluation.

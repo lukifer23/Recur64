@@ -1,0 +1,16 @@
+{
+  "schema": "v6_design_post_preservation_v1",
+  "reviewed_head": "3efce66f62c120df4bf599796c27f66d2ec194d6",
+  "preservation_inventory_sha256": "51ff913bd6ac2af557dad53a5623a500cc5af2c295905a1d0e1abe5b5db9b612",
+  "preserved_files_checked": 614,
+  "preserved_files_changed": 0,
+  "raw_artifacts_checked": 6,
+  "raw_artifacts_changed": 0,
+  "production_source_changes": false,
+  "optimizer_steps": 0,
+  "new_dev_model_invocations": 0,
+  "confirm_model_invocations": 0,
+  "confirm_sealed": true,
+  "confirm_evaluated": false,
+  "confirm_status_basis": "fresh native custody plus unchanged raw bytes; no model invocation"
+}

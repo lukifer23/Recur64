@@ -1,0 +1,25 @@
+{
+  "schema": "v6_design_package_v1",
+  "decision": "CLOSE V5 AS NO_SIGNAL; PROPOSE V6",
+  "reviewed_start_head": "3efce66f62c120df4bf599796c27f66d2ec194d6",
+  "panel_preregistration_commit": "25c8968151dfccf8526cdb5ed57a211ce0ec8c70",
+  "instrumentation_amendment_commit": "3d9ac84",
+  "stage_b_model_producer": "3db24a926815159d592e93b60a8ae51852abad13",
+  "evaluation_producer": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+  "production_code_changed": false,
+  "v6_implemented": false,
+  "v6_trained": false,
+  "new_dev_model_invocations": 0,
+  "optimizer_steps": 0,
+  "gradient_probe_status": "NOT RUN - preflight failure",
+  "primary_reconciliation": "V2 plan primary750; frozen classifier pooled4500; original report unchanged; retrospective supplementary750 only",
+  "principal_mechanism": "supervised branch-local adversarial evidence backup with explicit unknowns and frozen competent baseline",
+  "rejected_v55_reason": "no localized production mechanism defect demonstrated",
+  "next_authorization": "owner design review; proposed P0 only before any pilot",
+  "documents": {
+    "docs/V5_CLOSURE.md": "2b4fc9920da678200635849b162bcf78d73b79b1ded94052c8a2b951836f6f1e",
+    "docs/V6_DIAGNOSTICS.md": "a5543dbd724e0911989cd9b081ad4dc7b9b8f0e64c8508a4efa226b921ef053d",
+    "docs/V6_EXPERIMENT_PROPOSAL.md": "269525be0800efdd26253c9592fe2f0802cc97b06d9a0bc54ca7f9c5c9d6a863",
+    "docs/V6_IMPLEMENTATION_PROMPT.md": "04a7b655c4c41976bef08a01bc0680d856e46028bc6f9f8db64a70db345af331"
+  }
+}

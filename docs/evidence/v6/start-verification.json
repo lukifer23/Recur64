@@ -1,0 +1,61 @@
+{
+  "schema": "v6_design_start_verification_v1",
+  "reviewed_head": "3efce66f62c120df4bf599796c27f66d2ec194d6",
+  "freeze_commit": "25c8968151dfccf8526cdb5ed57a211ce0ec8c70",
+  "scientific_source_changes": false,
+  "independently_repeated": {
+    "preserved_files_byte_identical": 614,
+    "raw_artifact_hashes": {
+      "runs\\v5\\v2\\seed-5301\\eval-v3-000\\all-dev.json": "512f25b9d56fbac4f68caad38cb53c1c42e634abe94c6b1e979659a369f66468",
+      "runs\\v5\\v2\\seed-5301\\eval-v3-800\\all-dev.json": "48e51c1859df8b76dbf4650a4b217f8009043ee8aa4a0095df11e7d0c11d2976",
+      "runs/v5/v2/seed-5301/baseline-recovery/final-baseline-dev-v3.json": "b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4",
+      "runs/v5/data/v2/v5-hp-train-v2.json": "ab34a0d098c5c2a1985f76967c62cd803b04419b31cda41166e819d389b77823",
+      "runs/v5/data/v2/v5-hp-dev-v2.json": "15a645f4dc94e263ec55009989f4f052cf4fadebed27f3d824e15d73f6ca75ec",
+      "runs/v5/data/v2/v5-hp-confirm-v2.json": "825fae2b6da27678597e46527dc2a729abad7c648637f0b9113031215c1de9bf"
+    }
+  },
+  "historical_receipts_inspected": {
+    "stage-b-v3-source-scope.json": {
+      "sha256": "f2c5f344d3bd46ed1dc412eb279c79e7052f39a8ee0f85603facbf52655506bf",
+      "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+      "pass": null,
+      "classification": null
+    },
+    "stage-b-v3-pilot.json": {
+      "sha256": "4f840b03ba8ca4415f0ef1cc6aed593da0a337df2adc7cfbc990da7697bcbebe",
+      "source_sha": null,
+      "pass": null,
+      "classification": "NO_SIGNAL"
+    },
+    "stage-b-v3-ablation.json": {
+      "sha256": "7a0d12983939eb5c77214b33a44b43b237564b4587af70c32f16a5f8ceb94c57",
+      "source_sha": null,
+      "pass": null,
+      "classification": null
+    },
+    "stage-b-v3-preservation.json": {
+      "sha256": "88d04f2570c3d8f9eff509a4da3b42e465d5412d9c6d3ea9c5a8bd9999de9bf6",
+      "source_sha": null,
+      "pass": null,
+      "classification": null
+    },
+    "stage-b-v3-post-custody.json": {
+      "sha256": "49726daf8c1d928e02ba5faa5136e6dabbf89b529a54cde1b697d591fa871f8f",
+      "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+      "pass": null,
+      "classification": null
+    },
+    "qualification-7fb7461-cpu.json": {
+      "sha256": "69911a435c27ada45cb0bc27c63eaca7bf2e67e4ed36fa4f9c4cdbbbd03fea24",
+      "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+      "pass": true,
+      "classification": null
+    },
+    "qualification-7fb7461-cuda.json": {
+      "sha256": "faa98f94b1fc00a20cdf97bb958b11e41c4f16babf0ccdae1fb5778be61f58c0",
+      "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+      "pass": true,
+      "classification": null
+    }
+  }
+}

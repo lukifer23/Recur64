@@ -1,0 +1,58 @@
+{
+  "schema": "v6_design_probe_execution_v1",
+  "production_evaluator_source": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+  "stage_b_producer_source": "3db24a926815159d592e93b60a8ae51852abad13",
+  "diagnostic_source_sha256": "b992b07ee17616b6aff5ffa083cdaab4282e1de014e5c2daf7645fcfa00f8de3",
+  "diagnostic_binary_sha256": "af098950d9b9eb58d08cd91bcec48f702ce06c417adfc41ee5b1027d98133420",
+  "linked_v5_library_sha256": "d325b3c1e1db862a042b6d583541b542b81780dbf4ddd00744e4a954842575cb",
+  "cuda_path": "C:\\Users\\Caitl\\AppData\\Local\\Recur64\\cuda\\12.9.1",
+  "precision": "fp32",
+  "microbatch": 2,
+  "optimizer_steps": 0,
+  "invocations": [
+    {
+      "name": "v2-forward-0",
+      "arguments": [
+        "runs\\v6-design-diagnostics\\probe-v2.exe",
+        "forward",
+        "0"
+      ],
+      "timeout_seconds": 1200,
+      "native_exit": 0,
+      "wall_seconds": 51.10899999999674,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "v2-forward-800",
+      "arguments": [
+        "runs\\v6-design-diagnostics\\probe-v2.exe",
+        "forward",
+        "800"
+      ],
+      "timeout_seconds": 1200,
+      "native_exit": 0,
+      "wall_seconds": 48.53200000000652,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "v2-gradients-0",
+      "arguments": [
+        "runs\\v6-design-diagnostics\\probe-v2.exe",
+        "gradients",
+        "0"
+      ],
+      "timeout_seconds": 1200,
+      "native_exit": 1,
+      "wall_seconds": 2.125,
+      "log_sha256": "0a90e3b3c8302015f5f6e0b61a351118dd281a31c9f1c0899e4018c4e77ab5e3"
+    }
+  ],
+  "pre_execution_compile_attempts": [
+    {
+      "attempt": "v2",
+      "exit": 0
+    }
+  ],
+  "instrumentation_amendment": "3d9ac84; graph-free forward and proper named visitor hooks",
+  "prior_failed_invocation_preserved": true
+}
