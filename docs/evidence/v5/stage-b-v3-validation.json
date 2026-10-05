@@ -1,0 +1,164 @@
+{
+  "schema": "v5_evaluation_recovery_validation_v1",
+  "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+  "checks": [
+    {
+      "native_exit": 0,
+      "arguments": [
+        "--edition",
+        "2024",
+        "--check",
+        "crates/recur64-v5/src/study.rs",
+        "crates/recur64-v5/src/evaluation.rs",
+        "crates/recur64-cli/src/v5.rs"
+      ],
+      "name": "affected-rustfmt",
+      "wall_seconds": 0.13899519999999999,
+      "executable": "rustfmt"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-v5"
+      ],
+      "name": "focused-v5-release",
+      "wall_seconds": 78.95874119999999,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "v5::"
+      ],
+      "name": "cli-v5-unit",
+      "wall_seconds": 109.4643244,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--test",
+        "v5_boundary"
+      ],
+      "name": "cli-v5-boundary",
+      "wall_seconds": 95.2567538,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "--workspace"
+      ],
+      "name": "workspace-release",
+      "wall_seconds": 410.4116294,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-v5",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "name": "v5-cuda-clippy",
+      "wall_seconds": 21.9222923,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings",
+        "-A",
+        "clippy::collapsible_if",
+        "-A",
+        "clippy::manual_is_multiple_of"
+      ],
+      "name": "cli-cuda-clippy",
+      "wall_seconds": 28.633636,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "/d",
+        "/s",
+        "/c",
+        "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat\" -no_logo -arch=x64 -host_arch=x64 && cargo build --release -p recur64-cli --features cuda"
+      ],
+      "name": "serial-cuda-build",
+      "wall_seconds": 670.7904709,
+      "executable": "cmd.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cpu",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-7fb7461-cpu.json"
+      ],
+      "name": "cpu-qualification",
+      "wall_seconds": 52.0174102,
+      "executable": ".\\target\\release\\recur64.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cuda",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-7fb7461-cuda.json"
+      ],
+      "name": "cuda-qualification",
+      "wall_seconds": 34.167702,
+      "executable": ".\\target\\release\\recur64.exe"
+    }
+  ],
+  "workspace_counts": {
+    "passed": 604,
+    "failed": 0,
+    "ignored": 2
+  },
+  "untouched_workspace_formatting_limit_retained": true,
+  "cli_clippy_unchanged_v4_allowances": [
+    "collapsible_if",
+    "manual_is_multiple_of"
+  ]
+}

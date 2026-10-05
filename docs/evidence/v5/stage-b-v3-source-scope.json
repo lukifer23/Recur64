@@ -1,0 +1,16 @@
+{
+  "schema": "v5_evaluation_recovery_source_scope_v1",
+  "predecessor_source": "3db24a926815159d592e93b60a8ae51852abad13",
+  "evaluator_source": "7fb7461e94fa4819404913d9a51e91d4d154c167",
+  "preregistration_commit": "bd1e9460049f54f8eeba6c565cc25408652dbcb4",
+  "scientific_files_changed": [
+    "crates/recur64-cli/src/v5.rs",
+    "crates/recur64-v5/src/evaluation.rs",
+    "crates/recur64-v5/src/study.rs"
+  ],
+  "model_training_graph_data_loss_optimizer_sampler_config_files_unchanged": true,
+  "training_resume_bridge_added": false,
+  "evaluation_schema": "v5_reader_evaluation_v3",
+  "pilot_schema": "v5_reader_pilot_report_v3",
+  "shuffle_contract": "v5_payload_shuffle_widening_v1"
+}

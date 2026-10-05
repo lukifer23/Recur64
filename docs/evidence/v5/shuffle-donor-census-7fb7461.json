@@ -1,0 +1,70 @@
+{
+  "census": {
+    "all_turn_roles_match": true,
+    "by_cell_exact_widened": {
+      "KQRvK M1": [
+        12000,
+        0
+      ],
+      "KQRvK M2": [
+        12000,
+        0
+      ],
+      "KQRvK M3": [
+        12000,
+        0
+      ],
+      "KRRvK M1": [
+        11999,
+        1
+      ],
+      "KRRvK M2": [
+        11999,
+        1
+      ],
+      "KRRvK M3": [
+        11999,
+        1
+      ]
+    },
+    "by_recipient_depth": {
+      "1": 35728,
+      "2": 13892,
+      "3": 13190,
+      "4": 4848,
+      "5": 4339,
+      "6": 3
+    },
+    "by_schedule_exact_widened": {
+      "base_ranked_depth_v1": [
+        36000,
+        0
+      ],
+      "uniform_frontier_v1": [
+        35997,
+        3
+      ]
+    },
+    "by_selected_donor_depth": {
+      "1": 35728,
+      "2": 13892,
+      "3": 13190,
+      "4": 4851,
+      "5": 4339
+    },
+    "candidate_pool_max": 4676,
+    "candidate_pool_mean": 2274.1535972222223,
+    "candidate_pool_min": 7,
+    "control_contract": "v5_payload_shuffle_widening_v1",
+    "exact_depth_recipients": 71997,
+    "maximum_depth_delta": 2,
+    "no_self_mapping": true,
+    "schema": "v5_shuffle_donor_census_v1",
+    "total_recipient_nodes": 72000,
+    "unresolved_recipients": 0,
+    "widened_fraction": 0.000041666666666666665,
+    "widened_recipients": 3
+  },
+  "checkpoint_model_hash": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+  "source_sha": "7fb7461e94fa4819404913d9a51e91d4d154c167"
+}
