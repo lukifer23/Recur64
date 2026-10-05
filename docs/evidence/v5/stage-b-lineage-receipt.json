@@ -1,0 +1,38 @@
+{
+  "schema": "v5_stage_b_lineage_receipt_v1",
+  "starting_head": "e40521fe661c87bf8a8e1f832200803bd1d50cae",
+  "stage_a": {
+    "update": 1200,
+    "model_hash": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+    "optimizer_hash": "cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d",
+    "recipe_digest": "6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70",
+    "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+    "backend": "cuda",
+    "precision": "fp32"
+  },
+  "stage_a_source": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "baseline_report_sha256": "b59eed52aa09d1c16a0baa367403c1a3ae254065371c87c7ed2b7208e5f74fb4",
+  "baseline_evaluator_source": "b00569b33ced75a0169804a4a3d5b746a1e0e654",
+  "baseline_fingerprint": "12b272a941e5b29589195a65c779a60509626d2108975e4793674ad5867d75c9",
+  "scope": "Stage B initialization only; completed integrity loader first; exact accepted predecessor and publication; no generic historical allowance",
+  "recipe": "v5_stage_recipe_v3",
+  "data_contract": "v5_hp_data_v2",
+  "scientific_math_changes": false,
+  "fixed_updates": 800,
+  "dev_during_training": false,
+  "confirmation_evaluation_authorized": false,
+  "bridge_contract": "v5_stage_b_predecessor_bridge_v1",
+  "stage_b_source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "stage_b_run": "runs/v5/v2/seed-5301/stage-b",
+  "qualification_sha256": {
+    "cpu": "25c038878699b3b80e65abf81820c56a0f238878cf99a51c28726f72032b4e0e",
+    "cuda": "f445f35d1032490da69b1b8af3976eea7ddc5003619053bc2eb5ed5833bafab5"
+  },
+  "drill_sha256": "f350b74277e76af234f79a038dbdf9cae4cd605a270126a71573f903523384d8",
+  "train_identity": "V5_HP_TRAIN_V2",
+  "dev_identity": "V5_HP_DEV_V2",
+  "train_digest": "d7918b7a138b9aab17de24842dd5bf511cb0b95aeccbcbf07cb48921a81d86b9",
+  "dev_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+  "runtime_checks_not_replaced_by_receipt": true,
+  "preserved_files_verified": 361
+}

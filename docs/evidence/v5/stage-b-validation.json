@@ -1,0 +1,177 @@
+{
+  "schema": "v5_stage_b_validation_v1",
+  "source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "checks": [
+    {
+      "native_exit": 0,
+      "arguments": [
+        "--edition",
+        "2024",
+        "--check",
+        "crates/recur64-v5/src/study.rs",
+        "crates/recur64-cli/src/v5.rs"
+      ],
+      "name": "affected-rustfmt",
+      "wall_seconds": 0.09681229999999999,
+      "executable": "rustfmt"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-v5"
+      ],
+      "name": "focused-v5-release",
+      "wall_seconds": 65.1140504,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "v5::"
+      ],
+      "name": "cli-v5-unit",
+      "wall_seconds": 90.5283896,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--test",
+        "v5_boundary"
+      ],
+      "name": "cli-v5-boundary",
+      "wall_seconds": 77.6430932,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "test",
+        "--release",
+        "--workspace"
+      ],
+      "name": "workspace-release",
+      "wall_seconds": 374.7353171,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-v5",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "name": "v5-cuda-clippy",
+      "wall_seconds": 15.427624999999999,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "clippy",
+        "--release",
+        "-p",
+        "recur64-cli",
+        "--all-targets",
+        "--features",
+        "cuda",
+        "--",
+        "-D",
+        "warnings",
+        "-A",
+        "clippy::collapsible_if",
+        "-A",
+        "clippy::manual_is_multiple_of"
+      ],
+      "name": "cli-cuda-clippy",
+      "wall_seconds": 23.5735915,
+      "executable": "cargo"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "/d",
+        "/s",
+        "/c",
+        "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat\" -no_logo -arch=x64 -host_arch=x64 && cargo build --release -p recur64-cli --features cuda"
+      ],
+      "name": "serial-cuda-build",
+      "wall_seconds": 631.4487715,
+      "executable": "cmd.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cpu",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-3db24a9-cpu.json"
+      ],
+      "name": "cpu-qualification",
+      "wall_seconds": 51.663161599999995,
+      "executable": ".\\target\\release\\recur64.exe"
+    },
+    {
+      "native_exit": 0,
+      "arguments": [
+        "v5",
+        "qualify",
+        "--device",
+        "cuda",
+        "--microbatch",
+        "2",
+        "--output",
+        "docs/evidence/v5/qualification-3db24a9-cuda.json"
+      ],
+      "name": "cuda-qualification",
+      "wall_seconds": 30.2912884,
+      "executable": ".\\target\\release\\recur64.exe"
+    }
+  ],
+  "workspace_counts": {
+    "passed": 601,
+    "failed": 0,
+    "ignored": 2,
+    "blocks": 68
+  },
+  "focused_counts": {
+    "passed": 52,
+    "failed": 0,
+    "ignored": 1
+  },
+  "cli_unit_passed": 5,
+  "cli_boundary_passed": 7,
+  "graph_provenance": "PASS: focused/full V5 envelope rejection tests and actual CLI graph generation/audit boundary tests",
+  "format_limitation": "Only affected files checked; unrelated historical workspace formatting remains untouched",
+  "cuda_environment": {
+    "toolkit": "12.9.1",
+    "device": "RTX 2050",
+    "precision": "fp32",
+    "microbatch": 2,
+    "tf32_enabled": false,
+    "launch_blocking": false,
+    "cublas_workspace_config_override": false
+  }
+}

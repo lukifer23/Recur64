@@ -899,3 +899,19 @@ CPU/CUDA exact D9, custody and the disposable frozen Q8/R4 drill before Stage B.
 Stage B is fixed800 updates; update0 and800 DEV measurements occur only after
 training finishes. Existing pilot classifier controls conditional forward-only R8.
 No rescue, extra seed, controller, self-play or sealed-set evaluation.
+
+## V5-E46 - final Stage B source qualified; fresh drill PASS
+
+Bridge source3db24a926815159d592e93b60a8ae51852abad13 changes only CLI
+exact predecessor/publication validation and focused tests. Model/training/data/
+graph/loss/optimizer/sampler/config unchanged. Full release601 passed/0 failed/
+2 ignores; focused52 passed/1 ignore; CLI unit5/boundary7; affected fmt, V5
+all-target CUDA Clippy and serial pinned CUDA build PASS. Fresh CPU/CUDA
+FP32/microbatch2 qualification PASS:7162896 parameters, all nine Q/R shapes,
+zero null error, exact D9 and checkpoint/model/moment continuation.
+Actual three-split custody/internal disjointness PASS; CONFIRM sealed/evaluated=false.
+Fresh Q8/R4 disposable drill200 updates PASS:2.987107 ->0.097752 mean loss,
+96.73% reduction, baseline exact; weights never reused. All361 predecessor
+Stage A/B0 files remain unchanged. Lineage receipt binds full artifact and
+qualification/drill hashes. Stage B remains uninitialized until this evidence
+is committed/pushed. Fixed800 updates and post-completion-only DEV controls.

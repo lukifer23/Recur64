@@ -1,0 +1,17 @@
+{
+  "schema": "v5_stage_b_source_scope_v1",
+  "scientific_source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "producer_source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "baseline_evaluator_source_sha": "b00569b33ced75a0169804a4a3d5b746a1e0e654",
+  "changed_scientific_files_from_producer": [
+    "crates/recur64-cli/src/v5.rs",
+    "crates/recur64-v5/src/study.rs"
+  ],
+  "changed_scientific_files_from_baseline_publication": [
+    "crates/recur64-cli/src/v5.rs"
+  ],
+  "model_training_graph_data_loss_optimizer_sampler_config_unchanged": true,
+  "bridge_changes": "exact launch-time predecessor/publication validation and focused tests only",
+  "parameters": 7162896,
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee"
+}
