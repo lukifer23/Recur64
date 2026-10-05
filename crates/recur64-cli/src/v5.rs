@@ -24,6 +24,9 @@ pub enum V5Cmd {
     Doctor(DoctorArgs),
     /// Mandatory exhaustive native-data capacity stop gate; emits no split.
     DataCapacity(DataCapacityArgs),
+    /// Deterministic native V2 data generation; never executes a model.
+    #[command(subcommand)]
+    Data(DataCmd),
     /// Print exact V5 model and contract identity.
     ModelInfo(ModelInfoArgs),
     /// Verify measured HP-native custody (locked until complete DATA-B binding).
@@ -65,6 +68,38 @@ pub struct DataCapacityArgs {
     output: PathBuf,
     #[arg(long, default_value_t = 2)]
     threads: usize,
+}
+
+#[derive(Subcommand)]
+pub enum DataCmd {
+    /// Enumerate one bounded eight-white-king-square exhaustive shard.
+    Pool(DataPoolArgs),
+    /// Select, label and independently audit an exact split.
+    Generate(DataGenerateArgs),
+}
+#[derive(Args)]
+pub struct DataPoolArgs {
+    #[arg(long)]
+    family: String,
+    #[arg(long)]
+    start: usize,
+    #[arg(long, default_value_t = 2)]
+    threads: usize,
+    #[arg(long)]
+    output: PathBuf,
+}
+#[derive(Args)]
+pub struct DataGenerateArgs {
+    #[arg(long)]
+    split: String,
+    #[arg(long)]
+    pools: PathBuf,
+    #[arg(long)]
+    exclude: Vec<PathBuf>,
+    #[arg(long, default_value_t = 2)]
+    threads: usize,
+    #[arg(long)]
+    output: PathBuf,
 }
 
 #[derive(Args)]
@@ -1170,6 +1205,25 @@ fn extra_loops(a: ExtraLoopsArgs) -> anyhow::Result<()> {
 pub fn run(cmd: V5Cmd) -> anyhow::Result<()> {
     match cmd {
         V5Cmd::Doctor(a) => doctor(a),
+        V5Cmd::Data(DataCmd::Pool(a)) => recur64_v5::native_data_v2::pool_shard(
+            &source_sha()?,
+            &a.family,
+            a.start,
+            a.threads,
+            &a.output,
+        ),
+        V5Cmd::Data(DataCmd::Generate(a)) => {
+            let role = recur64_v5::native_data_v2::Role::parse(&a.split)?;
+            recur64_v5::native_data_v2::generate(
+                &source_sha()?,
+                role,
+                &a.pools,
+                &a.exclude,
+                &a.output,
+                a.threads,
+            )?;
+            Ok(())
+        }
         V5Cmd::DataCapacity(a) => {
             anyhow::ensure!(!a.output.exists(), "capacity report already exists");
             let report = recur64_v5::native_data::capacity(&source_sha()?, a.threads)?;

@@ -152,3 +152,7 @@ V5.0.
 
 The full deferred target/input/isolation/accounting sketch is in
 `docs/V5_QUERY_CONTROLLER_MEMO.md`.
+
+## Decision V5-native-V2 - pre-training data amendment
+
+The owner replaces the infeasible V1 lineage with the heavy-only V2 contract in V5_DATA_V2_PLAN.md. V1 remains historical, including all six insufficient light-family cells. New seeds, exact counts, TRAIN-first disjoint generation, independent audit and sealed CONFIRM are frozen before generation. Future recipe-v3 changes only data identity and nine-cell sampling; architecture, configuration, optimizer, LR, query schedules and practical thresholds remain unchanged. Stage A/B and DEV science are not authorized.

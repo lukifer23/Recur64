@@ -969,7 +969,7 @@ mod tests {
 /// Exact pool of one family: every legal, live placement, deduplicated by
 /// symmetry-canonical key, classified by exact mate depth, with the filters
 /// applied. This is the ceiling on what hard-disjoint splits can draw from.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, serde::Deserialize)]
 pub struct PoolReport {
     pub family: String,
     /// Raw placements enumerated (distinct squares, kings not adjacent).
@@ -986,7 +986,7 @@ pub struct PoolReport {
 }
 
 /// An eligible position of the exact pool (labels are built later).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, serde::Deserialize)]
 pub struct Candidate {
     pub fen: String,
     pub canon: String,
@@ -1007,11 +1007,31 @@ pub fn enumerate_pool(
     max_depth: u8,
     threads: usize,
 ) -> anyhow::Result<(PoolReport, Vec<Candidate>)> {
+    enumerate_pool_range(fi, max_depth, threads, 0, 64)
+}
+
+/// Deterministic resumable range of white-king squares; identical solver,
+/// canonicalization and eligibility semantics to the full enumeration.
+pub fn enumerate_pool_range(
+    fi: usize,
+    max_depth: u8,
+    threads: usize,
+    first_start: usize,
+    first_end: usize,
+) -> anyhow::Result<(PoolReport, Vec<Candidate>)> {
+    anyhow::ensure!(
+        fi < FAMILIES.len() && (1..=5).contains(&max_depth),
+        "invalid pool identity"
+    );
+    anyhow::ensure!(
+        first_start < first_end && first_end <= 64,
+        "invalid pool range"
+    );
     use std::sync::atomic::{AtomicUsize, Ordering};
     let (family, white) = FAMILIES[fi];
     let n = white.len() + 1;
     let t0 = Instant::now();
-    let next_first = AtomicUsize::new(0);
+    let next_first = AtomicUsize::new(first_start);
     type Classes = HashMap<String, (Option<u8>, bool, String)>;
     let parts: Vec<(u64, u64, Classes)> = std::thread::scope(|scope| {
         let hs: Vec<_> = (0..threads.max(1))
@@ -1022,7 +1042,7 @@ pub fn enumerate_pool(
                     let mut classes: Classes = HashMap::new();
                     loop {
                         let first = next_first.fetch_add(1, Ordering::Relaxed);
-                        if first >= 64 {
+                        if first >= first_end {
                             break;
                         }
                         let mut sq = vec![0usize; n];

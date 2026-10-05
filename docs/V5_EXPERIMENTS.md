@@ -803,3 +803,7 @@ infeasible under the frozen canonical uniqueness requirement; no accepted native
 TRAIN/DEV/CONFIRM, custody/seal or recipe-v2 binding. No 24-FIT drill, Stage A/B,
 DEV evaluation, learned controller, seeds5302/5303, self-play, confirmation,
 V4_TUNE or HOLDOUT_C evaluation. No chess-learning result is claimed.
+
+## V5-E36 - native heavy-family V2 preregistration
+
+Owner authorizes v5_hp_data_v2, heavy-only 27000/4500/4500, new seeds and split identities. V1 stays infeasible historical preregistration. See V5_DATA_V2_PLAN.md. DATA-V2-A implementation and tests precede accepted generation; no model/architecture changes or learning authorized.
