@@ -1,5 +1,16 @@
 # V5 results
 
+> CURRENT V2 HANDOFF: consumer source d11659e, fresh CPU/RTX2050 CUDA exact D9
+> PASS,12 repeated normal/profile comparisons exact, graph provenance PASS.
+> Native TRAIN27000/DEV4500/CONFIRM4500 generated/audited/byte-identically
+> regenerated, zero intersections, all actual local custody PASS. CONFIRM sealed
+> and UNEVALUATED. Data-v2/recipe-v3 bound.24-position Q8/R4 drill PASS:
+> 2.987107 ->0.026625 loss,99.11% reduction,200 updates, baseline exact.
+> STOP BEFORE STAGE A. Stage A/B, DEV model science/pilot, controller, replication,
+> V4_TUNE/HOLDOUT_C/CONFIRM evaluation NOT RUN. V1/P25 commands and earlier
+> statuses below are preserved history. See V5_DATA_V2_REPORT.md.
+
+
 > CURRENT CUDA RECOVERY (003d296): fresh CPU/CUDA qualification PASS under the
 > unchanged exact D9 and synchronized execution contract. Three repetitions of
 > each independent normal/profile order are EXACT; the proven cause was a
@@ -77,7 +88,7 @@ FIT drill, baseline/reader training and ALL DEV/pilot science remain NOT RUN.
 Historical scientific source: `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
 Full release workspace: **578 passed, zero failed, two explicitly ignored**.
 The corrected paired graph passed CPU and RTX 2050 CUDA in FP32 at physical
-microbatch 2: all nine Q2/Q4/Q8 × R1/R2/R4 forward/backward/AdamW conditions,
+microbatch 2: all nine Q2/Q4/Q8 Ã— R1/R2/R4 forward/backward/AdamW conditions,
 50 resident Q8/R4 updates, and forward-only engineering R8. Both streams are
 differentiated. Exact graph-free/autodiff baseline reference, frozen baseline
 outputs and ALL parameters after reader updates, ALL model/moment restoration,

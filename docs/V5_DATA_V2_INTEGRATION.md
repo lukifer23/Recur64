@@ -1,4 +1,4 @@
-﻿# V5 V2 production integration
+# V5 V2 production integration
 
 DATA-V2-A: 738db983084a998664ce962f87fa3c4a6153f526.
 DATA-V2-B: 37ea10e; measured manifests/seal pushed before adoption.
@@ -46,3 +46,7 @@ Engineering commands: v5 custody --split train|dev|confirm, v5 data verify,
 v5 recipe. They perform no model evaluation. Full current-source release tests,
 Clippy, changed-file formatting, CPU/CUDA qualification and graph provenance are
 pending at this implementation checkpoint. Drill remains conditional.
+
+## Final measured gate
+
+At source d11659e, all required current-source qualifications and actual local custody passed; the authorized Q8/R4 drill passed99.11% loss reduction. No Stage A/B or DEV model science followed. See V5_DATA_V2_REPORT.md.

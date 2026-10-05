@@ -6,8 +6,8 @@ that spends compute on internal refinement beat spending the same compute on
 external search?
 
 **Status (Phase 4, in progress).** The full learning loop exists and runs
-on the RTX 2000 Ada workstation: PUCT self-play → batched GPU inference →
-replay → audit → train → checkpoint → searched and raw arenas → report.
+on the RTX 2000 Ada workstation: PUCT self-play â†’ batched GPU inference â†’
+replay â†’ audit â†’ train â†’ checkpoint â†’ searched and raw arenas â†’ report.
 Phase 4 is producing the first trustworthy mainline F10 evidence on it. See
 `docs/STATUS.md` for the gate record and `docs/PHASE4_RESULTS.md` for measured
 Phase 4 results.
@@ -18,7 +18,7 @@ Phase 4 results.
 | 1 | chess contracts: observation V1, action V1, rules profile, perft, oracle | GO |
 | 2 | first vertical slice (Micro model) | GO |
 | 3 | F10 + PUCT control baseline, bounded pilots | CONDITIONAL GO (historical; predates the Phase 4 fixes) |
-| 4 | mainline harness convergence + GPU requalification | P4.2–P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum NO-GO; next fix pending owner decision |
+| 4 | mainline harness convergence + GPU requalification | P4.2â€“P4.5 done; smoke v2 GO (learning mechanism); P4.6 stopped on draw drift; root cause found; D51 curriculum NO-GO; next fix pending owner decision |
 
 **Branch `experiment/workstation-v25` (Workstation V2.5).** A separate research line
 that asks whether a stronger ONE-PASS model can learn conversion technique from exact
@@ -35,35 +35,35 @@ machine-readable evidence is in `docs/evidence/v25/`.
 **Branch `experiment/workstation-v4-evidence-belief` (Recur64 V4 P0/P1, current state).** A new architecture line, `evidence_belief_v4` (30.0M parameters): an immutable base belief over root-action hypotheses, explicit content-causal evidence messages (exactly zero for zero content) and a learned query-utility head. Built with 20 architectural invariants, a CUDA smoke and a sealed `v4_tune_v1` (6,000 positions, never evaluated). TRAIN-only Stage B result: **ARCHITECTURE-STOP** - zero content is bitwise exact (C passes) but the trained evidence path does not change decisions (G: top-1 change 0.0; A: +2e-6 nats; B fails). Stage C and V4 final science were NOT run; HOLDOUT_C remains sealed and unevaluated. See `docs/V4_P1_RESULTS.md`, `docs/V4_RESEARCH_PLAN.md`, `docs/evidence/v4/`.
 
 **Branch `experiment/hp-v5-counterfactual-loop` (Recur64 V5, current line).**
-V5 is a new 6-8M-parameter target architecture testing A(Q,R): exact acquired
-state count Q versus repeated shared relational integration R. It uses
-root-relative returned states, bidirectional hypothesis/evidence refinement,
-immutable-input recall and a matched factual/null correction. The architecture and
-single-seed reader pilot are pre-registered in `docs/V5_ARCHITECTURE.md` and
-`docs/V5_RESEARCH_PLAN.md`. The amended model has 7,162,896 parameters. The
-complete-frontier correction and depth-six through depth-sixteen tests pass;
-see `docs/V5_ROOT_CAUSE.md`. Focused CPU contracts pass with an explicitly
-test-only same-weight numerical reference. Depth-amended CPU qualification
-failed exact graph-free/autodiff baseline parity; the documented softmax
-execution correction passes its unchanged exact unit comparisons
-(`docs/V5_EXECUTION_PARITY.md`). Historical 64c4dd4 CPU/RTX 2050 functional fixture
-qualification passed at FP32/microbatch 2 (578 release tests passed). CUDA sampled
-device-wide peak is 1,068 MiB; 50 resident update samples stay at 364 MiB.
-Detailed component/online timing and the FIT drill are separate remaining gates.
-The historical synchronized qualification at d970049 passed CPU and failed CUDA
-exact normal/profile output-gradient and AdamW parity; its failed report remains
-unchanged. At source 003d296, a returned-payload boolean-mask stride repair clears
-the SAME exact D9 gate on CPU and CUDA. Three repeated independent comparisons
-of each execution order are exact, including all gradients, parameters and
-optimizer moments. All nine Q/R shapes, 50 resident updates and complete
-checkpoint continuation pass. Architecture and execution contract are unchanged;
-see `docs/V5_CUDA_MASK_RECOVERY.md`. Full release workspace: 587 passed, zero failed, two preserved ignores.
-P25 transfer/dependency is retired. Native TRAIN/DEV/CONFIRM generation is blocked
-by the frozen 2,000-per-cell unique canonical quotas: all six light-family cells
-have insufficient capacity (`docs/V5_RECOVERY_REPORT.md`). Scientific data loaders
-remain locked. No FIT drill, Stage A/B, DEV evaluation or reader pilot has run.
-V5 confirmation is not generated or sealed; it remains inaccessible and unevaluated.
-V4_TUNE_V1 and HOLDOUT_C remain unevaluated.
+V5 retains counterfactual_relational_loop_v1: **7,162,896 parameters**, FP32,
+physical microbatch2, configuration
+`849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee`.
+The returned-payload mask repair/model math at003d296 remains unchanged.
+Current scientific consumer source **d11659e** passes fresh CPU/RTX2050 CUDA
+qualification under unchanged exact D9, all nine Q/R shapes,50 resident Q8/R4
+updates, complete checkpoint/moment/resume and12 repeated exact normal/profile
+comparisons. Historical d970049 CUDA D9 failure remains preserved.
+Full release workspace: **596 passed, zero failed, two preserved ignores**;
+V5 CUDA Clippy/changed-file rustfmt PASS.16 untouched formatting failures remain.
+
+The owner-amended heavy-only native **V2** lineage is complete: TRAIN27000
+(nine cells3000), DEV4500 and sealed CONFIRM4500 (six cells750 each),72,000
+original/regeneration independent audits with zero failures. All three complete
+regenerations are byte-identical. FEN/canonical overlaps are zero. Actual local
+custody and source-bound graph provenance PASS. The infeasible light-family V1
+plan remains historical; P25 is retired as a V5 dependency. Active data contract
+is v5_hp_data_v2; scientific recipe is v5_stage_recipe_v3. TRAIN/DEV roles are
+separate, and ordinary commands refuse CONFIRM.
+
+The conditionally authorized24-position reader drill **PASS** at Q8/R4,200
+updates/LR1e-3: mean correct-set loss2.987107 ->0.026625 (**99.11% reduction**),
+finite training, baseline exact, disposable weights. Q16 was not run. This is
+engineering evidence; Stage A, Stage B, DEV model evaluation, reader pilot,
+controller and multi-seed replication remain unrun. CONFIRM remains sealed and
+unevaluated; V4_TUNE_V1/HOLDOUT_C remain unevaluated. **STOP before Stage A.**
+See [complete V2 handoff](docs/V5_DATA_V2_REPORT.md),
+[preregistration](docs/V5_DATA_V2_PLAN.md) and
+[measured evidence](docs/evidence/v5/data/v2/).
 
 **Branch `experiment/workstation-v35-onpolicy` (Recur64 V3.5, current state).** One on-policy rescue of the V3 architecture: the learner selects every query and the proof oracle only labels the learner-visited states (never chooses). Three seeds, 800 updates each, evaluated once on V3_TUNE_V1 KQRvK M3: the model now uses queried-state content (Content-Use PASS, +0.037 nats, every seed), but Gate II (ACTIVE B8 - B0 = -0.022) and Gate III (ACTIVE B8 - FIXED B8 = -0.023) FAIL. Outcome **PARTIAL - CONTENT**; HOLDOUT_C remains sealed and unevaluated; B16 not run; the lineage stops and a V4 design memo is in `docs/V35_RESULTS.md`. Plan: `docs/V35_RESEARCH_PLAN.md`; evidence: `docs/evidence/v35/`. The V3 branch text below is unchanged history.
 
@@ -361,7 +361,7 @@ crates/recur64-cli     `recur64` binary: doctor | model-info | bench | cuda-smok
                        | bench-runtime | bench-train | bench-lifecycle
                        | search-gain | gen-openings | eval-policy | pilot
                        | freeze-reference
-configs/               historical Phase 0–3 configs; configs/phase4/ (current
+configs/               historical Phase 0â€“3 configs; configs/phase4/ (current
                        mainline contracts); configs/hardware/ (measured
                        machine scheduling profiles)
 docs/                  STATUS, PHASE4_RESULTS, PHASE4_CONVERGENCE, DECISIONS
@@ -380,7 +380,7 @@ Established, with evidence in `docs/STATUS.md` and
 - Recurrent shared weights receive gradients, and F10 and R10 are matched in
   unique parameters (9,805,672 under head v2).
 - Chess contracts are exact (perft, independent oracle).
-- The self-play → learning loop closes truthfully: audited replay, provenance,
+- The self-play â†’ learning loop closes truthfully: audited replay, provenance,
   identity hashes, and refusal of mismatched checkpoints.
 - The main-workstation schedule is measured.
 - A fresh network now starts from a near-uniform policy and a neutral value.
