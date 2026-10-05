@@ -94,3 +94,26 @@ RETROSPECTIVE SUPPLEMENTARY ANALYSIS, not the original all4500 classifier, and
 do not change NO_SIGNAL or any original report. Record the preregistration/code
 population discrepancy explicitly. CONFIRM/V4_TUNE/HOLDOUT_C remain unopened
 to models. No Q16/R8 rescue, seeds, training or V6 variant fitting.
+
+
+## Recorded utility failure and prospective instrumentation amendment v2
+
+The first update0 scratch forward invocation exited101 with CubeCL missing-resource
+and allocation errors before serializing scientific diagnostic rows. The CUDA
+forward child was not interrupted; its coordinator was stopped before any gradient
+launch. Failure log and binary are retained. No forward800 or backward probe ran.
+The utility built forward-only traces on Autodiff rather than the graph-free inner
+backend used by production evaluation. Retained autodiff activations are a likely
+resource cause, not a proven production/backend defect. Additionally, inspection
+found that named parameter hooks require visit_float plus enter/exit callbacks;
+the initial visitor only overrode visit_float_with_path, which the pinned Param
+implementation does not call. This was found before gradient measurement.
+
+Model diagnostics stopped on that failure. This explicit pre-execution amendment
+permits ONE new utility version, no production change: forward-only tracing on the
+existing model.valid() inner backend; correct named visitor dispatch for gradient
+readback. Same panel, checkpoints, information, equations, controls, metrics and
+20-minute invocation bounds; no tuning or outcome-selected sample. Original failed
+update0 attempt remains invalid and is never merged. This instrumentation recovery
+is not a repeat to obtain a preferred scientific outcome. Any v2 CUDA invocation
+failure stops all remaining CUDA diagnostics; no further automatic repair/retry.

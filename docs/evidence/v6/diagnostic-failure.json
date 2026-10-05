@@ -1,0 +1,16 @@
+{
+  "schema": "v6_design_diagnostic_failure_v1",
+  "native_exit": 101,
+  "phase": "forward update0, original utility",
+  "result_valid": false,
+  "scientific_rows_published": false,
+  "model_interrupted": false,
+  "production_code_changed": false,
+  "forward800_and_all_gradients_not_run_at_failure": true,
+  "reason": "CubeCL missing-resource / allocation errors",
+  "likely_cause": "forward-only autodiff trace retention; inference, not proven backend defect",
+  "log_sha256": "b3dd5f594439b7645d0c587391efae2080576a3ebacf3e595b5728d0d4510729",
+  "original_source_sha256": "2ff65f43c9ae2187db61d384fb52a8bb2330d8b87c62a13dd36a841d5a8a72c6",
+  "original_binary_sha256": "72302a03bd671f4a71ce7ee20f8e4f1a92d7dabbcebf31e19ec43cdef65f9149",
+  "amendment": "V6_DIAGNOSTIC_PLAN instrumentation v2; one new attempt, any failure stops"
+}
