@@ -1,0 +1,23 @@
+{
+  "schema": "v5_stage_b_continuation_review_v1",
+  "starting_head": "b46be1b656e1ddb56ff715179e36c0eb45d1e111",
+  "owner_review_snapshot": "7c288ed92b88f9f861508fbf544fcecf3613d4b8",
+  "scientific_source_sha": "3db24a926815159d592e93b60a8ae51852abad13",
+  "scientific_process_active_at_handoff": false,
+  "training_complete_update": 800,
+  "preserved_file_hashes_verified": 608,
+  "existing_update_zero_reports": 3,
+  "existing_update_800_reports": 0,
+  "new_training_or_evaluation_invocations": 0,
+  "pilot_classifier_run": false,
+  "pilot_classification": null,
+  "operational_outcome": "STOP_EXISTING_EVALUATION_CONTROL_FAILURE",
+  "recommended_direction": "HARNESS REPAIR",
+  "scientific_architecture_decision": "DEFERRED_UNTIL_COMPLETE_VALID_DEV",
+  "cross_process_training_trajectory_variance_observed": true,
+  "drill_final_losses": [
+    0.026624600092569988,
+    0.0977521538734436
+  ],
+  "drill_variance_is_not_proof_of_defect": true
+}

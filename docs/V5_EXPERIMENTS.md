@@ -941,3 +941,16 @@ complete/VALID,reader task benefit unmeasured. All608 preserved files unchanged;
 post actual three-split custody PASS,zero overlaps,CONFIRM sealed/evaluated=false.
 A future versioned evaluation-control amendment requires owner authorization.
 Full report: V5_STAGE_B_RESULTS.md. No rescue or additional training.
+
+
+## V5-E49 - live-aware continuation review; existing harness STOP upheld
+
+Fetch/status/process/local-artifact inspection found no active scientific process,
+clean remote parity atb46be1b, completed800 training and three existing update0
+KQRvK reports. Existing KRRvK M1 depth6 empty-donor refusal still blocks complete
+measurement. All608 preservation hashes reverified; no new model invocation or
+scientific edit. New owner prompt explicitly requires STOP before engineering
+repair, so recommend HARNESS REPAIR and defer V5/V5.5/V6 scientific decision.
+Classifier NOT RUN; no label fabricated. Document historical cross-process drill
+trajectory variance without defect attribution, settings changes or repeat runs.
+CONFIRM remains sealed/unevaluated; prior post-run custody evidence preserved.

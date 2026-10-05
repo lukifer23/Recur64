@@ -1,5 +1,12 @@
 # V5 results
 
+> LATEST CONTINUATION REVIEW: no scientific process active; update800 complete.
+> Existing update0 shuffle donor failure still blocks DEV completion. Recommend
+> HARNESS REPAIR, subject to owner approval of a versioned evaluation-control
+> amendment. No new training/evaluation/code changes; no pilot classifier output.
+> Historical drill trajectory variance recorded in V5_STAGE_B_RESULTS.md.
+
+
 > CURRENT STAGE B HANDOFF (2026-10-05): seed5301 training COMPLETE and VALID,
 > all800 updates, final scientific source3db24a926815159d592e93b60a8ae51852abad13.
 > Stage A and published B0 unchanged. Three update0 KQRvK DEV cells completed;

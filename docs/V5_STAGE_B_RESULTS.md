@@ -159,3 +159,38 @@ MULTI-SEED REPLICATION NOT RUN.
 LEARNED QUERY CONTROLLER NOT TRAINED.
 SELF-PLAY NOT RUN.
 V4_TUNE_V1 AND HOLDOUT_C REMAIN UNEVALUATED.
+
+
+## Continuation review and research direction (2026-10-05)
+
+Origin fetched; starting HEAD b46be1b656e1ddb56ff715179e36c0eb45d1e111 is
+clean and synchronized, ahead of the owner's7c288ed review snapshot. No recur64,
+cargo or rustc process was active. Latest complete checkpoint is update800;
+three update0 cell reports already exist, no update800 report exists.
+All608 preserved local file hashes were rechecked unchanged. No training,
+evaluation, drill or scientific-code modification was performed in this review.
+
+Recommended direction: **HARNESS REPAIR; remain V5 pending valid measurement**.
+The recorded empty shuffle-donor pool prevents the required complete measurement.
+This is an operational evaluation-control failure, not a classifier output or
+architecture result. The pilot classifier was not run; ENGINEERING_FAILURE is
+not assigned as its output. The new continuation prompt expressly prohibits
+study.rs/scientific changes and requires STOP plus owner review before repair.
+Consequently complete matrices, paired CIs, final mechanism diagnostics and the
+V5/V5.5/V6 scientific choice remain unavailable. No model-strength conclusion
+can be drawn from sampled TRAIN loss or partial random-reader controls.
+
+### Cross-process training trajectory variance observed
+
+Historical d11659e and final-source3db24a9 disposable drills used the same seed,
+selected positions, all48 graph manifests, initial mean loss2.9871070881684623,
+and model/training math. Final mean losses differed:0.026624600092569988 versus
+0.0977521538734436. Both overwhelmingly passed the unchanged engineering gate.
+This is CROSS-PROCESS TRAINING TRAJECTORY VARIANCE OBSERVED, not proof of a
+harness defect. CUDA settings were unchanged; neither drill nor seed5301 was
+rerun to seek a preferred outcome. These measurements show that independent
+GPU training trajectories need not be bitwise identical. Any future positive
+single-seed Stage B result would require independent-seed replication before
+strong architectural claims. No new repeatability gate is adopted.
+
+See [continuation receipt](evidence/v5/stage-b-continuation-review.json).
