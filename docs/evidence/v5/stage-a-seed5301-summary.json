@@ -1,0 +1,233 @@
+{
+  "schema": "v5_stage_a_seed5301_summary_v1",
+  "starting_remote_head": "066270cc8818c528c1eeaca0217e85664449ac78",
+  "authorization_documentation_commit": "176044c",
+  "scientific_source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "architecture": "counterfactual_relational_loop_v1",
+  "parameters": 7162896,
+  "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+  "scientific_code_changed": false,
+  "data_contract": "v5_hp_data_v2",
+  "recipe": "v5_stage_recipe_v3",
+  "contract_digest": "4485032edfc1de9a106d66009ccacb33d20e593d7408e9cef218790a5cbba9de",
+  "stage_a_recipe_digest": "6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70",
+  "stage_a_execution_classification": "EXECUTION VALID",
+  "stage_a_training_complete": true,
+  "final_dev_b0_report_complete": false,
+  "overall_handoff": "STOP: final DEV B0 report rejected by unchanged validator; owner review required",
+  "performance_gate": "none preregistered; no baseline chess-strength classification",
+  "run_path": "runs/v5/v2/seed-5301/stage-a",
+  "training": {
+    "seed": 5301,
+    "updates": 1200,
+    "initial_recorded_update_loss": 3.064389243721962,
+    "final_recorded_update_loss": 0.6377226538024843,
+    "fixed_window_updates": 50,
+    "first_50_mean_loss": 2.7265847026184202,
+    "last_50_mean_loss": 0.5700689039449207,
+    "min_loss_diagnostic": 0.27570801321417093,
+    "max_loss_diagnostic": 3.0990144088864326,
+    "all_losses_finite": true,
+    "update_wall_seconds_sum": 846.8097176999985,
+    "process_wall_seconds_total": 1043.7213999,
+    "chunk_count": 1,
+    "resume_count": 0,
+    "chunks": [
+      {
+        "chunk": 1,
+        "resume": false,
+        "native_exit": 0,
+        "wall_seconds": 1043.7213999
+      }
+    ],
+    "resume_events": [],
+    "cell_exposure": {
+      "KQQvK M1": 8534,
+      "KQQvK M2": 8534,
+      "KQQvK M3": 8534,
+      "KQRvK M1": 8533,
+      "KQRvK M2": 8533,
+      "KQRvK M3": 8533,
+      "KRRvK M1": 8533,
+      "KRRvK M2": 8533,
+      "KRRvK M3": 8533
+    },
+    "examples_total": 76800,
+    "final_lr": 5.900987282647651e-10,
+    "model_hash": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+    "optimizer_hash": "cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d",
+    "physical_microbatch": 2,
+    "effective_batch": 64,
+    "accumulation_steps": 32,
+    "precision": "fp32",
+    "device": "cuda",
+    "q": 0,
+    "reader_executed": false,
+    "dev_used_during_training": false
+  },
+  "checkpoint_integrity": {
+    "schema": "v5_stage_a_checkpoint_integrity_v1",
+    "pass": true,
+    "update": 1200,
+    "model_hash": "2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00",
+    "optimizer_hash": "cbef56e557f71a9205e34f65c782d9264cabd8fe960e5ab3915790a5f368f03d",
+    "recipe_digest": "6642579e1f2472bda955ca7ada5bb3b8a435634c023b665684da1e4676347e70",
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "history_count": 1200,
+    "cell_exposure": {
+      "KQQvK M1": 8534,
+      "KQQvK M2": 8534,
+      "KQQvK M3": 8534,
+      "KQRvK M1": 8533,
+      "KQRvK M2": 8533,
+      "KQRvK M3": 8533,
+      "KRRvK M1": 8533,
+      "KRRvK M2": 8533,
+      "KRRvK M3": 8533
+    },
+    "model": {
+      "tensor_count": 175,
+      "elements": 7162896,
+      "all_finite": true
+    },
+    "optimizer": {
+      "tensor_count": 168,
+      "elements": 7355456,
+      "all_finite": true
+    },
+    "optimizer_parameter_states": 84,
+    "all_optimizer_counters": 1200,
+    "reader_parameter_tensors_unchanged_from_first_checkpoint": 91,
+    "reader_graphs": 0,
+    "resume_events": [],
+    "complete_sampler_schedule_state": "frozen recipe plus update reconstructs deterministic sampler and LR; per-update history verified",
+    "execution_classification": "EXECUTION VALID"
+  },
+  "dev_b0": {
+    "schema": "v5_stage_a_baseline_publication_failure_v1",
+    "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+    "evaluation_invocations": 1,
+    "native_exit": 1,
+    "wall_seconds": 19.8672492,
+    "error": "baseline sorted DEV identity digest mismatch",
+    "code_location": "crates/recur64-v5/src/study.rs:148",
+    "measured_sorted_dev_id_digest": "8e52094f6e2ec32726efc675acca408b8e2ff4f63a73910d0d00aefe97bc1b5e",
+    "compared_expected_dev_proof_targets_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+    "root_cause": "BaselineEvaluation.validate hashes sorted position IDs, then compares that hash to DEV_DIGEST, which now binds the V2 ProofTargets artifact. These are distinct hash contracts.",
+    "all_dev_forward_pass_completed_before_validation_failure": true,
+    "basis": "Read-only control-flow inspection: this error occurs only after all 4500 baseline records and preceding validation checks; report.validate returns before CLI write_json.",
+    "output_file_exists": false,
+    "metrics_recovered": false,
+    "aggregate_metrics": null,
+    "per_cell_metrics": null,
+    "no_repeat_evaluation": true,
+    "scientific_code_changed": false,
+    "required_next_step": "Owner authorization for a narrow evaluation identity-contract repair, tests/current-source validation and an explicit decision on recovering the missing final B0 measurement. Do not train Stage B."
+  },
+  "dev_cells": {
+    "KQRvK M1": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    },
+    "KQRvK M2": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    },
+    "KQRvK M3": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    },
+    "KRRvK M1": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    },
+    "KRRvK M2": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    },
+    "KRRvK M3": {
+      "n": 750,
+      "top1": null,
+      "correct_mass": null,
+      "set_loss": null,
+      "uniform_correct_target_ce": null,
+      "entropy": null,
+      "status": "UNAVAILABLE: report rejected before serialization"
+    }
+  },
+  "qualification": {
+    "cpu": "PASS at unchanged d11659e",
+    "cuda": "PASS at unchanged d11659e; original exact D9",
+    "rerun_in_this_documentation_only_pass": false
+  },
+  "custody": {
+    "pre_run_pass": true,
+    "post_run_pass": true,
+    "pairwise_overlaps": [
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_TRAIN_V2",
+        "right": "V5_HP_DEV_V2"
+      },
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_TRAIN_V2",
+        "right": "V5_HP_CONFIRM_V2"
+      },
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_DEV_V2",
+        "right": "V5_HP_CONFIRM_V2"
+      }
+    ],
+    "confirm_sealed": true,
+    "confirm_evaluated": false
+  },
+  "not_run": [
+    "Stage B including update0/optimizer/graphs",
+    "reader pilot",
+    "Q/R DEV evaluation",
+    "pilot classification",
+    "ablations",
+    "R8",
+    "learned query controller",
+    "LR screen",
+    "extra Stage A updates",
+    "best-checkpoint selection",
+    "seeds5302/5303",
+    "self-play",
+    "CONFIRM evaluation",
+    "V4_TUNE",
+    "HOLDOUT_C",
+    "repeat B0 evaluation",
+    "evaluation code repair"
+  ]
+}

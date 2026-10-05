@@ -1,5 +1,16 @@
 # V5 HP resume and artifact transfer
 
+> CURRENT STAGE A HANDOFF (2026-10-05): seed5301 Stage A completed1200 updates
+> in one bounded CUDA FP32 invocation, no resumes; final model2d1c770a...ae0bb00.
+> Final checkpoint integrity and post-run three-split custody PASS. Scientific
+> source remains d11659e; all scientific code unchanged. The exactly-one final
+> DEV B0 invocation FAILED report validation: sorted-ID hash compared to V2
+> ProofTargets digest. No report/metrics serialized; no retry or code repair.
+> STOP for owner review; Stage B/update0/optimizer/graphs NOT authorized.
+> CONFIRM sealed=true/evaluated=false. See V5_STAGE_A_RESULTS.md.
+> Prior STOP-before-Stage-A and P25/V1 text below is preserved historical status.
+
+
 ## Current V2 operation and Stage A-only authorization (2026-10-05)
 
 The owner authorizes the complete frozen seed-5301 Stage A (1200 updates),
@@ -271,3 +282,14 @@ from per-position records. Only a `PILOT_CANDIDATE` report unlocks:
 All commands in this section are implemented and their argument surfaces are
 covered by CLI tests. They are explicitly NOT RUN on this machine because the
 required P25 artifact is absent.
+
+## Current Stage A artifacts and owner review stop
+
+Final checkpoint: runs/v5/v2/seed-5301/stage-a/checkpoints/update-000000001200.
+Ignored operational receipts/logs: runs/v5/v2/seed-5301/preflight/.
+Final B0 output runs/v5/v2/seed-5301/stage-a/final-baseline-dev.json DOES NOT EXIST:
+the single command failed validation before publication. Do not rerun the earlier
+example or resume completed Stage A. Read V5_STAGE_A_RESULTS.md and the compact
+baseline-failure receipt. Next step is owner review of the narrow evaluation
+identity-contract defect; no source amendment or repeat evaluation is authorized
+by this handoff. Stage B/update0/graphs/optimizer remain NOT RUN.

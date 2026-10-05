@@ -1,5 +1,16 @@
 # V5 results
 
+> CURRENT STAGE A HANDOFF (2026-10-05): seed5301 Stage A completed1200 updates
+> in one bounded CUDA FP32 invocation, no resumes; final model2d1c770a...ae0bb00.
+> Final checkpoint integrity and post-run three-split custody PASS. Scientific
+> source remains d11659e; all scientific code unchanged. The exactly-one final
+> DEV B0 invocation FAILED report validation: sorted-ID hash compared to V2
+> ProofTargets digest. No report/metrics serialized; no retry or code repair.
+> STOP for owner review; Stage B/update0/optimizer/graphs NOT authorized.
+> CONFIRM sealed=true/evaluated=false. See V5_STAGE_A_RESULTS.md.
+> Prior STOP-before-Stage-A and P25/V1 text below is preserved historical status.
+
+
 > CURRENT V2 HANDOFF: consumer source d11659e, fresh CPU/RTX2050 CUDA exact D9
 > PASS,12 repeated normal/profile comparisons exact, graph provenance PASS.
 > Native TRAIN27000/DEV4500/CONFIRM4500 generated/audited/byte-identically
@@ -88,7 +99,7 @@ FIT drill, baseline/reader training and ALL DEV/pilot science remain NOT RUN.
 Historical scientific source: `64c4dd4008a9b5bc8d715515279ec67e6e1173a1`.
 Full release workspace: **578 passed, zero failed, two explicitly ignored**.
 The corrected paired graph passed CPU and RTX 2050 CUDA in FP32 at physical
-microbatch 2: all nine Q2/Q4/Q8 Ã— R1/R2/R4 forward/backward/AdamW conditions,
+microbatch 2: all nine Q2/Q4/Q8 Ãƒâ€” R1/R2/R4 forward/backward/AdamW conditions,
 50 resident Q8/R4 updates, and forward-only engineering R8. Both streams are
 differentiated. Exact graph-free/autodiff baseline reference, frozen baseline
 outputs and ALL parameters after reader updates, ALL model/moment restoration,

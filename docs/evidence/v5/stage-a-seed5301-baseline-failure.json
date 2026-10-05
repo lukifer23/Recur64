@@ -1,0 +1,21 @@
+{
+  "schema": "v5_stage_a_baseline_publication_failure_v1",
+  "source_sha": "d11659eca0774e0064bed0ef64ead2b725886d93",
+  "evaluation_invocations": 1,
+  "native_exit": 1,
+  "wall_seconds": 19.8672492,
+  "error": "baseline sorted DEV identity digest mismatch",
+  "code_location": "crates/recur64-v5/src/study.rs:148",
+  "measured_sorted_dev_id_digest": "8e52094f6e2ec32726efc675acca408b8e2ff4f63a73910d0d00aefe97bc1b5e",
+  "compared_expected_dev_proof_targets_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0",
+  "root_cause": "BaselineEvaluation.validate hashes sorted position IDs, then compares that hash to DEV_DIGEST, which now binds the V2 ProofTargets artifact. These are distinct hash contracts.",
+  "all_dev_forward_pass_completed_before_validation_failure": true,
+  "basis": "Read-only control-flow inspection: this error occurs only after all 4500 baseline records and preceding validation checks; report.validate returns before CLI write_json.",
+  "output_file_exists": false,
+  "metrics_recovered": false,
+  "aggregate_metrics": null,
+  "per_cell_metrics": null,
+  "no_repeat_evaluation": true,
+  "scientific_code_changed": false,
+  "required_next_step": "Owner authorization for a narrow evaluation identity-contract repair, tests/current-source validation and an explicit decision on recovering the missing final B0 measurement. Do not train Stage B."
+}

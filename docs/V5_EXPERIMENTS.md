@@ -286,7 +286,7 @@ Corrections are appended; old entries are never rewritten.
   payload gradient L2 0.003922534, all four reader groups nonzero; every baseline
   parameter and baseline output remained exact after reader updates. Complete
   parameter/moment restoration and one resumed parameter/moment update exact.
-- **Executed work:** Q2/Q4/Q8 Ã— R1/R2/R4, both streams differentiated,
+- **Executed work:** Q2/Q4/Q8 Ãƒâ€” R1/R2/R4, both streams differentiated,
   50 resident Q8/R4 updates; worst warm 0.7456381 s. R8 was engineering-only
   forward, 0.4578827 s. These are test-only fixtures, NOT a drill or pilot.
 - **Evidence:** `qualification-7737640-cpu.json`, numerical gradient evidence
@@ -836,3 +836,20 @@ fresh random model, followed by exactly one final DEV4500 B0 evaluation is
 explicitly authorized. No Stage B/update0/graphs/optimizer, reader pilot, Q/R DEV,
 controller, replication, self-play or sealed-set evaluation is authorized.
 No measured training result is asserted by this entry.
+
+## V5-E42 - fixed Stage A complete; final B0 validation failure; STOP
+
+MEASURED at unchanged scientific source d11659eca0774e0064bed0ef64ead2b725886d93.
+Stage A seed5301 completed1200 updates, one bounded invocation1043.721400s,
+zero resumes/native0, final model2d1c770a43a6455148b774e9ddb552b6ca33efd9fdd5d37593cefe7c8ae0bb00. All losses and complete final
+model/moments finite, exact frozen recipe and balanced76800-example exposure:
+Stage A EXECUTION VALID. First/last50 mean losses2.726584702618/0.570068903945.
+The exactly-one final DEV4500 B0 command exited1 after19.8672492s at
+baseline sorted DEV identity digest mismatch. Read-only code/hash inspection
+proves sorted-ID digest8e52094f...bc1b5e is compared to ProofTargets82d4578a...69d2a0.
+All DEV forward records completed in memory before report validation; no report
+serialized, no metrics recovered, no retry. Scientific/evaluation code unchanged.
+Post-run actual three-split custody, zero FEN/canonical overlaps and CONFIRM
+sealed/evaluated=false PASS. Owner failure stop/source-preservation rules applied:
+no code repair or further model execution. Stage B NOT AUTHORIZED. See
+V5_STAGE_A_RESULTS.md and compact summary/failure/custody evidence.
