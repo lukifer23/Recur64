@@ -1,3 +1,9 @@
+> **HISTORICAL PROPOSAL (identity `v6_content_differential_aux_v1`) — not the executed contract.**
+> Its training contrast used a complete-payload shuffle. The executed contract is
+> [V6_OBJECTIVE_PROBE_CONTRACT.md](V6_OBJECTIVE_PROBE_CONTRACT.md)
+> (`v6_content_differential_aux_v2_successor_only`), which replaces that with a
+> successor-only shuffle. The text below is unchanged.
+
 # Prospective objective/content-contrast probe
 
 **PENDING OWNER REVIEW. NOT IMPLEMENTED, QUALIFIED OR RUN.** This document is a
