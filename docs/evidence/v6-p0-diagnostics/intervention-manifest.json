@@ -1,0 +1,44 @@
+{
+  "schema": "v6_frozen_failure_interventions_v1",
+  "producer_source": "42f47b852451d59645dcc50120e4a426b034f493",
+  "plan_digest": "e7e09f8d853dc69f983c33e61e0186205fdfee21fc650edaafdcc1b7c1c5dee9",
+  "arms": [
+    "principal",
+    "one-pass"
+  ],
+  "updates": [
+    0,
+    200
+  ],
+  "panel_roots": 96,
+  "physical_microbatch": 2,
+  "device": "RTX2050 CUDA",
+  "precision": "fp32",
+  "maximum_invocation_minutes": 30,
+  "optimizer_steps": 0,
+  "shuffle_seeds": [
+    2053169154,
+    2053169410,
+    2053169666,
+    2053169922
+  ],
+  "conditions": [
+    "real",
+    "shuffle_original",
+    "all_null",
+    "turn_blind",
+    "shuffle_e102",
+    "shuffle_e202",
+    "shuffle_e302",
+    "board_zero",
+    "flags_zero",
+    "board_flags_zero",
+    "carrier_flags_zero",
+    "carrier_flags_factual",
+    "owner_zero"
+  ],
+  "carrier": "post-slot 256-vector: +0.1 at even coordinates, -0.1 at odd; same every acquired node, zero padded nodes; overrides encoded anchor, not a chess board",
+  "scope": "TRAIN fixed96 only; no model invocation DEV/CONFIRM",
+  "tie_break": "first legal ActionId-order index attaining maximum FP32 logit; exact ties lower index",
+  "donor_constraints": "original same family/root mate-depth cell, different root, same root_to_move, minimum depth distance (exact if available); stable id/depth/path/storage order, original recipient hash with listed seeds; no outcome selection"
+}

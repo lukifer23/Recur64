@@ -1,0 +1,94 @@
+{
+  "schema": "v6_frozen_diagnostic_artifacts_v1",
+  "producer_source": "42f47b852451d59645dcc50120e4a426b034f493",
+  "config_digest": "f48dcf28ce178581a99099d088fa4c975ab684c1c81c351896238a7ffc4b8335",
+  "plan_digest": "e7e09f8d853dc69f983c33e61e0186205fdfee21fc650edaafdcc1b7c1c5dee9",
+  "checks": [
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\update-000\\model.mpk",
+      "sha256": "e9d777d4065c448efcf8427ee75d8707a4565b9836ab23909ba0c49c83956dab",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\update-200\\model.mpk",
+      "sha256": "223837c199f3778eb8c4ca36a2b9409c46a63119b08049f3627416dd60ce884e",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\update-200\\optimizer.mpk",
+      "sha256": "b5ce1d1ab34389cf9dfefb3a01c9ece13c676ab5cec60557e66ab59280ac4373",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\latest.json",
+      "sha256": "187214a9badc9ed83f5bde2dc978e01a3952417ebb1a198a939d274b72106f1a",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\endpoint-000.json",
+      "sha256": "a0b3e91977066eab279351281a0fd9b3d9ca2c8382ac297432328015fc958541",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\endpoint-200.json",
+      "sha256": "4a665cfe23937b113044ba3247735d49d4c02fb771ea43097ed0f01433c6b787",
+      "binding_match": true
+    },
+    {
+      "arm": "principal",
+      "path": "runs\\v6-p0\\seed-6300\\principal\\update-000\\optimizer.mpk",
+      "sha256": "11e3c6fc5b58ca6204b4843b1aa01be5f667ae7dc7fd6253ab1be383e9603d40",
+      "binding_match": "first independent inventory; no historical update0 metadata exists"
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\update-000\\model.mpk",
+      "sha256": "575069e26cef5a330a76419628858f15c61023cdec258b72115ce1252831d59c",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\update-200\\model.mpk",
+      "sha256": "643b0d08675916f963b458d5d66fbc77b4f1f2a51f16e08733647a190cff9813",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\update-200\\optimizer.mpk",
+      "sha256": "ec295eacda17defbd85d374ce4acd030b781b5316c9de6cc3d16aaf9b25be871",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\latest.json",
+      "sha256": "d61ba974f94976130d488e6643639f1ecad4c3219def1de9b211cdad936fe75b",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\endpoint-000.json",
+      "sha256": "f3d0af5b869c7e2f583c4731836da0db9cdfbd19a52018fa21e73dd3bb233cf6",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\endpoint-200.json",
+      "sha256": "31216049189e5488fdf6fd4bd2d599bb81c0fcf68530eb4e13a368415c9d548c",
+      "binding_match": true
+    },
+    {
+      "arm": "one-pass",
+      "path": "runs\\v6-p0\\seed-6300\\one-pass\\update-000\\optimizer.mpk",
+      "sha256": "11e3c6fc5b58ca6204b4843b1aa01be5f667ae7dc7fd6253ab1be383e9603d40",
+      "binding_match": "first independent inventory; no historical update0 metadata exists"
+    }
+  ],
+  "frozen_preserved_file_count": 131,
+  "pass": true
+}
