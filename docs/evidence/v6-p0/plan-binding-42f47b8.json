@@ -1,0 +1,994 @@
+{
+  "schema": "v6_p0_measured_plan_binding_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "config_digest": "f48dcf28ce178581a99099d088fa4c975ab684c1c81c351896238a7ffc4b8335",
+  "raw_sha256": "3be158ebab91f3e691d4fdf723d450c6d4448447d1570a9371fbc7c8682a7e49",
+  "cpu_qualification_sha256": "27e286955febba58583d083108cc974a72904c8d9c830ac98af6a39c9869113f",
+  "cuda_qualification_sha256": "e96db0ca5c177e41186788e8f2926e7df87cd2ebc9b4df226235ba4fc99b8ce5",
+  "plan_digest": "e7e09f8d853dc69f983c33e61e0186205fdfee21fc650edaafdcc1b7c1c5dee9",
+  "episode_digest": "208658ccaef1d0160694b45dd72de1e53ff63d97f5199c029f80a65aebb57092",
+  "train_digest": "d7918b7a138b9aab17de24842dd5bf511cb0b95aeccbcbf07cb48921a81d86b9",
+  "seed": 6300,
+  "updates": 200,
+  "strata_support": {
+    "KQRvK M2": [
+      763,
+      2237
+    ],
+    "KQRvK M3": [
+      1291,
+      1709
+    ],
+    "KRRvK M2": [
+      725,
+      2275
+    ],
+    "KRRvK M3": [
+      867,
+      2133
+    ]
+  },
+  "initial_shapes_match": true,
+  "selected_roots": [
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................................KQ......R..k.............",
+      "index": 12091,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "f231ce9efae875cb392d2d733ab0f1485d40b81c014bd2906ec47f95f382e7c6",
+        "ccaadb63966f5f0e7788aa1e4fed78ab6dfc08d48c5240a178b38c9a64363ca0"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-............................R...............Q............k...K..",
+      "index": 12968,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "8987768692347484ccd423dd0cfcd899a36bdf73d821511b4f03a95b33471bed",
+        "1ad1c705dbfa786028a37d52fb69fb3d6537f7b361327b3ffe0ab972a232550c"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..............k..Q.............................K........R.......",
+      "index": 14664,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "c4ce266b73be71810c0c81d11dfebe757c34bda1c5150dde435c8c32c84e393f",
+        "a8094a0daf05ae54008a1378de364723e32425177e2e152d21eb00625c4ba6c7"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-......................R................K.k................Q.....",
+      "index": 13606,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "fca532e7a033655082830e32febc2c480ef1b6326cc89344deba7829a90d4c43",
+        "96ff9d8ac9cdfa9a9037c508df3713fb9a8d66942b2795e66fc1a31057850749"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..............................Q..........k..............R.K.....",
+      "index": 12648,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "0a85d04bba5f7012bf9d8f5c16b0248e130eb8c7f0e69144b73a30a7de42662d",
+        "050b212f866052a3b8b48f9522e9a2954fdea71b9f3257204035ef939099c04c"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................K.................Q....R....k..............",
+      "index": 13696,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "5e0eb44e0898999959a024c7bb93db8bf2dbfaa3585c082e98cd6bc1453d6d95",
+        "8c431550c9b8bcb35af9050ae542886e868397ce66e3c1a1873dc7ee46ddbf1b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-....................................Q....k......R...K...........",
+      "index": 12284,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "bde96f0dd019a7692ceb400cb3dbe2433b5048bfaa53c176300e1a5c3c877a2d",
+        "413ca44111878edf548bd40e11e5f2ffc202af46c0a8a9e18ca801aae77cf464"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.............................R....Q.........K....k..............",
+      "index": 12841,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "6a1bab7d63fba7ed2ede84f39f49712a8186d5d88543a4072e2cb6167c3c0a20",
+        "ed42a58abfd51f9f32bdf9ed18362aee23f78829e57e5129c0cbd05a125c644d"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.............k.........Q................R................K......",
+      "index": 14752,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "63d3bfdd11201fcb5ebb32aa096a29438b6f8dc9f89e4e70ebc48305b74017f6",
+        "a00a5aefdacfd54c6f89a1e2e26dfb076b4454695c30fbd279e72f70d84bb016"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................k.K.R..........................Q...........",
+      "index": 13875,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "2de0ffb7bab4787b3cf55b62620c79bf7ffcc24d72c9e38ab41d12a57d2642ca",
+        "26bd544f40679d4251b7057b6cd10f073bdd00f0f5e0a577105e72bb3ed7c60e"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................R......Q....K....k.......................",
+      "index": 13288,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "5da5abdbc877c208164612baeabb75ac72718301f09a0be76bb37a9abde4edb1",
+        "cc15ec2233a29bedd9fff3a647c5362e12be8c166be5746eeeb35c28ca6d1086"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-............................R......................k.....K.....Q",
+      "index": 12965,
+      "cell": "KQRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "f1eda9d210cc37988831ebd08cf50ba1e1550add33675203c211236a191508fd",
+        "af0ef7dd11636e1e16b297b6ec9b7b955b4fd62a52ce5952c74f9842a8fe999d"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-......................K.........k.............R...............Q.",
+      "index": 13510,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "d278651000de2dded0010c07b4c8b75a601c529b79b253f0e45384fe45d165f3",
+        "d53804975b9edc54fbf9ff3c22168032f38b91052bdd8f0d9a21d239f2d8d1d0"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......K....................................Q...k...........R...",
+      "index": 14842,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "277a601e8a190a310a6b89ce9cc1f7f8dbe2480ebc62b44a4f6d18d05c8c53c6",
+        "f6bb8c2c06c830dd39098f5c138bbb15dee04c94a7e95533436942d81ac2cb34"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................k........K..Q......R.....................",
+      "index": 13404,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "ac4a2b23efa483e22a3e638776aff0dc8d2ebf71e01f81492a93ba6d1e8e2e43",
+        "c469612890ea74834332888bc6e9cb80229c6fbe4d336a5a2d43575746ce7834"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......K........R..........................Q..................k.",
+      "index": 14865,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "ec74cb052cd14ba2acd49e1184e1e2f87cb516f92bee901c17b7e1f9998eb6a2",
+        "9d7e3efe4de52fafc17c9418269f70fab25b2181bd92525f701fbbf1edbd43ba"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..............................K...........R......k.............Q",
+      "index": 12600,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "19ff40fecc6885a92759fa2df45e9285eb12535ebe7d6e49874ccc627fa23523",
+        "59b8e18b5170e6591935dc1b61364c517eb088733d7f68dded7621cd2024beee"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-....................................K..k.R..............Q.......",
+      "index": 12267,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "a948e930ced732f1ab3f1dc259272855714f233602f4bedbef9f38bdf2901025",
+        "7d66f5bec9c3e125f2aff14d2e853dfd93d7ba5283482829e93456275cb3d3e8"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.....................R......................Q...K.k.............",
+      "index": 13817,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "d34c0ee1d6ad6b066aec452ae6aff71d49904e425e268130551578bce5d1a8dc",
+        "c6f595819eeb442565c097292a08127ed320412ed8721ed546905d5a207ef1ff"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................Q....K........R....................k.....",
+      "index": 13222,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "e17804437034848fb739225979871657718eec01558cd22d16f477e730517283",
+        "481abdd1a37153c768527f0dc25e965dcf2a9504788520ed3bd3ac361be53a54"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..............K.........k..............................Q...R....",
+      "index": 14533,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "a609094f692f29dec2f8e08a5077e066f821c4c6a165ec5153b71c8ccd2f7c74",
+        "bf1fc74bc9250d440f7a33384b74e457d66ac97e6b15b7ef305ee41695853cb4"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-....................................KQ..........k..............R",
+      "index": 12271,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "709b7771d020ff745199abdc350b771c4297ff91993197d3916462dff9f5f5d2",
+        "e4948675c65b74ec4e2ae7e6acb7ca990b6e61590256980ab3ff779582016bd9"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..................K....k.........................Q..R...........",
+      "index": 14032,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "64fb36d956308cbaa935558e78183b9df2c142f5a649509cb707e7dc04a0b7a5",
+        "57070fc7a7fd0cd0d31933779dbbeed11474c8583d21a3e7dfbdf454ea6e19c6"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-..............................K...R...Q......................k..",
+      "index": 12624,
+      "cell": "KQRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "066cb06bd8fbc11c57f44d4da5935cc60dc55ccbde3b1518fb3811e11c4555ad",
+        "936aec9019ed98d80047b8be8a15c486ad939f8519c8d19b710485f4350f9042"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................................R...K.k...........Q.......",
+      "index": 15139,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "47f75aa1eb224707580e1ce2696619e67d40b1b91b85932cec590b5c2789fe3a",
+        "ca2e0b98ff8e564c52fa20632aa253e6b0e2a7a0264b110832e833c25f8fe4dd"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k.................R..................Q...........K",
+      "index": 17742,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "379b523e8a6af8db3686c51efb75094523c4aee1a3ba07ed8f93bf87e8e62abf",
+        "6b96028b47e32d3de2752a96cf9e4199a9d1be15dccaca4d04c1ca6db176d781"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k..................K.R...........................Q",
+      "index": 17727,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "99d2b71be8d5fddf14b0a216833dfbe0b604809c1fcf6b0cfc3b0c53ae04af3e",
+        "202ebc57e1fa4b6f319e2c31b05aedb199782dbf5b4a5417521e101d35411486"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................R....K................k...........Q.......",
+      "index": 16518,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "f80b8fc9d3a2f8049b22014b501e0a541ed883cc0c22c8974606d37ab79eda91",
+        "fa053d1ac91809649df0d3d886a13787cf44b2c3ffc878060ce6947b8b2e70fa"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................Q.R..........k........................K..",
+      "index": 16220,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "41f3162a884f1c743fbd48dcb66b4f1f2375b02eae770036338ed8c71a604195",
+        "bf0e8031f38b107ae9a051c9f7d8ff74161684b7fdc1ca78f9e8564aafdc2c7d"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-...............Q.................................K...k..R.......",
+      "index": 17381,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "27c847dcbc4a38e1a557ccb4559d7dc038a1c3035244d81980c59e313aa42c7c",
+        "95fe45580da9d4231d2786678ea90232a4d8c6589c4c638a9c7c76b5cedb3cce"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............Q..................k.................K...R........",
+      "index": 17614,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "6b43969ba2e46c9e383a9220f8df32424bacd3d9a32e9b092b4f089e4e4ab2d6",
+        "1bacc1f3ba30461b1c7375e93c86ca3ea0e422758aa0bdbd2d3e4b7112319f28"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-............................................k.....R........K.Q..",
+      "index": 15046,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "957cf7cfdf52c3df7d3b3d458a1b9cbdf58095553f4fe05f705d45ceafc41ccc",
+        "9987a31b3040a461ad68f2310807d2a9c573b0943d68ef8370ec8ef607779ff9"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.............R...........................k..........Q..........K",
+      "index": 17826,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "30b71ab52c4c4e8a79499239c4459b925cadc009f2b5ea12e412b33342ab5548",
+        "9f09606a2639295ee6578706cecfbaeab983a9b76b4e6fc889ad6720c99199b9"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-...............K.....k..........................Q.............R.",
+      "index": 17349,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "0730a13fa93e3a18493795b4c923615811d36d45b997d9bed5db1702e304a1b0",
+        "121d2ce59db6c4525064ac87b4e2ae48697f97411810afe90f033a99e375e32b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................Q.....K....k..................R..........",
+      "index": 16192,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "ced6459a3f242557cb51b6b16ed2d984ea495babe4a81c7f370f24db0af8e1cb",
+        "591728148c4010cd1c9c7cdfc18ec23547bb7f7193805f63deba7dda67c99251"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................R..........Q.......K...........k..........",
+      "index": 16499,
+      "cell": "KQRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "2472ee9bd3ce13c88cbd4764d8566e29229466e4cff6b73c211caacf18732e4b",
+        "9dab11141f46ecd5e2a95cc631aad9d5cc50cb15c7809478dbae01a107de86c2"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................k....K....................R..Q............",
+      "index": 16670,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "94c9dc184f6cd8d7f0d0774c1ca0164cb3b3a72f19c2dbcfe6c3390dd6633d22",
+        "191279817aac6b0092e36b6bdeb95a65fa9eb5e5d4859a6eea4ab071298ea703"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................Q.R.....................K....k...........",
+      "index": 16217,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "47894159fdad7259967ba4d8591e90fa9737e1d4a24a27eac1666e7d742d8b1e",
+        "1ff6c4997fca9ae514165e66b5e0fff73fd3d8dc0fa8ae54ed531e7e60f9246b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.............................k.........Q..K...........R.........",
+      "index": 15829,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "63931337b78b3e30597f58588d680078f9ca8816038ad0053f45210ba0925ed1",
+        "594b306c67d392069b8fe08751e96c79441672b5d146d13acd9cf491406ac3f7"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k..K................................Q............R",
+      "index": 17772,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "b88732dc5c81db82a25e6eead33b79afbbe4ea85954adbcc15b1c09a58905c71",
+        "cc39ad0d99c1b494ccc1ba8fb1696ddc18b986ea803946547bdb889a3d9bf9e5"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.............................k...RQ..................K..........",
+      "index": 15846,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "26bfde3083567457aebfdf066a1c89b214afd06ca9c8e59264ce4e8a6095d187",
+        "0630a50251875de4349d2f46b3e812e2b4d5a74cba8900b3c86760c62cd1508d"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................k...K.................R..................Q",
+      "index": 16685,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "645642395bc8cfe1551ab7878a998fc2176d72f93776783e5d32dceadabef7d4",
+        "3eaad0ba5a1649f7469c7c2e9b15c4414dbf05c9ccc5c8910c58f621f22391e0"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............K.....................R...k..................Q....",
+      "index": 17572,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "0efb68bb4172a03fadb78f5a44cd6c95bd948c41069095c022bddeb087817d12",
+        "00a0c936fdee65b625f5a0b48ff671adea9976205f104f108d01283c3d3147c0"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................K..k.........Q........R...................",
+      "index": 16404,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "1306aa0f8e0842a5f4422ae2e96e620ec789e2c332b08bd2db9ec91f906cf46d",
+        "f227ca2f18cbb4391e68d041f242f97dbb8699219f15d4a59f481286b7c60d02"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................Q.k..........R....................K......",
+      "index": 16227,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "b81f3d4d27202ad45e3708be9cdbc601f183515af13bd75f7095ca93f9281ea4",
+        "966db9440f35fc101ef050ea5566694ded45fc2f64aa34572168c3234ed768b5"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................R........Q...........k.................K.",
+      "index": 16266,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "a7c87c30e3f9aff18024e9f6fac969eb679fcdb0d1c084410ae19c3e2360800a",
+        "5c9552ccc172c408abf32febd0e7dd10af802926d85361774a1b2ac01c676a88"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................k.K........R..............Q..............",
+      "index": 16331,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "83714c82db5ada495a455ca95c13cd5192a2638405feb041689500a57e0da638",
+        "03f81196dab6de1d7bcc784cbd44b3a65f0ffd79235aeebc0c94c11da8bc6561"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k.......................K.........R.............Q.",
+      "index": 17718,
+      "cell": "KQRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "d35c1c0cf3c41a540be6652e85f59c695b415e5c65782b74e9ec1568d9c92b65",
+        "c869eaa5a2b3f61b78f617c6b5a22dfec8abf9aba76795d562fb070de9a584a5"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................R..............K.......R.........k.......",
+      "index": 22204,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "171354c16ff770e6e7c2a692b5d7155b161eae500f1d0257835ddc0a7f6ec1cd",
+        "8f541e80b7d14ca7adbf35cc4a5f1578696218a63bbf7361908cbbcc26063ef2"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-......................................R.R........k.........K....",
+      "index": 21214,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "26cc623dc7bf87721e9266b8670668673e7353838149f06a7a6561e3e12a867b",
+        "ad82e81eaf9abeed20389685e26c6d019eb708dd3b9ffc376b8dac96dfe4a884"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-..............................R..........K...........R.........k",
+      "index": 21693,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "ab19a4b2bd8dd2fa82c840087a34fd5536e819f1d4e4d929d8d5406be1b2e3c8",
+        "3b25e28d676625110f21d3184fd275035b480827e26663c25dd990f07381b3cd"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................................k.R.......R....K.........",
+      "index": 21176,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "aaf1e3ed849a5b5f9bf743ab3cca3e9e2effe85fa0cf8580616a0a9eee3ae212",
+        "b105f1d2c0d0f80b2cc6734234e4e7ff57549ad2c4efd9b69f1464ac2d6c7010"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...........................KR...k..............R................",
+      "index": 22033,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "12974e2cc9198be1d084b84c7252de537bbea1d6e3581903ededa2ef224d505a",
+        "7aef625e271822b6f63ce125e3f9ba1be3a11d82e48bea8defa2357dfbd95dcb"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................R........k................K.R............",
+      "index": 22243,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "bbb093c14974a0e95a52517288eba75944351fd1053815988c4ca0472c554def",
+        "1f2ff4e372c7ec09bde1c8abb16c3a03f36931255ce59c1f07defe16a5a50728"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-..............................k.............K....R...........R..",
+      "index": 21750,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "ab5a10f653261ead26e863f9b78be58537157b21f88ec810dbc10640be649bbe",
+        "ae625bc6c01e3ead7d0b2d451668c9ec950ca32fd122c3a71967e926097a6b4a"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............k...RK...................................R.......",
+      "index": 23426,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "03bffbb5485e6bb4fa4cf6fcad5437308b96bb0156748e262c9b17a5e99778b7",
+        "afc1a5dda737a43fdecf7be928ec098ba4665c303d65565340be375f3ce89208"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-..............R.K...............................k.............R.",
+      "index": 23608,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "191be101146f30f6923064dce9351708f4cd019ab207993b1b2122fbe3f3fef1",
+        "e211ad6fe0d7da9c492bacec194b5bb5039e87779d0e20034f9c3e9955fba812"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-............................R................R.........Kk.......",
+      "index": 21933,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "bc9313863e99782fa8b27e7e14d498a51c583c43ae27bd22be68f521aef8474b",
+        "10ecac891c25caa0228c27227462b403d23c0434cb4e3b5efd8c03f9d7f0ca18"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................R.........K.........R....k...............",
+      "index": 22228,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "943cee02a1606f67aeabe3e57fca6b4943f834be7bf563cb48bd883badcae828",
+        "46c4650c85371a4b4f9c513ddbcfcead66fedafdd52c23c546e7c4c135c10f24"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............R..........................R......K............k.",
+      "index": 23140,
+      "cell": "KRRvK M2",
+      "baseline_correct": false,
+      "packet_digests": [
+        "46f91b02b6102d36daf373debd83349f35ce45d01f84c1e9a7e8a42eb461b244",
+        "33a17a4e60dbb4732049564b418d61849df807f5ddf9ffabbb43049c5bdba938"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.............R.................R.....................K..k.......",
+      "index": 23701,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "3085c0e0882f89bf8adaa266c4ae9c5bf8c6055aceb7fed4a13b8ce4588aee4d",
+        "b8ab3be78a599c1f469d2d0b2494b6e5edb128ca50045277cbff1edfc0f44b13"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............................kR.............K..R..............",
+      "index": 21634,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "fbdf471e7e6c1cb6a9cf4472acdaaab212f69ce02b78e1647dc798f26f748c85",
+        "4c32da6a0ea325edb92288a8760e8aa70857abee82d70b109a810726907be87c"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-......................K....................R...........kR.......",
+      "index": 22474,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "78d66665f1b7f09a09507bd88913e40709979213374cc9d339e42194b96c2043",
+        "172f32cefb2b5df77508172a9a9fd89b27ac225cdf2f1f4e39a7bb8d777116a4"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...................K...R......................R..........k......",
+      "index": 22978,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "e4e05363efa137a48a2813f8e7e47628e06604fe5081ab3f26d454410f4dff9b",
+        "030aa6cf27df7df58e5a6fe508edb4451b18190e4236d7af0fbd2fbf2dcce07b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.....................K.................k.....R..........R.......",
+      "index": 22671,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "2ff7862ebda2c31d0f4f8d5f3a0a7f3b76dc22812f18f1c4bf8ef73992d98847",
+        "3f0e270508668d8ed92dbe4910ad368ed1f1954c58f50a98870f03aa0570e090"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.....................R..........R..............k.K..............",
+      "index": 22767,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "cd8b985a321887d52841a9ab161b1098604b4bc85c17a0c79e2ae670f362ed5f",
+        "a7d13d840e0879d228088dfa92825c639b7bb62c6bfcb32c30f6c6a73e6b5f8b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.............................R.................Rk..K............",
+      "index": 21795,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "037d8d9b41c5cf2d28604af2715d5e622901af3cde80dbcb1e459b9c6c1409e5",
+        "d8b9e3bd6e03b1b2dff747ea33464f235e8af7dc0151915cfde9d3d685d15ec8"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-....................K........R....R............................k",
+      "index": 22868,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "4252dd9e4f7d2adc074d668092a7e958abe465513b8ba48530a734e44a8283eb",
+        "610dd3c5f1caeb6ccc9e8dd49c417cc04b1ebeabe36fa345f7f1e0cd666e739e"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............k...K............R..................R............",
+      "index": 23418,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "65d4063af15a1f3ce787607ffde43d83b6e7fcf28fc06ee814bb6ac7e904562c",
+        "fc371a3bfa62f8b17566ea4ca72cade76536e26dfb451706383100fa39f5d0b5"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...........K..R........k................................R.......",
+      "index": 23814,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "69341aa258ef09944f9244cbbf5f7ac401458a9965cca8ac11bf7e1509ae62e5",
+        "881f6c2618b97031d2572da24098214e808d7410f34b0a7e1017045e1dc6ba3a"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............R..R..................K...........k..............",
+      "index": 23256,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "2ef65cd370b543b1a9e8cd373e789761867aea79470d94611d140124a40362b4",
+        "00cd27456c4a3835de19e719957b78e62fa0abdb6d5149d25d873227ee63097a"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-.......................R..R......................k.....K........",
+      "index": 22281,
+      "cell": "KRRvK M2",
+      "baseline_correct": true,
+      "packet_digests": [
+        "8c34a3c0a389cce247d60e7a467b325441e69952a0750bbaf971a168f7a9be39",
+        "d703d80db98e1de3df5e9ae4f03113e33acfac43111dd597bca38bc4387c6f6d"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............................R...K.k.....................R......",
+      "index": 24823,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "45d61a5529c8c4bc692aa3df45d7f7fec04122b8328c2ba3edcc77a1f7c18419",
+        "643565ee7c2bb93cfec57c08942cacc17ac2a8e6a41d932e9bac0738d3b0fe01"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............................................KR.k..........R....",
+      "index": 24033,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "f0ca7fd9d12ad7a7cf710565637774a19eee2e30a9415d9b820af46e969faeb8",
+        "dec3fef63c5e234c8250dc3662dfa5426ec21f4ca3bcd76509a013d9994ad480"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................K..........................R......k.R.......",
+      "index": 25962,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "debe1c54b63ebd9d32c003193985568c40bd419548a1dd36f6a2f366256b9d9b",
+        "078cc5902b9a48b9d3ebf786ef45205c45aa3faa554256c1860adca0fa666d76"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-..............k.R..............................R...........K....",
+      "index": 26781,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "5d573a049fa9faa34e6166934d9a1c82aca54a2d0431e230dc5c7e9518037a30",
+        "04d59ac39372382e7f2f61e63b8d93b30ecbf0b22fdb8241aa345ba26bb9ae53"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-..........................................K..k..............R.R.",
+      "index": 24078,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "6a7af209566c4f06e95cda621d8794b83b6a93b7eed3fc6b693113c2e7f90497",
+        "0c791478e90899f3acd5fa6ae61d334c64d17b61b99310136aed4a94bdbb3bdc"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.......................K.........R............R......k..........",
+      "index": 25141,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "e48d7fb74e0813df159d338a383535419cea638b0dc4a37cedfded0364ccbff2",
+        "3f4a2938163d964395ea29c088ff8de1f12775c12c3d9f9b43565adfe19276e0"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-......................k...R.............K........R..............",
+      "index": 25738,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "6c5b6d3c681116224c99bb3e2d512b46eaacfb5e6d52ae5a4e477fdf9c9a015a",
+        "1a3c5aa03a1813ae23080a01a73eaf224ce1b40ebfd516b278f26528592d84bb"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-......................K.......................k...R.......R.....",
+      "index": 25488,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "f713ed3549d1b4d144e432f3bf1446e1988435f84d6cb40c52a7b27a14e51fac",
+        "3d7f23213261826a2b673c9f78aa3e3e42f43bc90ca67da0e932bed01180d2d3"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................R...........R..........K..........k.........",
+      "index": 26060,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "882972e8ba641146803a54d94664129536866d3c937e4d38a495988518b1d9aa",
+        "9e948552d66baa14d2a9e81f00be64f1737700b426648703377dc5aabca34c3f"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.....................K.................Rk....................R..",
+      "index": 25774,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "3f31593544289c962c63dfe34880788f7adc1f1def677ddd66be990296104506",
+        "6c30af0c9091cae36e36f9742cc07a1ab31fb42de3885b3284ec08c3616ac202"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................................k....R..........K..........R",
+      "index": 24335,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "a73bbfbe53fcf1a02c4e3919cc6e53918e370e87e3c59fc499597cf0ab99645c",
+        "ae2cd4b7d1510a9b7e377d9b97f6a50094f35f104011e0ff97f677efe9f25486"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-...................k..K.................R.................R.....",
+      "index": 26144,
+      "cell": "KRRvK M3",
+      "baseline_correct": false,
+      "packet_digests": [
+        "6983ef246d9275197cb73e067edd9a29a340c52c603b98dc0dbbb8afa3d1f344",
+        "1d0dbe259f27c96b93a93338feaf690d174c51bc7b1df4c2df698c2e4f25e058"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............k.............K....................R..............R",
+      "index": 26843,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "944e2642cca74c5a122843c30b8c98d0ddb6ac2dd02358b727d8fd617aaf50b3",
+        "2505da8c5a6b63d05b7ec7da3c65286b6c82c201575e2e52ea3f6fff22aaaab3"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-...............................k........R.................R....K",
+      "index": 24546,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "551b61b04335b53a5e13b22ae1ccdc3059f55a6e24cea053ac8e4083e8eac38e",
+        "34bda49d86d229615e83e900cb8ee93365dbfc994768b5ed6484bf36aa229095"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-..............................k.K............R.....R............",
+      "index": 24716,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "4953d2332020d59cdd0e805f35261261331276174b88a6f8edde8f9a238514da",
+        "c311f966c8c368276380618b3fba5951f7098407f2bd0d08e1198bc3b7cb31a1"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................................K.k.........R..R............",
+      "index": 24280,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "e99f09989b0927d917b57068b59c18f3d27679c7ef1bf76d19cf10d6036430e6",
+        "2b4d9ef671bb046f89d4a300d5f7981145073bb76e046557f0619d44fbe5e0e1"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-...............................K..R.R.........................k.",
+      "index": 24427,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "90328962eee221af125d64528ac5f07614a1502ea8f59f323be693b34a72aa0b",
+        "7c5e0622d74b6a8fbb6cd08a0de0f0e4d1ba8db9496a2346129367be33d43b6b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.....................K...........k.....................R..R.....",
+      "index": 25781,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "791c16f1f9cb77d8d6b12c5d3142523197e1c71add7c78af89fcdf63be81a045",
+        "dc7bac81cab38ec6335c608fcf5ed6f0ec63505200d73bc9cd6b2554565fd381"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.......................Kk.................R.R...................",
+      "index": 25171,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "61420e24e0e8829ac245230a556eeb1d398544627b38097647a5b4fe859e6219",
+        "654b748053aa664c93c8ca2450c46ff1e53942cb09bb5194d0c8873fbfa50d5a"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-...................K...k.........R...........................R..",
+      "index": 26122,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "10d63dca97aa482f228ce852d752fba71b46206f8abaa37e38167b60953972a1",
+        "854fc309868fe13883f06991eabef265d143ca7a3f4a74782e3a5004a241e527"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............................K.......R........k..........R......",
+      "index": 24739,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "3208912f04bb18e0660b0a82d1b5b506c459e278a415aeafe3751208d936ac15",
+        "89856031ec4fb4ccd6435ae535478e29d71216f0d77d2b76dd40c2ba3aed5d51"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................K.........k.................R...........R...",
+      "index": 25991,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "752dadbaaad4022eca99ade2863e33177352735f0117f4fbe16d8b10271fddda",
+        "41208259c4c22be1b478c255457db6c5e68bfbf969ca40f34c49148cb3151f9b"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-......................k.........R...........................KR..",
+      "index": 25710,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "99bb29b878ff3d06b6f0c98adc31740a1bb1d96d94c65eef52e78f321d173346",
+        "b6cce633a743f3a83b5de2360bd0dd942b3a7a8e178826f749b0792a514c1c0c"
+      ]
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-..............R...............K..R..........................k...",
+      "index": 26625,
+      "cell": "KRRvK M3",
+      "baseline_correct": true,
+      "packet_digests": [
+        "028e586061597ee9c9a67e90f944a8b7b58663f1f68a73b27749afa4a295e311",
+        "f8b9ebef94be218476cca852a7e02a2587552c25f66392ae876b5b1ce5b6a54d"
+      ]
+    }
+  ]
+}

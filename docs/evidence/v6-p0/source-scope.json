@@ -1,0 +1,33 @@
+{
+  "schema": "v6_p0_source_scope_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "closure_base": "1b397f465a463d28e46d1b0134afc1b861f428be",
+  "changed_files": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "README.md",
+    "crates/recur64-v6/Cargo.toml",
+    "crates/recur64-v6/build.rs",
+    "crates/recur64-v6/src/baseline.rs",
+    "crates/recur64-v6/src/encoder.rs",
+    "crates/recur64-v6/src/lib.rs",
+    "crates/recur64-v6/src/loss.rs",
+    "crates/recur64-v6/src/main.rs",
+    "crates/recur64-v6/src/model.rs",
+    "crates/recur64-v6/src/p0.rs",
+    "crates/recur64-v6/src/packet.rs",
+    "crates/recur64-v6/src/qualify.rs",
+    "docs/V6_IMPLEMENTATION_PROMPT.md",
+    "docs/V6_P0_REVISED_CONTRACT.md",
+    "docs/evidence/v6-p0/contracts.json",
+    "docs/evidence/v6-p0/preservation-pre.json"
+  ],
+  "existing_crates_changed": [],
+  "v5_production_source_changed": false,
+  "framework_versions_changed": false,
+  "v5_closed_classification": "NO_SIGNAL",
+  "v5_primary750_vs_pooled4500_reconciliation_changed": false,
+  "historical_v5_gradient_status": "NOT RUN",
+  "new_architecture": "v6_branch_full_information_backup_v1",
+  "scientific_800_update_campaign_authorized": false
+}

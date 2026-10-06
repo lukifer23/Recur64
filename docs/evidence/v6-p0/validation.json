@@ -1,0 +1,30 @@
+{
+  "schema": "v6_p0_validation_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "full_release_workspace": {
+    "native_exit": 0,
+    "passed": 614,
+    "ignored": 2,
+    "log_sha256": "9e2480216942851b66369df9c31f0422fb9c3d134bb5f71fac1f79b2823b306b"
+  },
+  "affected_rustfmt": {
+    "native_exit": 0,
+    "scope": "recur64-v6"
+  },
+  "cuda_all_target_clippy_D_warnings": {
+    "native_exit": 0,
+    "log_sha256": "1e93ebd221f812e16e2336f85ef17ea1720ae0ea318578d6ea1fe3d79723e4ab"
+  },
+  "focused_v6_release_tests_and_cli_boundary": "included and PASS in full workspace",
+  "historical_formatting": "unrelated files untouched; workspace-wide formatting not changed",
+  "preserved_precommit_failures": [
+    "full-release-workspace-1 native101: expected uncommitted-scientific-source refusal",
+    "release-tests-6 native101: shared-global-RNG parallel test race; seeded constructors serialized; exact assertion retained"
+  ],
+  "cuda_graph_qualification": "PASS; native exit 0",
+  "fitting": "NOT RUN",
+  "cpu_graph_qualification": "PASS; native exit 0",
+  "serial_pinned_cuda_build": {
+    "native_exit": 0
+  }
+}

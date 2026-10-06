@@ -1,0 +1,29 @@
+{
+  "capability": "P0 TRAIN only",
+  "config": {
+    "architecture": "v6_branch_full_information_backup_v1",
+    "aux_weight": 0.5,
+    "auxiliary": "eligible_available_class_mean",
+    "encoder_blocks": 2,
+    "ffn": 768,
+    "heads": 8,
+    "initialization": "all_owned_nodes_turn_pools_1024_768_256",
+    "null": "payload_anchor_and_terminal_mask_zero",
+    "policies": "v6_ranked_two_hash_two_reply_v1",
+    "precision": "fp32",
+    "q": 8,
+    "r": [
+      1,
+      4
+    ],
+    "readout_bias": false,
+    "refinement": "shared_local_simultaneous_1024_768_256",
+    "residual": 0.1,
+    "seed": 6300,
+    "slots": 4,
+    "structure": 48,
+    "width": 256
+  },
+  "config_digest": "f48dcf28ce178581a99099d088fa4c975ab684c1c81c351896238a7ffc4b8335",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493"
+}
