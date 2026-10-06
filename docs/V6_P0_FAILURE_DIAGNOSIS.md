@@ -1,3 +1,5 @@
+> **Status note:** the prospective probe proposed in this diagnosis was later amended (successor-only) and executed; see [V6_OBJECTIVE_PROBE_RESULTS.md](V6_OBJECTIVE_PROBE_RESULTS.md). The diagnosis below is unchanged.
+
 # V6 P0 frozen failure diagnosis
 
 **Decision: propose one objective/content-contrast experiment, pending owner review.

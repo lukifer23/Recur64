@@ -2,48 +2,50 @@
     {
         "value":  [
                       {
-                          "step":  "identity",
-                          "native_exit":  0,
-                          "elapsed_seconds":  0.9315949,
-                          "device":  "cpu",
-                          "output":  "runs/v6-objective-probe/receipts/identity.json"
+                          "value":  [
+                                        {
+                                            "value":  "    ",
+                                            "Count":  5
+                                        },
+                                        {
+                                            "step":  "preregister",
+                                            "native_exit":  0,
+                                            "elapsed_seconds":  10.2291551,
+                                            "device":  "cuda",
+                                            "output":  "runs/v6-objective-probe/receipts/plan-binding.json"
+                                        }
+                                    ],
+                          "Count":  2
                       },
                       {
-                          "step":  "identity",
+                          "step":  "control-chunk001",
                           "native_exit":  0,
-                          "elapsed_seconds":  0.5550511,
-                          "device":  "cpu",
-                          "output":  "runs/v6-objective-probe/receipts/identity.json"
-                      },
-                      {
-                          "step":  "custody-pre",
-                          "native_exit":  0,
-                          "elapsed_seconds":  0.64132879999999992,
-                          "device":  "cpu",
-                          "output":  "runs/v6-objective-probe/receipts/custody-pre.json"
-                      },
-                      {
-                          "step":  "qualify-cpu",
-                          "native_exit":  0,
-                          "elapsed_seconds":  84.778225499999991,
-                          "device":  "cpu",
-                          "output":  "runs/v6-objective-probe/receipts/qualification-cpu.json"
-                      },
-                      {
-                          "step":  "qualify-cuda",
-                          "native_exit":  0,
-                          "elapsed_seconds":  62.3204813,
+                          "elapsed_seconds":  199.4859754,
                           "device":  "cuda",
-                          "output":  "runs/v6-objective-probe/receipts/qualification-cuda.json"
+                          "output":  "runs/v6-objective-probe/receipts/control-chunk001.json"
+                      },
+                      {
+                          "step":  "treatment-chunk001",
+                          "native_exit":  0,
+                          "elapsed_seconds":  251.47441239999998,
+                          "device":  "cuda",
+                          "output":  "runs/v6-objective-probe/receipts/treatment-chunk001.json"
                       }
                   ],
-        "Count":  5
+        "Count":  3
     },
     {
-        "step":  "preregister",
+        "step":  "custody-post",
         "native_exit":  0,
-        "elapsed_seconds":  10.2291551,
-        "device":  "cuda",
-        "output":  "runs/v6-objective-probe/receipts/plan-binding.json"
+        "elapsed_seconds":  0.5213253,
+        "device":  "cpu",
+        "output":  "runs/v6-objective-probe/receipts/custody-post.json"
+    },
+    {
+        "step":  "decide",
+        "native_exit":  0,
+        "elapsed_seconds":  0.551302,
+        "device":  "cpu",
+        "output":  "runs/v6-objective-probe/receipts/decision.json"
     }
 ]

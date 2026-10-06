@@ -1,5 +1,16 @@
 # Recur64
 
+## Current V6 branch: successor-content objective probe executed — TREATMENT_FAILS
+
+The owner-authorized v2 probe (`v6_content_differential_aux_v2_successor_only`) ran
+both fixed 200-update TRAIN arms on source `3cf0aec`. Control reproduced the P0
+one-pass result; the differential treatment never learned its auxiliary (A(d) stayed
+at ln 2) and failed 8 of 10 absolute gates and the comparative benefit gates. The
+probe is closed with no retuning. Repeated-TRAIN learnability only; no held-out,
+semantic-reasoning or recurrent claim. [Results](docs/V6_OBJECTIVE_PROBE_RESULTS.md),
+[contract](docs/V6_OBJECTIVE_PROBE_CONTRACT.md). Stopped for owner review; V5 stays
+NO_SIGNAL, original P0 stays failed, CONFIRM stays sealed and unevaluated.
+
 ## Current V6 diagnosis: root/structure correction dominates; owner review
 
 All four frozen P0 endpoints reproduced exactly on RTX2050 CUDA FP32. Removing
@@ -11,7 +22,7 @@ proof of recurrent superiority. Original P0 failure and V5 NO_SIGNAL stand.
 
 [Diagnostic findings and limitations](docs/V6_P0_FAILURE_DIAGNOSIS.md) and
 [one prospective objective/content-contrast probe](docs/V6_P0_NEXT_OBJECTIVE_EXPERIMENT.md).
-The proposal is pending owner review; it has not been implemented or fitted.
+The proposal (full-payload v1, historical) was superseded by the v2 contract above and executed there.
 The diagnostic pass took no optimizer steps and invoked no DEV/CONFIRM model.
 CONFIRM remains sealed and unevaluated. Current diagnostic source `d34c948` is
 separate from frozen P0 producer `42f47b8` and this documentation publication.
