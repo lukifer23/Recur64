@@ -1,0 +1,230 @@
+{
+  "changed_raw_bytes_refused": true,
+  "custody": {
+    "confirm": {
+      "audit_contract": "v5_hp_independent_audit_v1",
+      "audit_count": 4500,
+      "audit_failures": 0,
+      "audited": true,
+      "canonical_set_digest": "2860b55ad1c581f90691a52907fed779bd68a6f820bda83a264f73cfbbe37be4",
+      "cell_counts": {
+        "KQRvK M1": 750,
+        "KQRvK M2": 750,
+        "KQRvK M3": 750,
+        "KRRvK M1": 750,
+        "KRRvK M2": 750,
+        "KRRvK M3": 750
+      },
+      "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+      "content_digest": "6a4e355fdb38d46cefb8b25974938432dd2979b893c788a537ada9e1b60aa4f0",
+      "data_contract": "v5_hp_data_v2",
+      "dataset_family": "v5_hp_heavy_endgames_v2",
+      "evaluated": false,
+      "exclusions": [
+        {
+          "canonical_set_digest": "6170bee242a7af46d4b3959f34d52a01e189c3a6b7d06f85925673e218c5f987",
+          "content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+          "fen_set_digest": "b7ebc90955fd8959c8e7266d1afac7a913c94959f3bca7a353b80e9cbc30f61a",
+          "identity": "V5_HP_TRAIN_V2"
+        },
+        {
+          "canonical_set_digest": "1201ea0c6dc8789b1d9cf0212bfb088590b4473948e28355c9ecd0523d4e37ec",
+          "content_digest": "aac1be9d74af801ea2fb32e88a1f3eb9e4e93062f6a49ada8512b953c91847c5",
+          "fen_set_digest": "4c2f3bb3bd2b594ee0921974a151ad71a19e149457b59c9061977fffd96f0e06",
+          "identity": "V5_HP_DEV_V2"
+        }
+      ],
+      "fen_set_digest": "6f3cb6f27932dee45c328cc17531bd99d0bd6d98063c18d8e1ab30bf1fad084c",
+      "generated": true,
+      "generation_seed": 2052071427,
+      "historical_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified.",
+      "identity": "V5_HP_CONFIRM_V2",
+      "overlaps": [
+        {
+          "canonical": 0,
+          "exact_fen": 0,
+          "left": "V5_HP_TRAIN_V2",
+          "right": "V5_HP_CONFIRM_V2"
+        },
+        {
+          "canonical": 0,
+          "exact_fen": 0,
+          "left": "V5_HP_DEV_V2",
+          "right": "V5_HP_CONFIRM_V2"
+        }
+      ],
+      "records": 4500,
+      "role": "confirm",
+      "schema": "v5_hp_dataset_manifest_v2",
+      "sealed": true,
+      "selection_contract": "v5_hp_dataset_select_v1",
+      "source_sha": "738db983084a998664ce962f87fa3c4a6153f526",
+      "target_digest": "e4d2831d5c8c9ec4119b4b584eb10430be56f8e8a29db2cb437d40bf6294fc1b"
+    },
+    "data_contract": "v5_hp_data_v2",
+    "dev": {
+      "audit_contract": "v5_hp_independent_audit_v1",
+      "audit_count": 4500,
+      "audit_failures": 0,
+      "audited": true,
+      "canonical_set_digest": "1201ea0c6dc8789b1d9cf0212bfb088590b4473948e28355c9ecd0523d4e37ec",
+      "cell_counts": {
+        "KQRvK M1": 750,
+        "KQRvK M2": 750,
+        "KQRvK M3": 750,
+        "KRRvK M1": 750,
+        "KRRvK M2": 750,
+        "KRRvK M3": 750
+      },
+      "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+      "content_digest": "aac1be9d74af801ea2fb32e88a1f3eb9e4e93062f6a49ada8512b953c91847c5",
+      "data_contract": "v5_hp_data_v2",
+      "dataset_family": "v5_hp_heavy_endgames_v2",
+      "evaluated": false,
+      "exclusions": [
+        {
+          "canonical_set_digest": "6170bee242a7af46d4b3959f34d52a01e189c3a6b7d06f85925673e218c5f987",
+          "content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+          "fen_set_digest": "b7ebc90955fd8959c8e7266d1afac7a913c94959f3bca7a353b80e9cbc30f61a",
+          "identity": "V5_HP_TRAIN_V2"
+        }
+      ],
+      "fen_set_digest": "4c2f3bb3bd2b594ee0921974a151ad71a19e149457b59c9061977fffd96f0e06",
+      "generated": true,
+      "generation_seed": 2052071426,
+      "historical_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified.",
+      "identity": "V5_HP_DEV_V2",
+      "overlaps": [
+        {
+          "canonical": 0,
+          "exact_fen": 0,
+          "left": "V5_HP_TRAIN_V2",
+          "right": "V5_HP_DEV_V2"
+        }
+      ],
+      "records": 4500,
+      "role": "dev",
+      "schema": "v5_hp_dataset_manifest_v2",
+      "sealed": false,
+      "selection_contract": "v5_hp_dataset_select_v1",
+      "source_sha": "738db983084a998664ce962f87fa3c4a6153f526",
+      "target_digest": "82d4578a62d0727ebca51f412d45e2dcf4e9461838f83148aa70d98b0a69d2a0"
+    },
+    "pairwise": [
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_TRAIN_V2",
+        "right": "V5_HP_DEV_V2"
+      },
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_TRAIN_V2",
+        "right": "V5_HP_CONFIRM_V2"
+      },
+      {
+        "canonical": 0,
+        "exact_fen": 0,
+        "left": "V5_HP_DEV_V2",
+        "right": "V5_HP_CONFIRM_V2"
+      }
+    ],
+    "pass": true,
+    "schema": "v5_hp_lineage_custody_v2",
+    "sealed_inputs_evaluated": false,
+    "train": {
+      "audit_contract": "v5_hp_independent_audit_v1",
+      "audit_count": 27000,
+      "audit_failures": 0,
+      "audited": true,
+      "canonical_set_digest": "6170bee242a7af46d4b3959f34d52a01e189c3a6b7d06f85925673e218c5f987",
+      "cell_counts": {
+        "KQQvK M1": 3000,
+        "KQQvK M2": 3000,
+        "KQQvK M3": 3000,
+        "KQRvK M1": 3000,
+        "KQRvK M2": 3000,
+        "KQRvK M3": 3000,
+        "KRRvK M1": 3000,
+        "KRRvK M2": 3000,
+        "KRRvK M3": 3000
+      },
+      "config_digest": "849133a5cdf169f187778bace2f858aa4747d2e8defef3bb5ac1bffc839774ee",
+      "content_digest": "7ca17f824d24a629d8b54e0a2be48590f6cf78e2bd42d6c0d5db62ddeadf2867",
+      "data_contract": "v5_hp_data_v2",
+      "dataset_family": "v5_hp_heavy_endgames_v2",
+      "evaluated": false,
+      "exclusions": [],
+      "fen_set_digest": "b7ebc90955fd8959c8e7266d1afac7a913c94959f3bca7a353b80e9cbc30f61a",
+      "generated": true,
+      "generation_seed": 2052071425,
+      "historical_cross_disjointness": "Cross-disjointness from unavailable workstation-only raw datasets was NOT verified.",
+      "identity": "V5_HP_TRAIN_V2",
+      "overlaps": [],
+      "records": 27000,
+      "role": "train",
+      "schema": "v5_hp_dataset_manifest_v2",
+      "sealed": false,
+      "selection_contract": "v5_hp_dataset_select_v1",
+      "source_sha": "738db983084a998664ce962f87fa3c4a6153f526",
+      "target_digest": "d7918b7a138b9aab17de24842dd5bf511cb0b95aeccbcbf07cb48921a81d86b9"
+    }
+  },
+  "manifest_mutations_refused": [
+    [
+      "source",
+      true
+    ],
+    [
+      "config",
+      true
+    ],
+    [
+      "content",
+      true
+    ],
+    [
+      "fen",
+      true
+    ],
+    [
+      "canonical",
+      true
+    ],
+    [
+      "count",
+      true
+    ],
+    [
+      "cell_count",
+      true
+    ],
+    [
+      "audit",
+      true
+    ]
+  ],
+  "models_initialized": 0,
+  "ordinary_confirmation_access": false,
+  "pass": true,
+  "role_refusals": [
+    [
+      "TRAIN refuses DEV",
+      true
+    ],
+    [
+      "TRAIN refuses CONFIRM",
+      true
+    ],
+    [
+      "DEV refuses TRAIN",
+      true
+    ],
+    [
+      "DEV refuses CONFIRM",
+      true
+    ]
+  ],
+  "schema": "v5_hp_actual_boundary_tests_v2"
+}

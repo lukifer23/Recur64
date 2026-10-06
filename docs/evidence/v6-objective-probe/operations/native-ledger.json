@@ -1,0 +1,49 @@
+[
+    {
+        "value":  [
+                      {
+                          "step":  "identity",
+                          "native_exit":  0,
+                          "elapsed_seconds":  0.9315949,
+                          "device":  "cpu",
+                          "output":  "runs/v6-objective-probe/receipts/identity.json"
+                      },
+                      {
+                          "step":  "identity",
+                          "native_exit":  0,
+                          "elapsed_seconds":  0.5550511,
+                          "device":  "cpu",
+                          "output":  "runs/v6-objective-probe/receipts/identity.json"
+                      },
+                      {
+                          "step":  "custody-pre",
+                          "native_exit":  0,
+                          "elapsed_seconds":  0.64132879999999992,
+                          "device":  "cpu",
+                          "output":  "runs/v6-objective-probe/receipts/custody-pre.json"
+                      },
+                      {
+                          "step":  "qualify-cpu",
+                          "native_exit":  0,
+                          "elapsed_seconds":  84.778225499999991,
+                          "device":  "cpu",
+                          "output":  "runs/v6-objective-probe/receipts/qualification-cpu.json"
+                      },
+                      {
+                          "step":  "qualify-cuda",
+                          "native_exit":  0,
+                          "elapsed_seconds":  62.3204813,
+                          "device":  "cuda",
+                          "output":  "runs/v6-objective-probe/receipts/qualification-cuda.json"
+                      }
+                  ],
+        "Count":  5
+    },
+    {
+        "step":  "preregister",
+        "native_exit":  0,
+        "elapsed_seconds":  10.2291551,
+        "device":  "cuda",
+        "output":  "runs/v6-objective-probe/receipts/plan-binding.json"
+    }
+]

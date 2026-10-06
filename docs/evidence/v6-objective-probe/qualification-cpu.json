@@ -1,0 +1,4692 @@
+{
+  "arms": [
+    {
+      "all_null_exact_b0": true,
+      "baseline_gradients_absent": true,
+      "checkpoint_restore_exact": true,
+      "continuation_exact": true,
+      "d_max_abs": 0.00006507337093353271,
+      "d_vs_direct_factual_difference_max_abs": 0.0,
+      "identity_gradient_max_l2": 2.9147762131497957e-10,
+      "identity_intervention_d_exactly_zero": true,
+      "independent_replicas_and_clone_purity": true,
+      "intentionally_absent": [
+        "correction_out.bias"
+      ],
+      "moment_restore_exact": true,
+      "objective": "control",
+      "parity": [
+        {
+          "batch": 0,
+          "moment_digest": "2ae6a444b44d2161dfdbcba949b099fe2a27ce3ea8546f7a06b27118eb234e2b",
+          "normal_profile_exact": true,
+          "numeric": {
+            "auxiliary_loss": 0.691836953163147,
+            "gradient_digest": "5041776e2d818332ba15f848320c5290c7ea4fc7f24c55a146ce60343effe0c6",
+            "gradients": [
+              {
+                "digest": "976c9345f0b32dd785a528d72181be25fdc4910bcbb3317974112aa05a19d145",
+                "elements": 30464,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.043802507701549705,
+                "name": "encoder.input.weight",
+                "shape": [
+                  119,
+                  256
+                ]
+              },
+              {
+                "digest": "a142b056d92eca77d006b3896cded4ff3cee2ee9d717936f43882f95cf8ba225",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.022295777902761844,
+                "name": "encoder.input.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "1708645959f1e990eaf0946459dae18a7f90c6dc6b47033beb817967b67a6b10",
+                "elements": 16384,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002809680817091155,
+                "name": "encoder.square",
+                "shape": [
+                  64,
+                  256
+                ]
+              },
+              {
+                "digest": "b09967c1498b465e2de9e3c4ab7fcf2e7737e4af9b6cec6fe70854bb5f4268f1",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002703028740172929,
+                "name": "encoder.blocks.0.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "1ba579f9f885600ad555ba5863013fba506049ed5cfd010fef4ac00bfe361148",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0006881596020779159,
+                "name": "encoder.blocks.0.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "8f7983f17efb13acc26641b14010856cf0e9f3a7e80440a3e71c9464a6a6051d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.000043519455345560765,
+                "name": "encoder.blocks.0.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3f4ab8252ee3bbd4cb0148d821d62b11c2be03d6b84b9dc640bdbbf7e0e4fcdf",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0007725646892434997,
+                "name": "encoder.blocks.0.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "11c1fcd378cddf52562d4af8ad7adc5ff9ac0846f5c8e8338bd877b9518fe4e9",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.642756137679936e-11,
+                "name": "encoder.blocks.0.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "32ec4259722a49618bdc96d19347e3146c36e82f9706e48f287baf8549d13c51",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.07345833146128172,
+                "name": "encoder.blocks.0.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "d58e33f41873ad710948277b5fd1b502f59cbc1933a0188e23449dc8c5c5b250",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004556275934614409,
+                "name": "encoder.blocks.0.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "5923eff2a5103ccd3ab51282346a039fd3d4f76db04cac0f9a085ee8c27de172",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.07067980670656146,
+                "name": "encoder.blocks.0.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "b295fe996e8bb1668185437c6c8cf318100945a56b1f0328a6ee444be8efd0ba",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.007190962047648674,
+                "name": "encoder.blocks.0.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "944f98cc7cca9ad1e8e998ac625eea73d9e7037ff187f678ada7f66e1a653897",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 8.28048110564791e-6,
+                "name": "encoder.blocks.0.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "ec8055474a3617c09c7850967cf00afb16c240426c7ac0ac5776bef4b52de5e7",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0012660905017335916,
+                "name": "encoder.blocks.0.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "2a1ab8ed5c24c4253df3e7a93ec68c35a72a6fde6f22df36c2601672699b317c",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.038467336457911706,
+                "name": "encoder.blocks.0.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "028d7335f766384ed30aad415c81d6b2a5ba11d6748bd22c89ae8d7b431ce669",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0023099321209890185,
+                "name": "encoder.blocks.0.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "e9227134dec15da73c0babb6be29b115fce383efa48f825d42b561271c0933d0",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.06924924289320004,
+                "name": "encoder.blocks.0.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "87a2896f2f4e797b4c96fad324d359f24c5ebe476891d832388b4bbd8d155bc7",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.006494608515342346,
+                "name": "encoder.blocks.0.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "2c3ffecd0593695659b734ee14a4464dddbd1ec0f02e820b63da18af6624e8eb",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002013921345133235,
+                "name": "encoder.blocks.1.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "313cf921af663afbca85024cc9c6a3457ef07d811cb71f5c652ce5ecf5743af1",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00007165407212158274,
+                "name": "encoder.blocks.1.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "244fed4a47075879a8fa8447c417ca8881d2aa12bcba9982b9b750d0b912408e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 4.349691151695658e-6,
+                "name": "encoder.blocks.1.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "b3efdf29ab5d9db42a1e8f7d068536d4b003b848ae818f8959c4af5953cbac39",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00006536698871260892,
+                "name": "encoder.blocks.1.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "99d6d70d336b643f7985f91df88c4347caaca257a89c082f8b07e05f607c826f",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.6815230963510368e-11,
+                "name": "encoder.blocks.1.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "cfa3e6bc441764b52201a8144f1e96103649797f30bb5281aa261da73e9a01ee",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.05004558838542062,
+                "name": "encoder.blocks.1.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "c4d2c84cb8e69d333a751d433d2f81a10d6d72347ff1c44d3714c27cf91128f2",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0029933709683452677,
+                "name": "encoder.blocks.1.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f892fa492d9b5096854c654e8a8c0d4a6d8016c6c7a0e8264a98545c08454cc9",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.045860191279294256,
+                "name": "encoder.blocks.1.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "6527c57fb9e5d2413fc183a48f2e2ed9dfd3da12775f402ddedd9642b52346aa",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004936732257397363,
+                "name": "encoder.blocks.1.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "43ac47dce5dee0d47f79bc0f54da2efa3808354e82f1d1f4c7d9e598b82ffbec",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.813269988622728e-6,
+                "name": "encoder.blocks.1.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "d3c2a72c0964c18673c3e46307f7303a4754c3ddf50aba92af1426d628f4dcb7",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0009049043236405124,
+                "name": "encoder.blocks.1.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "8a2d4165ed5c16a4420b28fa70a8fe380b3732d5648c8ef77e2d82b4b16fa1ba",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.026851838248779465,
+                "name": "encoder.blocks.1.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "6f32ec479c94d3191f55c130bb6dd4beadafa1cfa25f6e79469ea4c047b7b6ad",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0016147264901179431,
+                "name": "encoder.blocks.1.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "04750b3d2038969cd58069e11a9e6f7aa2fe4eb0f2a0c53ff627fea9cbcf464d",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.04775946867539179,
+                "name": "encoder.blocks.1.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "5c11c4bfebfd92e817aae24922c48e6924404d69dcc98868c57f9a1a22b0b97c",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004620901998408954,
+                "name": "encoder.blocks.1.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3deb6b474989da3c1ba77fd463fa2ab872bb3f2bd36ab75e18e2e9e5782164ca",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002467334223326198,
+                "name": "encoder.final_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "b51eeed16443176f91896c4937066ffecb94aae13ce8bc14b1e36c2bc4d76cbf",
+                "elements": 1024,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.1369404805124123e-6,
+                "name": "encoder.slots",
+                "shape": [
+                  4,
+                  256
+                ]
+              },
+              {
+                "digest": "630a3ceee9c19dee4939f3a6defb411930f76026a3a3914e43f24c1f8196604e",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.2929045249710208e-6,
+                "name": "encoder.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "099e4ea2f30d45ce0600dd6d1994b0934ac78349f8d9b27d20bc6f77095710dc",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.3810859933711703e-6,
+                "name": "encoder.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "c53943fbf2b3155c66b2ed58f6ab607733cf1e732b35c19f06847a88aa76bb06",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.627879867329488e-6,
+                "name": "encoder.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "fe4fb5ad6443fa6d09d606e4bfc914294c0aa5c7243754e729f039c2f2536227",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 7.364794464779297e-12,
+                "name": "encoder.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f252a0ca9491f9a505b403d39a3644a630300805838f08d2760748e940870a1b",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.06922354250970726,
+                "name": "encoder.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "24d8765aa4deed0a1dc8614a7f6a4be14f26852bb33e1bdd9885cd7797046b84",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00415634681651011,
+                "name": "encoder.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "56c7f4e5a68cb36a71b0044f502de2f7dd9f4b3bb00890a381050b7a1981fc1b",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.07858630117295877,
+                "name": "encoder.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "f7667b987b3454ebee52a67361728fb8f9a61cb440263cf10994707680d086cd",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.007362062383121824,
+                "name": "encoder.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "4847440844ca24a4283598c3bd92abffdfeca55a834479f04494b7b9c7f66416",
+                "elements": 2304,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0,
+                "name": "encoder.flags.weight",
+                "shape": [
+                  9,
+                  256
+                ]
+              },
+              {
+                "digest": "b105adcc59706a904f79584432a32b41445cec605d2fbefaf5bd2090d7f2b966",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.007362062575287945,
+                "name": "encoder.flags.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "007b181055b80d02f93e140b67392a6459195be38d9e777b955c4df9e1c8787a",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0029948425198785002,
+                "name": "encoder.output_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "e17354ea3de14721bf32d5ad2197b16781e85028ee4e0155932bd93b760f51ea",
+                "elements": 262144,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.17127799200062785,
+                "name": "slots.weight",
+                "shape": [
+                  1024,
+                  256
+                ]
+              },
+              {
+                "digest": "aa99e1c6c1136cc97228d07ce99b47ac6d9ca4ebabecfcf1d6493a3f9b5ceb0f",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.005219106703743313,
+                "name": "slots.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "020ebb2e3f541cbec6c8ce19509d97821438225289498e85a0aad6223d69e251",
+                "elements": 12288,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0023839955200882757,
+                "name": "structure.weight",
+                "shape": [
+                  48,
+                  256
+                ]
+              },
+              {
+                "digest": "baacacf8d09072567f785f145924be73176b86bcf22d476e1a15e3b5de71bc3d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0012312445742756544,
+                "name": "structure.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "ad98cf6df2c17fc61b6e40c2ab71a5091b15e8168a14c3fcce3289d9c9bdc8ff",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0775684570812621,
+                "name": "owner.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "f3081517931db89fc35832f8cc044e38f848398d62dda1833eacd20c3efbf571",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002304969730178832,
+                "name": "owner.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "5cd9eb6cbbf29ffb0112ff938638786900c3b63f5471ce738f856dfa31ac84c4",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0016383616762354327,
+                "name": "score.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              },
+              {
+                "digest": "193753352946018f0c96de4d8e8fa4cbbd250ca48455fac8a5a66846107b83e9",
+                "elements": 512,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0009742408929391908,
+                "name": "unknown",
+                "shape": [
+                  2,
+                  256
+                ]
+              },
+              {
+                "digest": "3550c0f898cd833035a640220290d93a138b4bd84d994b6ff6b9c3fa21642552",
+                "elements": 786432,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.20724333451504265,
+                "name": "initialize.first.weight",
+                "shape": [
+                  1024,
+                  768
+                ]
+              },
+              {
+                "digest": "5264264080988ffb90bebcd33ecf228d52515ee278e31358bd5d4631a8b82f23",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003498997575827824,
+                "name": "initialize.first.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "d3c4dcccc989f56488d3adcfbafce1556697814354542655b4fe50375cc3113d",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.15914514253622744,
+                "name": "initialize.second.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "7bebb5ed3f103064de2821bb6d68216e46ba68e147aa75822da7329979f1e133",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0017762356404336097,
+                "name": "initialize.second.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3b227b6c042e366bedfd273cabc5d120497c76181aa3dbcb933e23b352dc3825",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10500138060402785,
+                "name": "head_hidden.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "0b55bd191f4292a2d5f5ddcbc45c1a3c8912ad34fc5910ac6f78d377103dd7ed",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002973579262756404,
+                "name": "head_hidden.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "57abd5943fc56d2f95b02000d406fea796dcce8c9647e219816158c796e43b10",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08371427620344607,
+                "name": "correction_out.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              }
+            ],
+            "logits": "13a68197317eda6b19e6fd05bd4cff0db82a369df86a0db0874b4101d266caa8",
+            "loss": 1.3028836250305176,
+            "phases": [
+              [
+                "factual:returned_encoder_and_slots",
+                0.1187217
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0024032
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.002264
+              ],
+              [
+                "factual:paired_centered_readout",
+                0.0002094
+              ],
+              [
+                "policy_and_auxiliary",
+                0.0001066
+              ],
+              [
+                "backward",
+                0.195288
+              ],
+              [
+                "gradient_readback",
+                0.0184079
+              ],
+              [
+                "AdamW",
+                0.0170831
+              ]
+            ],
+            "policy_loss": 0.9569650888442993,
+            "raw_delta": "9f92b072827f0feb0040ddf3b3851653298e49c61177e8a3d4837e13d6f70a5e"
+          },
+          "original_objective": {
+            "exact_original_objective_behavior": true
+          },
+          "post_adamw_parameter_digest": "0aa4bb5e950e8f37c34469e793187b91e39836bc1ee9def2bb881af4161c20a8"
+        },
+        {
+          "batch": 1,
+          "moment_digest": "8957fdc0e84e13a31c12813e0703056e7333efccc0e81bf43ae9bf888b8f6832",
+          "normal_profile_exact": true,
+          "numeric": {
+            "auxiliary_loss": 0.6927034854888916,
+            "gradient_digest": "186cc3cc4c13ae50d23a9c82c95965d5ef25f145ff13d518eb2646df8bf9648c",
+            "gradients": [
+              {
+                "digest": "c7762bc177cda93ab930399145832d00ba045003ea83706567641bccb01b2bb7",
+                "elements": 30464,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.06507747402646774,
+                "name": "encoder.input.weight",
+                "shape": [
+                  119,
+                  256
+                ]
+              },
+              {
+                "digest": "807e81fa0b3223b00cffd55ede33dc426a60f48ea5f736d9a16f5685d3d3a669",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.03338213435863206,
+                "name": "encoder.input.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "10fcc029191d8cc635ef4e1c7a578bb9cec05f98d6ff28ba035e07c3dd8ca018",
+                "elements": 16384,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004213538030047389,
+                "name": "encoder.square",
+                "shape": [
+                  64,
+                  256
+                ]
+              },
+              {
+                "digest": "f6b754778060badc4ef033cfa42c25922bcd4828bcd4d107fb951f81c764aa0d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004045810680302119,
+                "name": "encoder.blocks.0.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "7d5b6bbe4bb2792661c8595874b544fc153b480937a4409f1eec86a6128bc79a",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0010344310796886866,
+                "name": "encoder.blocks.0.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "aa85ec167ba0f582b4679a837893f1dc7d60bb5de6a2b8be8ae7023286b4b0ad",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00006689492974537983,
+                "name": "encoder.blocks.0.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "322e3fcb4df8a1eb07bafa91a6786668f7fe82288ecc46be8bf87ca05d019822",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.001147315826205743,
+                "name": "encoder.blocks.0.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "640251a5c045409280ea27ac79e7a9306c83c9867855e1c91808e7b8c928b056",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.8945102398394382e-11,
+                "name": "encoder.blocks.0.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a40732cce1641e5b7e5619450aec2dfb1de5b7ac40b759b3a8f02ffda0462e12",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10982501284156379,
+                "name": "encoder.blocks.0.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "ea777802706e014f2c79e721090d6b7b04c0fd4baa580dfbd75ee24e517c91ca",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0071071883047613875,
+                "name": "encoder.blocks.0.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "0e15ecd19d91e0758cd84cac2b0d21f50669bde7417e8c305137c3b8b6a0831e",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.1055426107208394,
+                "name": "encoder.blocks.0.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "87d61d4c28c33ccfc1009c77e6c6835a93f7c42edac7ce323a8ca8955b408d4a",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.011297063007817973,
+                "name": "encoder.blocks.0.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "1ef7a276d3e890223ae0465951c5513a20a9b0c70efb48173134c75c69c5813c",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00001413040116163947,
+                "name": "encoder.blocks.0.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "80e5a011f0fa48d8e852e89b195ea00335a50ef92fc8cc0da06b9118fb877dd3",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.001866312244633084,
+                "name": "encoder.blocks.0.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "9715cf30cdca624a8c77715edbf57c34e5e50d2eb354780e2b1be188884b336d",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.05706055831074344,
+                "name": "encoder.blocks.0.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "8488f1f787d2f1e1c0502241bd9fb386481841ae35fc1b90ff4bdb13ceff5b80",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00358435864790737,
+                "name": "encoder.blocks.0.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "3bc3a6d7c60bf720abbf4572088b0d8f032425cb8df61dad72989aaa70816a91",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10381376317104822,
+                "name": "encoder.blocks.0.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "554ca0a091fb041f23cb5dc22b5b96f1e7a4ecb389f88ead5ba0e3b92de4938d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.010255139745781518,
+                "name": "encoder.blocks.0.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "ad6db070a21e0ae47d575186b5ffa9c3e27a0a4183e2b189b5586f8ba0241d37",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0029391398082724246,
+                "name": "encoder.blocks.1.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "7958d186d7e59fd2527733198944a763ce24346bf7da39ecf1fe1540e27771a3",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0001114729560898643,
+                "name": "encoder.blocks.1.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "a37e27e7481df549324c4eb3023f3ffb8446f037a66fe0f8c7b6aae70bc9ffba",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 6.998638556724888e-6,
+                "name": "encoder.blocks.1.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "e67d8756733c4f3fe3a42b7ac8e795cae4dd531a49707f185d1a2d354b3e0115",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00009439456040148474,
+                "name": "encoder.blocks.1.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "4bdd19917a28b298cb0e16b2596474797bad579ae23e1222df4fc1c2f8c044e6",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.916081147700441e-11,
+                "name": "encoder.blocks.1.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "7340288589af282fb5c2365a40929a856a7ddc1f0563afe7a0a3a546f25dfa60",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.07514855449466451,
+                "name": "encoder.blocks.1.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "c8959be7d1f1df0dfa17c70ef636f32a5d4fd9626ad8b04d240bff8dfa1a349d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004721169614958248,
+                "name": "encoder.blocks.1.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "5ac6082448d11897a85beaa077b340ec72f068f6eb4f85375a9c95565b345f92",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.06947120882900965,
+                "name": "encoder.blocks.1.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "4bf2450b935a38d5dbf11dcdfe349dd1b9fb241838931d5c4e41913ea77ab364",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.007769647324956246,
+                "name": "encoder.blocks.1.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3d147aea8a6016eb6a7dce5910441d9682a75612636fcc7f422186f905f3df4a",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.3027732482536736e-6,
+                "name": "encoder.blocks.1.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "a4da58e8ffa48baf1fadea511444a540b7254e21a64c9ba83501280932319d77",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.001347894925520399,
+                "name": "encoder.blocks.1.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "51ff3b0b69f939901231e0439321faf104c0033b93000dc2d7ae9589379295a6",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.04007460632625852,
+                "name": "encoder.blocks.1.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "510522c8d30002d37892917f4f32fe99e5437620ad5ec0fb3871fea60aa226c8",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0025126937275666873,
+                "name": "encoder.blocks.1.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "4d61d2f08c23b6967379d24291cc9ed05fd96801c266489c8b28c864049364e8",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.07182938698495321,
+                "name": "encoder.blocks.1.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "bad238dee2ccdf62e237e76f2600bf7fc9150edc5bec8c25473ae766cc25435b",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.007279814988356672,
+                "name": "encoder.blocks.1.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "0826a7f4f459a2b78343d24353ed2cc8f5f82d802a380fd771c68d8b31303abe",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003726393035975486,
+                "name": "encoder.final_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "d1eb1f875f31e3aa260cf932b8707e5ca176dd6c244b43c08694190cdb10059a",
+                "elements": 1024,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.20232874827829e-6,
+                "name": "encoder.slots",
+                "shape": [
+                  4,
+                  256
+                ]
+              },
+              {
+                "digest": "16fecc0c0f9ef84b83e7ee2c78bcf179a5f9ec509baeae0f33994997d46871b3",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.9842493886396738e-6,
+                "name": "encoder.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "5b32f38ba68faa58356832ce2bfd368fa9d20671910ad0cfb7c63540fcae13ce",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 5.402239014485229e-6,
+                "name": "encoder.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "40685f83b39398d91d5e5f5896b3fd8505fcc8fef7823bdc411cccf298fa42c8",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 5.606322069783655e-6,
+                "name": "encoder.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "d4abf0ed78885e623f902af11f4a890ac32b6fcc1c93cd776df751b39359bc42",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.8090719071528248e-11,
+                "name": "encoder.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a6d6b961d33bce8ed57b607b1ae6c03b6782381dcce302cd86b8e844ab7102b9",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10470655043563738,
+                "name": "encoder.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "fca95dd056acfe47f5b38d1b88a2523a6292ad83b2a35eea5cb69c6978f1e553",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.006566448306925064,
+                "name": "encoder.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "88aeec1a7d1d9abf600ca1189b7fe11fad2ecde267a7eab99a5583bec29c143c",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.11941381912108091,
+                "name": "encoder.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "626456c6c27694a18b9e7c11427eb5e2b39c20773269a711b51ba92999d24894",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.011624329598402348,
+                "name": "encoder.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a3526cbf0e586a482d8df41a1185071843a3032282f4e4e94970f0fb07894235",
+                "elements": 2304,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0056764829646867385,
+                "name": "encoder.flags.weight",
+                "shape": [
+                  9,
+                  256
+                ]
+              },
+              {
+                "digest": "fca71dd5f31b2fce25080b7b56ca6edb29c2564ffeb8da89446c205f77059bfa",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.011624329571408031,
+                "name": "encoder.flags.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "475f95750654169212fb5fe366a4c3a530dadc9fa5951e6227feace4d1469b53",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004602754280738305,
+                "name": "encoder.output_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "2a89a6ae370be10b8fcb31eef5f1727e70818cd85557885e864b1d6dfea25284",
+                "elements": 262144,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.2688448267299871,
+                "name": "slots.weight",
+                "shape": [
+                  1024,
+                  256
+                ]
+              },
+              {
+                "digest": "ed30c9615d47625e66364a5e6ce4fe16ac71bf7478cd1798b4c6e3e362440c07",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.008619216607160977,
+                "name": "slots.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a4ae5dd1468a3a90b6931caacf513296d6138497da4221b77a7f16be55e3bd71",
+                "elements": 12288,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004088872030471864,
+                "name": "structure.weight",
+                "shape": [
+                  48,
+                  256
+                ]
+              },
+              {
+                "digest": "d4651db17a6f09dabd896cc9e0fc26c814660903c5fc462449635b38d894b0e9",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0020211947377210006,
+                "name": "structure.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "139fac89dcaa3cac6c4248dba67d77b2234d39f6347bcc76a3e18f6ab743ae29",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.12325732056486795,
+                "name": "owner.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "efaea5bc5381ac771982a396d8dce44676cda31885e52f3947de3f09346dc968",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003683807555519381,
+                "name": "owner.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "070f8847b304bc0d9c3f7cc3a1c0990d3f7a2cc322bcda6ee68ebc11933d59db",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0027696163048171953,
+                "name": "score.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              },
+              {
+                "digest": "ff3f4c8254833c4197aea8f4f51a4a872cf0fa9c5e5c52322b402776d52446b3",
+                "elements": 512,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0015540090816244822,
+                "name": "unknown",
+                "shape": [
+                  2,
+                  256
+                ]
+              },
+              {
+                "digest": "617f78c9204fdb248ad3eca97e7e1cba4784a3a2b6891f944c0025cbe5c8ce19",
+                "elements": 786432,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.32782525940374124,
+                "name": "initialize.first.weight",
+                "shape": [
+                  1024,
+                  768
+                ]
+              },
+              {
+                "digest": "a630fa2aedc0408011c525ae2ae2c8c38168aa7018d9615873f4f2c98d1e4880",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.005618486337974039,
+                "name": "initialize.first.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "32b246913346ef3cd36b53b3d5fbc8f7f9ba3401d5a82d184c5f03538162f700",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.2583586422435483,
+                "name": "initialize.second.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "1c9fa411bf373c26d5b0221efa5f8322e210288a9213867d1bdb8e91e237bad1",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002835581950483022,
+                "name": "initialize.second.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "5507ffd0dd54537cca61943333d173a0e68933e3644eb01a1f1135b64801bd09",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.1685113973904377,
+                "name": "head_hidden.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "01208d7c267d902697d0a1d97f0148cf983bfd380a2abf61403f36ef33c2dd8e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004690991356651135,
+                "name": "head_hidden.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "6ae758273db6c776d76289b57190a841274c12bc3a76087055e421237e9bc7c1",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.1284508315081231,
+                "name": "correction_out.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              }
+            ],
+            "logits": "80e7973488962826da05647d75f02fb78877348351a0b2230c7af13ee4508788",
+            "loss": 1.5067187547683716,
+            "phases": [
+              [
+                "factual:returned_encoder_and_slots",
+                0.1183298
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0025076
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0025276
+              ],
+              [
+                "factual:paired_centered_readout",
+                0.0002386
+              ],
+              [
+                "policy_and_auxiliary",
+                0.0001088
+              ],
+              [
+                "backward",
+                0.1975304
+              ],
+              [
+                "gradient_readback",
+                0.0175847
+              ],
+              [
+                "AdamW",
+                0.0172634
+              ]
+            ],
+            "policy_loss": 1.1603670120239258,
+            "raw_delta": "c198c25207d03a753b5603f0d4bdb8f3dd28f46b4db72670a3f6e416c76f31ff"
+          },
+          "original_objective": {
+            "exact_original_objective_behavior": true
+          },
+          "post_adamw_parameter_digest": "83b52fb3ade74fe6556355b2dfccd8b9ecf5d801998118fbe6cf9c833a025957"
+        }
+      ],
+      "populated_moment_clone_purity": true,
+      "projected_fit_seconds_per_arm_at_12_microbatches": 858.4498512,
+      "reader_gradient_inventory": [
+        {
+          "digest": "976c9345f0b32dd785a528d72181be25fdc4910bcbb3317974112aa05a19d145",
+          "elements": 30464,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.043802507701549705,
+          "name": "encoder.input.weight",
+          "shape": [
+            119,
+            256
+          ]
+        },
+        {
+          "digest": "a142b056d92eca77d006b3896cded4ff3cee2ee9d717936f43882f95cf8ba225",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.022295777902761844,
+          "name": "encoder.input.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "1708645959f1e990eaf0946459dae18a7f90c6dc6b47033beb817967b67a6b10",
+          "elements": 16384,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002809680817091155,
+          "name": "encoder.square",
+          "shape": [
+            64,
+            256
+          ]
+        },
+        {
+          "digest": "b09967c1498b465e2de9e3c4ab7fcf2e7737e4af9b6cec6fe70854bb5f4268f1",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002703028740172929,
+          "name": "encoder.blocks.0.norm1.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "1ba579f9f885600ad555ba5863013fba506049ed5cfd010fef4ac00bfe361148",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0006881596020779159,
+          "name": "encoder.blocks.0.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "8f7983f17efb13acc26641b14010856cf0e9f3a7e80440a3e71c9464a6a6051d",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.000043519455345560765,
+          "name": "encoder.blocks.0.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "3f4ab8252ee3bbd4cb0148d821d62b11c2be03d6b84b9dc640bdbbf7e0e4fcdf",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0007725646892434997,
+          "name": "encoder.blocks.0.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "11c1fcd378cddf52562d4af8ad7adc5ff9ac0846f5c8e8338bd877b9518fe4e9",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.642756137679936e-11,
+          "name": "encoder.blocks.0.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "32ec4259722a49618bdc96d19347e3146c36e82f9706e48f287baf8549d13c51",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.07345833146128172,
+          "name": "encoder.blocks.0.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "d58e33f41873ad710948277b5fd1b502f59cbc1933a0188e23449dc8c5c5b250",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.004556275934614409,
+          "name": "encoder.blocks.0.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "5923eff2a5103ccd3ab51282346a039fd3d4f76db04cac0f9a085ee8c27de172",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.07067980670656146,
+          "name": "encoder.blocks.0.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "b295fe996e8bb1668185437c6c8cf318100945a56b1f0328a6ee444be8efd0ba",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.007190962047648674,
+          "name": "encoder.blocks.0.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "944f98cc7cca9ad1e8e998ac625eea73d9e7037ff187f678ada7f66e1a653897",
+          "elements": 1800,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 8.28048110564791e-6,
+          "name": "encoder.blocks.0.rel.table",
+          "shape": [
+            8,
+            225
+          ]
+        },
+        {
+          "digest": "ec8055474a3617c09c7850967cf00afb16c240426c7ac0ac5776bef4b52de5e7",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0012660905017335916,
+          "name": "encoder.blocks.0.norm2.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "2a1ab8ed5c24c4253df3e7a93ec68c35a72a6fde6f22df36c2601672699b317c",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.038467336457911706,
+          "name": "encoder.blocks.0.f1.weight",
+          "shape": [
+            256,
+            768
+          ]
+        },
+        {
+          "digest": "028d7335f766384ed30aad415c81d6b2a5ba11d6748bd22c89ae8d7b431ce669",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0023099321209890185,
+          "name": "encoder.blocks.0.f1.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "e9227134dec15da73c0babb6be29b115fce383efa48f825d42b561271c0933d0",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.06924924289320004,
+          "name": "encoder.blocks.0.f2.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "87a2896f2f4e797b4c96fad324d359f24c5ebe476891d832388b4bbd8d155bc7",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.006494608515342346,
+          "name": "encoder.blocks.0.f2.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "2c3ffecd0593695659b734ee14a4464dddbd1ec0f02e820b63da18af6624e8eb",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002013921345133235,
+          "name": "encoder.blocks.1.norm1.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "313cf921af663afbca85024cc9c6a3457ef07d811cb71f5c652ce5ecf5743af1",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00007165407212158274,
+          "name": "encoder.blocks.1.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "244fed4a47075879a8fa8447c417ca8881d2aa12bcba9982b9b750d0b912408e",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 4.349691151695658e-6,
+          "name": "encoder.blocks.1.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "b3efdf29ab5d9db42a1e8f7d068536d4b003b848ae818f8959c4af5953cbac39",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00006536698871260892,
+          "name": "encoder.blocks.1.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "99d6d70d336b643f7985f91df88c4347caaca257a89c082f8b07e05f607c826f",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.6815230963510368e-11,
+          "name": "encoder.blocks.1.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "cfa3e6bc441764b52201a8144f1e96103649797f30bb5281aa261da73e9a01ee",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.05004558838542062,
+          "name": "encoder.blocks.1.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "c4d2c84cb8e69d333a751d433d2f81a10d6d72347ff1c44d3714c27cf91128f2",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0029933709683452677,
+          "name": "encoder.blocks.1.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "f892fa492d9b5096854c654e8a8c0d4a6d8016c6c7a0e8264a98545c08454cc9",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.045860191279294256,
+          "name": "encoder.blocks.1.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "6527c57fb9e5d2413fc183a48f2e2ed9dfd3da12775f402ddedd9642b52346aa",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.004936732257397363,
+          "name": "encoder.blocks.1.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "43ac47dce5dee0d47f79bc0f54da2efa3808354e82f1d1f4c7d9e598b82ffbec",
+          "elements": 1800,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.813269988622728e-6,
+          "name": "encoder.blocks.1.rel.table",
+          "shape": [
+            8,
+            225
+          ]
+        },
+        {
+          "digest": "d3c2a72c0964c18673c3e46307f7303a4754c3ddf50aba92af1426d628f4dcb7",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0009049043236405124,
+          "name": "encoder.blocks.1.norm2.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "8a2d4165ed5c16a4420b28fa70a8fe380b3732d5648c8ef77e2d82b4b16fa1ba",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.026851838248779465,
+          "name": "encoder.blocks.1.f1.weight",
+          "shape": [
+            256,
+            768
+          ]
+        },
+        {
+          "digest": "6f32ec479c94d3191f55c130bb6dd4beadafa1cfa25f6e79469ea4c047b7b6ad",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0016147264901179431,
+          "name": "encoder.blocks.1.f1.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "04750b3d2038969cd58069e11a9e6f7aa2fe4eb0f2a0c53ff627fea9cbcf464d",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.04775946867539179,
+          "name": "encoder.blocks.1.f2.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "5c11c4bfebfd92e817aae24922c48e6924404d69dcc98868c57f9a1a22b0b97c",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.004620901998408954,
+          "name": "encoder.blocks.1.f2.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "3deb6b474989da3c1ba77fd463fa2ab872bb3f2bd36ab75e18e2e9e5782164ca",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002467334223326198,
+          "name": "encoder.final_norm.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "b51eeed16443176f91896c4937066ffecb94aae13ce8bc14b1e36c2bc4d76cbf",
+          "elements": 1024,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 2.1369404805124123e-6,
+          "name": "encoder.slots",
+          "shape": [
+            4,
+            256
+          ]
+        },
+        {
+          "digest": "630a3ceee9c19dee4939f3a6defb411930f76026a3a3914e43f24c1f8196604e",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.2929045249710208e-6,
+          "name": "encoder.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "099e4ea2f30d45ce0600dd6d1994b0934ac78349f8d9b27d20bc6f77095710dc",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 3.3810859933711703e-6,
+          "name": "encoder.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "c53943fbf2b3155c66b2ed58f6ab607733cf1e732b35c19f06847a88aa76bb06",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 3.627879867329488e-6,
+          "name": "encoder.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "fe4fb5ad6443fa6d09d606e4bfc914294c0aa5c7243754e729f039c2f2536227",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 7.364794464779297e-12,
+          "name": "encoder.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "f252a0ca9491f9a505b403d39a3644a630300805838f08d2760748e940870a1b",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.06922354250970726,
+          "name": "encoder.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "24d8765aa4deed0a1dc8614a7f6a4be14f26852bb33e1bdd9885cd7797046b84",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00415634681651011,
+          "name": "encoder.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "56c7f4e5a68cb36a71b0044f502de2f7dd9f4b3bb00890a381050b7a1981fc1b",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.07858630117295877,
+          "name": "encoder.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "f7667b987b3454ebee52a67361728fb8f9a61cb440263cf10994707680d086cd",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.007362062383121824,
+          "name": "encoder.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "4847440844ca24a4283598c3bd92abffdfeca55a834479f04494b7b9c7f66416",
+          "elements": 2304,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0,
+          "name": "encoder.flags.weight",
+          "shape": [
+            9,
+            256
+          ]
+        },
+        {
+          "digest": "b105adcc59706a904f79584432a32b41445cec605d2fbefaf5bd2090d7f2b966",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.007362062575287945,
+          "name": "encoder.flags.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "007b181055b80d02f93e140b67392a6459195be38d9e777b955c4df9e1c8787a",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0029948425198785002,
+          "name": "encoder.output_norm.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "e17354ea3de14721bf32d5ad2197b16781e85028ee4e0155932bd93b760f51ea",
+          "elements": 262144,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.17127799200062785,
+          "name": "slots.weight",
+          "shape": [
+            1024,
+            256
+          ]
+        },
+        {
+          "digest": "aa99e1c6c1136cc97228d07ce99b47ac6d9ca4ebabecfcf1d6493a3f9b5ceb0f",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.005219106703743313,
+          "name": "slots.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "020ebb2e3f541cbec6c8ce19509d97821438225289498e85a0aad6223d69e251",
+          "elements": 12288,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0023839955200882757,
+          "name": "structure.weight",
+          "shape": [
+            48,
+            256
+          ]
+        },
+        {
+          "digest": "baacacf8d09072567f785f145924be73176b86bcf22d476e1a15e3b5de71bc3d",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0012312445742756544,
+          "name": "structure.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "ad98cf6df2c17fc61b6e40c2ab71a5091b15e8168a14c3fcce3289d9c9bdc8ff",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0775684570812621,
+          "name": "owner.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "f3081517931db89fc35832f8cc044e38f848398d62dda1833eacd20c3efbf571",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002304969730178832,
+          "name": "owner.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "5cd9eb6cbbf29ffb0112ff938638786900c3b63f5471ce738f856dfa31ac84c4",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0016383616762354327,
+          "name": "score.weight",
+          "shape": [
+            256,
+            1
+          ]
+        },
+        {
+          "digest": "193753352946018f0c96de4d8e8fa4cbbd250ca48455fac8a5a66846107b83e9",
+          "elements": 512,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0009742408929391908,
+          "name": "unknown",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        {
+          "digest": "3550c0f898cd833035a640220290d93a138b4bd84d994b6ff6b9c3fa21642552",
+          "elements": 786432,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.20724333451504265,
+          "name": "initialize.first.weight",
+          "shape": [
+            1024,
+            768
+          ]
+        },
+        {
+          "digest": "5264264080988ffb90bebcd33ecf228d52515ee278e31358bd5d4631a8b82f23",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.003498997575827824,
+          "name": "initialize.first.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "d3c4dcccc989f56488d3adcfbafce1556697814354542655b4fe50375cc3113d",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.15914514253622744,
+          "name": "initialize.second.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "7bebb5ed3f103064de2821bb6d68216e46ba68e147aa75822da7329979f1e133",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0017762356404336097,
+          "name": "initialize.second.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "3b227b6c042e366bedfd273cabc5d120497c76181aa3dbcb933e23b352dc3825",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.10500138060402785,
+          "name": "head_hidden.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "0b55bd191f4292a2d5f5ddcbc45c1a3c8912ad34fc5910ac6f78d377103dd7ed",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002973579262756404,
+          "name": "head_hidden.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "57abd5943fc56d2f95b02000d406fea796dcce8c9647e219816158c796e43b10",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.08371427620344607,
+          "name": "correction_out.weight",
+          "shape": [
+            256,
+            1
+          ]
+        }
+      ],
+      "reference_objective_gradient_max_l2": 0.20724333451504265,
+      "resident_seconds": [
+        0.3530857,
+        0.3565529,
+        0.354868,
+        0.3529735,
+        0.3557248,
+        0.3550587,
+        0.3538269,
+        0.3547433,
+        0.3532277,
+        0.3530257,
+        0.3569634,
+        0.3537876,
+        0.3569665,
+        0.3577353,
+        0.3568556,
+        0.3565747,
+        0.3586398,
+        0.3569506,
+        0.3557216,
+        0.3590388,
+        0.3557185,
+        0.356412,
+        0.3588855,
+        0.3595045,
+        0.3603563,
+        0.3617635,
+        0.3589931,
+        0.3591387,
+        0.3569191,
+        0.3587368,
+        0.3590336,
+        0.358028,
+        0.3584692,
+        0.3591667,
+        0.3577399,
+        0.3596406,
+        0.3618872,
+        0.3584126,
+        0.3605802,
+        0.3599203,
+        0.3602548,
+        0.359689,
+        0.3600203,
+        0.3575379,
+        0.3587209,
+        0.3582964,
+        0.3593219,
+        0.3593308,
+        0.36058,
+        0.3589925
+      ],
+      "resident_seconds_max": 0.3618872,
+      "resident_seconds_mean": 0.357687438,
+      "resident_updates": 50
+    },
+    {
+      "all_null_exact_b0": true,
+      "baseline_gradients_absent": true,
+      "checkpoint_restore_exact": true,
+      "continuation_exact": true,
+      "d_max_abs": 0.00006507337093353271,
+      "d_vs_direct_factual_difference_max_abs": 0.0,
+      "identity_gradient_max_l2": 2.9147762131497957e-10,
+      "identity_intervention_d_exactly_zero": true,
+      "independent_replicas_and_clone_purity": true,
+      "intentionally_absent": [
+        "correction_out.bias"
+      ],
+      "moment_restore_exact": true,
+      "objective": "treatment",
+      "parity": [
+        {
+          "batch": 0,
+          "moment_digest": "6c55c18c8271f3cbb1d50c87ad03fc755ef152102012e8f53af4a88ef33efb97",
+          "normal_profile_exact": true,
+          "numeric": {
+            "auxiliary_loss": 0.6931374073028564,
+            "gradient_digest": "29e09918b7ab85cc6bc4d8c7021093995a201465b6b96a833bea56cad4a21597",
+            "gradients": [
+              {
+                "digest": "1c7c852c67a2b1dd2dc6851e632c851821c7510f38ced1f760d97ed02483e174",
+                "elements": 30464,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.022392096690124264,
+                "name": "encoder.input.weight",
+                "shape": [
+                  119,
+                  256
+                ]
+              },
+              {
+                "digest": "517411f9485d369bd934848c88573efdccb43a11763eaab60e3881c77b0c55de",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.011481810002844954,
+                "name": "encoder.input.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "75438a6fe87af46dfd365f92b988a751b78acfd4ceeeaa67c103e31475ea3ab7",
+                "elements": 16384,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0014641526816536756,
+                "name": "encoder.square",
+                "shape": [
+                  64,
+                  256
+                ]
+              },
+              {
+                "digest": "ed9615bb1e1ca569c65620993561eb8ad7c8b80da5dcfd9ddb51f4e367110a7e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0013689764311429601,
+                "name": "encoder.blocks.0.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "0d5670fd6d5de20fe5755d02f45ec7de1f2eb0c66d82dae342d1fae025797eaf",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0005399872062755715,
+                "name": "encoder.blocks.0.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "cd672f3a1f65955e5b578969c55f48f47b86988884882bc521cbee9882d3d3df",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00003481601497220524,
+                "name": "encoder.blocks.0.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "53a5aed4262202809f5b11d1e63455944d17ed7a1aeebe84363565ac2487e128",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.000592817404701964,
+                "name": "encoder.blocks.0.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "4e1db5b56f19cb41df79f98716b4647367b714d105fbafb0f45378a296bed66c",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.5680799061225486e-11,
+                "name": "encoder.blocks.0.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a94224bd704ebf1423b3d2347ffe705c04f94fe2fa14fc27b2666d3762b41177",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.03736514727458013,
+                "name": "encoder.blocks.0.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "c5b7fd78933ffc8bca2dadf3eb5fa487cd76285bc33de8382e6369456bc4edd3",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0023845890724089676,
+                "name": "encoder.blocks.0.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "334ec35632017c0ce178e0a59584937ecb07341b0d068885e2d60a62012a094c",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.035887034108584924,
+                "name": "encoder.blocks.0.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "49290faf646950aaf20333db07c4045e0655e8a17fa878458e2effce85518f73",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003774545650874672,
+                "name": "encoder.blocks.0.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f387e53081689c7b8e639c3d1c3f4d858e01602f9736111f6b0d3770ef3fa028",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 6.704051743921973e-6,
+                "name": "encoder.blocks.0.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "25a0b5ae9fdc0c9c00f4a92e218895adfa88e390616ee392eb706a9125ee2ad1",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0006290661080433144,
+                "name": "encoder.blocks.0.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "53484ccef69562c302eafa603e869fa756a77491977c2f71a25613f5dc2442a5",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.019431183855124372,
+                "name": "encoder.blocks.0.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "aad92b4c3124e9a31a33e43bfe1ec92bc8e577fdfda4289a5803b067e85ebe9c",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0012017148567369776,
+                "name": "encoder.blocks.0.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "fed2ece037be3a3239edd59bec29199a4676863d1f033229439a6fa509f563c7",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0351087685483138,
+                "name": "encoder.blocks.0.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "8222c39a8a58b8a398e10a97ff77c7b433912a8579c912dc4d9152cee892b745",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0034070789366080385,
+                "name": "encoder.blocks.0.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f31f6761b80bc0160963b7e107ce8f9d436bc741349802061f1189da327139dd",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0010171771237247067,
+                "name": "encoder.blocks.1.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "abc6ede7e5e7c9026215b47f1741be451b3a279f4ee5b8b6508a6824dfb7ac4f",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0000535450569930889,
+                "name": "encoder.blocks.1.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "e28d3d577a55927bd2946ddf7352db11a04681e153963ed695dcb5760a3e3d93",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.331952806298296e-6,
+                "name": "encoder.blocks.1.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "42970de71c530425a17c2c9d2a29dbd4457d14416f42a8256a2aa93ace52daba",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00004913162960345005,
+                "name": "encoder.blocks.1.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "c740d8294eadd8cc64198d20bd932fb0404e8b88d3f60354b869d2195a93b265",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.6298141473394173e-11,
+                "name": "encoder.blocks.1.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3be2d08d170de90b4075d76e41fedf9f5441c8ac56b750eeb320c15a5b9855e6",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.02539225455630361,
+                "name": "encoder.blocks.1.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "46c32c5c856492857f546d3d714bb1fae15220680f2ac0a706784340fd63d52a",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0015686207498340978,
+                "name": "encoder.blocks.1.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "86a6114f87de1d1bf54f07b9eaa0e738b59e00f088db3ea39e7afb001c552991",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.023420036289228018,
+                "name": "encoder.blocks.1.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "65f288544fe6fb77647836fa919e6667a2078a4296cc71f816aaf1c1319ebaab",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002586168138148668,
+                "name": "encoder.blocks.1.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "924bba9b8a3f7dc65a489417e5c9109265ba97fe49fb43a765ac1a8520e44261",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.2776120245840483e-6,
+                "name": "encoder.blocks.1.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "59cdc217ac3b5db79a32dd5d0f487d33a04ad8bd767aec7263169f733c89edfd",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0004536644398545274,
+                "name": "encoder.blocks.1.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "e4b2cd5c73a0df3ec971560452155474f79edd5cbb50e2bb2e764609143aa063",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.013570123486618107,
+                "name": "encoder.blocks.1.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "6684e6ef79b52a01662371c720380260815f7df001eccfc8e4b01478f883ad89",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0008387007132337243,
+                "name": "encoder.blocks.1.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "d2e7080c7309d2b94e6b67036356c15e4ea1963dffa343877eb823f18160a508",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.024289413633734436,
+                "name": "encoder.blocks.1.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "b83aab0d967753b6d17efa66aa8a2373274c14af70d044827bebebedf8dee224",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0024229238060586426,
+                "name": "encoder.blocks.1.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "3c161342f464027427f030b6d5ae03a39b8bfac4b81c87e156a79742b2fb58c8",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0012610821493409838,
+                "name": "encoder.final_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "b54ab48bb7975de3d724108729b5d5ef5508bd9ada41ef8757a74064c17064db",
+                "elements": 1024,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.6798295739771595e-6,
+                "name": "encoder.slots",
+                "shape": [
+                  4,
+                  256
+                ]
+              },
+              {
+                "digest": "5a6e0cf4a8dda8107c44abecc6a58eb584fee0360586c1b9f96429eb41c6a6c4",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.0105061456289908e-6,
+                "name": "encoder.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "54f666a3ef18242c17c805b2ce8a07e2796d30d03b3ed722454efae9424120f4",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.575588993477104e-6,
+                "name": "encoder.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "47aa786731a9152b5180b5617010cffcde14563b61d833a8943c54d8f9160705",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.783432250874439e-6,
+                "name": "encoder.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "8f903dff34cbdf4e08750d34f98f10752f4464c820d5b4a310837a73f7584645",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 7.29779244050372e-12,
+                "name": "encoder.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "7b807fd53c6e148b156219e483a1bb576ea6e38709935b8ee6228062d357ef0c",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.03509474269845226,
+                "name": "encoder.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "1427b5830ad3c4bda676f791b56059273a20e945c9ef82dc67bea8fe4b6bdedc",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0021684318668430467,
+                "name": "encoder.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "860e9d7b4e82b9289662ad9f8c53735e4bd7d7a26001a226946be160ed27f1a5",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0399645836164071,
+                "name": "encoder.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "d9fb3a6f5c1c087bfe1d3c7c4876d36f0dec5e080c47dbbc2f75907ed46fef28",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0038379756663007576,
+                "name": "encoder.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "4847440844ca24a4283598c3bd92abffdfeca55a834479f04494b7b9c7f66416",
+                "elements": 2304,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0,
+                "name": "encoder.flags.weight",
+                "shape": [
+                  9,
+                  256
+                ]
+              },
+              {
+                "digest": "2d57dd80c97b01d3ad693aba1e970c46c73ed03e431d57fe46146787096318c7",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0038379754145596284,
+                "name": "encoder.flags.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "956fe7a39b7690097d3234ba42649447f6edd77b06b44ec1af7e1931d290944c",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00152684478497012,
+                "name": "encoder.output_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f4f121adacc09c6179e01960c089924430db0af78ae97acfdc32b10385bc4bc9",
+                "elements": 262144,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08719876617088008,
+                "name": "slots.weight",
+                "shape": [
+                  1024,
+                  256
+                ]
+              },
+              {
+                "digest": "00955d906e2829e73954ae715029fd5cf027d77eb77fa97198082a7ac2ec7cd9",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002701793657965947,
+                "name": "slots.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "43b5db50f50fa05a33718c50fa856786b2fab0c8821b6cd2770f2d26e45ac66b",
+                "elements": 12288,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0011879721603461496,
+                "name": "structure.weight",
+                "shape": [
+                  48,
+                  256
+                ]
+              },
+              {
+                "digest": "7668a7edb48514fd2c82fc60d49e12930bfb40f52a7f136fd74164ef17a75698",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0006234096040669187,
+                "name": "structure.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "90f3a91106bc0010d986b0c76b7084a7d537e01625eab6181c9ad350a4688f5e",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.03929233709425215,
+                "name": "owner.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "dce4e0e8d2b2c3516ebae3343bdbc1edda6d17a8de74e0c58c685d62554f6bfd",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0011726277930956442,
+                "name": "owner.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "2439b4c82f0d9c5df3c4ccee54f6795850d65742313bdcf9b93394c8ffad7248",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0016049891573730272,
+                "name": "score.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              },
+              {
+                "digest": "d983dc35946faa2aaba6616fcc61257d4f2dfd6bf97fc6420f1d39989bd052b0",
+                "elements": 512,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0005095700182015781,
+                "name": "unknown",
+                "shape": [
+                  2,
+                  256
+                ]
+              },
+              {
+                "digest": "de91131729be0da24e66752573cec397eefebb76c668c860d4900f061f9a7504",
+                "elements": 786432,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10564893002286012,
+                "name": "initialize.first.weight",
+                "shape": [
+                  1024,
+                  768
+                ]
+              },
+              {
+                "digest": "3f3d6e3184fd3dd7ba11524373a9e884e99251eabb391b4d5f560a6770e7c459",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.001813391719962197,
+                "name": "initialize.first.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "6484096e4f98d2207a6c295777c75de0164478c9e5fa80b7e8d71aa7c16a2a01",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08144060377941187,
+                "name": "initialize.second.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "e76507e04446085be387b2fe4776e47f6e7959003822c7c1cefba77ef9313aa9",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0009079872706362921,
+                "name": "initialize.second.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "d0dac14556c2ce90c26fd6803257ae4673e7d74d457b1c19dd53201ca883d7db",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.053514974020081076,
+                "name": "head_hidden.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "4209db1e2f039cb3358459539a3e029b174782b908b49ea4dc9b2eb1d5cd78c5",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0015185240687245335,
+                "name": "head_hidden.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "370d64fd8541150c4ed1dba30a87039c4d5495418eed023b6a6249ae1cb29655",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.042736243542809804,
+                "name": "correction_out.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              }
+            ],
+            "logits": "13a68197317eda6b19e6fd05bd4cff0db82a369df86a0db0874b4101d266caa8",
+            "loss": 1.3035337924957275,
+            "phases": [
+              [
+                "factual:returned_encoder_and_slots",
+                0.1179044
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0022336
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0021007
+              ],
+              [
+                "factual:paired_centered_readout",
+                0.0002337
+              ],
+              [
+                "successor:returned_encoder_and_slots",
+                0.1181779
+              ],
+              [
+                "successor:full_branch_initialize",
+                0.0024646
+              ],
+              [
+                "successor:full_branch_initialize",
+                0.00222
+              ],
+              [
+                "successor:paired_centered_readout",
+                0.0002969
+              ],
+              [
+                "policy_and_auxiliary",
+                0.0001076
+              ],
+              [
+                "backward",
+                0.390733
+              ],
+              [
+                "gradient_readback",
+                0.0185235
+              ],
+              [
+                "AdamW",
+                0.0172547
+              ]
+            ],
+            "policy_loss": 0.9569650888442993,
+            "raw_delta": "9f92b072827f0feb0040ddf3b3851653298e49c61177e8a3d4837e13d6f70a5e"
+          },
+          "original_objective": null,
+          "post_adamw_parameter_digest": "e3766be09b1f83b2e2b0b782cd3bc708fa4788c7c96d2424e6843ef2934a1db4"
+        },
+        {
+          "batch": 1,
+          "moment_digest": "4e1366d1ba7cb6133b21ee720ffa4983f3a2a282ba95bde7b24bf9bdcb8334be",
+          "normal_profile_exact": true,
+          "numeric": {
+            "auxiliary_loss": 0.6931376457214355,
+            "gradient_digest": "0a087b154e2483afe2f0edbc23e247f4995cfb711863eb2aa15ed8bf6b99886a",
+            "gradients": [
+              {
+                "digest": "dc0905ccbb4c3bd4803cf4e2a055735700e26539918a4047521dd856a0c21557",
+                "elements": 30464,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.05390809390948508,
+                "name": "encoder.input.weight",
+                "shape": [
+                  119,
+                  256
+                ]
+              },
+              {
+                "digest": "027ef0be9e16eb38dd2db63c7b55f3351b99d2890c4136f10b8ffe6308ba9345",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.027652763436537536,
+                "name": "encoder.input.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "05e0bd0b7a4dedc31763a35e8d6af71c0beb0e6eba9c8c867f1ffd714f0eab0b",
+                "elements": 16384,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0034964184909509447,
+                "name": "encoder.square",
+                "shape": [
+                  64,
+                  256
+                ]
+              },
+              {
+                "digest": "8485a00832d22a6e5408937be66fdb424a397fdebb419a4cfc5560676edfc23f",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003360473062110642,
+                "name": "encoder.blocks.0.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "77f29f9358cfca2eb63ebea8b5cbaaa8040445bf49c44d889d7482c8d0957831",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0009313476003096422,
+                "name": "encoder.blocks.0.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "f2376d833522ac3a814bcc047bf858c32337408bccea3521501cbf64f132488b",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00006021040983468122,
+                "name": "encoder.blocks.0.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "832ce1f77230e0b1bad29e3ff38182f944b5c5a54349398143da166166e4f5ee",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0010351002649820356,
+                "name": "encoder.blocks.0.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "7c63cb52a78e02a53b68526abf38fc91309563abd2b86fb1894d142316f9ae91",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.859654107387e-11,
+                "name": "encoder.blocks.0.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "98bf75a6429861cc22744d3615f25264713b13a4c80e69a00be88a2d84541b4c",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.09082250861961332,
+                "name": "encoder.blocks.0.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "55eb763803746b6fd8402b683c64326f664bb6f5106cb2c99b75ea9b4488bf9e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0058776339024976445,
+                "name": "encoder.blocks.0.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "bff8bd2b5217c86b40fa22521e27eb0b873488ce47dd520a3e121f89b7fd9ef3",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08753124855562035,
+                "name": "encoder.blocks.0.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "9cb6de441ec67b24e4592104885e13e9b2d6b2526844a4dbc80449a44e81c3be",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00936861715039055,
+                "name": "encoder.blocks.0.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "d0b293a7ccd7b930903625df72f718e245ce2dfe3c681a01126ddc0ca10d6349",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.000012761308394515468,
+                "name": "encoder.blocks.0.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "a67580cedf1628d0567b4c93ee6f7464674d75a0bd76d79043c20c2b646a61ce",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0015479983052349628,
+                "name": "encoder.blocks.0.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "b202714fb0ed5f046ad6621800771b8f6a78030e35d2f9922d0c3ed246e715ca",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.04737897201546416,
+                "name": "encoder.blocks.0.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "3d824f43f1922dc89d50a0c2f6a8655cd39fe91414659a17d7c221f2f3f3ed82",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0029760315137043313,
+                "name": "encoder.blocks.0.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "d7e808bff37adcebb175d141ece096ca84e8e96ae0cce891a46147d62a7c6405",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08611291282262523,
+                "name": "encoder.blocks.0.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "60cae512d9faea49c5f7179843a61c04d45752a2f68284bbb6a4147b116092fb",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.008505994811269506,
+                "name": "encoder.blocks.0.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "c495ff5288823e1b0538253eb946f171a6b2acd56f16c58d98d68b1ead74849e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002439077746986916,
+                "name": "encoder.blocks.1.norm1.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f077513e918623899851c942c282465691e083ec3a680cf91cbd8b2b8cd5b8be",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00009977363257497123,
+                "name": "encoder.blocks.1.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "5b34d2c7a7cb861cd0ee55979b7eec24fc000cd73a8c9e40b98f40b3bd289716",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 6.26396720912631e-6,
+                "name": "encoder.blocks.1.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "71593405724eb605a314a0930ddef6a75afe28e01713817a4f5e0cce6c469e53",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00008434914929219516,
+                "name": "encoder.blocks.1.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "2678321b0c601215eced63a2145b07b850963105cd309b14b9da9939863a900e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 3.426943106780129e-11,
+                "name": "encoder.blocks.1.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "c2f5ba43d0989de1866723dc05c504b588cc6115de952de26232688dcb1cc8c3",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.06230876012436887,
+                "name": "encoder.blocks.1.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "96eb4dec309bfd1c7634d63923254ecd7029db203160b36acbffd0b9c5ad1f60",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00391423308484066,
+                "name": "encoder.blocks.1.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "d29bf9e9210955cef463dae63ffce32a5e2ddb662defa6b61fb6b654e12b38f6",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.057585522058801554,
+                "name": "encoder.blocks.1.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "1399866b7c813918c4d88dc8e1d379bc6502f94285349139c73ce4540be5e3c1",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.006440255532858492,
+                "name": "encoder.blocks.1.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "e998283e4f61149c5cdc665b6ca8d2df3949109ac16cd51712ba26708b175c49",
+                "elements": 1800,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.902550231298059e-6,
+                "name": "encoder.blocks.1.rel.table",
+                "shape": [
+                  8,
+                  225
+                ]
+              },
+              {
+                "digest": "efcdabcaf5a8a778c8e4c3cd298c979cfad5dc75c955be2f6a1f96ddf6d461dc",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0011255673995848668,
+                "name": "encoder.blocks.1.norm2.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "ad9ac25ebb5b8a3cb43901b87095ab48de2ef274b5ab6f49ba6186cd2ba88e9e",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.033285038092611074,
+                "name": "encoder.blocks.1.f1.weight",
+                "shape": [
+                  256,
+                  768
+                ]
+              },
+              {
+                "digest": "b32ee2c0181bfecbf3bb6c5c36c6b93cb4feddd27ca676f379667f8739a2daab",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0020869493090144185,
+                "name": "encoder.blocks.1.f1.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "feb1e8dcc73daff8f861ecd35fc678c943b833b0e9c7d38c5f7de9eb7c3bda41",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.059556749250079845,
+                "name": "encoder.blocks.1.f2.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "65c1e49efae82c745cc3069d8cc92d84a184be701ccea1f1ecff303969a3bec2",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00603552264339291,
+                "name": "encoder.blocks.1.f2.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "a208bed1d13d780c846272f874f0150e8895736b7928cdfcabb5a4556ba35a5c",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0030827200185519214,
+                "name": "encoder.final_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "ca4ee372847443c25c4a3198fd5d82c471b29bd2f017b2e2a153fa591b6f8594",
+                "elements": 1024,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.8523193750261673e-6,
+                "name": "encoder.slots",
+                "shape": [
+                  4,
+                  256
+                ]
+              },
+              {
+                "digest": "adec9a48d45a8630229410a9ca26238d49df18f5060b49ad31b3ee6254d347ac",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 1.7648343002567646e-6,
+                "name": "encoder.q.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "87cf5df4603f0c87aa2a5e1b96f0f7a6a7fb89e4c9bc0828b942639bf9a1d43e",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 4.789997415333889e-6,
+                "name": "encoder.q.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "add0605efa5e5e62893435c6d0f6fe28319d0cb30b0f272fcd4845f55cb8ea69",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 4.9825181730327775e-6,
+                "name": "encoder.k.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "cbcd93f3828046b786ee439ca5c1ad1c29d8f391fdbc59244769ee4f47b2fbc9",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 2.701091840761595e-11,
+                "name": "encoder.k.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "7211216dc5cc8967fb4f6f0c19363103b024a2f2ffaf291d900b8c8c8d518850",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.08676194773200542,
+                "name": "encoder.v.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "4846cb7dc4fab6f56b7384b85abdd64b6f4b2b9b46e257765ae1ef854235db5d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0054405592378132745,
+                "name": "encoder.v.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "14de88b13b413b90a5c51734ef48b577f8ee0820faea50f9b560a991f301eccb",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.09866891857126783,
+                "name": "encoder.o.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "b2d438b3c30226d97e141fe481f85fee0b0ecff77f6e807dff602cdf089b4c0d",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.009603749056350742,
+                "name": "encoder.o.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "90df718ed7d97a0c5f7bbe103fac79531933a88a76e89d158a548b3ac249bd00",
+                "elements": 2304,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004405021276831467,
+                "name": "encoder.flags.weight",
+                "shape": [
+                  9,
+                  256
+                ]
+              },
+              {
+                "digest": "56216f1e23ceaeac095758927a78fbf52a7085b44840e97c94214be611eeff1a",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.009603749291427943,
+                "name": "encoder.flags.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "4f5cf5be78e944a02337202de551050b70616401e620554bc3fd91d34e111b83",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0037895603763111393,
+                "name": "encoder.output_norm.gamma",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "c7f04609b589b20f293c8c6d3e3e8dd15b0ed7c04ec830a37aab989488f8946c",
+                "elements": 262144,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.2219318028748017,
+                "name": "slots.weight",
+                "shape": [
+                  1024,
+                  256
+                ]
+              },
+              {
+                "digest": "b89ca190e2b6ff2de1ef90cb4d6ed49735ff8d3a6e0f3dc02d6c1917ed24e91f",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00711491546478715,
+                "name": "slots.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "775251db5bf04cd2538ad080cfbb4f99fa87498791979a6035f56b0cdfc8d646",
+                "elements": 12288,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003469908642032523,
+                "name": "structure.weight",
+                "shape": [
+                  48,
+                  256
+                ]
+              },
+              {
+                "digest": "30476607e68bb7fb841ad8bdcb510975e0d490d4dd8a4d062adf9694c60a5482",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0016816781368760188,
+                "name": "structure.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "fa1bca736e01d718e26f2aa2019d228323533006320c9427c7eb122d61d58848",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10200232262773487,
+                "name": "owner.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "b65259fb394d3afff0ff2f1eba538f4fc5cfecf73c6b85139a18229d0e3d0b54",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.003066352556374226,
+                "name": "owner.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "40b2ce4153fc33c1f3026978a4ebc370a4e35d422a4be822e55094cc07f36896",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002489984809928166,
+                "name": "score.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              },
+              {
+                "digest": "99f262c73026b44f1d634ca4de17e315fe6efbdbf3be52317eacc44fa6791d46",
+                "elements": 512,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.0012749658965395833,
+                "name": "unknown",
+                "shape": [
+                  2,
+                  256
+                ]
+              },
+              {
+                "digest": "b1a01305ab7ba765ef715233cbb6f347b948bb1a399bb55bfed4e7d8e38ad431",
+                "elements": 786432,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.2707422489439684,
+                "name": "initialize.first.weight",
+                "shape": [
+                  1024,
+                  768
+                ]
+              },
+              {
+                "digest": "f8d56a0bbaf6067d0d01a787fb9fa041a85a0bd5327aec81126266aa9470050e",
+                "elements": 768,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.004596526806314529,
+                "name": "initialize.first.bias",
+                "shape": [
+                  768
+                ]
+              },
+              {
+                "digest": "2213888828bba3010df526f705b29228904eab58c37077f1c097e815b1625c03",
+                "elements": 196608,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.21299574439494323,
+                "name": "initialize.second.weight",
+                "shape": [
+                  768,
+                  256
+                ]
+              },
+              {
+                "digest": "9f47fc31ec7fb24cdada3a591589e853ca77224985585a5fb0cf3c158f591c85",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.002345279318555837,
+                "name": "initialize.second.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "f92da21298d87f1b21b12390f6be22f958cbde068f0da4c85a9192c6e95df2cc",
+                "elements": 65536,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.13880199826091777,
+                "name": "head_hidden.weight",
+                "shape": [
+                  256,
+                  256
+                ]
+              },
+              {
+                "digest": "52f54634f661546f776c2b1331a0172b52bd58e45f1214dd6e5a1c0ccf4f4400",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.00387277435475733,
+                "name": "head_hidden.bias",
+                "shape": [
+                  256
+                ]
+              },
+              {
+                "digest": "fabc91b9493bfa65fa7ce5370442d3cb8223c813e1340aee484487907b21025f",
+                "elements": 256,
+                "finite": true,
+                "gradient_present": true,
+                "l2": 0.10619674647921899,
+                "name": "correction_out.weight",
+                "shape": [
+                  256,
+                  1
+                ]
+              }
+            ],
+            "logits": "80e7973488962826da05647d75f02fb78877348351a0b2230c7af13ee4508788",
+            "loss": 1.5069358348846436,
+            "phases": [
+              [
+                "factual:returned_encoder_and_slots",
+                0.1181998
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0023223
+              ],
+              [
+                "factual:full_branch_initialize",
+                0.0022617
+              ],
+              [
+                "factual:paired_centered_readout",
+                0.0002161
+              ],
+              [
+                "successor:returned_encoder_and_slots",
+                0.1186216
+              ],
+              [
+                "successor:full_branch_initialize",
+                0.0025692
+              ],
+              [
+                "successor:full_branch_initialize",
+                0.0024242
+              ],
+              [
+                "successor:paired_centered_readout",
+                0.0002201
+              ],
+              [
+                "policy_and_auxiliary",
+                0.0001107
+              ],
+              [
+                "backward",
+                0.392817
+              ],
+              [
+                "gradient_readback",
+                0.0182246
+              ],
+              [
+                "AdamW",
+                0.0169977
+              ]
+            ],
+            "policy_loss": 1.1603670120239258,
+            "raw_delta": "c198c25207d03a753b5603f0d4bdb8f3dd28f46b4db72670a3f6e416c76f31ff"
+          },
+          "original_objective": null,
+          "post_adamw_parameter_digest": "9bb59a4d040fcf22ff5e88898b7957f47c9568c9e0afcf2c8af96cce3e8a22ab"
+        }
+      ],
+      "populated_moment_clone_purity": true,
+      "projected_fit_seconds_per_arm_at_12_microbatches": 1644.9937295999994,
+      "reader_gradient_inventory": [
+        {
+          "digest": "1c7c852c67a2b1dd2dc6851e632c851821c7510f38ced1f760d97ed02483e174",
+          "elements": 30464,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.022392096690124264,
+          "name": "encoder.input.weight",
+          "shape": [
+            119,
+            256
+          ]
+        },
+        {
+          "digest": "517411f9485d369bd934848c88573efdccb43a11763eaab60e3881c77b0c55de",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.011481810002844954,
+          "name": "encoder.input.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "75438a6fe87af46dfd365f92b988a751b78acfd4ceeeaa67c103e31475ea3ab7",
+          "elements": 16384,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0014641526816536756,
+          "name": "encoder.square",
+          "shape": [
+            64,
+            256
+          ]
+        },
+        {
+          "digest": "ed9615bb1e1ca569c65620993561eb8ad7c8b80da5dcfd9ddb51f4e367110a7e",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0013689764311429601,
+          "name": "encoder.blocks.0.norm1.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "0d5670fd6d5de20fe5755d02f45ec7de1f2eb0c66d82dae342d1fae025797eaf",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0005399872062755715,
+          "name": "encoder.blocks.0.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "cd672f3a1f65955e5b578969c55f48f47b86988884882bc521cbee9882d3d3df",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00003481601497220524,
+          "name": "encoder.blocks.0.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "53a5aed4262202809f5b11d1e63455944d17ed7a1aeebe84363565ac2487e128",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.000592817404701964,
+          "name": "encoder.blocks.0.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "4e1db5b56f19cb41df79f98716b4647367b714d105fbafb0f45378a296bed66c",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.5680799061225486e-11,
+          "name": "encoder.blocks.0.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "a94224bd704ebf1423b3d2347ffe705c04f94fe2fa14fc27b2666d3762b41177",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.03736514727458013,
+          "name": "encoder.blocks.0.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "c5b7fd78933ffc8bca2dadf3eb5fa487cd76285bc33de8382e6369456bc4edd3",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0023845890724089676,
+          "name": "encoder.blocks.0.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "334ec35632017c0ce178e0a59584937ecb07341b0d068885e2d60a62012a094c",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.035887034108584924,
+          "name": "encoder.blocks.0.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "49290faf646950aaf20333db07c4045e0655e8a17fa878458e2effce85518f73",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.003774545650874672,
+          "name": "encoder.blocks.0.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "f387e53081689c7b8e639c3d1c3f4d858e01602f9736111f6b0d3770ef3fa028",
+          "elements": 1800,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 6.704051743921973e-6,
+          "name": "encoder.blocks.0.rel.table",
+          "shape": [
+            8,
+            225
+          ]
+        },
+        {
+          "digest": "25a0b5ae9fdc0c9c00f4a92e218895adfa88e390616ee392eb706a9125ee2ad1",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0006290661080433144,
+          "name": "encoder.blocks.0.norm2.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "53484ccef69562c302eafa603e869fa756a77491977c2f71a25613f5dc2442a5",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.019431183855124372,
+          "name": "encoder.blocks.0.f1.weight",
+          "shape": [
+            256,
+            768
+          ]
+        },
+        {
+          "digest": "aad92b4c3124e9a31a33e43bfe1ec92bc8e577fdfda4289a5803b067e85ebe9c",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0012017148567369776,
+          "name": "encoder.blocks.0.f1.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "fed2ece037be3a3239edd59bec29199a4676863d1f033229439a6fa509f563c7",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0351087685483138,
+          "name": "encoder.blocks.0.f2.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "8222c39a8a58b8a398e10a97ff77c7b433912a8579c912dc4d9152cee892b745",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0034070789366080385,
+          "name": "encoder.blocks.0.f2.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "f31f6761b80bc0160963b7e107ce8f9d436bc741349802061f1189da327139dd",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0010171771237247067,
+          "name": "encoder.blocks.1.norm1.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "abc6ede7e5e7c9026215b47f1741be451b3a279f4ee5b8b6508a6824dfb7ac4f",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0000535450569930889,
+          "name": "encoder.blocks.1.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "e28d3d577a55927bd2946ddf7352db11a04681e153963ed695dcb5760a3e3d93",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 3.331952806298296e-6,
+          "name": "encoder.blocks.1.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "42970de71c530425a17c2c9d2a29dbd4457d14416f42a8256a2aa93ace52daba",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00004913162960345005,
+          "name": "encoder.blocks.1.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "c740d8294eadd8cc64198d20bd932fb0404e8b88d3f60354b869d2195a93b265",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.6298141473394173e-11,
+          "name": "encoder.blocks.1.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "3be2d08d170de90b4075d76e41fedf9f5441c8ac56b750eeb320c15a5b9855e6",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.02539225455630361,
+          "name": "encoder.blocks.1.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "46c32c5c856492857f546d3d714bb1fae15220680f2ac0a706784340fd63d52a",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0015686207498340978,
+          "name": "encoder.blocks.1.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "86a6114f87de1d1bf54f07b9eaa0e738b59e00f088db3ea39e7afb001c552991",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.023420036289228018,
+          "name": "encoder.blocks.1.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "65f288544fe6fb77647836fa919e6667a2078a4296cc71f816aaf1c1319ebaab",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002586168138148668,
+          "name": "encoder.blocks.1.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "924bba9b8a3f7dc65a489417e5c9109265ba97fe49fb43a765ac1a8520e44261",
+          "elements": 1800,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.2776120245840483e-6,
+          "name": "encoder.blocks.1.rel.table",
+          "shape": [
+            8,
+            225
+          ]
+        },
+        {
+          "digest": "59cdc217ac3b5db79a32dd5d0f487d33a04ad8bd767aec7263169f733c89edfd",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0004536644398545274,
+          "name": "encoder.blocks.1.norm2.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "e4b2cd5c73a0df3ec971560452155474f79edd5cbb50e2bb2e764609143aa063",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.013570123486618107,
+          "name": "encoder.blocks.1.f1.weight",
+          "shape": [
+            256,
+            768
+          ]
+        },
+        {
+          "digest": "6684e6ef79b52a01662371c720380260815f7df001eccfc8e4b01478f883ad89",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0008387007132337243,
+          "name": "encoder.blocks.1.f1.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "d2e7080c7309d2b94e6b67036356c15e4ea1963dffa343877eb823f18160a508",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.024289413633734436,
+          "name": "encoder.blocks.1.f2.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "b83aab0d967753b6d17efa66aa8a2373274c14af70d044827bebebedf8dee224",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0024229238060586426,
+          "name": "encoder.blocks.1.f2.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "3c161342f464027427f030b6d5ae03a39b8bfac4b81c87e156a79742b2fb58c8",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0012610821493409838,
+          "name": "encoder.final_norm.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "b54ab48bb7975de3d724108729b5d5ef5508bd9ada41ef8757a74064c17064db",
+          "elements": 1024,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.6798295739771595e-6,
+          "name": "encoder.slots",
+          "shape": [
+            4,
+            256
+          ]
+        },
+        {
+          "digest": "5a6e0cf4a8dda8107c44abecc6a58eb584fee0360586c1b9f96429eb41c6a6c4",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 1.0105061456289908e-6,
+          "name": "encoder.q.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "54f666a3ef18242c17c805b2ce8a07e2796d30d03b3ed722454efae9424120f4",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 2.575588993477104e-6,
+          "name": "encoder.q.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "47aa786731a9152b5180b5617010cffcde14563b61d833a8943c54d8f9160705",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 2.783432250874439e-6,
+          "name": "encoder.k.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "8f903dff34cbdf4e08750d34f98f10752f4464c820d5b4a310837a73f7584645",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 7.29779244050372e-12,
+          "name": "encoder.k.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "7b807fd53c6e148b156219e483a1bb576ea6e38709935b8ee6228062d357ef0c",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.03509474269845226,
+          "name": "encoder.v.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "1427b5830ad3c4bda676f791b56059273a20e945c9ef82dc67bea8fe4b6bdedc",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0021684318668430467,
+          "name": "encoder.v.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "860e9d7b4e82b9289662ad9f8c53735e4bd7d7a26001a226946be160ed27f1a5",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0399645836164071,
+          "name": "encoder.o.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "d9fb3a6f5c1c087bfe1d3c7c4876d36f0dec5e080c47dbbc2f75907ed46fef28",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0038379756663007576,
+          "name": "encoder.o.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "4847440844ca24a4283598c3bd92abffdfeca55a834479f04494b7b9c7f66416",
+          "elements": 2304,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0,
+          "name": "encoder.flags.weight",
+          "shape": [
+            9,
+            256
+          ]
+        },
+        {
+          "digest": "2d57dd80c97b01d3ad693aba1e970c46c73ed03e431d57fe46146787096318c7",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0038379754145596284,
+          "name": "encoder.flags.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "956fe7a39b7690097d3234ba42649447f6edd77b06b44ec1af7e1931d290944c",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.00152684478497012,
+          "name": "encoder.output_norm.gamma",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "f4f121adacc09c6179e01960c089924430db0af78ae97acfdc32b10385bc4bc9",
+          "elements": 262144,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.08719876617088008,
+          "name": "slots.weight",
+          "shape": [
+            1024,
+            256
+          ]
+        },
+        {
+          "digest": "00955d906e2829e73954ae715029fd5cf027d77eb77fa97198082a7ac2ec7cd9",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.002701793657965947,
+          "name": "slots.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "43b5db50f50fa05a33718c50fa856786b2fab0c8821b6cd2770f2d26e45ac66b",
+          "elements": 12288,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0011879721603461496,
+          "name": "structure.weight",
+          "shape": [
+            48,
+            256
+          ]
+        },
+        {
+          "digest": "7668a7edb48514fd2c82fc60d49e12930bfb40f52a7f136fd74164ef17a75698",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0006234096040669187,
+          "name": "structure.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "90f3a91106bc0010d986b0c76b7084a7d537e01625eab6181c9ad350a4688f5e",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.03929233709425215,
+          "name": "owner.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "dce4e0e8d2b2c3516ebae3343bdbc1edda6d17a8de74e0c58c685d62554f6bfd",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0011726277930956442,
+          "name": "owner.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "2439b4c82f0d9c5df3c4ccee54f6795850d65742313bdcf9b93394c8ffad7248",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0016049891573730272,
+          "name": "score.weight",
+          "shape": [
+            256,
+            1
+          ]
+        },
+        {
+          "digest": "d983dc35946faa2aaba6616fcc61257d4f2dfd6bf97fc6420f1d39989bd052b0",
+          "elements": 512,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0005095700182015781,
+          "name": "unknown",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        {
+          "digest": "de91131729be0da24e66752573cec397eefebb76c668c860d4900f061f9a7504",
+          "elements": 786432,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.10564893002286012,
+          "name": "initialize.first.weight",
+          "shape": [
+            1024,
+            768
+          ]
+        },
+        {
+          "digest": "3f3d6e3184fd3dd7ba11524373a9e884e99251eabb391b4d5f560a6770e7c459",
+          "elements": 768,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.001813391719962197,
+          "name": "initialize.first.bias",
+          "shape": [
+            768
+          ]
+        },
+        {
+          "digest": "6484096e4f98d2207a6c295777c75de0164478c9e5fa80b7e8d71aa7c16a2a01",
+          "elements": 196608,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.08144060377941187,
+          "name": "initialize.second.weight",
+          "shape": [
+            768,
+            256
+          ]
+        },
+        {
+          "digest": "e76507e04446085be387b2fe4776e47f6e7959003822c7c1cefba77ef9313aa9",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0009079872706362921,
+          "name": "initialize.second.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "d0dac14556c2ce90c26fd6803257ae4673e7d74d457b1c19dd53201ca883d7db",
+          "elements": 65536,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.053514974020081076,
+          "name": "head_hidden.weight",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "digest": "4209db1e2f039cb3358459539a3e029b174782b908b49ea4dc9b2eb1d5cd78c5",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.0015185240687245335,
+          "name": "head_hidden.bias",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "digest": "370d64fd8541150c4ed1dba30a87039c4d5495418eed023b6a6249ae1cb29655",
+          "elements": 256,
+          "finite": true,
+          "gradient_present": true,
+          "l2": 0.042736243542809804,
+          "name": "correction_out.weight",
+          "shape": [
+            256,
+            1
+          ]
+        }
+      ],
+      "reference_objective_gradient_max_l2": 0.20724333451504265,
+      "resident_seconds": [
+        0.6739822,
+        0.6732956,
+        0.6708691,
+        0.6729574,
+        0.6716814,
+        0.6713565,
+        0.6773218,
+        0.67721,
+        0.6766759,
+        0.6768098,
+        0.6816626,
+        0.6790127,
+        0.6791154,
+        0.6981005,
+        0.6788193,
+        0.6795654,
+        0.6784888,
+        0.683387,
+        0.6784926,
+        0.6850152,
+        0.6781618,
+        0.696723,
+        0.678328,
+        0.6830045,
+        0.6797683,
+        0.6805733,
+        0.6816934,
+        0.6855324,
+        0.6848326,
+        0.6835622,
+        0.6902814,
+        0.6859394,
+        0.6856327,
+        0.6858642,
+        0.687169,
+        0.6879031,
+        0.6904519,
+        0.7161097,
+        0.6911636,
+        0.6882356,
+        0.6904489,
+        0.7026736,
+        0.6945785,
+        0.7051783,
+        0.6899317,
+        0.6886713,
+        0.6965541,
+        0.7145139,
+        0.6900613,
+        0.6933418
+      ],
+      "resident_seconds_max": 0.7161097,
+      "resident_seconds_mean": 0.6854140539999998,
+      "resident_updates": 50
+    }
+  ],
+  "backend": "cpu",
+  "baseline_optimizer_registered": false,
+  "baseline_parameters_exact": true,
+  "config_digest": "f48dcf28ce178581a99099d088fa4c975ab684c1c81c351896238a7ffc4b8335",
+  "device_used_peak_sampled_mib": null,
+  "donor_map_summary": {
+    "e002": {
+      "exact_depth": 1535,
+      "max_depth_delta": 2,
+      "max_pool": 120,
+      "min_pool": 18,
+      "nearest_depth_fallback": 1,
+      "rows": 1536,
+      "seed": 2053169154
+    },
+    "e402": {
+      "exact_depth": 1535,
+      "max_depth_delta": 2,
+      "max_pool": 120,
+      "min_pool": 18,
+      "nearest_depth_fallback": 1,
+      "rows": 1536,
+      "seed": 2053170178
+    },
+    "e502": {
+      "exact_depth": 1535,
+      "max_depth_delta": 2,
+      "max_pool": 120,
+      "min_pool": 18,
+      "nearest_depth_fallback": 1,
+      "rows": 1536,
+      "seed": 2053170434
+    }
+  },
+  "donor_maps_independent_of_correctness": true,
+  "frozen_root_parameters": 3677728,
+  "initial": {
+    "model_sha256": "70037b5ce46cb98a13b04cfd44c2a58086093bc1be4d5c2a58e0eb1bc8e9b9f4",
+    "parameter_digest": "2a6214eb6f3e477c11b3d5be6295b4224c70a06ef4d9c18356a60a4778c4e290",
+    "reader_parameters": 3025424,
+    "seed": 6300
+  },
+  "intervention_cells_verified": 93585408,
+  "loss_references": {
+    "bce_at_zero_ln2": true,
+    "bce_value_vs_f64": 4.1398279693183326e-8,
+    "empty_support_zero": true,
+    "gradient_max_abs_error_analytic": 5.079660914120154e-9,
+    "gradient_max_abs_error_numeric": 5.062055663529463e-9,
+    "positive_and_negative_paths_exact_negatives": true,
+    "single_class_not_averaged_with_empty": true
+  },
+  "microbatch": 2,
+  "objective": "v6_content_differential_aux_v2_successor_only",
+  "p0_frozen_regression": {
+    "reason": "frozen weights were produced on CUDA; CPU comparison would invent bitwise equality",
+    "run": false
+  },
+  "pass": true,
+  "precision": "fp32",
+  "projected_fit_seconds": {
+    "control": 858.4498512,
+    "treatment": 1644.9937295999994
+  },
+  "reader_parameters": 3025424,
+  "resident_seconds_mean": {
+    "control": 0.357687438,
+    "treatment": 0.6854140539999998
+  },
+  "schema": "v6_objective_probe_qualification_v2",
+  "seeded_initialization_reproducible": true,
+  "source_sha": "3cf0aec0c1cb8d24af064a80a21f889344aca1d1",
+  "successor_view_structure_masks_flags_identical": true,
+  "target_mutation_leaves_predictions_and_packets_unchanged": true,
+  "total_parameters": 6703152,
+  "treatment_over_control_resident_cost_ratio": 1.916237421790585,
+  "view_build": {
+    "real_only_seconds": 0.03175073333333333,
+    "real_plus_successor_seconds": 0.0324461
+  }
+}

@@ -1,0 +1,44 @@
+[
+    {
+        "step":  "fmt-check",
+        "command":  "cargo fmt -p recur64-v6 -- --check",
+        "elapsed_seconds":  6.7679548,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target"
+    },
+    {
+        "step":  "cpu-clippy-lib-bins-tests",
+        "command":  "cargo clippy -p recur64-v6 --lib --bins --tests --release -- -D warnings",
+        "elapsed_seconds":  21.2739339,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target"
+    },
+    {
+        "step":  "workspace-release-tests",
+        "command":  "cargo test --workspace --release",
+        "elapsed_seconds":  560.6557722,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target"
+    },
+    {
+        "step":  "cpu-build-probe",
+        "command":  "cargo build -p recur64-v6 --release --bin objective_probe -j 1",
+        "elapsed_seconds":  165.01312289999998,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target"
+    },
+    {
+        "step":  "cuda-clippy-all-targets",
+        "command":  "cargo clippy -p recur64-v6 --all-targets --release --no-default-features --features cuda -j 1 -- -D warnings",
+        "elapsed_seconds":  158.0010776,
+        "native_exit":  101,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target-cuda"
+    },
+    {
+        "step":  "cuda-build-probe",
+        "command":  "cargo build -p recur64-v6 --release --no-default-features --features cuda --bin objective_probe -j 1",
+        "elapsed_seconds":  312.63947079999997,
+        "native_exit":  101,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target-cuda"
+    }
+]

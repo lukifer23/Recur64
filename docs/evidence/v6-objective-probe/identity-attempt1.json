@@ -1,0 +1,7 @@
+{
+  "capability": "objective probe TRAIN only",
+  "config_digest": "f48dcf28ce178581a99099d088fa4c975ab684c1c81c351896238a7ffc4b8335",
+  "launch_plan": "v6_objective_content_probe_v2",
+  "objective": "v6_content_differential_aux_v2_successor_only",
+  "source_sha": "3cf0aec0c1cb8d24af064a80a21f889344aca1d1"
+}

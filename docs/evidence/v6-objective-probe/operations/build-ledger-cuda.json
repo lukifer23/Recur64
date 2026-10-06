@@ -1,0 +1,16 @@
+[
+    {
+        "step":  "cuda-clippy-all-targets",
+        "command":  "cargo clippy -p recur64-v6 --all-targets --release --features cuda -j 1 -- -D warnings",
+        "elapsed_seconds":  82.706232899999989,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target-cuda"
+    },
+    {
+        "step":  "cuda-build-probe",
+        "command":  "cargo build -p recur64-v6 --release --features cuda --bin objective_probe -j 1",
+        "elapsed_seconds":  819.00361649999991,
+        "native_exit":  0,
+        "target":  "C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v6\\target-cuda"
+    }
+]
