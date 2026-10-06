@@ -36,12 +36,21 @@ Labels are serialized for offline alignment only, never supplied to forward.
 | carrier_flags_zero | encoder replaced after slot projection by fixed256-vector alternating +0.1/-0.1, identical every acquired node; stopping false |
 | carrier_flags_factual | same carrier; terminal stopping factual; other flag encoder channels bypassed |
 | owner_zero | payload/structure factual; frozen candidate-context tensor zero in BOTH streams; B0 logits unchanged |
+| successor_frames_zero | zero observation history frames k < acquired node.depth (current/successor frames, including validity); retain root/pre-root history, current rule fields, flags and stopping |
+| root_history_frames_zero | zero observation history frames k >= acquired node.depth; retain current/successor frames, current rule fields, flags and stopping |
 
 The carrier is an embedding intervention, not a valid chess position. Board/flag
 zeroing and owner zeroing are distribution shifts. Collapse alone is not proof
 of semantic board use. Structure retains board-derived legal counts; shuffle does
 not erase those. Unknown replies remain unknown, never fabricated as covered.
 No further structural controls will be selected after observing these outcomes.
+
+Pre-execution amendment: authoritative ObservationV1 contains eight history frames;
+the original root board is at frame acquired depth. These two additional fixed
+channels are necessary to separate successor-board dependence from root recall.
+They are frozen before any new control execution, based on source inspection alone.
+Legal counts and current rule fields still carry returned-state information, so
+neither history intervention is total removal of all future-derived information.
 
 ## Instrumentation and analysis
 

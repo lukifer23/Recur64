@@ -103,6 +103,20 @@ fn control(e: &Entry, plan: &Plan, policy: usize, name: &str) -> Result<(Packet,
     }
     // Tensor interventions have no claim of being valid chess states.
     for n in &mut p.nodes {
+        if matches!(name, "successor_frames_zero" | "root_history_frames_zero") {
+            for square in 0..64 {
+                for frame in 0..8 {
+                    let successor = frame < n.depth as usize;
+                    if (name == "successor_frames_zero" && successor)
+                        || (name == "root_history_frames_zero" && !successor)
+                    {
+                        n.payload.observation
+                            [square * 119 + frame * 14..square * 119 + (frame + 1) * 14]
+                            .fill(0.);
+                    }
+                }
+            }
+        }
         if matches!(name, "board_zero" | "board_flags_zero") {
             n.payload.observation.fill(0.);
         }
@@ -486,6 +500,27 @@ mod tests {
             let name = name.as_str().unwrap();
             let (p, m) = control(e, &plan, 0, name).unwrap();
             assert_eq!(structure(&p), structure(&e.packets[0]));
+            if matches!(name, "successor_frames_zero" | "root_history_frames_zero") {
+                for (new, old) in p.nodes.iter().zip(&e.packets[0].nodes) {
+                    assert_eq!(new.payload.flags, old.payload.flags);
+                    for square in 0..64 {
+                        for feature in 0..119 {
+                            let successor = feature / 14 < old.depth as usize;
+                            let removed = feature < 112
+                                && ((name == "successor_frames_zero" && successor)
+                                    || (name == "root_history_frames_zero" && !successor));
+                            assert_eq!(
+                                new.payload.observation[square * 119 + feature],
+                                if removed {
+                                    0.
+                                } else {
+                                    old.payload.observation[square * 119 + feature]
+                                }
+                            );
+                        }
+                    }
+                }
+            }
             for d in m {
                 assert_ne!(d["donor_id"], d["recipient_id"]);
                 assert_eq!(d["donor_turn"], d["recipient_turn"]);

@@ -35,10 +35,13 @@
     "board_flags_zero",
     "carrier_flags_zero",
     "carrier_flags_factual",
-    "owner_zero"
+    "owner_zero",
+    "successor_frames_zero",
+    "root_history_frames_zero"
   ],
   "carrier": "post-slot 256-vector: +0.1 at even coordinates, -0.1 at odd; same every acquired node, zero padded nodes; overrides encoded anchor, not a chess board",
   "scope": "TRAIN fixed96 only; no model invocation DEV/CONFIRM",
   "tie_break": "first legal ActionId-order index attaining maximum FP32 logit; exact ties lower index",
-  "donor_constraints": "original same family/root mate-depth cell, different root, same root_to_move, minimum depth distance (exact if available); stable id/depth/path/storage order, original recipient hash with listed seeds; no outcome selection"
+  "donor_constraints": "original same family/root mate-depth cell, different root, same root_to_move, minimum depth distance (exact if available); stable id/depth/path/storage order, original recipient hash with listed seeds; no outcome selection",
+  "preexecution_amendment": "Authoritative ObservationV1 contains8 history frames; root is at frame acquired depth. Separate successor/root-history removal frozen before any new model control execution; no outcome-driven selection."
 }
