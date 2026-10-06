@@ -92,7 +92,7 @@ pub fn targets<B: Backend>(
         device,
     ))
 }
-fn choose(z: &[f32]) -> usize {
+pub fn choose(z: &[f32]) -> usize {
     z.iter()
         .enumerate()
         .max_by(|(i, a), (j, b)| a.total_cmp(b).then(j.cmp(i)))

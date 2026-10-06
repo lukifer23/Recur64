@@ -80,6 +80,10 @@ pub struct Output<B: Backend> {
     pub raw_delta: Tensor<B, 2>,
     pub centered: Tensor<B, 2>,
     pub iteration_delta: Vec<Tensor<B, 2>>,
+    /// Per-iteration factual and null streams (read-only views of tensors the forward
+    /// already computed; used for serialization, they add no equation or compute).
+    pub factual: Vec<Tensor<B, 2>>,
+    pub null: Vec<Tensor<B, 2>>,
 }
 impl<B: Backend> Reader<B> {
     pub fn new(arm: Arm, device: &B::Device) -> Self {
@@ -218,6 +222,7 @@ impl<B: Backend> Reader<B> {
         phase("returned_encoder_and_slots");
         let f = self.stream(i, encoded.clone(), r, !all_null, turn_blind, phase);
         let null = self.stream(i, encoded, r, false, turn_blind, phase);
+        let (factual, null_streams) = (f.clone(), null.clone());
         let delta: Vec<_> = f
             .into_iter()
             .zip(null)
@@ -233,6 +238,8 @@ impl<B: Backend> Reader<B> {
             raw_delta: raw,
             centered,
             iteration_delta: delta,
+            factual,
+            null: null_streams,
         }
     }
 }
