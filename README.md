@@ -1,6 +1,11 @@
 # Recur64
 
-## Current V6 branch: real P0 implementation, qualification pending
+## Current V6 branch: P0 complete; both readers failed learnability
+
+Actual CPU/RTX2050 qualification passed. Both fixed 200-update competent-base
+TRAIN experiments completed, but neither passed the frozen content-sensitive
+learnability gates. The scientific campaign is NOT justified or run.
+[Measured P0 results and stop decision](docs/V6_P0_RESULTS.md).
 
 This branch `experiment/hp-v6-branch-backup` implements the revised full-information
 branch reader and one-pass comparator. Its authorized endpoint is qualification

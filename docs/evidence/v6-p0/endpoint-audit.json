@@ -1,0 +1,28 @@
+{
+  "schema": "v6_p0_endpoint_audit_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "arms": [
+    {
+      "arm": "principal",
+      "independently_recomputed_root_counts": {
+        "corrected": 12,
+        "harmed": 5,
+        "specificity": 0,
+        "roots_without_correct_branch_both": 23,
+        "roots_without_correct_branch_either": 23
+      },
+      "published_gates_unchanged": true
+    },
+    {
+      "arm": "one-pass",
+      "independently_recomputed_root_counts": {
+        "corrected": 4,
+        "harmed": 4,
+        "specificity": 0,
+        "roots_without_correct_branch_both": 23,
+        "roots_without_correct_branch_either": 23
+      },
+      "published_gates_unchanged": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "v6_p0_decision_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "classification": "BOTH_READERS_FAIL_LEARNABILITY",
+  "engineering": "PASS",
+  "execution": "VALID",
+  "held_out_strength_claim": false,
+  "scientific_campaign_justified": false,
+  "next_scientific_agent_prompt": "NOT ISSUED: neither reader meets frozen content-sensitive learnability requirements",
+  "performance_retry": false,
+  "further_execution": "STOP FOR OWNER REVIEW",
+  "v5_classification": "NO_SIGNAL",
+  "v5_primary750_pooled4500_reconciliation": "unchanged; original pooled report and retrospective primary analysis preserved",
+  "not_run": [
+    "DEV model invocation",
+    "CONFIRM model invocation",
+    "V4_TUNE/HOLDOUT_C evaluation",
+    "scientific 800-update campaign",
+    "seed6301/6302/6303",
+    "additional P0 updates or retuning",
+    "learned controller",
+    "self-play",
+    "V5 GPU gradient probes or rescue"
+  ]
+}

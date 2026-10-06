@@ -1,0 +1,138 @@
+{
+  "schema": "v6_p0_costs_v1",
+  "source_sha": "42f47b852451d59645dcc50120e4a426b034f493",
+  "backend": "RTX2050 CUDA FP32 microbatch2",
+  "same_information": true,
+  "compute_matched": false,
+  "notes": [
+    "single qualification fixture timings; not throughput benchmark",
+    "phase totals include fences and gradient readback",
+    "resident complete update includes validation instrumentation; cannot extrapolate as production throughput",
+    "device-wide memory sampled, not a continuous allocator peak"
+  ],
+  "device_used_peak_sampled_mib": 451,
+  "parameter_inventory": [
+    {
+      "arm": "SharedBackup",
+      "reader": 4009488,
+      "frozen_root": 3677728,
+      "total": 7687216,
+      "resident_50_mean_seconds": 0.122176478
+    },
+    {
+      "arm": "OnePass",
+      "reader": 3025424,
+      "frozen_root": 3677728,
+      "total": 6703152,
+      "resident_50_mean_seconds": 0.092814912
+    }
+  ],
+  "condition_costs": [
+    {
+      "arm": "SharedBackup",
+      "policy": "ExploitTwo",
+      "r": 1,
+      "acquisition_seconds": 0.0035147,
+      "frozen_root_seconds": 0.2398108,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0050686,
+        "full_branch_initialize": 0.0038198,
+        "shared_local_refinement": 0.0027517,
+        "paired_centered_readout": 0.0006453,
+        "policy_and_eligible_auxiliary": 0.0015689,
+        "backward": 0.0201807,
+        "gradient_readback": 0.0350141,
+        "AdamW": 0.0201172
+      },
+      "instrumented_training_phase_total_seconds": 0.0891663
+    },
+    {
+      "arm": "SharedBackup",
+      "policy": "ExploitTwo",
+      "r": 4,
+      "acquisition_seconds": 0.0035147,
+      "frozen_root_seconds": 0.2398108,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0108047,
+        "full_branch_initialize": 0.0047139999999999994,
+        "shared_local_refinement": 0.018493199999999998,
+        "paired_centered_readout": 0.0010765,
+        "policy_and_eligible_auxiliary": 0.0045621,
+        "backward": 0.0554998,
+        "gradient_readback": 0.0353846,
+        "AdamW": 0.0240159
+      },
+      "instrumented_training_phase_total_seconds": 0.15455080000000002
+    },
+    {
+      "arm": "SharedBackup",
+      "policy": "BroadRankedHash",
+      "r": 1,
+      "acquisition_seconds": 0.0034466,
+      "frozen_root_seconds": 0.0125847,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0048849,
+        "full_branch_initialize": 0.0037936,
+        "shared_local_refinement": 0.0030261000000000003,
+        "paired_centered_readout": 0.0002459,
+        "policy_and_eligible_auxiliary": 0.001657,
+        "backward": 0.0205877,
+        "gradient_readback": 0.0338385,
+        "AdamW": 0.0190949
+      },
+      "instrumented_training_phase_total_seconds": 0.0871286
+    },
+    {
+      "arm": "SharedBackup",
+      "policy": "BroadRankedHash",
+      "r": 4,
+      "acquisition_seconds": 0.0034466,
+      "frozen_root_seconds": 0.0125847,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0051706,
+        "full_branch_initialize": 0.0037973,
+        "shared_local_refinement": 0.016901199999999998,
+        "paired_centered_readout": 0.001073,
+        "policy_and_eligible_auxiliary": 0.0147694,
+        "backward": 0.032407,
+        "gradient_readback": 0.0353545,
+        "AdamW": 0.0198971
+      },
+      "instrumented_training_phase_total_seconds": 0.1293701
+    },
+    {
+      "arm": "OnePass",
+      "policy": "ExploitTwo",
+      "r": 1,
+      "acquisition_seconds": 0.0035259,
+      "frozen_root_seconds": 0.0085591,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0066281,
+        "full_branch_initialize": 0.003984,
+        "paired_centered_readout": 0.0010781,
+        "policy_and_eligible_auxiliary": 0.0020274,
+        "backward": 0.0231965,
+        "gradient_readback": 0.0287784,
+        "AdamW": 0.024579
+      },
+      "instrumented_training_phase_total_seconds": 0.0902715
+    },
+    {
+      "arm": "OnePass",
+      "policy": "BroadRankedHash",
+      "r": 1,
+      "acquisition_seconds": 0.0035881,
+      "frozen_root_seconds": 0.0105278,
+      "synchronized_phases_seconds": {
+        "returned_encoder_and_slots": 0.0065613,
+        "full_branch_initialize": 0.0033199,
+        "paired_centered_readout": 0.0008991,
+        "policy_and_eligible_auxiliary": 0.0021585,
+        "backward": 0.0241178,
+        "gradient_readback": 0.0290323,
+        "AdamW": 0.0197046
+      },
+      "instrumented_training_phase_total_seconds": 0.0857935
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 # Revised V6 P0 execution freeze
 
+Current endpoint: both fixed arms COMPLETE, engineering PASS, both learnability gates FAIL.
+[Final result and stop decision](V6_P0_RESULTS.md). The preregistration below is preserved.
+
 Scientific implementation source: `42f47b852451d59645dcc50120e4a426b034f493`.
 V5 remains closed as NO_SIGNAL. No V5 source or checkpoint has changed.
 

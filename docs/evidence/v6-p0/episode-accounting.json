@@ -1,0 +1,16 @@
+{
+  "schema": "v6_p0_episode_accounting_v1",
+  "plan_digest": "e7e09f8d853dc69f983c33e61e0186205fdfee21fc650edaafdcc1b7c1c5dee9",
+  "episode_digest": "208658ccaef1d0160694b45dd72de1e53ff63d97f5199c029f80a65aebb57092",
+  "roots": 96,
+  "policy_rows": 192,
+  "updates_per_arm": 200,
+  "examples_per_update": 24,
+  "total_examples_per_arm": 4800,
+  "root_policy_exposure_min": 25,
+  "root_policy_exposure_max": 25,
+  "examples_per_cell_per_arm": 1200,
+  "examples_per_policy_per_arm": 2400,
+  "same_episode_bags_across_arms": true,
+  "independent_formula_check": true
+}
