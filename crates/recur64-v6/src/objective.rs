@@ -615,7 +615,7 @@ pub fn learn<B: AutodiffBackend>(
         let m = load_initial::<B>(initial, &frozen.plan, device)?;
         let o = recur64_model::train::adamw::<B, Reader<B>>();
         qualify::save(&m, &o, &dir.join("update-000"))?;
-        let matrix = probe_eval::evaluate(
+        let mut matrix = probe_eval::evaluate(
             &m,
             base,
             data,
@@ -626,6 +626,7 @@ pub fn learn<B: AutodiffBackend>(
             0,
             device,
         )?;
+        bind_provenance(&mut matrix, &frozen.plan, &dir.join("update-000/model.mpk"))?;
         std::fs::write(matrix_at(0), serde_json::to_vec(&matrix)?)?;
         (m, o, 0, vec![], 0.)
     };
@@ -708,7 +709,7 @@ pub fn learn<B: AutodiffBackend>(
     if update < 200 {
         return Ok(json!({"bounded_stop": true, "update": update, "resume_required": true}));
     }
-    let last = probe_eval::evaluate(
+    let mut last = probe_eval::evaluate(
         &m,
         base,
         data,
@@ -719,6 +720,7 @@ pub fn learn<B: AutodiffBackend>(
         200,
         device,
     )?;
+    bind_provenance(&mut last, &frozen.plan, &dir.join("update-200/model.mpk"))?;
     std::fs::write(matrix_at(200), serde_json::to_vec(&last)?)?;
     let first: probe_eval::Matrix = serde_json::from_slice(&std::fs::read(matrix_at(0))?)?;
     let analysis = probe_eval::analyze(&first, &last)?;
@@ -758,4 +760,11 @@ pub fn learn<B: AutodiffBackend>(
                     "device_used_peak_sampled_mib": history.iter().filter_map(|h| h["device_used_mib"].as_u64()).max()},
         "history": history,
     }))
+}
+
+/// Bind an endpoint matrix to this launch plan and to the exact checkpoint it evaluated.
+fn bind_provenance(m: &mut probe_eval::Matrix, plan: &ProbePlan, model: &Path) -> Result<()> {
+    m.probe_plan_digest = plan.digest.clone();
+    m.model_sha256 = recur64_v5::stage::hash_file(model)?;
+    Ok(())
 }

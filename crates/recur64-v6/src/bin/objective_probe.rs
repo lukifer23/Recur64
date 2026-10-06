@@ -91,9 +91,19 @@ enum Cmd {
     /// No model: compares the two completed arms' endpoint matrices.
     Decide {
         #[arg(long)]
+        plan: PathBuf,
+        #[arg(long)]
+        plan_binding: PathBuf,
+        #[arg(long)]
+        contract: PathBuf,
+        #[arg(long)]
         control_dir: PathBuf,
         #[arg(long)]
+        control_result: PathBuf,
+        #[arg(long)]
         treatment_dir: PathBuf,
+        #[arg(long)]
+        treatment_result: PathBuf,
     },
 }
 
@@ -128,23 +138,100 @@ fn hash(p: &Path) -> anyhow::Result<String> {
     recur64_v5::stage::hash_file(p)
 }
 
-fn decide(control: &Path, treatment: &Path) -> anyhow::Result<Value> {
+struct ArmFiles<'a> {
+    name: &'static str,
+    dir: &'a Path,
+    result: &'a Path,
+}
+/// File-level provenance for one completed arm: every hash in the arm receipt must
+/// equal the actual file, the checkpoint metadata must name this launch plan, and the
+/// endpoint matrices must name the evaluated checkpoints.
+fn verify_arm(
+    a: &ArmFiles,
+    plan: &objective::ProbePlan,
+    m0: &probe_eval::Matrix,
+    m200: &probe_eval::Matrix,
+) -> anyhow::Result<()> {
+    let r: Value = serde_json::from_slice(&std::fs::read(a.result)?)?;
+    let meta: Value = serde_json::from_slice(&std::fs::read(a.dir.join("latest.json"))?)?;
+    let h = |p: &str| hash(&a.dir.join(p));
+    let hist = r["history"].as_array().map_or(0, |v| v.len());
+    anyhow::ensure!(
+        r["schema"] == "v6_objective_probe_arm_result_v2"
+            && r["source_sha"] == recur64_v6::SOURCE
+            && r["objective"] == objective::OBJECTIVE
+            && r["arm"] == a.name
+            && r["plan_digest"] == plan.digest
+            && r["update"] == 200
+            && r["baseline_exact"] == true
+            && r["weights_reused"] == false
+            && hist == 200
+            && r["history"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|u| u["examples"] == 24)
+            && r["endpoint_000_sha256"] == h("endpoint-000.json")?
+            && r["endpoint_200_sha256"] == h("endpoint-200.json")?
+            && r["model_update0_sha256"] == h("update-000/model.mpk")?
+            && r["model_update200_sha256"] == h("update-200/model.mpk")?
+            && r["optimizer_update200_sha256"] == h("update-200/optimizer.mpk")?
+            && r["checkpoint_metadata_sha256"] == h("latest.json")?
+            && m0.model_sha256 == r["model_update0_sha256"]
+            && m200.model_sha256 == r["model_update200_sha256"]
+            && meta["source"] == recur64_v6::SOURCE
+            && meta["objective"] == objective::OBJECTIVE
+            && meta["arm"] == a.name
+            && meta["plan"] == plan.digest
+            && meta["update"] == 200
+            && meta["model_sha"] == r["model_update200_sha256"],
+        "{} arm receipt/checkpoint/endpoint provenance mismatch",
+        a.name
+    );
+    Ok(())
+}
+fn decide(
+    plan_path: &Path,
+    plan_binding: &Path,
+    contract: &Path,
+    control: ArmFiles,
+    treatment: ArmFiles,
+) -> anyhow::Result<Value> {
+    let plan: objective::ProbePlan = serde_json::from_slice(&std::fs::read(plan_path)?)?;
+    plan.validate()?;
+    let b: Value = serde_json::from_slice(&std::fs::read(plan_binding)?)?;
+    anyhow::ensure!(
+        b["schema"] == "v6_objective_probe_plan_binding_v2"
+            && b["source_sha"] == recur64_v6::SOURCE
+            && b["plan_raw_sha256"] == hash(plan_path)?
+            && b["plan_digest"] == plan.digest
+            && plan.contract_sha256 == hash(contract)?,
+        "launch plan binding/contract mismatch"
+    );
     let read = |d: &Path, u: usize| -> anyhow::Result<probe_eval::Matrix> {
         Ok(serde_json::from_slice(&std::fs::read(
             d.join(format!("endpoint-{u:03}.json")),
         )?)?)
     };
-    let (c0, c1, t0, t1) = (
-        read(control, 0)?,
-        read(control, 200)?,
-        read(treatment, 0)?,
-        read(treatment, 200)?,
+    let (c0, c1) = (read(control.dir, 0)?, read(control.dir, 200)?);
+    let (t0, t1) = (read(treatment.dir, 0)?, read(treatment.dir, 200)?);
+    verify_arm(&control, &plan, &c0, &c1)?;
+    verify_arm(&treatment, &plan, &t0, &t1)?;
+    anyhow::ensure!(
+        c0.model_sha256 == t0.model_sha256,
+        "control/treatment update-0 readers are not bit-identical"
     );
-    let mut v = probe_eval::decide(&[&c0, &c1], &[&t0, &t1])?;
+    let mut v = probe_eval::decide(&plan, &[&c0, &c1], &[&t0, &t1])?;
     v["source_sha"] = json!(recur64_v6::SOURCE);
+    v["launch_plan_digest"] = json!(plan.digest);
+    v["initial_equality"] = json!({
+        "control_update0_model_sha256": c0.model_sha256, "treatment_update0_model_sha256": t0.model_sha256,
+        "equal": true, "equals_canonical_initial_file": c0.model_sha256 == plan.initial_model_sha256,
+        "canonical_initial_model_sha256": plan.initial_model_sha256,
+    });
     v["endpoint_hashes"] = json!({
-        "control_000": hash(&control.join("endpoint-000.json"))?, "control_200": hash(&control.join("endpoint-200.json"))?,
-        "treatment_000": hash(&treatment.join("endpoint-000.json"))?, "treatment_200": hash(&treatment.join("endpoint-200.json"))?,
+        "control_000": hash(&control.dir.join("endpoint-000.json"))?, "control_200": hash(&control.dir.join("endpoint-200.json"))?,
+        "treatment_000": hash(&treatment.dir.join("endpoint-000.json"))?, "treatment_200": hash(&treatment.dir.join("endpoint-200.json"))?,
     });
     Ok(v)
 }
@@ -152,11 +239,30 @@ fn decide(control: &Path, treatment: &Path) -> anyhow::Result<Value> {
 fn execute<B: AutodiffBackend>(c: &Cli, backend: &str) -> anyhow::Result<Value> {
     let device = Default::default();
     if let Cmd::Decide {
+        plan,
+        plan_binding,
+        contract,
         control_dir,
+        control_result,
         treatment_dir,
+        treatment_result,
     } = &c.command
     {
-        return decide(control_dir, treatment_dir);
+        return decide(
+            plan,
+            plan_binding,
+            contract,
+            ArmFiles {
+                name: "control",
+                dir: control_dir,
+                result: control_result,
+            },
+            ArmFiles {
+                name: "treatment",
+                dir: treatment_dir,
+                result: treatment_result,
+            },
+        );
     }
     if let Cmd::Preregister {
         cpu_qualification,

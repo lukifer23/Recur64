@@ -68,6 +68,9 @@ pub struct Matrix {
     pub plan_digest: String,
     pub maps_digest: String,
     pub baseline_exact_all_null: bool,
+    pub objective: String,
+    pub probe_plan_digest: String,
+    pub model_sha256: String,
     pub rows: Vec<Row>,
 }
 
@@ -277,6 +280,9 @@ pub fn evaluate<B: AutodiffBackend>(
         plan_digest: plan.digest.clone(),
         maps_digest: maps_digest.into(),
         baseline_exact_all_null: exact,
+        objective: crate::objective::OBJECTIVE.into(),
+        probe_plan_digest: String::new(),
+        model_sha256: String::new(),
         rows,
     })
 }
@@ -610,8 +616,45 @@ pub fn analyze(initial: &Matrix, last: &Matrix) -> Result<Value> {
     }))
 }
 
+/// Refuse any endpoint that is not exactly this launch's: expected schema and
+/// scientific source, arm/update identity, frozen panel + donor-map bindings, and the
+/// complete objective-probe launch plan (which binds contract, initial reader and
+/// panel). The P0 plan digest alone is not accepted as launch identity.
+pub fn verify_endpoint(
+    m: &Matrix,
+    arm: &str,
+    update: usize,
+    plan: &crate::objective::ProbePlan,
+) -> Result<()> {
+    ensure!(
+        m.schema == "v6_objective_probe_endpoint_v2"
+            && m.source_sha == crate::SOURCE
+            && plan.source_sha == crate::SOURCE
+            && m.objective == crate::objective::OBJECTIVE
+            && m.arm == arm
+            && m.update == update
+            && m.plan_digest == plan.p0_plan_digest
+            && m.maps_digest == plan.maps_digest
+            && m.probe_plan_digest == plan.digest
+            && !m.model_sha256.is_empty()
+            && m.baseline_exact_all_null
+            && m.rows.len() == 96 * 2 * Condition::all().len(),
+        "endpoint provenance mismatch ({arm} update {update}): foreign source, launch, arm or panel"
+    );
+    Ok(())
+}
+
 /// Treatment versus fresh control, computed only after BOTH arms completed 0/200.
-pub fn decide(control: &[&Matrix; 2], treatment: &[&Matrix; 2]) -> Result<Value> {
+pub fn decide(
+    plan: &crate::objective::ProbePlan,
+    control: &[&Matrix; 2],
+    treatment: &[&Matrix; 2],
+) -> Result<Value> {
+    for (arm, pair) in [("control", control), ("treatment", treatment)] {
+        for (m, update) in pair.iter().zip([0, 200]) {
+            verify_endpoint(m, arm, update, plan)?;
+        }
+    }
     ensure!(
         control[0].plan_digest == treatment[0].plan_digest
             && control[0].maps_digest == treatment[0].maps_digest
@@ -748,13 +791,16 @@ mod tests {
             }
         }
         Matrix {
-            schema: String::new(),
-            source_sha: String::new(),
+            schema: "v6_objective_probe_endpoint_v2".into(),
+            source_sha: crate::SOURCE.into(),
             arm: arm.into(),
             update,
             plan_digest: "p".into(),
             maps_digest: "m".into(),
             baseline_exact_all_null: true,
+            objective: crate::objective::OBJECTIVE.into(),
+            probe_plan_digest: "probe".into(),
+            model_sha256: format!("model-{arm}-{update}"),
             rows,
         }
     }
@@ -812,6 +858,86 @@ mod tests {
             .is_err()
         );
     }
+    fn test_plan() -> crate::objective::ProbePlan {
+        crate::objective::ProbePlan {
+            schema: crate::objective::PLAN_SCHEMA.into(),
+            objective: crate::objective::OBJECTIVE.into(),
+            launch_plan: crate::objective::LAUNCH_PLAN.into(),
+            source_sha: crate::SOURCE.into(),
+            config_digest: String::new(),
+            train_digest: String::new(),
+            contract_sha256: String::new(),
+            p0_producer: String::new(),
+            p0_plan_digest: "p".into(),
+            p0_plan_raw_sha256: String::new(),
+            episode_digest: String::new(),
+            panel: vec![],
+            maps_digest: "m".into(),
+            map_summary: Value::Null,
+            seed: 6300,
+            updates: 200,
+            aux_weight: 0.5,
+            conditions: vec![],
+            initial_model_sha256: String::new(),
+            initial_parameter_digest: String::new(),
+            digest: "probe".into(),
+        }
+    }
+    #[test]
+    fn foreign_source_or_mismatched_launch_endpoints_are_refused() {
+        let plan = test_plan();
+        let good = matrix("treatment", 200, |id, _| (id >= 48, 1.));
+        verify_endpoint(&good, "treatment", 200, &plan).unwrap();
+        type Mutation = (&'static str, fn(&mut Matrix));
+        let mutations: [Mutation; 10] = [
+            ("foreign source", |m| m.source_sha = "f".repeat(40)),
+            ("wrong schema", |m| {
+                m.schema = "v6_objective_probe_endpoint_v1".into()
+            }),
+            ("other launch plan", |m| {
+                m.probe_plan_digest = "another-launch".into()
+            }),
+            ("only the P0 panel digest matches", |m| {
+                m.probe_plan_digest.clear()
+            }),
+            ("foreign panel", |m| m.plan_digest = "other-panel".into()),
+            ("foreign donor maps", |m| {
+                m.maps_digest = "other-maps".into()
+            }),
+            ("wrong objective", |m| {
+                m.objective = "v6_content_differential_aux_v1".into()
+            }),
+            ("no checkpoint binding", |m| m.model_sha256.clear()),
+            ("inexact baseline", |m| m.baseline_exact_all_null = false),
+            ("missing rows", |m| {
+                m.rows.pop();
+            }),
+        ];
+        for (name, f) in mutations {
+            let mut m = good.clone();
+            f(&mut m);
+            assert!(
+                verify_endpoint(&m, "treatment", 200, &plan).is_err(),
+                "{name}"
+            );
+        }
+        assert!(
+            verify_endpoint(&good, "control", 200, &plan).is_err(),
+            "arm identity"
+        );
+        assert!(
+            verify_endpoint(&good, "treatment", 0, &plan).is_err(),
+            "update identity"
+        );
+        // A foreign endpoint inside a pair blocks the whole decision.
+        let (ci, ti) = (
+            matrix("control", 0, |id, _| (id >= 48, 1.)),
+            matrix("treatment", 0, |id, _| (id >= 48, 1.)),
+        );
+        let mut foreign = matrix("control", 200, |id, _| (id >= 48, 1.));
+        foreign.source_sha = "f".repeat(40);
+        assert!(decide(&plan, &[&ci, &foreign], &[&ti, &good]).is_err());
+    }
     #[test]
     fn decision_classes_and_comparative_gates() {
         let initial = |arm: &str| matrix(arm, 0, |id, _| (id >= 48, 1.));
@@ -833,12 +959,13 @@ mod tests {
         let weak = matrix("control", 200, |id, _| (!(4..48).contains(&id), 0.9));
         let (ci, ti) = (initial("control"), initial("treatment"));
         let t = passing("treatment", 0.5);
-        let d = decide(&[&ci, &weak], &[&ti, &t]).unwrap();
+        let d = decide(&test_plan(), &[&ci, &weak], &[&ti, &t]).unwrap();
         assert_eq!(d["outcome"], "OBJECTIVE_SUPPORTED_TRAIN_ONLY");
         let c2 = passing("control", 0.5);
-        let d = decide(&[&ci, &c2], &[&ti, &t]).unwrap();
+        let d = decide(&test_plan(), &[&ci, &c2], &[&ti, &t]).unwrap();
         assert_eq!(d["outcome"], "TREATMENT_PASSES_NO_COMPARATIVE_ADVANTAGE");
         let d = decide(
+            &test_plan(),
             &[&ci, &weak],
             &[&ti, &matrix("treatment", 200, |id, _| (id >= 48, 1.))],
         )
