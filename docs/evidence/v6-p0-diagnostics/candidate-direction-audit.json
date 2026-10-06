@@ -1,0 +1,100 @@
+{
+  "principal": {
+    "queried_rank_groups": [
+      {
+        "policy": 0,
+        "acquired_rank_group": "top_two",
+        "candidates": 192,
+        "minimum_mate_correct": 91,
+        "mean_factual": 0.1707512813639672,
+        "mean_null": -0.0010785179135079186,
+        "mean_raw_delta": 0.17182979744393378,
+        "negative_fraction": 0.4427083333333333
+      },
+      {
+        "policy": 1,
+        "acquired_rank_group": "top_two",
+        "candidates": 192,
+        "minimum_mate_correct": 91,
+        "mean_factual": 0.16958826210854264,
+        "mean_null": 0.9953613909698712,
+        "mean_raw_delta": -0.8257731282307456,
+        "negative_fraction": 0.765625
+      },
+      {
+        "policy": 1,
+        "acquired_rank_group": "rank_three_plus",
+        "candidates": 192,
+        "minimum_mate_correct": 0,
+        "mean_factual": 8.085406332102139,
+        "mean_null": 18.435610822363135,
+        "mean_raw_delta": -10.350204489814738,
+        "negative_fraction": 0.9635416666666666
+      }
+    ],
+    "board_flags_zero_anchor_rms_min": 1.6304148287566156,
+    "board_flags_zero_anchor_rms_max": 1.6304148287566156,
+    "same_encoded_input_explanation": "every valid encoder input has observation0 and flags0; learned position embeddings/biases remain. RMS is identical; full-vector equality was not separately serialized.",
+    "null_candidate_scores_exact_against_real": {
+      "board_zero": true,
+      "board_flags_zero": true,
+      "flags_zero": true,
+      "shuffle_original": true,
+      "shuffle_e102": true,
+      "shuffle_e202": true,
+      "shuffle_e302": true,
+      "carrier_flags_zero": true,
+      "successor_frames_zero": true,
+      "root_history_frames_zero": true
+    }
+  },
+  "one-pass": {
+    "queried_rank_groups": [
+      {
+        "policy": 0,
+        "acquired_rank_group": "top_two",
+        "candidates": 192,
+        "minimum_mate_correct": 91,
+        "mean_factual": -1.1636044167292614,
+        "mean_null": -1.398677456745645,
+        "mean_raw_delta": 0.2350730411708355,
+        "negative_fraction": 0.2708333333333333
+      },
+      {
+        "policy": 1,
+        "acquired_rank_group": "top_two",
+        "candidates": 192,
+        "minimum_mate_correct": 91,
+        "mean_factual": -1.1636519553139806,
+        "mean_null": -0.8164669272955507,
+        "mean_raw_delta": -0.34718502607817453,
+        "negative_fraction": 0.5416666666666666
+      },
+      {
+        "policy": 1,
+        "acquired_rank_group": "rank_three_plus",
+        "candidates": 192,
+        "minimum_mate_correct": 0,
+        "mean_factual": -0.45352102659914334,
+        "mean_null": 6.574414793906423,
+        "mean_raw_delta": -7.027935842052102,
+        "negative_fraction": 0.9479166666666666
+      }
+    ],
+    "board_flags_zero_anchor_rms_min": 1.7377007570649299,
+    "board_flags_zero_anchor_rms_max": 1.7377007570649299,
+    "same_encoded_input_explanation": "every valid encoder input has observation0 and flags0; learned position embeddings/biases remain. RMS is identical; full-vector equality was not separately serialized.",
+    "null_candidate_scores_exact_against_real": {
+      "board_zero": true,
+      "board_flags_zero": true,
+      "flags_zero": true,
+      "shuffle_original": true,
+      "shuffle_e102": true,
+      "shuffle_e202": true,
+      "shuffle_e302": true,
+      "carrier_flags_zero": true,
+      "successor_frames_zero": true,
+      "root_history_frames_zero": true
+    }
+  }
+}

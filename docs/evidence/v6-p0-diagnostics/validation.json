@@ -1,0 +1,86 @@
+{
+  "schema": "v6_frozen_diagnostic_validation_v1",
+  "diagnostic_source": "d34c9484b70800c3cfef86618172a5aecc42653d",
+  "production_files_changed": false,
+  "changed_scientific_files": [
+    "crates/recur64-v6/examples/frozen_diagnostics.rs",
+    "crates/recur64-v6/examples/support/forward_trace.rs"
+  ],
+  "affected_fmt_native_exit": 0,
+  "scoped_cuda_clippy_D_warnings_native_exit": 0,
+  "release_example_tests": {
+    "passed": 3,
+    "native_exit": 0
+  },
+  "serial_pinned_cuda_release_build_native_exit": 0,
+  "cuda_original_endpoint_reproductions_exact": 4,
+  "native_invocations": [
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 24.1278178,
+      "arm": "principal",
+      "mode": "reproduce",
+      "update": 0
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 18.664668499999998,
+      "arm": "principal",
+      "mode": "reproduce",
+      "update": 200
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 16.1195759,
+      "arm": "one-pass",
+      "mode": "reproduce",
+      "update": 0
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 16.5180136,
+      "arm": "one-pass",
+      "mode": "reproduce",
+      "update": 200
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 52.3213751,
+      "arm": "principal",
+      "mode": "diagnose",
+      "update": 0
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 52.4718636,
+      "arm": "principal",
+      "mode": "diagnose",
+      "update": 200
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 38.9405876,
+      "arm": "one-pass",
+      "mode": "diagnose",
+      "update": 0
+    },
+    {
+      "native_exit": 0,
+      "elapsed_seconds": 39.7467883,
+      "arm": "one-pass",
+      "mode": "diagnose",
+      "update": 200
+    }
+  ],
+  "measured_root_policy_condition_rows": 11520,
+  "production_forward_parity_batches": 4992,
+  "optimizer_steps": 0,
+  "full_workspace_and_gradient_qualification": "historical P0 receipts inspected; not rerun for diagnostic-only source",
+  "raw_logs": {
+    "diagnostic-fmt-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diagnostic-clippy-final2.log": "a76d2cba5554018ce1646ccca3bde22e67b480fc5d81bcb14bbcf0293b070038",
+    "diagnostic-tests-final.log": "44e4d3b7a984412a45f0c2706eb981e49f15753c731dc1d7d791f5fbc0f0f3f5",
+    "diagnostic-build-final.log": "cc0ae34531a2aa51206de0b5e0e4532a8286e1139880c4ec7fabd4741115ba73"
+  },
+  "preserved_preexecution_clippy_failure": "needless_question_mark native101 corrected without weakening lint"
+}

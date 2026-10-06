@@ -1,0 +1,2760 @@
+{
+  "schema": "v6_frozen_root_control_transitions_v1",
+  "counting": "correct both policies; harm either; masks preserve individual roots",
+  "roots": [
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.............................R....Q.........K....k..............",
+      "cell": "KQRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            9505,
+            9505
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            9505,
+            9505
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            9505,
+            9505
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            9505,
+            9505
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9405
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9545,
+            9545
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-............................R......................k.....K.....Q",
+      "cell": "KQRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20340,
+            20340
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20340,
+            20340
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20340,
+            20340
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20340,
+            20340
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            20395,
+            20395
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            20395,
+            20340
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-.......................R......Q....K....k.......................",
+      "cell": "KQRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7445,
+            7445
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7445,
+            7445
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7445,
+            7445
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7445,
+            7445
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            9725,
+            9725
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            11410,
+            9725
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m2-......................R................K.k................Q.....",
+      "cell": "KQRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7130,
+            7130
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7130,
+            7130
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7130,
+            7130
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            7130,
+            7130
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7125,
+            7125
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            7130,
+            7125
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-............................................k.....R........K.Q..",
+      "cell": "KQRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            16210,
+            16210
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            16210,
+            16210
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            16210,
+            16210
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            16210,
+            16210
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19690,
+            19690
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            16210,
+            16210
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-.......................Q.R.....................K....k...........",
+      "cell": "KQRvK M3",
+      "original_helpful": false,
+      "original_harmful": true,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            8205,
+            8205
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            8205,
+            8205
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            8205,
+            8205
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            8205,
+            8205
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            7455
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            8205,
+            8245
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-......................K..k.........Q........R...................",
+      "cell": "KQRvK M3",
+      "original_helpful": false,
+      "original_harmful": true,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            14290,
+            14290
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            14290,
+            14290
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            14290,
+            14290
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            14290,
+            14290
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            14285,
+            14285
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            14285,
+            14285
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            14285,
+            14290
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            14285,
+            14285
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            14285,
+            14285
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            14285,
+            14285
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-...............K.....k..........................Q.............R.",
+      "cell": "KQRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            15625,
+            15625
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            15625,
+            15625
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            15625,
+            15625
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            15625,
+            15625
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15495,
+            15495
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15495,
+            15625
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KQRvK-m3-..............k.......................K.........R.............Q.",
+      "cell": "KQRvK M3",
+      "original_helpful": false,
+      "original_harmful": true,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19925,
+            19925
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19925,
+            19925
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19925,
+            19925
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19925,
+            19925
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            19925,
+            15625
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            19925,
+            19925
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-..............................R..........K...........R.........k",
+      "cell": "KRRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            17265,
+            17265
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            17265,
+            17265
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            17265,
+            17265
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            17265,
+            17265
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            16985,
+            16985
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            17265,
+            16985
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-......................K....................R...........kR.......",
+      "cell": "KRRvK M2",
+      "original_helpful": false,
+      "original_harmful": true,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18160,
+            18160
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18160,
+            18160
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18160,
+            18160
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18160,
+            18160
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18160,
+            7190
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18160,
+            18160
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m2-...............R..........................R......K............k.",
+      "cell": "KRRvK M2",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            13670,
+            13670
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            13670,
+            13690
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            13670,
+            13690
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            13670,
+            13670
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            13670,
+            13670
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13690,
+            13690
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            13670,
+            13670
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13690,
+            13690
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            13670,
+            13690
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            13670,
+            13690
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            13670,
+            13690
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13690,
+            13690
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13690,
+            13690
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13690,
+            13690
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            13670,
+            13670
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................................k....R..........K..........R",
+      "cell": "KRRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20315,
+            20315
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20315,
+            20315
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20315,
+            20315
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20315,
+            20315
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            13245,
+            13245
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            20315,
+            20315
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............................R...K.k.....................R......",
+      "cell": "KRRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18530,
+            18530
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18530,
+            18530
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18530,
+            18530
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18530,
+            18530
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            18540,
+            18540
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            18540,
+            18530
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-......................K.......................k...R.......R.....",
+      "cell": "KRRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18870,
+            18870
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18870,
+            18870
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18870,
+            18870
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            18870,
+            18870
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            7190,
+            7190
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            18870,
+            7190
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-....................R...........R..........K..........k.........",
+      "cell": "KRRvK M3",
+      "original_helpful": true,
+      "original_harmful": false,
+      "correct_branch_support": [
+        0,
+        0
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            10430,
+            10430
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            10430,
+            10430
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            10430,
+            10430
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            10430,
+            10430
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            6510,
+            6510
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            false
+          ],
+          "selected_actions": [
+            10430,
+            10430
+          ]
+        }
+      }
+    },
+    {
+      "id": "V5_HP_TRAIN_V2-KRRvK-m3-.............k.............K....................R..............R",
+      "cell": "KRRvK M3",
+      "original_helpful": false,
+      "original_harmful": true,
+      "correct_branch_support": [
+        1,
+        1
+      ],
+      "controls": {
+        "all_null": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "board_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "board_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "carrier_flags_factual": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "carrier_flags_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "flags_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "owner_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "real": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "root_history_frames_zero": {
+          "correct_policies": [
+            true,
+            true
+          ],
+          "selected_actions": [
+            15400,
+            15400
+          ]
+        },
+        "shuffle_e102": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "shuffle_e202": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "shuffle_e302": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "shuffle_original": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "successor_frames_zero": {
+          "correct_policies": [
+            true,
+            false
+          ],
+          "selected_actions": [
+            15400,
+            20275
+          ]
+        },
+        "turn_blind": {
+          "correct_policies": [
+            false,
+            true
+          ],
+          "selected_actions": [
+            20235,
+            15400
+          ]
+        }
+      }
+    }
+  ]
+}

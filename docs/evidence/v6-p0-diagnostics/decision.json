@@ -1,0 +1,33 @@
+{
+  "schema": "v6_p0_failure_diagnostic_decision_v1",
+  "producer_source": "42f47b852451d59645dcc50120e4a426b034f493",
+  "diagnostic_source": "d34c9484b70800c3cfef86618172a5aecc42653d",
+  "original_classification": "BOTH_READERS_FAIL_LEARNABILITY",
+  "v5": "CLOSED / NO_SIGNAL",
+  "new_training_executed": false,
+  "recommendation": "OBJECTIVE_CONTENT_CONTRAST_EXPERIMENT_PENDING_OWNER_REVIEW",
+  "measured": [
+    "4 exact CUDA endpoint reproductions",
+    "11520 frozen root-policy-condition rows",
+    "board+flags removal preserves 11/12 principal and4/4 comparator helpful paired roots",
+    "principal successor-frame removal preserves all actions and12/12 helpful roots",
+    "broad additional192 acquired candidates:0 minimum-mate positives per reader",
+    "one paired corrected root per reader selected an unobserved action via suppression of observed alternatives",
+    "all frozen bytes/custody preserved"
+  ],
+  "inferred": [
+    "current correction uses a learned generic returned anchor plus root context/structure for most benefits",
+    "raw auxiliary correction targets admit root/structure shortcuts and acquisition-correlated negative prior",
+    "limited observed correct branches constrain the task, but do not alone explain content-erasure robustness"
+  ],
+  "limitations": [
+    "arbitrary0.1 carrier is distribution-mismatched and preserves no benefit; not any nonzero signal suffices",
+    "owner/turn removal is destructive; not causal proof alone",
+    "partial successor removal changes24 comparator actions and raises loss by0.04215; some content dependence exists without paired helpful-root necessity",
+    "23 roots lack observed correct branches and lower-B0-rank positives are absent",
+    "unequal readers and repeated TRAIN panel do not establish recurrence or held-out usefulness",
+    "terminal and legal-count-derived information are separate; unknown replies remain unknown"
+  ],
+  "next_experiment_executed": false,
+  "stop": "OWNER REVIEW; no implementation/fitting of proposed objective now"
+}

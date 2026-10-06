@@ -1,0 +1,13 @@
+{
+  "schema": "v6_frozen_diagnostic_environment_v1",
+  "cuda_path": "C:\\Users\\Caitl\\AppData\\Local\\Recur64\\cuda\\12.9.1",
+  "CUBLAS_WORKSPACE_CONFIG": null,
+  "CUDA_LAUNCH_BLOCKING": null,
+  "gpu": "NVIDIA GeForce RTX 2050, 616.92, 4096 MiB",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "precision": "fp32",
+  "microbatch": 2,
+  "toolkit_driver_framework_modified": false,
+  "full_training_qualification_rerun": false,
+  "scope": "forward-only frozen diagnostic; historical producer CPU/CUDA PASS inspected separately"
+}

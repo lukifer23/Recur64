@@ -1,5 +1,21 @@
 # Recur64
 
+## Current V6 diagnosis: root/structure correction dominates; owner review
+
+All four frozen P0 endpoints reproduced exactly on RTX2050 CUDA FP32. Removing
+returned boards and flags preserves 11/12 principal and 4/4 one-pass helpful
+paired roots. Broad acquisition mainly adds negative corrections to candidates
+outside B0's top two; it adds no minimum-mate-positive branch on this panel.
+These are repeatedly exposed TRAIN diagnostics, not held-out improvement or
+proof of recurrent superiority. Original P0 failure and V5 NO_SIGNAL stand.
+
+[Diagnostic findings and limitations](docs/V6_P0_FAILURE_DIAGNOSIS.md) and
+[one prospective objective/content-contrast probe](docs/V6_P0_NEXT_OBJECTIVE_EXPERIMENT.md).
+The proposal is pending owner review; it has not been implemented or fitted.
+The diagnostic pass took no optimizer steps and invoked no DEV/CONFIRM model.
+CONFIRM remains sealed and unevaluated. Current diagnostic source `d34c948` is
+separate from frozen P0 producer `42f47b8` and this documentation publication.
+
 ## Current V6 branch: P0 complete; both readers failed learnability
 
 Actual CPU/RTX2050 qualification passed. Both fixed 200-update competent-base
