@@ -1,0 +1,10 @@
+{
+  "schema": "v6_p0_v5_preservation_v1",
+  "checked_files": 614,
+  "checked_bytes": 12097788866,
+  "mismatches": [],
+  "pass": true,
+  "seconds": 13.937999999994645,
+  "independently_repeated": true,
+  "model_invocations": 0
+}

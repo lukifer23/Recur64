@@ -1,6 +1,14 @@
 # Recur64
 
-## Current HP research branch: V5 closed, V6 design proposed
+## Current V6 branch: real P0 implementation, qualification pending
+
+This branch `experiment/hp-v6-branch-backup` implements the revised full-information
+branch reader and one-pass comparator. Its authorized endpoint is qualification
+and two disposable competent-base TRAIN panels, not held-out training or DEV
+inference. [Corrected frozen contract](docs/V6_P0_REVISED_CONTRACT.md) supersedes
+the historical implementation ticket. V5 remains closed as NO_SIGNAL.
+
+## Historical closure publication: V5 closed, V6 design proposed
 
 The frozen V5 pilot is **NO_SIGNAL**: all reader conditions left DEV actions
 unchanged. Its model producer (`3db24a9`), evaluator (`7fb7461`) and reviewed result
@@ -11,7 +19,8 @@ measures sparse error-branch information and ineffective corrections over traine
 Read [closure](docs/V5_CLOSURE.md), [diagnosis](docs/V6_DIAGNOSTICS.md),
 [prospective V6 design](docs/V6_EXPERIMENT_PROPOSAL.md), and
 [next implementation ticket](docs/V6_IMPLEMENTATION_PROMPT.md).
-V6 is not implemented or trained. CONFIRM remains sealed/unevaluated.
+At that historical closure publication V6 was not implemented or trained.
+CONFIRM remains sealed/unevaluated.
 The older branch/Phase4/V5 handoffs below are historical context, not instructions
 for continuing the closed V5 run. Current operational entry point:
 [HP resume/status](docs/V5_RESUME.md).

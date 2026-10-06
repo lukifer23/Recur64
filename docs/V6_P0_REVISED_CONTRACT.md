@@ -1,4 +1,4 @@
-# Revised V6 P0 contract ? frozen before implementation execution
+# Revised V6 P0 contract - frozen before implementation execution
 
 Owner authorization supersedes the older proposed ticket. Base closure publication:
 1b397f465a463d28e46d1b0134afc1b861f428be; V5 remains closed NO_SIGNAL.
@@ -29,17 +29,17 @@ for attacker, negative-sign for defender, temperature1. Unknown logit includes
 log(max(1,total unqueried replies in that turn group)); empty groups receive one
 unknown token. Virtual unqueried root branches receive unknown summaries, no x.
 I_a = owner_a + MLP([attacker_pool,defender_pool,owner_a,s_root]),
-MLP1024?768?256 GELU. This common nonlinear initialization, encoder and head are
+MLP1024->768->256 GELU. This common nonlinear initialization, encoder and head are
 identical in both arms. Deep depth-five payload has a direct path to I_a and R1.
 Cost: two full-branch Q8 attention reductions and one MLP per legal candidate;
 report separately from encoder and repeated backup, no hidden free initialization.
 
-One-pass: head(I_a), with head256?256?1 GELU, final linear deliberately NO BIAS.
+One-pass: head(I_a), with head256->256->1 GELU, final linear deliberately NO BIAS.
 Principal: initialize every node with n_v + I_owner, and virtual candidate with I_a.
 For each simultaneous shared iteration r, locally pool ONLY observed children
 plus a same-turn unknown token weighted by unqueried count, using the same learned
-signed score inductive bias. Update h?h+0.1?MLP([h,child_pool,I_owner,s]);
-MLP1024?768?256 GELU shared across nodes/candidates and iterations. Terminal nodes
+signed score inductive bias. Update h <- h + 0.1 * MLP([h,child_pool,I_owner,s]);
+MLP1024->768->256 GELU shared across nodes/candidates and iterations. Terminal nodes
 freeze according to PAYLOAD terminal flag. Read candidate virtual states at R1/R4.
 No other-branch evidence/state communication before final candidate centering.
 R now means refinement of full-information initialization, not information access.
@@ -47,8 +47,8 @@ Internal scores are latent compatibility scores, NOT win probabilities or proofs
 Conservative WIN/NOT_WIN/UNKNOWN diagnostic stays outside deployed model inputs.
 
 Factual and null execute identical weights/topology. Null zeros returned anchors
-AND payload terminal flags; structural counts/path remain matched. Raw ?=headF?headN,
-logits=B0+??mean_legal(?). All-null factual and null are exact identical ? exact B0.
+AND payload terminal flags; structural counts/path remain matched. Raw delta=headF-headN,
+logits=B0+delta-mean_legal(delta). All-null factual and null are exact identical, hence exact B0.
 Terminal/check/draw/rule status flags and board observations are returned PAYLOAD;
 no second terminal Boolean in structure. Rule-derived legal/unqueried counts and
 acquisition topology remain STRUCTURE, so shuffle does not claim removal of all
@@ -58,23 +58,23 @@ structural inductive-bias dependence, never interpret all-null as structural ben
 
 ## Eligible supervision
 
-Policy correct-set loss covers every legal action. Eligible branches contain ?1
+Policy correct-set loss covers every legal action. Eligible branches contain >=1
 acquired returned payload; use root minimum-mate correct-set membership targets.
-For each root P=eligible?correct and N=eligible?correct. BCE(?,1) averaged over P;
-BCE(?,0) averaged over N; average available class means, zero if neither exists.
-Composite=policy loss+0.5?mean_executed_iteration(eligible BCE). No invented
+For each root P=eligible intersect correct and N=eligible minus correct. BCE(delta,1) averaged over P;
+BCE(delta,0) averaged over N; average available class means, zero if neither exists.
+Composite=policy loss+0.5 * mean_executed_iteration(eligible BCE). No invented
 positives, no labels in acquisition. Report P/N counts and roots with no acquired
-correct branch separately. Unqueried branches have identical F/N and exact ?=0.
+correct branch separately. Unqueried branches have identical F/N and exact delta=0.
 
 ## Frozen Q8 acquisition
 
 Seed0x7A60_E001. Exploit policy selects up to two B0-ranked legal root actions.
 Broad policy selects up to two B0-ranked plus up to two remaining legal actions
-by SHA256(contract+NUL+seedLE+rootID+ActionIdLE), tie ActionId. Rank B0 ties by
+by SHA256(contract+NUL+seedLE+authoritativeRootFEN+ActionIdLE), tie ActionId. Rank B0 ties by
 ActionId; finite logits required. Small action sets take available unique actions.
 Query selected roots in ranked-then-hash order; round-robin their branches.
 In each branch choose shallowest observed node with unqueried legal action,
-then lexicographic native path; actions stable hash(contract,seed,rootID,path,action).
+then lexicographic native path; actions stable hash(contract,seed,authoritativeRootFEN,path,action).
 Skip exhausted/terminal nodes; never inspect labels/reader outputs. If all initial
 branches exhaust, add next remaining root action by stable hash (including exploit
 fallback); stop Q8 or complete depth16 frontier exhaustion. All state/history/action
@@ -85,7 +85,7 @@ and B0 wrong/right; correct branch presence only offline reporting, no policy tu
 
 ## Qualification and paired disposable experiments
 
-Each arm total including immutable root?8M, device-wide peak?3.2GiB. FP32 MB2.
+Each arm total including immutable root <=8M, device-wide peak <=3.2GiB. FP32 MB2.
 Not compute matched. Future four-layer untied control remains a SPECIFICATION,
 not a scaffold: same full summary/interface, independent local layers and matched
 receptive field; measured parameter/FLOP/latency accounting before future science.
@@ -101,19 +101,19 @@ Formatting/scopedClippy/CLI boundaries/focused+full release tests/serialCUDA bui
 Frozen96 panel: KQR/KRR M2/M3,12 B0 wrong+12 right/cell; hash contract
 v6_competent_base_drill_select_v1 seed0x7A60_D101, B0 strata once, no substitution.
 Freeze exact IDs/strata/graphs/episode bags before BOTH invocations. Seed6300,
-200updates, batch24, physical2, accumulation12, peak1e?3,warmup20, fixed existing
+200updates, batch24, physical2, accumulation12, peak1e-3,warmup20, fixed existing
 warmup/cosine and AdamW contracts. Fresh disposable optimizer per arm, shared-shape
 initial tensors identical. Alternate policies by microbatch; same deterministic
-root bags and six exposures per each policy per update. ?45min process chunks,
-validated resume, ?2h fit per arm. No DEV, no extra steps or performance retry.
+root bags and 12 examples per policy per update. <=45min process chunks,
+validated resume, <=2h fit per arm. No DEV, no extra steps or performance retry.
 
 Endpoints0/200 both arms, complete BOTH before comparing performance; integrity
 failure stops remaining execution. Count ROOTS, not policy rows: corrected root
 must be correct under BOTH policies (from B0 wrong); harmed root is wrong under
-EITHER policy (from B0 right). Require?12/48 corrected and?2/48 harmed. Also
-require finite/exact B0/null,?20% mean policy loss reduction unless start<0.05,
-shuffle?real loss?0.05 after averaging policies within each root then roots,
-and?6 real-corrected roots losing correctness under shuffle in BOTH policies.
+EITHER policy (from B0 right). Require >=12/48 corrected and <=2/48 harmed. Also
+require finite/exact B0/null,>=20% mean policy loss reduction unless start<0.05,
+shuffle-real loss >=0.05 after averaging policies within each root then roots,
+and >=6 real-corrected roots losing correctness under shuffle in BOTH policies.
 Report each policy's raw counts and paired counts. Shuffle same cell/turn,
 exact depth else minimum-distance same-turn, seed0x7A60_E002 stable donor keys;
 no self mapping, no labels in donor choice, unresolved donor STOP. Complete
@@ -128,3 +128,31 @@ Both fail: stop, separate information/learning/engineering limits. No outcome
 licenses800updates/6301..6303/DEV/CONFIRM/controller/selfplay or V5 rescue.
 V5 primary750 vs pooled4500 discrepancy and retrospective report remain unchanged;
 future primary predicate is KQRvK M3 n750 paired-policy position averaging.
+
+## Pre-execution numeric/import clarification
+
+Stable BCE uses detached max-shift logsumexp with an analytic gradient reference
+at zero; the coefficient and objective are unchanged. The exact historical B0
+forward fingerprint is a CUDA identity. CUDA import requires it exactly; CPU
+qualification imports the same exact producer/checkpoint/parameter bytes and
+checks same-CPU before/after outputs, not an invented bitwise CPU/CUDA equality.
+This is no CPU fallback: actual RTX2050 qualification remains separately mandatory.
+
+Exact paired episode formula (frozen before fitting): entries are cell order, then
+12 wrong followed by12 right. Microbatch k in 0..11 at update u in 0..199 uses cell=k%4,
+local=(3u+floor(k/4))%12, indices24cell+local and24cell+12+local,
+policy=(k+u+floor(u/4))%2. Thus each update has3 wrong+3 right/cell,12 examples
+per policy; every selected root has25 exposures per policy after200 updates.
+Both arms consume exactly this episode list. This is not a loss-selected curriculum.
+
+The predecessor loader first validates COMPLETE Stage A files. The V6 adapter
+then transfers ONLY its root record to an independently owned exact-equation
+root tower, verifies all FP32 parameter bits and same-backend fingerprint, and
+discards the unused legacy reader tensors. Active/root parameter accounting is
+therefore real residency, not a budget discount for unused allocated modules.
+V5 source remains byte-for-byte unchanged; root math is copied, never redesigned.
+
+Pre-execution label boundary: acquisition hashes authoritative GameState::to_fen(),
+not dataset position IDs (which encode family/depth labels). IDs remain artifact
+provenance only. Renaming label annotations cannot change acquired nodes. This
+clarification is frozen before any coverage, qualification or fitting measurements.

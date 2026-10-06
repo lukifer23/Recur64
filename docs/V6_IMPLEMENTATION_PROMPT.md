@@ -1,3 +1,8 @@
+> Current V6 P0 authorization supersedes this historical proposal. Use
+> [V6_P0_REVISED_CONTRACT.md](V6_P0_REVISED_CONTRACT.md): eligible-only auxiliary,
+> full-information initialization, two fixed disposable arms, and no DEV science.
+> The text below is preserved history, not the active implementation contract.
+
 # Next implementation-agent prompt — V6 P0 only
 
 This is a complete proposed ticket for a future owner invocation. It is **not

@@ -8,6 +8,7 @@ members = [
     "crates/recur64-runtime",
     "crates/recur64-v4",
     "crates/recur64-v5",
+    "crates/recur64-v6",
     "crates/recur64-eval",
     "crates/recur64-cli",
 ]
