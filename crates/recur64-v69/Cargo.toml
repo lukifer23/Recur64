@@ -1,0 +1,18 @@
+[package]
+name = "recur64-v69"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Recur64 V69 fresh-data pipeline: generator, exact mate teacher, partitions, custody"
+
+[[bin]]
+name = "v69-data"
+path = "src/bin/v69_data.rs"
+
+[dependencies]
+recur64-core = { path = "../recur64-core" }
+cozy-chess = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+sha2 = "=0.10.9"

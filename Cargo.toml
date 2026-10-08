@@ -7,6 +7,7 @@ members = [
     "crates/recur64-runtime",
     "crates/recur64-eval",
     "crates/recur64-cli",
+    "crates/recur64-v69",
 ]
 
 [workspace.package]
