@@ -2,12 +2,17 @@
 //!
 //! Software only: no scientific asset from any earlier experiment is read here.
 //! All inputs and outputs are confined to the V69 artifact namespace
-//! (see [`paths`]).
+//! (see [`custody`]) and, inside it, to role-restricted access ([`access`]).
 
+pub mod access;
+pub mod audit2;
 pub mod canon;
 pub mod custody;
 pub mod dataset;
+pub mod features;
 pub mod generate;
+pub mod metrics;
 pub mod oracle;
+pub mod provenance;
 pub mod reference;
 pub mod streams;

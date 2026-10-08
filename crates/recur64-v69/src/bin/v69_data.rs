@@ -586,6 +586,21 @@ fn main() -> Result<()> {
     match args.get(1).map(String::as_str) {
         Some("generate") => run_generate(&args[2..]),
         Some("audit") => run_audit(&args[2..]),
+        Some("audit2") => run_audit2(&args[2..]),
         _ => bail!("usage: v69-data <generate|audit> ..."),
     }
+}
+
+fn run_audit2(args: &[String]) -> Result<()> {
+    let custody = Custody::new(Path::new(&arg(args, "--artifacts").context("--artifacts")?))?;
+    let run = arg(args, "--run").context("--run")?;
+    let seed = arg(args, "--seed-file").context("--seed-file")?;
+    let threads: usize = arg(args, "--threads").map(|s| s.parse()).transpose()?.unwrap_or(10);
+    let access = recur64_v69::access::Access::new(&custody, recur64_v69::access::Role::DataAudit, Path::new(&run), Path::new(&seed))?;
+    let r = recur64_v69::audit2::run_and_write(&access, Path::new(&run), Path::new(&seed), 5_000_000, threads)?;
+    println!("{}", serde_json::to_string_pretty(&r)?);
+    if !r.audit_pass {
+        std::process::exit(4);
+    }
+    Ok(())
 }

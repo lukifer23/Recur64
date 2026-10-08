@@ -1,0 +1,179 @@
+//! Role-based access policy for the accepted gen-001 dataset.
+//!
+//! Custody (custody.rs) confines paths to the V69 namespace; this layer adds ROLE
+//! restrictions inside the dataset directory. Model-side code (learner, endpoint
+//! evaluator) must open dataset files only through `Access`, which refuses
+//! sealed/, pool/, and root-bearing metadata. Read-only file attributes are not
+//! treated as a barrier.
+
+use crate::custody::Custody;
+use anyhow::{Result, bail};
+use std::path::{Path, PathBuf};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    /// Reads the master seed (stream derivation) and data/fit.jsonl only.
+    Learner,
+    /// Reads data/fit.jsonl and data/val.jsonl only.
+    Evaluator,
+    /// Reads fit/val metadata, predictions and intervention maps.
+    MetricAggregator,
+    /// Data-only integrity audit: may read the whole dataset directory.
+    DataAudit,
+}
+
+#[derive(Clone)]
+pub struct Access {
+    custody: Custody,
+    role: Role,
+    /// Dataset directory (e.g. artifacts/v69/gen-001), already resolved.
+    dataset_dir: PathBuf,
+    /// Seed file path (resolved).
+    seed_file: PathBuf,
+}
+
+fn norm(p: &Path) -> String {
+    let s = p.to_string_lossy().into_owned();
+    s.strip_prefix(r"\\?\").map(str::to_owned).unwrap_or(s).replace('\\', "/").to_lowercase()
+}
+
+impl Access {
+    pub fn new(custody: &Custody, role: Role, dataset_rel: &Path, seed_rel: &Path) -> Result<Self> {
+        Ok(Self {
+            custody: custody.clone(),
+            role,
+            dataset_dir: custody.resolve(dataset_rel)?,
+            seed_file: custody.resolve(seed_rel)?,
+        })
+    }
+
+    pub fn role(&self) -> Role {
+        self.role
+    }
+
+    pub fn custody(&self) -> &Custody {
+        &self.custody
+    }
+
+    pub fn dataset_dir(&self) -> &Path {
+        &self.dataset_dir
+    }
+
+    /// Allowed dataset-relative reads for the role.
+    fn allowed_dataset_reads(role: Role) -> &'static [&'static str] {
+        match role {
+            Role::Learner => &["data/fit.jsonl", "MANIFEST.sha256.json"],
+            Role::Evaluator => &["data/fit.jsonl", "data/val.jsonl", "MANIFEST.sha256.json"],
+            Role::MetricAggregator => &["meta/fit.meta.jsonl", "meta/val.meta.jsonl", "MANIFEST.sha256.json"],
+            Role::DataAudit => &[],
+        }
+    }
+
+    /// Output prefixes (relative to the V69 artifact root) the role may write.
+    fn allowed_write_prefixes(role: Role) -> &'static [&'static str] {
+        match role {
+            Role::Learner => &["fits/", "qual/"],
+            Role::Evaluator => &["eval/", "fits/", "qual/", "intervention/"],
+            Role::MetricAggregator => &["report/"],
+            Role::DataAudit => &["audit/"],
+        }
+    }
+
+    /// Non-dataset V69 files readable by role (relative prefixes under the root).
+    fn allowed_other_read_prefixes(role: Role) -> &'static [&'static str] {
+        match role {
+            Role::Learner => &["fits/", "qual/", "init/", "spec/"],
+            Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/"],
+            Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/"],
+            Role::DataAudit => &["audit/", "spec/"],
+        }
+    }
+
+    fn rel_to_root(&self, resolved: &Path) -> Option<String> {
+        let root = norm(self.custody.root());
+        let p = norm(resolved);
+        p.strip_prefix(&format!("{root}/")).map(|s| s.to_string())
+    }
+
+    /// Validate (and resolve) a path for reading under this role.
+    pub fn check_read(&self, p: &Path) -> Result<PathBuf> {
+        let resolved = self.custody.resolve(p)?;
+        if norm(&resolved) == norm(&self.seed_file) {
+            // All roles derive streams from the seed (learner: train_order; evaluator:
+            // intervention; aggregator: bootstrap). The seed carries no data.
+            return Ok(resolved);
+        }
+        let ds = norm(&self.dataset_dir);
+        let rp = norm(&resolved);
+        if rp == ds || rp.starts_with(&format!("{ds}/")) {
+            if self.role == Role::DataAudit {
+                return Ok(resolved);
+            }
+            let rel = rp.strip_prefix(&format!("{ds}/")).unwrap_or("");
+            if Self::allowed_dataset_reads(self.role).iter().any(|a| a.to_lowercase() == rel) {
+                return Ok(resolved);
+            }
+            bail!("ACCESS VIOLATION: role {:?} may not read dataset file '{rel}'", self.role);
+        }
+        if let Some(rel) = self.rel_to_root(&resolved) {
+            if Self::allowed_other_read_prefixes(self.role).iter().any(|a| rel.starts_with(a)) {
+                return Ok(resolved);
+            }
+            bail!("ACCESS VIOLATION: role {:?} may not read '{rel}'", self.role);
+        }
+        bail!("ACCESS VIOLATION: {} outside namespace", resolved.display())
+    }
+
+    pub fn check_write(&self, p: &Path) -> Result<PathBuf> {
+        let resolved = self.custody.resolve(p)?;
+        let rp = norm(&resolved);
+        let ds = norm(&self.dataset_dir);
+        if rp == ds || rp.starts_with(&format!("{ds}/")) {
+            if self.role == Role::DataAudit {
+                let rel = rp.strip_prefix(&format!("{ds}/")).unwrap_or("");
+                if rel == "audit_receipt_v2.json" {
+                    return Ok(resolved);
+                }
+            }
+            bail!("ACCESS VIOLATION: role {:?} may not write inside the dataset directory", self.role);
+        }
+        if let Some(rel) = self.rel_to_root(&resolved) {
+            if Self::allowed_write_prefixes(self.role).iter().any(|a| rel.starts_with(a)) {
+                return Ok(resolved);
+            }
+        }
+        bail!("ACCESS VIOLATION: role {:?} may not write {}", self.role, resolved.display())
+    }
+
+    pub fn read_to_string(&self, p: &Path) -> Result<String> {
+        Ok(std::fs::read_to_string(self.check_read(p)?)?)
+    }
+
+    pub fn read(&self, p: &Path) -> Result<Vec<u8>> {
+        Ok(std::fs::read(self.check_read(p)?)?)
+    }
+
+    pub fn write(&self, p: &Path, bytes: &[u8]) -> Result<PathBuf> {
+        let r = self.check_write(p)?;
+        if let Some(parent) = r.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&r, bytes)?;
+        Ok(r)
+    }
+
+    /// Resolve a path for directory-style outputs (checkpoint recorders); write
+    /// permission is validated, the caller must not read dataset files with it.
+    pub fn output_path(&self, p: &Path) -> Result<PathBuf> {
+        let r = self.check_write(p)?;
+        if let Some(parent) = r.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        Ok(r)
+    }
+
+    /// Resolve a previously written output for reading (checkpoints etc.).
+    pub fn input_path(&self, p: &Path) -> Result<PathBuf> {
+        self.check_read(p)
+    }
+}
