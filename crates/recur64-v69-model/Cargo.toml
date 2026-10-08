@@ -17,3 +17,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 sha2 = "=0.10.9"
+
+[[bin]]
+name = "v69-d1-fit"
+path = "src/bin/v69_d1_fit.rs"

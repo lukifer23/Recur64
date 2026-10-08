@@ -58,24 +58,24 @@ pub struct QualCtx {
     pub scientific_init_hash: String,
 }
 
-fn device() -> CudaDevice {
+pub fn device() -> CudaDevice {
     CudaDevice::default()
 }
 
-fn host1<B: Backend>(t: Tensor<B, 1>) -> Vec<f32> {
+pub fn host1<B: Backend>(t: Tensor<B, 1>) -> Vec<f32> {
     t.into_data().to_vec::<f32>().unwrap()
 }
 
-fn l2(v: &[f32]) -> f64 {
+pub fn l2(v: &[f32]) -> f64 {
     v.iter().map(|x| (*x as f64).powi(2)).sum::<f64>().sqrt()
 }
 
-fn rel_l2(a: &[f32], b: &[f32]) -> f64 {
+pub fn rel_l2(a: &[f32], b: &[f32]) -> f64 {
     let d: f64 = a.iter().zip(b).map(|(x, y)| ((*x - *y) as f64).powi(2)).sum::<f64>().sqrt();
     d / l2(b).max(1e-30)
 }
 
-fn max_abs_diff(a: &[f32], b: &[f32]) -> f64 {
+pub fn max_abs_diff(a: &[f32], b: &[f32]) -> f64 {
     a.iter().zip(b).map(|(x, y)| ((*x - *y) as f64).abs()).fold(0.0, f64::max)
 }
 
@@ -86,7 +86,7 @@ pub struct Check {
 }
 
 impl Check {
-    fn new(name: &str, pass: bool, detail: Value) -> Self {
+    pub fn new(name: &str, pass: bool, detail: Value) -> Self {
         Self { name: name.to_string(), pass, detail }
     }
     pub fn to_json(&self) -> Value {

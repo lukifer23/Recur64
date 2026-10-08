@@ -20,6 +20,8 @@ pub enum Role {
     MetricAggregator,
     /// Data-only integrity audit: may read the whole dataset directory.
     DataAudit,
+    /// D1 panel selection (data side): fit rows + fit metadata, writes d1/ only.
+    D1Panel,
 }
 
 #[derive(Clone)]
@@ -66,26 +68,29 @@ impl Access {
             Role::Evaluator => &["data/fit.jsonl", "data/val.jsonl", "MANIFEST.sha256.json"],
             Role::MetricAggregator => &["meta/fit.meta.jsonl", "meta/val.meta.jsonl", "MANIFEST.sha256.json"],
             Role::DataAudit => &[],
+            Role::D1Panel => &["data/fit.jsonl", "meta/fit.meta.jsonl", "MANIFEST.sha256.json"],
         }
     }
 
     /// Output prefixes (relative to the V69 artifact root) the role may write.
     fn allowed_write_prefixes(role: Role) -> &'static [&'static str] {
         match role {
-            Role::Learner => &["fits/", "qual/", "init/", "spec/"],
-            Role::Evaluator => &["eval/", "intervention/"],
-            Role::MetricAggregator => &["report/"],
-            Role::DataAudit => &["audit/"],
+            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/"],
+            Role::Evaluator => &["eval/", "intervention/", "d1/"],
+            Role::MetricAggregator => &["report/", "d1/"],
+            Role::DataAudit => &["audit/", "d1/"],
+            Role::D1Panel => &["d1/"],
         }
     }
 
     /// Non-dataset V69 files readable by role (relative prefixes under the root).
     fn allowed_other_read_prefixes(role: Role) -> &'static [&'static str] {
         match role {
-            Role::Learner => &["fits/", "qual/", "init/", "spec/"],
-            Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/"],
-            Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/"],
-            Role::DataAudit => &["audit/", "spec/"],
+            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/"],
+            Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/", "d1/"],
+            Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/"],
+            Role::DataAudit => &["audit/", "spec/", "d1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
+            Role::D1Panel => &["d1/", "spec/", "init/"],
         }
     }
 

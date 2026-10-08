@@ -241,3 +241,15 @@ pub fn ref_loss(w: &RefWeights, feats: &[&Features], labels: &[bool], arm: Arm) 
     }
     tot / feats.len() as f64
 }
+
+/// f64 host reference of the D1 direct-board MLP (842 -> 128 -> 64 -> 1, GELU).
+pub fn mlp_ref_forward(w: &RefWeights, f: &Features) -> f64 {
+    let x: Vec<f64> = crate::d1::mlp_input_vec(f).into_iter().map(|v| v as f64).collect();
+    let h1: Vec<f64> = lin(w, "fc1", &x, 1, crate::d1::MLP_IN, 128).into_iter().map(gelu).collect();
+    let h2: Vec<f64> = lin(w, "fc2", &h1, 1, 128, 64).into_iter().map(gelu).collect();
+    lin(w, "fc3", &h2, 1, 64, 1)[0]
+}
+
+pub fn mlp_ref_loss(w: &RefWeights, feats: &[&Features], labels: &[bool]) -> f64 {
+    feats.iter().zip(labels).map(|(f, y)| bce64(mlp_ref_forward(w, f), *y)).sum::<f64>() / feats.len() as f64
+}

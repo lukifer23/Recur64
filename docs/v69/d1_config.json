@@ -1,0 +1,31 @@
+{
+  "experiment": "V69-D1 bounded diagnostic of learning failure",
+  "status": "retrospective diagnostic; gen-001 validation is already-exposed development evidence",
+  "dataset": "gen-001",
+  "precision": "CUDA backend: f32 storage and accumulation, matmul inputs possibly TF32 (autotune-selected); NOT strict FP32",
+  "neural": {
+    "updates": 2000,
+    "microbatch": 2,
+    "accumulation_steps": 8,
+    "optimizer": "AdamW",
+    "betas": [0.9, 0.999],
+    "epsilon": 1e-8,
+    "weight_decay": 1e-4,
+    "weight_decay_excludes": "bias and normalization parameters (rank-1 tensors)",
+    "peak_lr": 5e-4,
+    "final_lr": 5e-5,
+    "warmup_updates": 20,
+    "lr_rule": "u in 0..1999: u<20: peak*(u+1)/20; else final + 0.5*(peak-final)*(1+cos(pi*(u-20)/(1999-20)))",
+    "grad_clip_global_norm": 1.0,
+    "clip_epsilon": 1e-6,
+    "measure_updates": [0, 100, 500, 1000, 2000],
+    "memorization_criterion": "32/32 correct and BCE <= 0.05 at update 2000",
+    "d1a_init": "init/canonical_init.bin (E1 canonical UNTRAINED init, bit-identical)",
+    "d1m_init_stream": "d1_mlp_init",
+    "panel_size": 32,
+    "train_order_stream": "d1_train_order"
+  },
+  "mlp": {"input_width": 842, "layers": [842, 128, 64, 1], "activation": "GELU", "normalization": false, "dropout": 0.0},
+  "limits": {"device_mib_sampled": 3072, "host_gib": 8, "native_execution_hours_total": 2},
+  "baseline": {"features": 23, "steps": 1000, "lr": 0.05, "l2": 0.01, "threshold": "logit 0", "bootstrap": {"resamples": 2000, "unit": "connected group_id"}}
+}

@@ -8,6 +8,8 @@ pub mod access;
 pub mod audit2;
 pub mod canon;
 pub mod custody;
+pub mod d1;
+pub mod d1_metrics;
 pub mod dataset;
 pub mod features;
 pub mod generate;
