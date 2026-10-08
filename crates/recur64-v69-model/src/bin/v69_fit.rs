@@ -410,6 +410,57 @@ fn real_main() -> Result<()> {
         Some("qualify") => cmd_qualify(&args[2..]),
         Some("fit") => cmd_fit(&args[2..]),
         Some("eval") => cmd_eval(&args[2..]),
+        Some("diag") => cmd_diag(&args[2..]),
         _ => bail!("usage: v69-fit <init|make-intervention|qualify|fit|eval> ..."),
     }
+}
+
+// ---------------------------------------------------------------- diagnostic (post-hoc, inference only)
+
+/// Across-example signal in the head input: ||std over examples||_2 / ||mean over examples||_2
+/// of the mean-pooled encoder output and of the mean-pooled final workspace, plus the logit std.
+/// Compares the canonical initialization with a fitted endpoint. No training, no selection.
+fn cmd_diag(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::Evaluator)?;
+    let dev = cuda_device()?;
+    let val = load_split(&a, &env.run, "val")?;
+    let refs: Vec<&Features> = val.feats.iter().collect();
+    let stats = |model: &Model<G>, arm: Arm| -> serde_json::Value {
+        let (mut ep, mut wp, mut lg) = (Vec::new(), Vec::new(), Vec::new());
+        for chunk in refs.chunks(16) {
+            let b = Batch::<G>::from_features(chunk, &dev);
+            let (e, w) = model.pooled_features(&b, arm);
+            let z = model.forward(&b, arm).pop().unwrap();
+            ep.extend(e.into_data().to_vec::<f32>().unwrap().chunks(192).map(|c| c.to_vec()));
+            wp.extend(w.into_data().to_vec::<f32>().unwrap().chunks(192).map(|c| c.to_vec()));
+            lg.extend(z.into_data().to_vec::<f32>().unwrap());
+        }
+        let ratio = |rows: &Vec<Vec<f32>>| -> f64 {
+            let n = rows.len() as f64;
+            let (mut sm, mut ss) = (0f64, 0f64);
+            for j in 0..192 {
+                let m = rows.iter().map(|r| r[j] as f64).sum::<f64>() / n;
+                let v = rows.iter().map(|r| (r[j] as f64 - m).powi(2)).sum::<f64>() / n;
+                sm += m * m;
+                ss += v;
+            }
+            (ss / sm.max(1e-30)).sqrt()
+        };
+        let m = lg.iter().map(|x| *x as f64).sum::<f64>() / lg.len() as f64;
+        let sd = (lg.iter().map(|x| (*x as f64 - m).powi(2)).sum::<f64>() / lg.len() as f64).sqrt();
+        json!({"encoder_pool_std_over_mean_norm": ratio(&ep), "workspace_pool_std_over_mean_norm": ratio(&wp), "logit_mean": m, "logit_std_over_examples": sd})
+    };
+    let (_, vals, _) = read_init(&a)?;
+    let mut out = serde_json::Map::new();
+    for arm in Arm::ALL {
+        let init_model = load_values::<G, _>(Model::<G>::new(&dev), &vals, &dev);
+        let ck = a.input_path(Path::new(&format!("fits/{}/final/meta.json", arm.name())))?;
+        let fitted = load_model_for_eval::<G>(ck.parent().unwrap(), &dev)?;
+        out.insert(arm.name().to_string(), json!({"canonical_init": stats(&init_model, arm), "fitted_update_600": stats(&fitted, arm)}));
+    }
+    let text = serde_json::to_string_pretty(&serde_json::Value::Object(out))?;
+    a.write(Path::new("eval/diag_signal.json"), text.as_bytes())?;
+    println!("{text}");
+    Ok(())
 }

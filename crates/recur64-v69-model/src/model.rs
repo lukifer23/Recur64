@@ -338,6 +338,22 @@ impl<B: Backend> Model<B> {
         outs
     }
 
+    /// Diagnostic only: (mean-pooled encoder output [b,D], mean-pooled final workspace [b,D]).
+    pub fn pooled_features(&self, x: &Batch<B>, arm: Arm) -> (Tensor<B, 2>, Tensor<B, 2>) {
+        let (e, mut ws) = self.encode(x);
+        let b = x.n;
+        let e_pool = e.clone().mean_dim(1).reshape([b, D]);
+        let mut board = e.clone();
+        for op in arm.schedule() {
+            match op {
+                Op::Fast => board = self.fast.forward(board, ws.clone(), Some(e.clone())),
+                Op::Slow => ws = self.slow.forward(ws, board.clone(), None),
+                Op::Read => {}
+            }
+        }
+        (e_pool, ws.mean_dim(1).reshape([b, D]))
+    }
+
     pub fn forward(&self, x: &Batch<B>, arm: Arm) -> Vec<Tensor<B, 1>> {
         self.forward_ex(x, arm, &FwdOpts::default())
     }
