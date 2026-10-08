@@ -1,0 +1,1079 @@
+{
+  "all_qualified": true,
+  "arms": [
+    {
+      "accumulation_steps": 8,
+      "arm": "A",
+      "block_calls": 2,
+      "checks": [
+        {
+          "detail": {
+            "got": 13.593992233276367,
+            "logit_range": [
+              -88,
+              88
+            ],
+            "max_grad_abs_err": 3.91425290444114e-9,
+            "reference_f64": 13.59399189021511,
+            "reference_self_check_fd_err": 5.84228845856849e-12
+          },
+          "name": "stable_bce_value_and_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "expected_readouts": 1,
+            "host_f64_mean": 0.6972226691730931,
+            "model_loss": 0.6972226500511169,
+            "per_readout_bce": [
+              0.6972226691730931
+            ],
+            "readouts": 1
+          },
+          "name": "loss_is_mean_over_prescribed_readouts",
+          "pass": true
+        },
+        {
+          "detail": {
+            "accum_loss_mean": 0.6972226575016975,
+            "full_batch_loss": 0.6972226500511169,
+            "global_norm_accum": 5.901635139702422,
+            "global_norm_full": 5.901635186326836,
+            "missing": 0,
+            "tensors_compared": 107,
+            "tolerance": 0.02,
+            "worst_err_over_scale": 7.05324716464074e-7,
+            "worst_tensors": [
+              {
+                "abs_err": 9.38986893528404e-7,
+                "err_over_scale": 7.05324716464074e-7,
+                "tensor": "piece_emb.weight",
+                "tensor_norm": 1.331283126211318
+              },
+              {
+                "abs_err": 3.1097236176473224e-9,
+                "err_over_scale": 2.517321314817359e-7,
+                "tensor": "slow.cross.v.bias",
+                "tensor_norm": 0.012353304281590864
+              },
+              {
+                "abs_err": 1.064326684370199e-8,
+                "err_over_scale": 2.1313625262497066e-7,
+                "tensor": "enc0.ln2.gamma",
+                "tensor_norm": 0.04993644540813816
+              },
+              {
+                "abs_err": 1.6598213979558722e-8,
+                "err_over_scale": 2.105198556931595e-7,
+                "tensor": "enc0.ffn.l1.bias",
+                "tensor_norm": 0.07884393576514338
+              }
+            ]
+          },
+          "name": "gradient_accumulation_8x2_equals_batch16_mean",
+          "pass": true
+        },
+        {
+          "detail": {
+            "big": {
+              "clipped": true,
+              "factor": 0.0004236751885106059,
+              "post_norm": 1.0000000340177493,
+              "pre_norm": 2360.298706874339
+            },
+            "clip_ops_in_3_updates": 3,
+            "factor_fn_ok": true,
+            "microbatches_per_update": 8,
+            "small": {
+              "clipped": false,
+              "pre_norm": 0.005902282057041303,
+              "untouched": true
+            }
+          },
+          "name": "global_clipping_once_on_accumulated_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "exactly_zero": [],
+            "global_grad_norm": 5.901635186326836,
+            "min_grad_l2_by_component": {
+              "att_emb": 1.4213141337925281,
+              "budget_emb": 2.836178602192096,
+              "enc0": 6.655918981110696e-8,
+              "enc1": 2.3524971899910112e-8,
+              "enc_ln": 0.14185199865901188,
+              "fast": 1.224487225034869e-10,
+              "head1": 0.12367922631856945,
+              "head2": 0.12734457850456238,
+              "head_ln": 0.11989026533864719,
+              "piece_emb": 1.331283126211318,
+              "scalar_proj": 1.4213141337925281,
+              "slot_emb": 0.04400019752726111,
+              "slow": 5.670719602004103e-9,
+              "square_emb": 0.18181534198342073,
+              "ws_pool_ln": 0.14080927002435717,
+              "ws_pool_proj": 0.1244507393229027
+            },
+            "missing": [],
+            "negligible_below_1e-6_of_global_norm_info": [
+              "enc0.attn.k.bias (norm 6.66e-8, true gradient is exactly 0 for key biases)",
+              "enc1.attn.k.bias (norm 2.35e-8, true gradient is exactly 0 for key biases)",
+              "fast.self_attn.q.bias (norm 2.71e-6)",
+              "fast.self_attn.k.bias (norm 2.24e-10, true gradient is exactly 0 for key biases)",
+              "fast.ln_q.gamma (norm 2.44e-7)",
+              "fast.ln_q.beta (norm 2.10e-7)",
+              "fast.cross.q.weight (norm 3.15e-6)",
+              "fast.cross.q.bias (norm 2.14e-7)",
+              "fast.cross.k.weight (norm 3.43e-6)",
+              "fast.cross.k.bias (norm 1.22e-10, true gradient is exactly 0 for key biases)",
+              "slow.self_attn.q.bias (norm 1.85e-6)",
+              "slow.self_attn.k.bias (norm 5.67e-9, true gradient is exactly 0 for key biases)",
+              "slow.cross.k.bias (norm 9.81e-9, true gradient is exactly 0 for key biases)"
+            ],
+            "nonfinite": [],
+            "params": 107
+          },
+          "name": "relevant_gradient_inventory",
+          "pass": true
+        },
+        {
+          "detail": {
+            "calls": 2,
+            "negative_control_detach_after_call": 1,
+            "negative_control_ok": true,
+            "probe_grad_l2_board_ws_per_call": [
+              [
+                0.0014613362391703907,
+                0.040669002807360286
+              ],
+              [
+                0.0,
+                0.040669812672621077
+              ]
+            ],
+            "shared_block_grad_rel_change_when_early_calls_cut": {
+              "expected_fast_change": true,
+              "expected_slow_change": false,
+              "fast": 1.0,
+              "slow": 0.0
+            },
+            "violations": []
+          },
+          "name": "recurrent_credit_assignment_full_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "examples": 16,
+            "interpretation": "~1e-6..1e-5 would indicate strict FP32 matmul; ~1e-4..1e-3 indicates TF32-class tensor-core inputs",
+            "max_abs_logit": 0.022417658405544404,
+            "max_abs_logit_error": 0.0005677722003987035,
+            "max_rel_error": 0.39658330975830436,
+            "readouts": 1,
+            "tolerance_abs": 0.002
+          },
+          "name": "cuda_forward_matches_independent_f64_reference",
+          "pass": true
+        },
+        {
+          "detail": {
+            "epsilon": 0.001,
+            "examples": 4,
+            "targets": [
+              {
+                "analytic_gpu_grad_norm": 0.04599719247338793,
+                "f64_central_diff_along_it": 0.04601001280357675,
+                "param": "fast.ffn.l1.weight",
+                "pass": true,
+                "rel_err": 0.0002787198413519426
+              },
+              {
+                "analytic_gpu_grad_norm": 0.0014441043369915502,
+                "f64_central_diff_along_it": 0.0014439126412302272,
+                "param": "slow.cross.q.weight",
+                "pass": true,
+                "rel_err": 0.00013274370584769312
+              },
+              {
+                "analytic_gpu_grad_norm": 0.00013142279194138282,
+                "f64_central_diff_along_it": 0.00013146943905750774,
+                "param": "fast.self_attn.q.weight",
+                "pass": true,
+                "rel_err": 0.0003549393178751296
+              },
+              {
+                "analytic_gpu_grad_norm": 0.496212459151194,
+                "f64_central_diff_along_it": 0.4963017464360564,
+                "param": "slow.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.0001799376118349326
+              },
+              {
+                "analytic_gpu_grad_norm": 2.891219425789875,
+                "f64_central_diff_along_it": 2.891326428327512,
+                "param": "enc1.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.00003700948350118249
+              },
+              {
+                "analytic_gpu_grad_norm": 0.06327391549606852,
+                "f64_central_diff_along_it": 0.06328203727368198,
+                "param": "fast.cross.o.weight",
+                "pass": true,
+                "rel_err": 0.00012835901729464172
+              },
+              {
+                "analytic_gpu_grad_norm": 0.4674156953061034,
+                "f64_central_diff_along_it": 0.4674827117289171,
+                "param": "head1.bias",
+                "pass": true,
+                "rel_err": 0.00014337649224597767
+              }
+            ],
+            "tolerance_rel": 0.1
+          },
+          "name": "gradient_vs_exact_f64_finite_differences_through_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_logit_diff_repeat_run": 0.0,
+            "max_logit_diff_solo_or_reordered_vs_batch16": 0.0,
+            "tolerance": 0.0001
+          },
+          "name": "no_state_leakage_across_examples_or_batches",
+          "pass": true
+        },
+        {
+          "detail": {
+            "features_identical_after_label_and_id_mutation": true,
+            "max_prediction_diff": 0.0
+          },
+          "name": "labels_ids_never_inputs",
+          "pass": true
+        },
+        {
+          "detail": {
+            "arm_init_hashes": [
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7"
+            ],
+            "file_hash": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+            "step_moved_A_not_B": true
+          },
+          "name": "bit_identical_init_and_independent_storage_optimizers",
+          "pass": true
+        },
+        {
+          "detail": {
+            "decay_tensors": 41,
+            "nodecay_tensors": 66,
+            "nodecay_tensors_changed": 0,
+            "note": "per-update decay at scheduled LR (<=5e-8 relative) is near f32 resolution; applied as AdamW prescribes",
+            "worst_rel_err_decay": 7.614887906428877e-8
+          },
+          "name": "weight_decay_excludes_biases_and_norms",
+          "pass": true
+        },
+        {
+          "detail": {
+            "continued_training_max_param_diff": 0.0,
+            "negative_control_fresh_optimizer_max_param_diff": 0.00039223782368935645,
+            "restored_weights_max_diff": 0.0,
+            "schedule_ok": true,
+            "tolerance": 1e-6
+          },
+          "name": "checkpoint_restores_weights_optimizer_and_schedule",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_grad_rel_l2": 0.0,
+            "max_logit_diff": 0.0
+          },
+          "name": "normal_vs_synchronized_profile_execution_parity",
+          "pass": true
+        },
+        {
+          "detail": {
+            "block_calls": 2,
+            "device_mem_mib": {
+              "before": 771,
+              "ceiling": 3072,
+              "sampled_peak_100ms_poll": 771
+            },
+            "host_working_set_mib": {
+              "after": 285,
+              "before": 284
+            },
+            "inference_median_ms_batch16": 8.1213,
+            "inference_median_ms_batch2": 5.706,
+            "limitations": "device memory is nvidia-smi sampled (100 ms poll, whole-GPU used memory) and can miss short peaks; allocator high-water not available through this API; host working set is a point sample (launcher records peak)",
+            "readouts": 1,
+            "update_mean_ms": 241.68944000000002,
+            "update_median_ms": 240.9146
+          },
+          "name": "latency_and_memory",
+          "pass": true
+        }
+      ],
+      "microbatch": 2,
+      "qualified": true,
+      "readouts": 1,
+      "wall_secs": 23.3832157,
+      "within_wall_limit": true
+    },
+    {
+      "accumulation_steps": 8,
+      "arm": "B",
+      "block_calls": 12,
+      "checks": [
+        {
+          "detail": {
+            "got": 13.593992233276367,
+            "logit_range": [
+              -88,
+              88
+            ],
+            "max_grad_abs_err": 3.91425290444114e-9,
+            "reference_f64": 13.59399189021511,
+            "reference_self_check_fd_err": 5.84228845856849e-12
+          },
+          "name": "stable_bce_value_and_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "expected_readouts": 3,
+            "host_f64_mean": 0.6841472045164876,
+            "model_loss": 0.6841471791267395,
+            "per_readout_bce": [
+              0.6970590698835317,
+              0.6876625042823818,
+              0.6677200393835493
+            ],
+            "readouts": 3
+          },
+          "name": "loss_is_mean_over_prescribed_readouts",
+          "pass": true
+        },
+        {
+          "detail": {
+            "accum_loss_mean": 0.6841471865773201,
+            "full_batch_loss": 0.6841471791267395,
+            "global_norm_accum": 4.716837905101953,
+            "global_norm_full": 4.71683790161656,
+            "missing": 0,
+            "tensors_compared": 107,
+            "tolerance": 0.02,
+            "worst_err_over_scale": 9.674781442767299e-7,
+            "worst_tensors": [
+              {
+                "abs_err": 9.598436930316946e-7,
+                "err_over_scale": 9.674781442767299e-7,
+                "tensor": "piece_emb.weight",
+                "tensor_norm": 0.9921089160616205
+              },
+              {
+                "abs_err": 3.725290298461914e-8,
+                "err_over_scale": 3.7014833620543764e-7,
+                "tensor": "head2.bias",
+                "tensor_norm": 0.10064317286014557
+              },
+              {
+                "abs_err": 1.8530568851899317e-8,
+                "err_over_scale": 2.463660265604872e-7,
+                "tensor": "enc0.attn.o.bias",
+                "tensor_norm": 0.0752156013984734
+              },
+              {
+                "abs_err": 1.590529004663168e-8,
+                "err_over_scale": 2.4261905214754534e-7,
+                "tensor": "enc1.ln1.beta",
+                "tensor_norm": 0.06555664077427482
+              }
+            ]
+          },
+          "name": "gradient_accumulation_8x2_equals_batch16_mean",
+          "pass": true
+        },
+        {
+          "detail": {
+            "big": {
+              "clipped": true,
+              "factor": 0.000529907524953996,
+              "post_norm": 1.0000000051500961,
+              "pre_norm": 1887.1217191280828
+            },
+            "clip_ops_in_3_updates": 3,
+            "factor_fn_ok": true,
+            "microbatches_per_update": 8,
+            "small": {
+              "clipped": false,
+              "pre_norm": 0.004717803724179061,
+              "untouched": true
+            }
+          },
+          "name": "global_clipping_once_on_accumulated_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "exactly_zero": [],
+            "global_grad_norm": 4.71683790161656,
+            "min_grad_l2_by_component": {
+              "att_emb": 1.0591365601937826,
+              "budget_emb": 2.4805271017489994,
+              "enc0": 5.4712297082433835e-8,
+              "enc1": 1.6193848652197953e-8,
+              "enc_ln": 0.10581464053767883,
+              "fast": 9.886800204483745e-10,
+              "head1": 0.0974441912894113,
+              "head2": 0.10064317286014557,
+              "head_ln": 0.09388476773081235,
+              "piece_emb": 0.9921089160616205,
+              "scalar_proj": 1.0591365601937826,
+              "slot_emb": 0.03327759372385401,
+              "slow": 6.216096852292394e-9,
+              "square_emb": 0.13571446497712397,
+              "ws_pool_ln": 0.10400878529828944,
+              "ws_pool_proj": 0.09412128964854065
+            },
+            "missing": [],
+            "negligible_below_1e-6_of_global_norm_info": [
+              "enc0.attn.k.bias (norm 5.47e-8, true gradient is exactly 0 for key biases)",
+              "enc1.attn.k.bias (norm 1.62e-8, true gradient is exactly 0 for key biases)",
+              "fast.self_attn.k.bias (norm 1.34e-9, true gradient is exactly 0 for key biases)",
+              "fast.ln_q.gamma (norm 1.05e-6)",
+              "fast.ln_q.beta (norm 8.41e-7)",
+              "fast.cross.q.bias (norm 8.43e-7)",
+              "fast.cross.k.bias (norm 9.89e-10, true gradient is exactly 0 for key biases)",
+              "slow.self_attn.q.bias (norm 2.62e-6)",
+              "slow.self_attn.k.bias (norm 6.22e-9, true gradient is exactly 0 for key biases)",
+              "slow.cross.k.bias (norm 1.89e-8, true gradient is exactly 0 for key biases)"
+            ],
+            "nonfinite": [],
+            "params": 107
+          },
+          "name": "relevant_gradient_inventory",
+          "pass": true
+        },
+        {
+          "detail": {
+            "calls": 12,
+            "negative_control_detach_after_call": 6,
+            "negative_control_ok": true,
+            "probe_grad_l2_board_ws_per_call": [
+              [
+                0.003795373391366967,
+                0.0342911970325468
+              ],
+              [
+                0.0037469927972129434,
+                0.03417488597303331
+              ],
+              [
+                0.002680272861174963,
+                0.03290652224958349
+              ],
+              [
+                0.0026451929293652052,
+                0.032843329317650376
+              ],
+              [
+                0.002622646015374561,
+                0.032799138932043184
+              ],
+              [
+                0.001656067434381007,
+                0.032049843717392425
+              ],
+              [
+                0.0016409732195631634,
+                0.032029943825154526
+              ],
+              [
+                0.001632983018303644,
+                0.03201650677037512
+              ],
+              [
+                0.0007722378278012879,
+                0.031759703284457104
+              ],
+              [
+                0.000768109875622019,
+                0.03175462716031252
+              ],
+              [
+                0.0007669113605686739,
+                0.03175043922337728
+              ],
+              [
+                0.0,
+                0.03192991026389699
+              ]
+            ],
+            "shared_block_grad_rel_change_when_early_calls_cut": {
+              "expected_fast_change": true,
+              "expected_slow_change": true,
+              "fast": 1.239454346775769,
+              "slow": 0.9285498983234564
+            },
+            "violations": []
+          },
+          "name": "recurrent_credit_assignment_full_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "examples": 16,
+            "interpretation": "~1e-6..1e-5 would indicate strict FP32 matmul; ~1e-4..1e-3 indicates TF32-class tensor-core inputs",
+            "max_abs_logit": 0.23699284377691426,
+            "max_abs_logit_error": 0.0009275586523028786,
+            "max_rel_error": 0.12048802904663836,
+            "readouts": 3,
+            "tolerance_abs": 0.002
+          },
+          "name": "cuda_forward_matches_independent_f64_reference",
+          "pass": true
+        },
+        {
+          "detail": {
+            "epsilon": 0.001,
+            "examples": 4,
+            "targets": [
+              {
+                "analytic_gpu_grad_norm": 0.2574908642415775,
+                "f64_central_diff_along_it": 0.25748644886869343,
+                "param": "fast.ffn.l1.weight",
+                "pass": true,
+                "rel_err": 0.00001714768753873082
+              },
+              {
+                "analytic_gpu_grad_norm": 0.0021012019305038524,
+                "f64_central_diff_along_it": 0.0021011938141635156,
+                "param": "slow.cross.q.weight",
+                "pass": true,
+                "rel_err": 3.862713154299114e-6
+              },
+              {
+                "analytic_gpu_grad_norm": 0.007946518383340463,
+                "f64_central_diff_along_it": 0.007951996957855645,
+                "param": "fast.self_attn.q.weight",
+                "pass": true,
+                "rel_err": 0.0006894307986082669
+              },
+              {
+                "analytic_gpu_grad_norm": 0.893237048788902,
+                "f64_central_diff_along_it": 0.8932038625368288,
+                "param": "slow.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.00003715279400709384
+              },
+              {
+                "analytic_gpu_grad_norm": 2.514907071464256,
+                "f64_central_diff_along_it": 2.5146881402665078,
+                "param": "enc1.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.00008705339462925166
+              },
+              {
+                "analytic_gpu_grad_norm": 0.367978987588905,
+                "f64_central_diff_along_it": 0.36793250701622204,
+                "param": "fast.cross.o.weight",
+                "pass": true,
+                "rel_err": 0.00012631311637527166
+              },
+              {
+                "analytic_gpu_grad_norm": 0.43065118041338074,
+                "f64_central_diff_along_it": 0.43063454139513624,
+                "param": "head1.bias",
+                "pass": true,
+                "rel_err": 0.00003863688061537469
+              }
+            ],
+            "tolerance_rel": 0.1
+          },
+          "name": "gradient_vs_exact_f64_finite_differences_through_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_logit_diff_repeat_run": 0.0,
+            "max_logit_diff_solo_or_reordered_vs_batch16": 0.0,
+            "tolerance": 0.0001
+          },
+          "name": "no_state_leakage_across_examples_or_batches",
+          "pass": true
+        },
+        {
+          "detail": {
+            "features_identical_after_label_and_id_mutation": true,
+            "max_prediction_diff": 0.0
+          },
+          "name": "labels_ids_never_inputs",
+          "pass": true
+        },
+        {
+          "detail": {
+            "arm_init_hashes": [
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7"
+            ],
+            "file_hash": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+            "step_moved_A_not_B": true
+          },
+          "name": "bit_identical_init_and_independent_storage_optimizers",
+          "pass": true
+        },
+        {
+          "detail": {
+            "decay_tensors": 41,
+            "nodecay_tensors": 66,
+            "nodecay_tensors_changed": 0,
+            "note": "per-update decay at scheduled LR (<=5e-8 relative) is near f32 resolution; applied as AdamW prescribes",
+            "worst_rel_err_decay": 7.614887906428877e-8
+          },
+          "name": "weight_decay_excludes_biases_and_norms",
+          "pass": true
+        },
+        {
+          "detail": {
+            "continued_training_max_param_diff": 0.0,
+            "negative_control_fresh_optimizer_max_param_diff": 0.0003847852349281311,
+            "restored_weights_max_diff": 0.0,
+            "schedule_ok": true,
+            "tolerance": 1e-6
+          },
+          "name": "checkpoint_restores_weights_optimizer_and_schedule",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_grad_rel_l2": 0.0,
+            "max_logit_diff": 0.0
+          },
+          "name": "normal_vs_synchronized_profile_execution_parity",
+          "pass": true
+        },
+        {
+          "detail": {
+            "block_calls": 12,
+            "device_mem_mib": {
+              "before": 2403,
+              "ceiling": 3072,
+              "sampled_peak_100ms_poll": 2403
+            },
+            "host_working_set_mib": {
+              "after": 289,
+              "before": 286
+            },
+            "inference_median_ms_batch16": 28.6194,
+            "inference_median_ms_batch2": 21.7234,
+            "limitations": "device memory is nvidia-smi sampled (100 ms poll, whole-GPU used memory) and can miss short peaks; allocator high-water not available through this API; host working set is a point sample (launcher records peak)",
+            "readouts": 3,
+            "update_mean_ms": 864.2080600000002,
+            "update_median_ms": 868.0204
+          },
+          "name": "latency_and_memory",
+          "pass": true
+        }
+      ],
+      "microbatch": 2,
+      "qualified": true,
+      "readouts": 3,
+      "wall_secs": 38.3826163,
+      "within_wall_limit": true
+    },
+    {
+      "accumulation_steps": 8,
+      "arm": "C",
+      "block_calls": 12,
+      "checks": [
+        {
+          "detail": {
+            "got": 13.593992233276367,
+            "logit_range": [
+              -88,
+              88
+            ],
+            "max_grad_abs_err": 3.91425290444114e-9,
+            "reference_f64": 13.59399189021511,
+            "reference_self_check_fd_err": 5.84228845856849e-12
+          },
+          "name": "stable_bce_value_and_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "expected_readouts": 3,
+            "host_f64_mean": 0.6726037188834693,
+            "model_loss": 0.6726037859916687,
+            "per_readout_bce": [
+              0.6885154068007764,
+              0.6701486566688938,
+              0.6591470931807377
+            ],
+            "readouts": 3
+          },
+          "name": "loss_is_mean_over_prescribed_readouts",
+          "pass": true
+        },
+        {
+          "detail": {
+            "accum_loss_mean": 0.6726037412881851,
+            "full_batch_loss": 0.6726037859916687,
+            "global_norm_accum": 3.828729838759201,
+            "global_norm_full": 3.828729856826346,
+            "missing": 0,
+            "tensors_compared": 107,
+            "tolerance": 0.02,
+            "worst_err_over_scale": 1.1492599291033515e-6,
+            "worst_tensors": [
+              {
+                "abs_err": 8.497096120555232e-7,
+                "err_over_scale": 1.1492599291033515e-6,
+                "tensor": "piece_emb.weight",
+                "tensor_norm": 0.7393537271576706
+              },
+              {
+                "abs_err": 1.4488087026296738e-8,
+                "err_over_scale": 2.895357329729088e-7,
+                "tensor": "enc1.ln1.beta",
+                "tensor_norm": 0.050039029302308455
+              },
+              {
+                "abs_err": 1.676489975374118e-8,
+                "err_over_scale": 2.6918882360988353e-7,
+                "tensor": "enc0.ln1.gamma",
+                "tensor_norm": 0.06227933065318259
+              },
+              {
+                "abs_err": 2.0659312668526888e-8,
+                "err_over_scale": 2.592325771219867e-7,
+                "tensor": "enc_ln.beta",
+                "tensor_norm": 0.07969412215813163
+              }
+            ]
+          },
+          "name": "gradient_accumulation_8x2_equals_batch16_mean",
+          "pass": true
+        },
+        {
+          "detail": {
+            "big": {
+              "clipped": true,
+              "factor": 0.0006529212025977861,
+              "post_norm": 1.0000000096433783,
+              "pre_norm": 1531.5783824577386
+            },
+            "clip_ops_in_3_updates": 3,
+            "factor_fn_ok": true,
+            "microbatches_per_update": 8,
+            "small": {
+              "clipped": false,
+              "pre_norm": 0.003829256239222627,
+              "untouched": true
+            }
+          },
+          "name": "global_clipping_once_on_accumulated_gradient",
+          "pass": true
+        },
+        {
+          "detail": {
+            "exactly_zero": [],
+            "global_grad_norm": 3.828729856826346,
+            "min_grad_l2_by_component": {
+              "att_emb": 0.7892670090723873,
+              "budget_emb": 2.0985819590729555,
+              "enc0": 2.6770849668988382e-8,
+              "enc1": 2.2274997273705986e-8,
+              "enc_ln": 0.07969412215813163,
+              "fast": 7.358147137680544e-10,
+              "head1": 0.07818437977542897,
+              "head2": 0.0807991474866867,
+              "head_ln": 0.07442472924203185,
+              "piece_emb": 0.7393537271576706,
+              "scalar_proj": 0.7892670090723873,
+              "slot_emb": 0.025410327094253036,
+              "slow": 7.68366157101695e-9,
+              "square_emb": 0.10141213104598244,
+              "ws_pool_ln": 0.07662899762795577,
+              "ws_pool_proj": 0.07186758337919637
+            },
+            "missing": [],
+            "negligible_below_1e-6_of_global_norm_info": [
+              "enc0.attn.k.bias (norm 2.68e-8, true gradient is exactly 0 for key biases)",
+              "enc1.attn.k.bias (norm 2.23e-8, true gradient is exactly 0 for key biases)",
+              "fast.self_attn.k.bias (norm 1.92e-9, true gradient is exactly 0 for key biases)",
+              "fast.ln_q.gamma (norm 9.95e-7)",
+              "fast.ln_q.beta (norm 7.58e-7)",
+              "fast.cross.q.bias (norm 7.50e-7)",
+              "fast.cross.k.bias (norm 7.36e-10, true gradient is exactly 0 for key biases)",
+              "slow.self_attn.q.bias (norm 3.20e-6)",
+              "slow.self_attn.k.bias (norm 7.68e-9, true gradient is exactly 0 for key biases)",
+              "slow.cross.k.bias (norm 9.67e-9, true gradient is exactly 0 for key biases)"
+            ],
+            "nonfinite": [],
+            "params": 107
+          },
+          "name": "relevant_gradient_inventory",
+          "pass": true
+        },
+        {
+          "detail": {
+            "calls": 12,
+            "negative_control_detach_after_call": 6,
+            "negative_control_ok": true,
+            "probe_grad_l2_board_ws_per_call": [
+              [
+                0.005101118162939065,
+                0.0309892907330082
+              ],
+              [
+                0.004155707101682546,
+                0.029174514463870992
+              ],
+              [
+                0.004109835141571128,
+                0.02901422785032312
+              ],
+              [
+                0.0032081157016145842,
+                0.02767336310141474
+              ],
+              [
+                0.0031806081241228237,
+                0.027583348247646668
+              ],
+              [
+                0.0023252914600950672,
+                0.0267012139908167
+              ],
+              [
+                0.00231042999270552,
+                0.026654848458946064
+              ],
+              [
+                0.0015009957622141752,
+                0.026186252101132203
+              ],
+              [
+                0.0014944293045528415,
+                0.026164066766969436
+              ],
+              [
+                0.0007282869988696825,
+                0.026047578432350216
+              ],
+              [
+                0.0007264822941832839,
+                0.026038586365474813
+              ],
+              [
+                0.0,
+                0.026209728384171488
+              ]
+            ],
+            "shared_block_grad_rel_change_when_early_calls_cut": {
+              "expected_fast_change": true,
+              "expected_slow_change": true,
+              "fast": 0.8614802350232371,
+              "slow": 1.0346600529865488
+            },
+            "violations": []
+          },
+          "name": "recurrent_credit_assignment_full_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "examples": 16,
+            "interpretation": "~1e-6..1e-5 would indicate strict FP32 matmul; ~1e-4..1e-3 indicates TF32-class tensor-core inputs",
+            "max_abs_logit": 0.3080518304639958,
+            "max_abs_logit_error": 0.0009148298343217356,
+            "max_rel_error": 0.015728968019282353,
+            "readouts": 3,
+            "tolerance_abs": 0.002
+          },
+          "name": "cuda_forward_matches_independent_f64_reference",
+          "pass": true
+        },
+        {
+          "detail": {
+            "epsilon": 0.001,
+            "examples": 4,
+            "targets": [
+              {
+                "analytic_gpu_grad_norm": 0.28518235320807245,
+                "f64_central_diff_along_it": 0.2851692408623041,
+                "param": "fast.ffn.l1.weight",
+                "pass": true,
+                "rel_err": 0.00004597881187540826
+              },
+              {
+                "analytic_gpu_grad_norm": 0.0033012942000040526,
+                "f64_central_diff_along_it": 0.0033014010512588676,
+                "param": "slow.cross.q.weight",
+                "pass": true,
+                "rel_err": 0.0000323664745828837
+              },
+              {
+                "analytic_gpu_grad_norm": 0.003879697173356228,
+                "f64_central_diff_along_it": 0.0038842776390879408,
+                "param": "fast.self_attn.q.weight",
+                "pass": true,
+                "rel_err": 0.0011806245505884216
+              },
+              {
+                "analytic_gpu_grad_norm": 1.247888125752489,
+                "f64_central_diff_along_it": 1.247818171963233,
+                "param": "slow.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.000056057740924260756
+              },
+              {
+                "analytic_gpu_grad_norm": 2.166223065085475,
+                "f64_central_diff_along_it": 2.165858339445992,
+                "param": "enc1.ffn.l2.weight",
+                "pass": true,
+                "rel_err": 0.00016836938234178825
+              },
+              {
+                "analytic_gpu_grad_norm": 0.39665458454611635,
+                "f64_central_diff_along_it": 0.39659407613640285,
+                "param": "fast.cross.o.weight",
+                "pass": true,
+                "rel_err": 0.000152546855805886
+              },
+              {
+                "analytic_gpu_grad_norm": 0.398177139437333,
+                "f64_central_diff_along_it": 0.3981435498763286,
+                "param": "head1.bias",
+                "pass": true,
+                "rel_err": 0.00008435833622160172
+              }
+            ],
+            "tolerance_rel": 0.1
+          },
+          "name": "gradient_vs_exact_f64_finite_differences_through_unroll",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_logit_diff_repeat_run": 0.0,
+            "max_logit_diff_solo_or_reordered_vs_batch16": 0.0,
+            "tolerance": 0.0001
+          },
+          "name": "no_state_leakage_across_examples_or_batches",
+          "pass": true
+        },
+        {
+          "detail": {
+            "features_identical_after_label_and_id_mutation": true,
+            "max_prediction_diff": 0.0
+          },
+          "name": "labels_ids_never_inputs",
+          "pass": true
+        },
+        {
+          "detail": {
+            "arm_init_hashes": [
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+              "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7"
+            ],
+            "file_hash": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+            "step_moved_A_not_B": true
+          },
+          "name": "bit_identical_init_and_independent_storage_optimizers",
+          "pass": true
+        },
+        {
+          "detail": {
+            "decay_tensors": 41,
+            "nodecay_tensors": 66,
+            "nodecay_tensors_changed": 0,
+            "note": "per-update decay at scheduled LR (<=5e-8 relative) is near f32 resolution; applied as AdamW prescribes",
+            "worst_rel_err_decay": 7.614887906428877e-8
+          },
+          "name": "weight_decay_excludes_biases_and_norms",
+          "pass": true
+        },
+        {
+          "detail": {
+            "continued_training_max_param_diff": 0.0,
+            "negative_control_fresh_optimizer_max_param_diff": 0.0003849770873785019,
+            "restored_weights_max_diff": 0.0,
+            "schedule_ok": true,
+            "tolerance": 1e-6
+          },
+          "name": "checkpoint_restores_weights_optimizer_and_schedule",
+          "pass": true
+        },
+        {
+          "detail": {
+            "max_grad_rel_l2": 0.0,
+            "max_logit_diff": 0.0
+          },
+          "name": "normal_vs_synchronized_profile_execution_parity",
+          "pass": true
+        },
+        {
+          "detail": {
+            "block_calls": 12,
+            "device_mem_mib": {
+              "before": 2403,
+              "ceiling": 3072,
+              "sampled_peak_100ms_poll": 2403
+            },
+            "host_working_set_mib": {
+              "after": 291,
+              "before": 283
+            },
+            "inference_median_ms_batch16": 25.4996,
+            "inference_median_ms_batch2": 22.767200000000003,
+            "limitations": "device memory is nvidia-smi sampled (100 ms poll, whole-GPU used memory) and can miss short peaks; allocator high-water not available through this API; host working set is a point sample (launcher records peak)",
+            "readouts": 3,
+            "update_mean_ms": 854.10869,
+            "update_median_ms": 858.5083
+          },
+          "name": "latency_and_memory",
+          "pass": true
+        }
+      ],
+      "microbatch": 2,
+      "qualified": true,
+      "readouts": 3,
+      "wall_secs": 37.4468731,
+      "within_wall_limit": true
+    }
+  ],
+  "panel_ids": [
+    "fit-003b534790cf3f2168376b42-2",
+    "fit-0ff2dc317ceda8597e208ab0-1",
+    "fit-1e7367a98aefdab8c17f80f7-1",
+    "fit-2d568a060160127946134e55-1",
+    "fit-3f0a8cc3f4df8a7622c56e36-1",
+    "fit-4b4c5fac47624c3950f835f4-2",
+    "fit-59287ecc8bb2b00cee7213e2-2",
+    "fit-662c3f5acfd6ea3f6257102c-1",
+    "fit-75d39ce174e7f4fff7379356-2",
+    "fit-868ef2266c9ab7fa746d09ce-2",
+    "fit-965492627f684a930b77bf5e-1",
+    "fit-a340cd99758710532ae48688-2",
+    "fit-b7862dddca547271759f8953-1",
+    "fit-caa6fb3b9b48c740e971bad6-1",
+    "fit-de6cbc69a371a9b11b61a414-2",
+    "fit-edf0b765623fbe2db6f32e16-2"
+  ],
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "ad685ba5f75c8ea577aebd31fb04437d60050b92",
+    "source_digest": "3b31c994020dae18b5d99b8b126a3a4f765b326f905594d68a2c58499dbee0ea"
+  },
+  "weights": "disposable (qualification_init stream); never used to initialize scientific fits"
+}

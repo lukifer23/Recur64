@@ -1,0 +1,1248 @@
+{
+  "by_component": {
+    "att_emb": 384,
+    "budget_emb": 768,
+    "enc0": 370944,
+    "enc1": 370944,
+    "enc_ln": 384,
+    "fast": 519936,
+    "head1": 37056,
+    "head2": 193,
+    "head_ln": 384,
+    "piece_emb": 2496,
+    "scalar_proj": 1728,
+    "slot_emb": 1536,
+    "slow": 519936,
+    "square_emb": 12288,
+    "ws_pool_ln": 384,
+    "ws_pool_proj": 37056
+  },
+  "ceiling": 4000000,
+  "decay_parameters": 1862400,
+  "file_sha256": "3bc80e9fef855375713af0a02030acb46df1b98ba782fa0674dab6607c637cdf",
+  "nodecay_parameters": 14017,
+  "seed_fingerprint": "5710d34e89d9dd35",
+  "stream": "model_init/0",
+  "tensor_inventory": [
+    {
+      "component": "piece_emb",
+      "decay": true,
+      "index": 0,
+      "leaf": "weight",
+      "numel": 2496,
+      "path": "piece_emb",
+      "shape": [
+        13,
+        192
+      ]
+    },
+    {
+      "component": "square_emb",
+      "decay": true,
+      "index": 1,
+      "leaf": "weight",
+      "numel": 12288,
+      "path": "square_emb",
+      "shape": [
+        64,
+        192
+      ]
+    },
+    {
+      "component": "scalar_proj",
+      "decay": true,
+      "index": 2,
+      "leaf": "weight",
+      "numel": 1536,
+      "path": "scalar_proj",
+      "shape": [
+        8,
+        192
+      ]
+    },
+    {
+      "component": "scalar_proj",
+      "decay": false,
+      "index": 3,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "scalar_proj",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "budget_emb",
+      "decay": true,
+      "index": 4,
+      "leaf": "weight",
+      "numel": 768,
+      "path": "budget_emb",
+      "shape": [
+        4,
+        192
+      ]
+    },
+    {
+      "component": "att_emb",
+      "decay": true,
+      "index": 5,
+      "leaf": "weight",
+      "numel": 384,
+      "path": "att_emb",
+      "shape": [
+        2,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 6,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "enc0.ln1",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 7,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "enc0.ln1",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 8,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc0.attn.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 9,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc0.attn.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 10,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc0.attn.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 11,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc0.attn.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 12,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc0.attn.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 13,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc0.attn.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 14,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc0.attn.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 15,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc0.attn.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 16,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "enc0.ln2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 17,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "enc0.ln2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 18,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "enc0.ffn.l1",
+      "shape": [
+        192,
+        576
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 19,
+      "leaf": "bias",
+      "numel": 576,
+      "path": "enc0.ffn.l1",
+      "shape": [
+        576
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": true,
+      "index": 20,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "enc0.ffn.l2",
+      "shape": [
+        576,
+        192
+      ]
+    },
+    {
+      "component": "enc0",
+      "decay": false,
+      "index": 21,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc0.ffn.l2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 22,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "enc1.ln1",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 23,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "enc1.ln1",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 24,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc1.attn.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 25,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc1.attn.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 26,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc1.attn.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 27,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc1.attn.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 28,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc1.attn.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 29,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc1.attn.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 30,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "enc1.attn.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 31,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc1.attn.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 32,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "enc1.ln2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 33,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "enc1.ln2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 34,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "enc1.ffn.l1",
+      "shape": [
+        192,
+        576
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 35,
+      "leaf": "bias",
+      "numel": 576,
+      "path": "enc1.ffn.l1",
+      "shape": [
+        576
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": true,
+      "index": 36,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "enc1.ffn.l2",
+      "shape": [
+        576,
+        192
+      ]
+    },
+    {
+      "component": "enc1",
+      "decay": false,
+      "index": 37,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "enc1.ffn.l2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc_ln",
+      "decay": false,
+      "index": 38,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "enc_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "enc_ln",
+      "decay": false,
+      "index": 39,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "enc_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slot_emb",
+      "decay": true,
+      "index": 40,
+      "leaf": "weight",
+      "numel": 1536,
+      "path": "slot_emb",
+      "shape": [
+        8,
+        192
+      ]
+    },
+    {
+      "component": "ws_pool_ln",
+      "decay": false,
+      "index": 41,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "ws_pool_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "ws_pool_ln",
+      "decay": false,
+      "index": 42,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "ws_pool_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "ws_pool_proj",
+      "decay": true,
+      "index": 43,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "ws_pool_proj",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "ws_pool_proj",
+      "decay": false,
+      "index": 44,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "ws_pool_proj",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 45,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "fast.ln_self",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 46,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "fast.ln_self",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 47,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.self_attn.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 48,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.self_attn.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 49,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.self_attn.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 50,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.self_attn.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 51,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.self_attn.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 52,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.self_attn.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 53,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.self_attn.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 54,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.self_attn.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 55,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "fast.ln_q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 56,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "fast.ln_q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 57,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "fast.ln_kv",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 58,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "fast.ln_kv",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 59,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.cross.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 60,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.cross.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 61,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.cross.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 62,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.cross.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 63,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.cross.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 64,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.cross.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 65,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "fast.cross.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 66,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.cross.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 67,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "fast.ln_ff",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 68,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "fast.ln_ff",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 69,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "fast.ffn.l1",
+      "shape": [
+        192,
+        576
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 70,
+      "leaf": "bias",
+      "numel": 576,
+      "path": "fast.ffn.l1",
+      "shape": [
+        576
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": true,
+      "index": 71,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "fast.ffn.l2",
+      "shape": [
+        576,
+        192
+      ]
+    },
+    {
+      "component": "fast",
+      "decay": false,
+      "index": 72,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "fast.ffn.l2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 73,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "slow.ln_self",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 74,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "slow.ln_self",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 75,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.self_attn.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 76,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.self_attn.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 77,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.self_attn.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 78,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.self_attn.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 79,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.self_attn.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 80,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.self_attn.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 81,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.self_attn.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 82,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.self_attn.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 83,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "slow.ln_q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 84,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "slow.ln_q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 85,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "slow.ln_kv",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 86,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "slow.ln_kv",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 87,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.cross.q",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 88,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.cross.q",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 89,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.cross.k",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 90,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.cross.k",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 91,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.cross.v",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 92,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.cross.v",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 93,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "slow.cross.o",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 94,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.cross.o",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 95,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "slow.ln_ff",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 96,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "slow.ln_ff",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 97,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "slow.ffn.l1",
+      "shape": [
+        192,
+        576
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 98,
+      "leaf": "bias",
+      "numel": 576,
+      "path": "slow.ffn.l1",
+      "shape": [
+        576
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": true,
+      "index": 99,
+      "leaf": "weight",
+      "numel": 110592,
+      "path": "slow.ffn.l2",
+      "shape": [
+        576,
+        192
+      ]
+    },
+    {
+      "component": "slow",
+      "decay": false,
+      "index": 100,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "slow.ffn.l2",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "head_ln",
+      "decay": false,
+      "index": 101,
+      "leaf": "gamma",
+      "numel": 192,
+      "path": "head_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "head_ln",
+      "decay": false,
+      "index": 102,
+      "leaf": "beta",
+      "numel": 192,
+      "path": "head_ln",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "head1",
+      "decay": true,
+      "index": 103,
+      "leaf": "weight",
+      "numel": 36864,
+      "path": "head1",
+      "shape": [
+        192,
+        192
+      ]
+    },
+    {
+      "component": "head1",
+      "decay": false,
+      "index": 104,
+      "leaf": "bias",
+      "numel": 192,
+      "path": "head1",
+      "shape": [
+        192
+      ]
+    },
+    {
+      "component": "head2",
+      "decay": true,
+      "index": 105,
+      "leaf": "weight",
+      "numel": 192,
+      "path": "head2",
+      "shape": [
+        192,
+        1
+      ]
+    },
+    {
+      "component": "head2",
+      "decay": false,
+      "index": 106,
+      "leaf": "bias",
+      "numel": 1,
+      "path": "head2",
+      "shape": [
+        1
+      ]
+    }
+  ],
+  "tensors_sha256": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+  "total_parameters": 1876417
+}

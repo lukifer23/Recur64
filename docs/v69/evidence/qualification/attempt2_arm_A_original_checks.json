@@ -1,0 +1,239 @@
+{
+  "accumulation_steps": 8,
+  "arm": "A",
+  "block_calls": 2,
+  "checks": [
+    {
+      "detail": {
+        "got": 13.593992233276367,
+        "logit_range": [
+          -88,
+          88
+        ],
+        "max_grad_abs_err": 0.01923077066357319,
+        "reference_f64": 13.59399189021511,
+        "reference_self_check_fd_err": 5.84228845856849e-12
+      },
+      "name": "stable_bce_value_and_gradient",
+      "pass": false
+    },
+    {
+      "detail": {
+        "expected_readouts": 1,
+        "host_f64_mean": 0.6972226691730931,
+        "model_loss": 0.6972226500511169,
+        "per_readout_bce": [
+          0.6972226691730931
+        ],
+        "readouts": 1
+      },
+      "name": "loss_is_mean_over_prescribed_readouts",
+      "pass": true
+    },
+    {
+      "detail": {
+        "accum_loss_mean": 0.6972226575016975,
+        "full_batch_loss": 0.6972226500511169,
+        "global_norm_accum": 5.901635139702422,
+        "global_norm_full": 5.901635186326836,
+        "missing": 0,
+        "tensors_compared": 107,
+        "worst_rel_l2": 0.011004600417088348
+      },
+      "name": "gradient_accumulation_8x2_equals_batch16_mean",
+      "pass": false
+    },
+    {
+      "detail": {
+        "big": {
+          "clipped": true,
+          "factor": 0.00042367518854541885,
+          "post_norm": 1.0000000339595414,
+          "pre_norm": 2360.2987066803958
+        },
+        "clip_ops_in_3_updates": 3,
+        "factor_fn_ok": true,
+        "microbatches_per_update": 8,
+        "small": {
+          "clipped": false,
+          "pre_norm": 0.005902282057342265,
+          "untouched": true
+        }
+      },
+      "name": "global_clipping_once_on_accumulated_gradient",
+      "pass": true
+    },
+    {
+      "detail": {
+        "all_zero": [],
+        "min_grad_l2_by_component": {
+          "att_emb": 1.4213141337925281,
+          "budget_emb": 2.836178602192096,
+          "enc0": 6.655918981110696e-8,
+          "enc1": 2.3524971899910112e-8,
+          "enc_ln": 0.14185199865901188,
+          "fast": 1.224487225034869e-10,
+          "head1": 0.12367922631856945,
+          "head2": 0.12734457850456238,
+          "head_ln": 0.11989026533864719,
+          "piece_emb": 1.331283126211318,
+          "scalar_proj": 1.4213141337925281,
+          "slot_emb": 0.04400019752726111,
+          "slow": 5.670719602004103e-9,
+          "square_emb": 0.18181534198342073,
+          "ws_pool_ln": 0.14080927002435717,
+          "ws_pool_proj": 0.1244507393229027
+        },
+        "missing": [],
+        "nonfinite": [],
+        "params": 107
+      },
+      "name": "relevant_gradient_inventory",
+      "pass": true
+    },
+    {
+      "detail": {
+        "calls": 2,
+        "negative_control_detach_after_call": 1,
+        "negative_control_ok": true,
+        "probe_grad_l2_board_ws_per_call": [
+          [
+            0.0014613362391703907,
+            0.040669002807360286
+          ],
+          [
+            0.0,
+            0.040669812672621077
+          ]
+        ],
+        "shared_block_grad_rel_change_when_early_calls_cut": {
+          "fast": 0.0,
+          "slow": 0.0
+        },
+        "violations": []
+      },
+      "name": "recurrent_credit_assignment_full_unroll",
+      "pass": false
+    },
+    {
+      "detail": {
+        "epsilon": 0.05,
+        "targets": [
+          {
+            "analytic": -2.6152744138038787e-6,
+            "numeric_central_diff": -0.00025451183319091797,
+            "param": "fast.ffn.l1.weight",
+            "pass": false
+          },
+          {
+            "analytic": -1.0529968391626208e-6,
+            "numeric_central_diff": 0.0001347064971923828,
+            "param": "slow.cross.q.weight",
+            "pass": false
+          },
+          {
+            "analytic": 0.00930945501030887,
+            "numeric_central_diff": 0.008503198623657227,
+            "param": "enc0.attn.v.weight",
+            "pass": false
+          },
+          {
+            "analytic": 0.0018931675244217069,
+            "numeric_central_diff": 0.001958608627319336,
+            "param": "head1.bias",
+            "pass": true
+          }
+        ]
+      },
+      "name": "numeric_directional_gradient_through_unroll",
+      "pass": false
+    },
+    {
+      "detail": {
+        "max_logit_diff_repeat_run": 0.0,
+        "max_logit_diff_solo_or_reordered_vs_batch16": 0.0,
+        "tolerance": 0.0001
+      },
+      "name": "no_state_leakage_across_examples_or_batches",
+      "pass": true
+    },
+    {
+      "detail": {
+        "features_identical_after_label_and_id_mutation": true,
+        "max_prediction_diff": 0.0
+      },
+      "name": "labels_ids_never_inputs",
+      "pass": true
+    },
+    {
+      "detail": {
+        "arm_init_hashes": [
+          "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+          "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+          "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7"
+        ],
+        "file_hash": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+        "step_moved_A_not_B": true
+      },
+      "name": "bit_identical_init_and_independent_storage_optimizers",
+      "pass": true
+    },
+    {
+      "detail": {
+        "decay_tensors": 41,
+        "nodecay_tensors": 66,
+        "nodecay_tensors_changed": 0,
+        "note": "per-update decay at scheduled LR (<=5e-8 relative) is near f32 resolution; applied as AdamW prescribes",
+        "worst_rel_err_decay": 7.614887906428877e-8
+      },
+      "name": "weight_decay_excludes_biases_and_norms",
+      "pass": true
+    },
+    {
+      "detail": {
+        "continued_training_max_param_diff": 0.0,
+        "negative_control_fresh_optimizer_max_param_diff": 0.00039223782368935645,
+        "restored_weights_max_diff": 0.0,
+        "schedule_ok": true,
+        "tolerance": 1e-6
+      },
+      "name": "checkpoint_restores_weights_optimizer_and_schedule",
+      "pass": true
+    },
+    {
+      "detail": {
+        "max_grad_rel_l2": 0.0,
+        "max_logit_diff": 0.0
+      },
+      "name": "normal_vs_synchronized_profile_execution_parity",
+      "pass": true
+    },
+    {
+      "detail": {
+        "block_calls": 2,
+        "device_mem_mib": {
+          "before": 1475,
+          "ceiling": 3072,
+          "sampled_peak_100ms_poll": 1475
+        },
+        "host_working_set_mib": {
+          "after": 277,
+          "before": 274
+        },
+        "inference_median_ms_batch16": 10.4571,
+        "inference_median_ms_batch2": 5.7875000000000005,
+        "limitations": "device memory is nvidia-smi sampled (100 ms poll, whole-GPU used memory) and can miss short peaks; allocator high-water not available through this API; host working set is a point sample (launcher records peak)",
+        "readouts": 1,
+        "update_mean_ms": 235.59207,
+        "update_median_ms": 233.78019999999998
+      },
+      "name": "latency_and_memory",
+      "pass": true
+    }
+  ],
+  "microbatch": 2,
+  "qualified": false,
+  "readouts": 1,
+  "wall_secs": 23.0456442,
+  "within_wall_limit": true
+}

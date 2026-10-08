@@ -1,0 +1,13 @@
+[qual A] stable_bce_value_and_gradient -> FAIL
+[qual A] loss_is_mean_over_prescribed_readouts -> PASS
+[qual A] gradient_accumulation_8x2_equals_batch16_mean -> FAIL
+[qual A] global_clipping_once_on_accumulated_gradient -> PASS
+[qual A] relevant_gradient_inventory -> PASS
+[qual A] recurrent_credit_assignment_full_unroll -> FAIL
+[qual A] numeric_directional_gradient_through_unroll -> FAIL
+[qual A] no_state_leakage_across_examples_or_batches -> PASS
+[qual A] labels_ids_never_inputs -> PASS
+[qual A] bit_identical_init_and_independent_storage_optimizers -> PASS
+[qual A] weight_decay_excludes_biases_and_norms -> PASS
+
+thread 'main' (18116) has overflowed its stack

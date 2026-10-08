@@ -165,3 +165,48 @@ Every launch/checkpoint/prediction records the consumer source id (git head, dir
 digest of sources + lock), the distinct **data-producer** head
 `36a81508b456ede1cb682f2f03fe678fd08db70f`, input hashes, spec/init/intervention hashes,
 streams, arm schedule, completed updates. The sealed test is never opened by a model.
+
+## 9. Qualification findings (MEASURED; evidence in `docs/v69/evidence/qualification/`)
+
+Final qualification (`qual/qual_summary.json`, run under `run_limited.ps1`: 8 GiB host, 3,072 MiB
+device ceiling, exit 0, no orphans) qualified A, B and C on all 15 checks; every failed attempt
+that preceded it is preserved. Honest account of how the suite reached its final form (no scientific
+fit existed at any point):
+1. Attempt 1: stack overflow on the 1 MiB Windows main thread inside Burn checkpoint recording
+   → binaries now run on a 512 MiB worker thread.
+2. Attempt 2 (arm A, original checks) exposed four problems: (a) a real defect — `clamp_min`
+   has a one-sided gradient at exactly z = 0, so BCE gradients were off by 1/2 at that single point;
+   fixed (`max(z,0)` written as `(z+|z|)/2`; same loss function); (b) per-tensor relative accumulation
+   error was dominated by tensors whose true gradient is ~0 (attention key biases: softmax is
+   shift-invariant) — check redesigned to scale by `max(‖tensor‖, 1e-3·global norm)`; (c) the
+   credit-assignment control skipped tensors that lose all gradient when early calls are cut — those
+   now count as zero, and the expectation is block-specific (a block called only after the cut must
+   not change); (d) fp32 finite differences of the GPU loss were useless because of the finding below —
+   replaced by exact f64 finite differences of an independent host reference model.
+3. **Precision finding (not removable):** Burn 0.21.0 / cubek-matmul 0.2.0 autotune may execute f32
+   matmuls on **TF32 tensor cores** (`adjust_dtypes`: f32 inputs are staged as tf32 when the device
+   supports it and the selected kernel is accelerated). This GPU supports it. The graph is therefore
+   "CUDA, f32 storage and accumulation, matmul inputs possibly TF32" — **not validated as strict FP32**.
+   Measured against the independent f64 host reference over the 16-example panel: max |logit error|
+   5.7e-4 (A), 9.3e-4 (B), 9.1e-4 (C) at logit scales 0.02–0.3 (tolerance 2e-3), i.e. TF32-class,
+   not 1e-6-class. Gradients agree with exact f64 finite differences to ≤ 1.2e-3 relative (typically
+   1e-4). Forcing strict FP32 matmuls would require custom kernels or a different backend, which
+   this task forbids; the recipe was therefore left unchanged. Kernel selection is by timing, so
+   bit-exact reproducibility across processes is not claimed.
+Final measured values: gradient accumulation 8×2 vs batch-16 agree to ≤ 1.2e-6 (error/scale), global
+norms to ≤ 1e-8; checkpoint continued-training disagreement 0.0 (negative control with fresh optimizer:
+3.9e-4); normal vs per-call-synchronized execution identical (0.0) — "profile" parity is interpreted as
+this synchronization mode (no Burn profiler API was used); zero-valued gradient probes are nonzero for
+every workspace state and every board state except after the final call (exactly zero, as the head reads
+only the workspace); cutting the unroll changes the shared fast/slow gradients (B: 1.24 / 0.93,
+C: 0.86 / 1.03 relative); cutting after call 1 in A changes fast (1.0) but not slow (0.0), as required.
+Latency (synchronized, medians, qualification weights): inference batch 2 / 16 — A 5.7 / 8.1 ms,
+B 21.7 / 28.6 ms, C 22.8 / 25.5 ms; full update (8 microbatches + clip + AdamW) — A 241 ms,
+B 868 ms, C 859 ms. B and C block-call counts are equal (12) and their measured update latency agrees
+within ~1%; no FLOP estimate is made. Memory: sampled device memory (whole GPU, nvidia-smi, 100 ms)
+peaked at 771 MiB for A alone and 2,403 MiB after B/C ran in the same process (allocator pool growth);
+host working set 284–291 MiB point samples, launcher peak 2,683 MiB (includes the f64 reference);
+ceiling 3,072 MiB device / 8 GiB host respected. Allocator high-water values are not available through
+this interface (limitation).
+Weight decay note: at the scheduled learning rates the decoupled decay factor (1 − lr·1e-4 ≤ 5e-8)
+is near f32 resolution; the zero-gradient lr = 1 test shows the groups behave exactly as specified.

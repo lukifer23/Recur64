@@ -1,0 +1,5 @@
+﻿exit7: reason=completed exit_code=7 wall_secs=1 peak_host_mib=0 peak_gpu_mib_sampled=0 orphans=0
+args: reason=completed exit_code=0 wall_secs=1 peak_host_mib=0 peak_gpu_mib_sampled=0 orphans=0
+wall: reason=killed_wall_limit exit_code=-1 wall_secs=5 peak_host_mib=73 peak_gpu_mib_sampled=0 orphans=0
+mem: reason=killed_memory_limit exit_code=-1 wall_secs=1 peak_host_mib=344 peak_gpu_mib_sampled=0 orphans=0
+LAUNCHER SELF-TEST PASS
