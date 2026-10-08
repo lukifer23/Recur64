@@ -120,6 +120,8 @@ pub struct DerangeReport {
     pub bal_acc_vs_donor_labels: f64,
     pub donor_label_agreement_rate: f64,
     pub max_abs_logit_diff_vs_donor_real: f64,
+    /// Every deranged prediction equals the donor ordinary-input prediction within DONOR_LOGIT_TOL.
+    pub donor_predictions_consistent: bool,
     pub n_donor_pred_checked: usize,
 }
 
@@ -247,6 +249,7 @@ fn partition_report(
             bal_acc_vs_donor_labels: dc.bal_acc(),
             donor_label_agreement_rate: agree as f64 / der.len() as f64,
             max_abs_logit_diff_vs_donor_real: max_diff,
+            donor_predictions_consistent: max_diff <= DONOR_LOGIT_TOL,
             n_donor_pred_checked: der.len(),
         })
     };

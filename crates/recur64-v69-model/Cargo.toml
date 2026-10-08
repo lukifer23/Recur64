@@ -1,0 +1,19 @@
+[package]
+name = "recur64-v69-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Recur64 V69 two-clock workspace model, qualification, fitting and endpoint evaluation (CUDA FP32 only)"
+
+[[bin]]
+name = "v69-fit"
+path = "src/bin/v69_fit.rs"
+
+[dependencies]
+recur64-v69 = { path = "../recur64-v69" }
+# CUDA is the only backend: no CPU backend feature is enabled (no silent fallback).
+burn = { workspace = true, features = ["std", "autodiff", "cuda"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+sha2 = "=0.10.9"

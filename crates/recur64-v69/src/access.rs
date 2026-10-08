@@ -72,8 +72,8 @@ impl Access {
     /// Output prefixes (relative to the V69 artifact root) the role may write.
     fn allowed_write_prefixes(role: Role) -> &'static [&'static str] {
         match role {
-            Role::Learner => &["fits/", "qual/"],
-            Role::Evaluator => &["eval/", "fits/", "qual/", "intervention/"],
+            Role::Learner => &["fits/", "qual/", "init/", "spec/"],
+            Role::Evaluator => &["eval/", "intervention/"],
             Role::MetricAggregator => &["report/"],
             Role::DataAudit => &["audit/"],
         }

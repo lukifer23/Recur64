@@ -8,6 +8,7 @@ members = [
     "crates/recur64-eval",
     "crates/recur64-cli",
     "crates/recur64-v69",
+    "crates/recur64-v69-model",
 ]
 
 [workspace.package]

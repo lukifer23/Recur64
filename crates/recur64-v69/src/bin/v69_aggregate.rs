@@ -34,7 +34,21 @@ fn main() -> Result<()> {
     let fit_preds: Vec<PredRow> = jsonl(&access.read_to_string(&Path::new(&pred_dir).join("predictions_fit.jsonl"))?)?;
     let val_preds: Vec<PredRow> = jsonl(&access.read_to_string(&Path::new(&pred_dir).join("predictions_val.jsonl"))?)?;
     let report = aggregate(&arm, &fit_preds, &val_preds, &fit_meta, &val_meta, &seed)?;
-    let text = serde_json::to_string_pretty(&report)?;
+    // Cross-check against the model crate in-process f32 summary (separate implementation).
+    let mut compare = serde_json::Value::Null;
+    if let Some(c) = arg(&args, "--compare") {
+        let inproc: serde_json::Value = serde_json::from_str(&access.read_to_string(Path::new(&c))?)?;
+        let mut worst = 0f64;
+        for (part, rep) in [("fit", &report.fit), ("val", &report.val)] {
+            worst = worst.max((inproc[part]["bal_acc"].as_f64().unwrap() - rep.real_bal_acc).abs());
+            worst = worst.max((inproc[part]["acc"].as_f64().unwrap() - rep.real_acc).abs());
+            worst = worst.max((inproc[part]["final_bce"].as_f64().unwrap() - rep.real_final_bce).abs());
+        }
+        compare = serde_json::json!({"max_abs_diff_vs_inprocess_f32": worst, "agrees_within_1e-5": worst <= 1e-5});
+    }
+    let mut v = serde_json::to_value(&report)?;
+    v["inprocess_crosscheck"] = compare;
+    let text = serde_json::to_string_pretty(&v)?;
     access.write(Path::new(&out), text.as_bytes())?;
     println!("{text}");
     Ok(())
