@@ -1,0 +1,4 @@
+recur64 cuda-smoke
+device          : Cuda(0)
+config          : micro
+forward         : R=1 executed_blocks=4 finite=yes

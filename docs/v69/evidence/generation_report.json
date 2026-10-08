@@ -1,0 +1,259 @@
+{
+  "cells_filled_vs_quota": {
+    "fit/KQQvK/n1/neg": [
+      64,
+      64
+    ],
+    "fit/KQQvK/n1/pos": [
+      64,
+      64
+    ],
+    "fit/KQQvK/n2/neg": [
+      64,
+      64
+    ],
+    "fit/KQQvK/n2/pos": [
+      64,
+      64
+    ],
+    "fit/KQRvK/n1/neg": [
+      64,
+      64
+    ],
+    "fit/KQRvK/n1/pos": [
+      64,
+      64
+    ],
+    "fit/KQRvK/n2/neg": [
+      64,
+      64
+    ],
+    "fit/KQRvK/n2/pos": [
+      64,
+      64
+    ],
+    "fit/KRRvK/n1/neg": [
+      64,
+      64
+    ],
+    "fit/KRRvK/n1/pos": [
+      64,
+      64
+    ],
+    "fit/KRRvK/n2/neg": [
+      64,
+      64
+    ],
+    "fit/KRRvK/n2/pos": [
+      64,
+      64
+    ],
+    "test/KQQvK/n1/neg": [
+      32,
+      32
+    ],
+    "test/KQQvK/n1/pos": [
+      32,
+      32
+    ],
+    "test/KQQvK/n2/neg": [
+      32,
+      32
+    ],
+    "test/KQQvK/n2/pos": [
+      32,
+      32
+    ],
+    "test/KQRvK/n1/neg": [
+      32,
+      32
+    ],
+    "test/KQRvK/n1/pos": [
+      32,
+      32
+    ],
+    "test/KQRvK/n2/neg": [
+      32,
+      32
+    ],
+    "test/KQRvK/n2/pos": [
+      32,
+      32
+    ],
+    "test/KRRvK/n1/neg": [
+      32,
+      32
+    ],
+    "test/KRRvK/n1/pos": [
+      32,
+      32
+    ],
+    "test/KRRvK/n2/neg": [
+      32,
+      32
+    ],
+    "test/KRRvK/n2/pos": [
+      32,
+      32
+    ],
+    "val/KQQvK/n1/neg": [
+      32,
+      32
+    ],
+    "val/KQQvK/n1/pos": [
+      32,
+      32
+    ],
+    "val/KQQvK/n2/neg": [
+      32,
+      32
+    ],
+    "val/KQQvK/n2/pos": [
+      32,
+      32
+    ],
+    "val/KQRvK/n1/neg": [
+      32,
+      32
+    ],
+    "val/KQRvK/n1/pos": [
+      32,
+      32
+    ],
+    "val/KQRvK/n2/neg": [
+      32,
+      32
+    ],
+    "val/KQRvK/n2/pos": [
+      32,
+      32
+    ],
+    "val/KRRvK/n1/neg": [
+      32,
+      32
+    ],
+    "val/KRRvK/n1/pos": [
+      32,
+      32
+    ],
+    "val/KRRvK/n2/neg": [
+      32,
+      32
+    ],
+    "val/KRRvK/n2/pos": [
+      32,
+      32
+    ]
+  },
+  "examples_total": 1536,
+  "feasible": true,
+  "git_dirty_files": 0,
+  "git_head": "36a81508b456ede1cb682f2f03fe678fd08db70f",
+  "groups": {
+    "by_partition_groups_roots": {
+      "fit": [
+        605,
+        814
+      ],
+      "test": [
+        304,
+        407
+      ],
+      "val": [
+        303,
+        407
+      ]
+    },
+    "count": 1212,
+    "largest_component_roots": 9,
+    "mixed_depth_groups": 95,
+    "size_histogram_roots": {
+      "1": 974,
+      "2": 155,
+      "3": 45,
+      "4": 11,
+      "5": 15,
+      "6": 2,
+      "7": 3,
+      "8": 6,
+      "9": 1
+    }
+  },
+  "last_shortfall_summary": "0 cells short, 0 examples missing",
+  "limits": {
+    "memory_gib_enforced_by": "scripts/v69/run_limited.ps1 watchdog",
+    "node_limit_per_query": 5000000,
+    "threads": 10,
+    "wall_secs": 7200
+  },
+  "per_family_stats": {
+    "KQQvK": {
+      "accepted_m2": 419,
+      "accepted_m3": 86,
+      "analyzed": 694,
+      "attempted": 2000,
+      "duplicate": 1,
+      "illegal_adjacent_kings": 178,
+      "illegal_defender_in_check": 934,
+      "illegal_other": 0,
+      "illegal_overlap": 193,
+      "oracle_micros_m2": 287532,
+      "oracle_micros_m3": 537913,
+      "oracle_micros_rejected": 339,
+      "oracle_nodes_accepted": 418352,
+      "rejected_m1": 189,
+      "rejected_no_mate_within_3": 0,
+      "timed_out_discarded": 0,
+      "unresolved_node_limit": 0
+    },
+    "KQRvK": {
+      "accepted_m2": 310,
+      "accepted_m3": 279,
+      "analyzed": 829,
+      "attempted": 2000,
+      "duplicate": 1,
+      "illegal_adjacent_kings": 186,
+      "illegal_defender_in_check": 816,
+      "illegal_other": 0,
+      "illegal_overlap": 168,
+      "oracle_micros_m2": 169646,
+      "oracle_micros_m3": 998984,
+      "oracle_micros_rejected": 359214,
+      "oracle_nodes_accepted": 876141,
+      "rejected_m1": 107,
+      "rejected_no_mate_within_3": 133,
+      "timed_out_discarded": 0,
+      "unresolved_node_limit": 0
+    },
+    "KRRvK": {
+      "accepted_m2": 290,
+      "accepted_m3": 244,
+      "analyzed": 1001,
+      "attempted": 2000,
+      "duplicate": 1,
+      "illegal_adjacent_kings": 172,
+      "illegal_defender_in_check": 643,
+      "illegal_other": 0,
+      "illegal_overlap": 183,
+      "oracle_micros_m2": 126244,
+      "oracle_micros_m3": 508356,
+      "oracle_micros_rejected": 604832,
+      "oracle_nodes_accepted": 506414,
+      "rejected_m1": 76,
+      "rejected_no_mate_within_3": 391,
+      "timed_out_discarded": 0,
+      "unresolved_node_limit": 0
+    }
+  },
+  "per_root_cap_per_class": 2,
+  "pool_roots": 1628,
+  "round_size_per_family": 1000,
+  "rounds": 2,
+  "seed_fingerprint": "5710d34e89d9dd35",
+  "shortfalls": [],
+  "source_digest": "08f63b8104f41ac471904f87614c3e724936d5da389dbd355fb1791b0f89ed47",
+  "status": "complete_feasible",
+  "used_groups": 403,
+  "used_roots": 453,
+  "wall_secs_actual": 0.6714912
+}

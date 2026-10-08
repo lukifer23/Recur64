@@ -1,0 +1,4 @@
+[v69] seed fingerprint 5710d34e89d9dd35 | limits: 7200s wall, 5000000 nodes/query, 10 threads
+[v69] round 0: pool 812 roots, 704 groups, 6 cells short, 92 examples missing | elapsed 0s
+[v69] round 1: pool 1628 roots, 1212 groups, 0 cells short, 0 examples missing | elapsed 1s
+[v69] done: status=complete_feasible feasible=true wall=0.8s

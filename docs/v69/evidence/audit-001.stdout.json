@@ -1,0 +1,12 @@
+{
+  "audit_pass": true,
+  "audit_wall_secs": 0.3676196,
+  "contributing_roots_reverified_fresh_cache": 453,
+  "distinct_canonical_children": 1536,
+  "examples": 1536,
+  "failures": [],
+  "reference_child_checks": 576,
+  "reference_m2_root_depth_checks": 192,
+  "sealed_test_note": "labels were read only to verify exactness; no model code touches sealed/",
+  "symmetric_duplicate_canonical_keys": 0
+}

@@ -1,0 +1,8 @@
+recur64 cuda-smoke
+device          : Cuda(0)
+config          : micro
+forward         : R=1 executed_blocks=4 finite=yes
+backward+adamw  : loss=2.253405 core_w 0.068273 -> 0.068565
+checkpoint      : step=1 core_w 0.068565 -> 0.068565 (delta 0.00e0)
+
+CUDA SMOKE: PASS
