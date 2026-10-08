@@ -1,0 +1,78 @@
+{
+  "arm": "C",
+  "checkpoint_meta": {
+    "arm": "C",
+    "clip_calls": 600,
+    "completed_updates": 600,
+    "lr_schedule_position": 600,
+    "next_lr": 0.00005,
+    "provenance": {
+      "arm": "C",
+      "canonical_init_file_sha256": "3bc80e9fef855375713af0a02030acb46df1b98ba782fa0674dab6607c637cdf",
+      "canonical_init_tensors_sha256": "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+      "consumer_source": {
+        "git_dirty_files": 0,
+        "git_head": "fb72a81020a9df38ab86aaf76ebbcb75616c1bb9",
+        "source_digest": "3b31c994020dae18b5d99b8b126a3a4f765b326f905594d68a2c58499dbee0ea"
+      },
+      "data_producer_git_head": "36a81508b456ede1cb682f2f03fe678fd08db70f",
+      "dataset_dir": "gen-001",
+      "fit_jsonl_sha256": "14c7167f6f3c304d4059f0797b86ada8497bfaf2dc4d0a2900dbb7376a8ed407",
+      "frozen_manifest_sha256": "da7de5649f46faa6e8a9051bf9e43f4547bd32900a79a5c8faac3a3575238a58",
+      "manifest_fit_hash": "14c7167f6f3c304d4059f0797b86ada8497bfaf2dc4d0a2900dbb7376a8ed407",
+      "recipe": {
+        "accumulation": 8,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "clip": 1.0,
+        "eps": 1e-8,
+        "final_lr": 0.00005,
+        "microbatch": 2,
+        "peak_lr": 0.0005,
+        "updates": 600,
+        "warmup": 20,
+        "wd": 0.0001
+      },
+      "schedule": [
+        "Fast",
+        "Slow",
+        "Fast",
+        "Slow",
+        "Read",
+        "Fast",
+        "Slow",
+        "Fast",
+        "Slow",
+        "Read",
+        "Fast",
+        "Slow",
+        "Fast",
+        "Slow",
+        "Read"
+      ],
+      "seed_streams": {
+        "model_init": "model_init/0",
+        "train_order": "train_order/<epoch>, epochs concatenated"
+      },
+      "spec_sha256": "0907042710a07bf3d1d0c1460159c9311e0089dd0fe307fe5895c6ee07b4b1f5"
+    }
+  },
+  "consumer_source": {
+    "git_dirty_files": 0,
+    "git_head": "fb72a81020a9df38ab86aaf76ebbcb75616c1bb9",
+    "source_digest": "3b31c994020dae18b5d99b8b126a3a4f765b326f905594d68a2c58499dbee0ea"
+  },
+  "data_producer_git_head": "36a81508b456ede1cb682f2f03fe678fd08db70f",
+  "device": "CUDA FP32",
+  "inference_latency_ms_per_batch16": {
+    "fit": 90.4602854166667,
+    "val": 25.332974999999994
+  },
+  "intervention_map_sha256": "0d1aab889625d2445923858b9fbbec670cc8b68e8b0a6aea6bb8b00a96ce714e",
+  "prediction_files": {
+    "eval/C/predictions_fit.jsonl": "047c39157325371926849fcc4f6279bdfd3936cfebed195ffea68bd60ce25687",
+    "eval/C/predictions_val.jsonl": "502a2ee439061c3921f3d814e4ab1d170ca87f7802b84efe3482e8fb99794650"
+  }
+}

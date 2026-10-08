@@ -1,0 +1,32 @@
+{
+  "audit_pass": true,
+  "failures": [],
+  "checks_run": [
+    "manifest hashes (custody-routed opens)",
+    "model rows == metadata by id (fen,budget,label,partition,family; no missing/extra/duplicate)",
+    "root/child/example canonical identities recomputed from FEN",
+    "groups, partitions and selection rebuilt from pool+seed and compared",
+    "every example: claimed root/child membership, stored status, fresh exact target re-query; every contributing root re-analysed",
+    "quotas"
+  ],
+  "input_hashes": {
+    "data/fit.jsonl": "14c7167f6f3c304d4059f0797b86ada8497bfaf2dc4d0a2900dbb7376a8ed407",
+    "data/val.jsonl": "705bea667faeeea6596b47ff43adac6484a07edbd420e0396e2e32a87a63aebf",
+    "generation_report.json": "25ae0c4f53f4080b6784885b441f8bb3621d208c772b9608fb9db43dbaaa5cc9",
+    "meta/fit.meta.jsonl": "eb5797c205796369fe78cc1c524847564d7ea4a82c0ecbcc88761a043eed71b6",
+    "meta/val.meta.jsonl": "e29c7330af512eab14d232d3ef1ff189b320ea5993059ebc3ee33b7474da0e06",
+    "pool/roots.jsonl": "943823eda0ac273e4fccdba42a19614f099b793a65e156866f3f56326953fd0e",
+    "sealed/test.jsonl": "5de7631eead7d4ace7c5c4621c94521bb43a8b29b83f000a25447128a88d8bbc",
+    "sealed/test.meta.jsonl": "e80f216da9945954c81c8a9878c676949e0ad9d2c44fbc0440818c38a278b24b"
+  },
+  "seed_fingerprint": "5710d34e89d9dd35",
+  "consumer_source": {
+    "git_head": "7b163c4518a9cbd953c4725a82df48bfe3033041",
+    "git_dirty_files": 0,
+    "source_digest": "db50ca990cfecb33bda4074ed2139fe817e61ccd090ace1213b06484c4bcb34f"
+  },
+  "examples": 1536,
+  "pool_roots": 1628,
+  "rebuilt_groups": 1212,
+  "examples_requeried_exact": 1536
+}

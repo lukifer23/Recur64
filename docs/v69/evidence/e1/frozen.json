@@ -1,0 +1,15 @@
+{
+    "frozen_utc":  "2026-10-08T23:08:08.4216788Z",
+    "model_spec_sha256":  "0907042710a07bf3d1d0c1460159c9311e0089dd0fe307fe5895c6ee07b4b1f5",
+    "contract_sha256":  "e2a5dbfe027d65903ead3026f6ae74bd41734db607bf5160c7f2db3d1d415bd5",
+    "canonical_init_file_sha256":  "3bc80e9fef855375713af0a02030acb46df1b98ba782fa0674dab6607c637cdf",
+    "canonical_init_tensors_sha256":  "f21959ae328e1544f75876b1876f660cf41a1444562de338dd8a20b3ba1e97c7",
+    "parameter_inventory_sha256":  "83a0f64c6e064851fa403ade6be07a3b1ea6cac3ef8383c0c449cac019ba6bb6",
+    "total_parameters":  1876417,
+    "intervention_map_sha256":  "0d1aab889625d2445923858b9fbbec670cc8b68e8b0a6aea6bb8b00a96ce714e",
+    "qual_summary_sha256":  "32250065a613779f35f299f967e5076c791c66a61683a78a47725e300ce270d4",
+    "dataset_manifest_sha256":  "3da360e6ea1714712b69fd50bf65714a385b0921f49c117c63b6c0088f626d6c",
+    "audit_v2_receipt_sha256":  "3b21334328a2b9ef577a7a9fc71a03f237d6afbe96b2a9c59bd5cbfcfd8caebf",
+    "git_head_at_freeze":  "e0f4efdc2bae49410638253055d680f86889f806",
+    "git_dirty_files_at_freeze":  1
+}

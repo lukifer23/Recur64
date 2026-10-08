@@ -1,0 +1,44 @@
+{
+  "A": {
+    "canonical_init": {
+      "encoder_pool_std_over_mean_norm": 0.12077596884266387,
+      "logit_mean": 0.17344830864264318,
+      "logit_std_over_examples": 0.1286468551979097,
+      "workspace_pool_std_over_mean_norm": 0.10099090594120216
+    },
+    "fitted_update_600": {
+      "encoder_pool_std_over_mean_norm": 0.0288189045195465,
+      "logit_mean": -0.026629296660151642,
+      "logit_std_over_examples": 0.00012726555593764016,
+      "workspace_pool_std_over_mean_norm": 0.012382847366767596
+    }
+  },
+  "B": {
+    "canonical_init": {
+      "encoder_pool_std_over_mean_norm": 0.12077596884266387,
+      "logit_mean": -0.1703164556529373,
+      "logit_std_over_examples": 0.15925548923278426,
+      "workspace_pool_std_over_mean_norm": 0.10264995458290839
+    },
+    "fitted_update_600": {
+      "encoder_pool_std_over_mean_norm": 0.033052082380710605,
+      "logit_mean": -0.012454781584286442,
+      "logit_std_over_examples": 0.00041828162238144136,
+      "workspace_pool_std_over_mean_norm": 0.008564431067184542
+    }
+  },
+  "C": {
+    "canonical_init": {
+      "encoder_pool_std_over_mean_norm": 0.12077596884266387,
+      "logit_mean": -0.15407779141484448,
+      "logit_std_over_examples": 0.13074893904091872,
+      "workspace_pool_std_over_mean_norm": 0.10341531939185025
+    },
+    "fitted_update_600": {
+      "encoder_pool_std_over_mean_norm": 0.03167313695881519,
+      "logit_mean": -0.016485416078163933,
+      "logit_std_over_examples": 0.00021140632194520403,
+      "workspace_pool_std_over_mean_norm": 0.006679260560989368
+    }
+  }
+}

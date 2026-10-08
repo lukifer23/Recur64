@@ -1,0 +1,3 @@
+ARM A : reason=completed exit_code=0 wall_secs=152 peak_host_mib=367 peak_gpu_mib_sampled=161 orphans=0
+ARM B : reason=completed exit_code=0 wall_secs=520 peak_host_mib=399 peak_gpu_mib_sampled=193 orphans=0
+ARM C : reason=completed exit_code=0 wall_secs=501 peak_host_mib=397 peak_gpu_mib_sampled=193 orphans=0

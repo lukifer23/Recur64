@@ -1,0 +1,265 @@
+{
+  "arm": "B",
+  "bootstrap_groups": 100,
+  "bootstrap_resamples": 2000,
+  "fit": {
+    "brier": 0.2500097419041318,
+    "confusion": {
+      "fn_": 384,
+      "fp": 0,
+      "tn": 384,
+      "tp": 0
+    },
+    "derange": {
+      "acc_vs_donor_labels": 0.5,
+      "acc_vs_recipient_labels": 0.5,
+      "bal_acc_vs_donor_labels": 0.5,
+      "bal_acc_vs_recipient_labels": 0.5,
+      "donor_label_agreement_rate": 0.484375,
+      "donor_predictions_consistent": true,
+      "max_abs_logit_diff_vs_donor_real": 0.0,
+      "n_donor_pred_checked": 768
+    },
+    "erase": {
+      "acc": 0.5,
+      "bal_acc": 0.5,
+      "mean_final_bce": 0.6931665911328134,
+      "pred_pos_rate": 0.0
+    },
+    "n": 768,
+    "per_cell": {
+      "KQQvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6867490933217117,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6995922428907083,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6871524757383529,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6991827684925547,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6867537983504355,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.699584122713581,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6871365011553325,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6991976416747745,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.686691199771415,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6996264660935547,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6871346756441374,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6991989910874545,
+        "n": 64,
+        "pred_pos_rate": 0.0
+      }
+    },
+    "per_readout_bal_acc": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "per_readout_bce": [
+      0.6931679169837296,
+      0.6932303200594148,
+      0.6931666647445013
+    ],
+    "real_acc": 0.5,
+    "real_bal_acc": 0.5,
+    "real_final_bce": 0.6931666647445013
+  },
+  "gates": {
+    "derange_drop_ge_15pp": false,
+    "derange_drop_pp": 0.0,
+    "fit_bal_acc_ge_95": false,
+    "metric_gates_pass": false,
+    "val_bal_acc_ge_75": false,
+    "val_final_bce_le_055": false
+  },
+  "inprocess_crosscheck": {
+    "agrees_within_1e-5": true,
+    "max_abs_diff_vs_inprocess_f32": 1.184578657387192e-9
+  },
+  "val": {
+    "brier": 0.2500086261223804,
+    "confusion": {
+      "fn_": 192,
+      "fp": 0,
+      "tn": 192,
+      "tp": 0
+    },
+    "derange": {
+      "acc_vs_donor_labels": 0.5,
+      "acc_vs_recipient_labels": 0.5,
+      "bal_acc_vs_donor_labels": 0.5,
+      "bal_acc_vs_recipient_labels": 0.5,
+      "donor_label_agreement_rate": 0.4947916666666667,
+      "donor_predictions_consistent": true,
+      "max_abs_logit_diff_vs_donor_real": 0.0,
+      "n_donor_pred_checked": 384
+    },
+    "erase": {
+      "acc": 0.5,
+      "bal_acc": 0.5,
+      "mean_final_bce": 0.693166591132819,
+      "pred_pos_rate": 0.0
+    },
+    "n": 384,
+    "per_cell": {
+      "KQQvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6867552068976487,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6995800077143168,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6871584394156441,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQQvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.699173714557909,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.686738456378125,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.69958086802878,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.687138492668949,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KQRvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.699186299724468,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n1/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6867046980364901,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n1/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6996361099984432,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n2/neg": {
+        "acc": 1.0,
+        "mean_final_bce": 0.6871270411411117,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      },
+      "KRRvK/n2/pos": {
+        "acc": 0.0,
+        "mean_final_bce": 0.6991938626308282,
+        "n": 32,
+        "pred_pos_rate": 0.0
+      }
+    },
+    "per_readout_bal_acc": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "per_readout_bce": [
+      0.6931705713955499,
+      0.693231535919902,
+      0.6931644330993931
+    ],
+    "real_acc": 0.5,
+    "real_bal_acc": 0.5,
+    "real_final_bce": 0.6931644330993931
+  },
+  "val_bootstrap": {
+    "val_bal_acc": {
+      "hi95": 0.5,
+      "lo95": 0.5,
+      "point": 0.5
+    },
+    "val_derange_bal_acc_vs_recipient": {
+      "hi95": 0.5,
+      "lo95": 0.5,
+      "point": 0.5
+    },
+    "val_final_bce": {
+      "hi95": 0.6934410824308812,
+      "lo95": 0.6929030807658839,
+      "point": 0.6931644330993931
+    },
+    "val_gap_pp": {
+      "hi95": 0.0,
+      "lo95": 0.0,
+      "point": 0.0
+    }
+  }
+}
