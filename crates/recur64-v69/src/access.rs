@@ -30,7 +30,7 @@ pub enum Role {
     G1Aggregator,
     /// T1 data builder/auditor (gen-001 + G1 pools for identity exclusion; writes t1/).
     T1Builder,
-    /// T1 trainer: T1 train/val rows and canonical inits; writes t1/runs/. Never test rows or metadata.
+    /// T1 trainer: T1 train/val rows and canonical inits; writes t1/train_runs/. Never test rows or metadata.
     T1Trainer,
     /// T1 final evaluator: frozen candidates + T1 test rows (+ G1 panel rows); no metadata, no train rows.
     T1Evaluator,
@@ -100,7 +100,7 @@ impl Access {
             Role::G1Evaluator => &["g1r1/eval/", "g1r1/receipts/"],
             Role::G1Aggregator => &["g1r1/report/"],
             Role::T1Builder => &["t1/"],
-            Role::T1Trainer => &["t1/runs/"],
+            Role::T1Trainer => &["t1/train_runs/"],
             Role::T1Evaluator => &["t1/final/", "t1/receipts/"],
             Role::T1Aggregator => &["t1/report/"],
         }
@@ -131,7 +131,7 @@ impl Access {
         match role {
             Role::G1Evaluator => g1.iter().any(|d| rel.starts_with(d)),
             Role::T1Trainer => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/test", "t1/final/"].iter().any(|d| rel.starts_with(d)),
-            Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train", "t1/rows/val"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/runs/") && rel.contains("/opt_")),
+            Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train", "t1/rows/val"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/train_runs/") && rel.contains("/opt_")),
             _ => false,
         }
     }

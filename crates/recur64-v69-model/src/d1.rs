@@ -184,15 +184,34 @@ impl<B: AutodiffBackend, M: DiagModel<B> + AutodiffModule<B>> DTrainer<B, M> {
     }
 
     pub fn apply(&mut self, acc: GradientsParams, loss: f64, t0: std::time::Instant) -> StepStats {
+        let lr = lr_d1(self.update);
+        self.apply_lr(acc, loss, t0, lr)
+    }
+
+    /// Same update with an explicit learning rate (T1 recipe).
+    pub fn apply_lr(&mut self, acc: GradientsParams, loss: f64, t0: std::time::Instant, lr: f64) -> StepStats {
         let (gd, gn, norm, factor, clipped) = self.clip_and_split(acc);
         self.clip_calls += 1;
-        let lr = lr_d1(self.update);
         let m = self.model.clone();
         let m = self.opt_decay.step(lr, m, gd);
         self.model = self.opt_nodecay.step(lr, m, gn);
         let st = StepStats { update: self.update, lr, loss, final_bce: loss, grad_norm_pre_clip: norm, clip_scale: if clipped { factor } else { 1.0 }, clipped, millis: t0.elapsed().as_secs_f64() * 1e3 };
         self.update += 1;
         st
+    }
+
+    /// One update from `micros.len()` microbatches (loss divided by the microbatch count) at an explicit LR.
+    pub fn step_lr(&mut self, micros: &[(Vec<&Features>, Vec<bool>)], lr: f64) -> StepStats {
+        let t0 = std::time::Instant::now();
+        let n = micros.len() as f32;
+        let mut acc = GradientsAccumulator::<M>::new();
+        let mut loss = 0.0;
+        for (f, l) in micros {
+            let (g, lv) = self.micro_grads(f, l, 1.0 / n);
+            acc.accumulate(&self.model, g);
+            loss += lv / n as f64;
+        }
+        self.apply_lr(acc.grads(), loss, t0, lr)
     }
 
     /// One update from `D1_ACCUM` microbatches of `D1_MICRO` examples (loss/8 each).

@@ -9,7 +9,7 @@ use recur64_v69::canon::{canonical_key, key_hex, key_id};
 use recur64_v69::custody::Custody;
 use recur64_v69::d1::{BaselineModel, FrozenD1, N_BASELINE, baseline_features, fit_baseline};
 use recur64_v69::d2::write_new;
-use recur64_v69::dataset::{Example, Partition, RootOutcome, RootRec, analyze_root, build_groups};
+use recur64_v69::dataset::{Partition, RootOutcome, RootRec, analyze_root};
 use recur64_v69::features::{featurize, read_rows, transform_fen};
 use recur64_v69::g1::ExclusionIndex;
 use recur64_v69::generate::{Family, Reject, sample_root};
@@ -118,9 +118,19 @@ fn cmd_preserve(args: &[String]) -> Result<()> {
 fn cmd_protocol_freeze(args: &[String]) -> Result<()> {
     let env = Env::from(args)?;
     let a = env.access(Role::DataAudit)?;
-    ensure!(!a.custody().resolve(Path::new(FROZEN_PROTOCOL))?.exists(), "protocol already frozen");
-    ensure!(!a.custody().resolve(&env.seed_rel)?.exists(), "protocol must be frozen BEFORE the T1 seed exists");
-    let files = ["t1/T1_CONTRACT.md", "t1/config.json", "t1/g1r1_manifest.json", "t1/receipts/preservation_start.json", "g1r1/g1_attempt1_manifest.json", "g1r1/d3_supplementary_manifest.json", "d1/e1_supplementary_manifest.json", "d2/d1_supplementary_manifest.json", "d3/d2_supplementary_manifest.json", "d1/baseline/model.json", "g1r1/MANIFEST.sha256.json", "g1r1/report/g1_report.json", "dataset:MANIFEST.sha256.json"];
+    let amend = args.iter().any(|x| x == "--amend");
+    let target = if amend { "t1/frozen_protocol_a1.json" } else { FROZEN_PROTOCOL };
+    ensure!(!a.custody().resolve(Path::new(target))?.exists(), "protocol already frozen");
+    if !amend {
+        ensure!(!a.custody().resolve(&env.seed_rel)?.exists(), "protocol must be frozen BEFORE the T1 seed exists");
+    } else {
+        ensure!(!a.custody().resolve(Path::new("t1/rows/train.jsonl"))?.exists(), "amendment A1 must be frozen before any T1 rows exist");
+    }
+    let mut files = vec!["t1/T1_CONTRACT.md", "t1/config.json", "t1/g1r1_manifest.json", "t1/receipts/preservation_start.json", "g1r1/g1_attempt1_manifest.json", "g1r1/d3_supplementary_manifest.json", "d1/e1_supplementary_manifest.json", "d2/d1_supplementary_manifest.json", "d3/d2_supplementary_manifest.json", "d1/baseline/model.json", "g1r1/MANIFEST.sha256.json", "g1r1/report/g1_report.json", "dataset:MANIFEST.sha256.json"];
+    if amend {
+        files.push("t1/T1_AMENDMENT_A1.md");
+        files.push(FROZEN_PROTOCOL);
+    }
     let mut g = BTreeMap::new();
     for rel in files {
         let bytes = match rel.strip_prefix("dataset:") {
@@ -133,8 +143,8 @@ fn cmd_protocol_freeze(args: &[String]) -> Result<()> {
     groups.insert("protocol".to_string(), g);
     let fz = FrozenD1 { created_utc: format!("unix:{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()), run: "gen-001".into(), seed_fingerprint: "(not yet drawn)".into(), groups };
     let text = serde_json::to_string_pretty(&fz)?;
-    write_new(&a, FROZEN_PROTOCOL, text.as_bytes())?;
-    println!("frozen_protocol.json sha256 {}", sha256_hex(text.as_bytes()));
+    write_new(&a, target, text.as_bytes())?;
+    println!("frozen protocol sha256 {}", sha256_hex(text.as_bytes()));
     Ok(())
 }
 
@@ -173,7 +183,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     let mut seen: HashSet<String> = HashSet::new();
     let mut kept: Vec<RootRec> = Vec::new();
     let (mut excluded, mut accepted_total) = (0usize, 0usize);
-    let mut done: Option<(Vec<recur64_v69::dataset::Group>, Vec<Partition>, Vec<T1Meta>, BTreeMap<String, usize>)> = None;
+    let mut done: Option<(Vec<T1Meta>, BTreeMap<String, usize>)> = None;
     let mut status = "wall_limit_reached".to_string();
     let mut rounds = 0u64;
     for round in 0..100_000u64 {
@@ -253,24 +263,24 @@ fn cmd_generate(args: &[String]) -> Result<()> {
         }
         rounds = round + 1;
         if rounds % 3 == 0 {
-            let groups = build_groups(&seed, &kept);
-            let parts = assign(&seed, &groups);
-            let (examples, counts) = select_t1(&seed, &kept, &groups, &parts);
+            let parts = assign_roots(&seed, &kept);
+            let (examples, counts) = select_t1(&seed, &kept, &parts);
             let short: usize = counts.iter().map(|(k, c)| quota(if k.starts_with("train/") { Partition::Fit } else if k.starts_with("val/") { Partition::Val } else { Partition::Test }).saturating_sub(*c)).sum();
-            eprintln!("[t1] round {round}: accepted {accepted_total}, excluded {excluded}, kept {} ({} groups), {short} examples short | {:.0}s", kept.len(), groups.len(), t_start.elapsed().as_secs_f64());
+            eprintln!("[t1] round {round}: accepted {accepted_total}, excluded {excluded}, kept {}, {short} examples short | {:.0}s", kept.len(), t_start.elapsed().as_secs_f64());
             if feasible(&counts) {
                 status = "complete_feasible".into();
-                done = Some((groups, parts, examples, counts));
+                done = Some((examples, counts));
                 break;
             }
         }
     }
-    let Some((groups, parts, examples, counts)) = done else {
+    let Some((mut examples, counts)) = done else {
         let rep = json!({"status": status, "feasible": false, "rounds": rounds, "per_family_stats": stats, "accepted": accepted_total, "excluded": excluded, "wall_secs": t_start.elapsed().as_secs_f64()});
         a.write(Path::new("t1/meta/generation_report_FAILED.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
         eprintln!("[t1] GENERATION INFEASIBLE: {rep}");
         std::process::exit(3);
     };
+    let group_counts = attach_groups(&seed, &mut examples, &kept);
     // write partitions, nested scales, metadata, contributing pool
     let mut written = BTreeMap::new();
     let mut manifest = BTreeMap::new();
@@ -305,19 +315,14 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     for m in &examples {
         gp.entry(m.ex.partition.name()).or_default().insert(m.ex.group_id.as_str());
     }
-    let mut size_hist: BTreeMap<usize, usize> = BTreeMap::new();
-    for g in &groups {
-        *size_hist.entry(g.roots.len().min(60)).or_default() += 1;
-    }
-    let part_groups: BTreeMap<&str, usize> = parts.iter().fold(BTreeMap::new(), |mut m, p| { *m.entry(p.name()).or_default() += 1; m });
     let report = json!({"status": status, "feasible": true, "rounds": rounds, "round_size_per_family": round_size, "wall_secs": t_start.elapsed().as_secs_f64(), "seed_fingerprint": seed.fingerprint(),
         "per_family_stats": stats, "accepted_roots": accepted_total, "excluded_direct_prior_overlap": excluded, "kept_roots": kept.len(), "prior_index": {"roots": idx.roots.len(), "children": idx.children.len()},
-        "groups": {"count": groups.len(), "by_partition": part_groups, "largest": groups.iter().map(|g| g.roots.len()).max(), "size_histogram_capped_at_60": size_hist},
+        "groups_among_contributing_roots_by_partition": group_counts,
         "examples_written": written, "per_cell": counts, "distinct_groups_by_partition": gp.iter().map(|(k, v)| (k.to_string(), v.len())).collect::<BTreeMap<_, _>>(), "source": source_id()});
     a.write(Path::new("t1/meta/generation_report.json"), serde_json::to_string_pretty(&report)?.as_bytes())?;
     manifest.insert("t1/meta/generation_report.json".into(), sha256_hex(&a.read(Path::new("t1/meta/generation_report.json"))?));
     a.write(Path::new("t1/MANIFEST.sha256.json"), serde_json::to_string_pretty(&manifest)?.as_bytes())?;
-    println!("T1 generation complete: {written:?}; accepted {accepted_total}, excluded {excluded}, kept {}, groups {}; wall {:.1}s", kept.len(), groups.len(), t_start.elapsed().as_secs_f64());
+    println!("T1 generation complete: {written:?}; accepted {accepted_total}, excluded {excluded}, kept {}; wall {:.1}s", kept.len(), t_start.elapsed().as_secs_f64());
     Ok(())
 }
 
@@ -371,7 +376,7 @@ fn cmd_audit(args: &[String]) -> Result<()> {
     for k in SCALES {
         let rows = read_rows(&a.read_to_string(Path::new(&format!("t1/rows/train_s{k}.jsonl")))?)?;
         let ids: HashSet<String> = rows.iter().map(|r| r.id.clone()).collect();
-        check!("scales", ids.len() == 12 * 2 * k.min(TRAIN_PER_CLASS_CELL) && rows.len() == ids.len(), format!("scale {k}: {} rows", rows.len()));
+        check!("scales", ids.len() == 12 * k.min(TRAIN_PER_CLASS_CELL) && rows.len() == ids.len(), format!("scale {k}: {} rows", rows.len()));
         check!("scales", ids.iter().all(|i| train_ids.contains(i.as_str())) && prev.is_subset(&ids), format!("scale {k} not nested in train"));
         let want: HashSet<String> = all_meta.iter().filter(|m| m.ex.partition == Partition::Fit && m.rank < k).map(|m| m.ex.id.clone()).collect();
         check!("scales", want == ids, format!("scale {k} is not the rank<k prefix"));
@@ -397,9 +402,9 @@ fn cmd_audit(args: &[String]) -> Result<()> {
             check!("canon", key_hex(&canonical_key(&cb, att)) == c.key, format!("child identity {}", r.id));
         }
     }
-    let mut taken: HashSet<(String, u8)> = HashSet::new();
+    let mut taken: HashSet<String> = HashSet::new();
     for m in &all_meta {
-        check!("canon", taken.insert((m.ex.key.clone(), m.ex.budget)), format!("duplicate canonical child {}", m.ex.id));
+        check!("canon", taken.insert(m.ex.key.clone()), format!("duplicate canonical child {}", m.ex.id));
         let Some(root) = pool_by_id.get(m.ex.root_id.as_str()) else {
             failures.push(format!("[membership] root {} missing", m.ex.root_id));
             continue;
@@ -434,23 +439,18 @@ fn cmd_audit(args: &[String]) -> Result<()> {
         rpart.entry(&m.ex.root_id).or_default().insert(m.ex.partition);
         kpart.entry(&m.ex.key).or_default().insert(m.ex.partition);
     }
-    check!("isolation", gpart.values().all(|s| s.len() == 1) && rpart.values().all(|s| s.len() == 1) && kpart.values().all(|s| s.len() == 1), "a group/root/child identity spans partitions");
-    // every child of every contributing root is in the root's partition-consistent component: verify by rebuilding groups
-    let groups = build_groups(&seed, &pool);
-    let mut rg: HashMap<&str, &str> = HashMap::new();
-    for g in &groups {
-        for &i in &g.roots {
-            rg.insert(pool[i].id.as_str(), g.id.as_str());
+    check!("isolation", gpart.values().all(|s| s.len() == 1) && rpart.values().all(|s| s.len() == 1) && kpart.values().all(|s| s.len() == 1), "a group/root/example-child identity spans partitions");
+    // groups: rebuilt per partition from the contributing pool and compared (amendment A1)
+    {
+        let mut rebuilt = all_meta.clone();
+        let mut pool_sorted = pool.clone();
+        pool_sorted.sort_by(|x, y| x.id.cmp(&y.id));
+        attach_groups(&seed, &mut rebuilt, &pool_sorted);
+        let rb: HashMap<&str, &str> = rebuilt.iter().map(|m| (m.ex.id.as_str(), m.ex.group_id.as_str())).collect();
+        for m in &all_meta {
+            check!("groups", rb.get(m.ex.id.as_str()) == Some(&m.ex.group_id.as_str()), format!("group id differs {}", m.ex.id));
         }
     }
-    // (groups over the contributing pool only are a sub-partition of the full-pool groups: ids may differ; require consistency within partitions)
-    let mut pg: HashMap<&str, HashSet<Partition>> = HashMap::new();
-    for m in &all_meta {
-        if let Some(g) = rg.get(m.ex.root_id.as_str()) {
-            pg.entry(g).or_default().insert(m.ex.partition);
-        }
-    }
-    check!("isolation", pg.values().all(|s| s.len() == 1), "a connected component of the contributing pool spans partitions");
     // fresh exact re-query + empty-cache re-analysis
     let next = AtomicUsize::new(0);
     let bad = std::sync::Mutex::new(Vec::<String>::new());
@@ -620,6 +620,28 @@ fn cmd_baseline_refit(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+fn cmd_freeze_train(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::DataAudit)?;
+    let target = "t1/frozen_train.json";
+    ensure!(!a.custody().resolve(Path::new(target))?.exists(), "training inputs already frozen");
+    let rcpt: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/receipts/audit_receipt_t1.json"))?)?;
+    ensure!(rcpt["audit_pass"] == json!(true), "T1 audit did not pass; training inputs cannot be frozen");
+    let files = ["t1/T1_CONTRACT.md", "t1/config.json", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/frozen_protocol.json", "t1/frozen_protocol_a1.json", "t1/receipts/audit_receipt_t1.json", "t1/MANIFEST.sha256.json", "t1/rows/train.jsonl", "t1/rows/train_s250.jsonl", "t1/rows/train_s1000.jsonl", "t1/rows/train_s2000.jsonl", "t1/rows/val.jsonl", "init/canonical_init.bin", "d1/mlp_init.bin", "t1/seed/t1_master_seed.hex"];
+    let mut g = BTreeMap::new();
+    for rel in files {
+        g.insert(rel.to_string(), sha256_hex(&a.read(Path::new(rel)).with_context(|| format!("hash {rel}"))?));
+    }
+    let mut groups = BTreeMap::new();
+    groups.insert("learner".to_string(), g);
+    let seed = env.seed(&a)?;
+    let fz = FrozenD1 { created_utc: format!("unix:{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()), run: "gen-001".into(), seed_fingerprint: seed.fingerprint(), groups };
+    let text = serde_json::to_string_pretty(&fz)?;
+    write_new(&a, target, text.as_bytes())?;
+    println!("frozen training inputs sha256 {}", sha256_hex(text.as_bytes()));
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
@@ -628,6 +650,7 @@ fn main() -> Result<()> {
         Some("generate") => cmd_generate(&args[2..]),
         Some("audit") => cmd_audit(&args[2..]),
         Some("baseline-refit") => cmd_baseline_refit(&args[2..]),
+        Some("freeze-train") => cmd_freeze_train(&args[2..]),
         _ => bail!("usage: v69-t1 <preserve|protocol-freeze|generate|audit|baseline-refit> --artifacts DIR"),
     }
 }

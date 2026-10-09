@@ -1,18 +1,16 @@
 //! T1 dataset: train/val/test partitions from one fresh draw, identity-level exclusion against all prior
-//! V69 data (gen-001 and the G1 pool), component-level partitioning, nested training subsets.
+//! V69 data (gen-001 and the G1 pool), root-level partitioning (amendment A1), nested training subsets.
 
-use crate::dataset::{ChildRec, Example, Group, Partition, RootRec, CAP_PER_ROOT_PER_CLASS};
+use crate::dataset::{ChildRec, Example, Partition, RootRec, build_groups, CAP_PER_ROOT_PER_CLASS};
 use crate::generate::Family;
 use crate::streams::{MasterSeed, keyed_u64};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 pub const TRAIN_PER_CLASS_CELL: usize = 2000;
 pub const VAL_PER_CLASS_CELL: usize = 128;
 pub const TEST_PER_CLASS_CELL: usize = 256;
 pub const SCALES: [usize; 3] = [250, 1000, 2000];
-/// Components with more roots than this go to the training partition (label-blind, size only).
-pub const BIG_COMPONENT: usize = 50;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct T1Meta {
@@ -38,40 +36,29 @@ pub fn pname(p: Partition) -> &'static str {
     }
 }
 
-/// Label-blind partition of connected groups: size > BIG_COMPONENT -> train; otherwise keyed hash buckets 80/10/10.
-pub fn assign(seed: &MasterSeed, groups: &[Group]) -> Vec<Partition> {
-    groups
-        .iter()
-        .map(|g| {
-            if g.roots.len() > BIG_COMPONENT {
-                return Partition::Fit;
-            }
-            match keyed_u64(seed, "t1/partition", g.id.as_bytes()) % 100 {
-                0..=79 => Partition::Fit,
-                80..=89 => Partition::Val,
-                _ => Partition::Test,
-            }
-        })
-        .collect()
-}
-
 pub fn cell_name(f: &str, b: u8, label: bool) -> String {
     format!("{f}/n{b}/{}", if label { "pos" } else { "neg" })
 }
 
+/// Amendment A1: label-blind root-level assignment by keyed hash of the canonical root key, 80/10/10.
+pub fn assign_roots(seed: &MasterSeed, roots: &[RootRec]) -> Vec<Partition> {
+    roots
+        .iter()
+        .map(|r| match keyed_u64(seed, "t1/partition", r.key.as_bytes()) % 100 {
+            0..=79 => Partition::Fit,
+            80..=89 => Partition::Val,
+            _ => Partition::Test,
+        })
+        .collect()
+}
+
 /// Deterministic keyed selection per partition and family x budget x class cell; per-root cap 2 per class.
-pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], groups: &[Group], parts: &[Partition]) -> (Vec<T1Meta>, BTreeMap<String, usize>) {
-    let mut root_part = vec![Partition::Fit; roots.len()];
-    let mut root_group = vec![0usize; roots.len()];
-    for (gi, g) in groups.iter().enumerate() {
-        for &r in &g.roots {
-            root_part[r] = parts[gi];
-            root_group[r] = gi;
-        }
-    }
+/// Partitions are filled test, val, train with ONE global taken-set of (canonical child, budget), so no
+/// identical child position appears in two partitions. `group_id` is attached afterwards (`attach_groups`).
+pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], root_part: &[Partition]) -> (Vec<T1Meta>, BTreeMap<String, usize>) {
     let mut out = Vec::new();
     let mut counts = BTreeMap::new();
-    let mut taken: HashSet<(String, u8)> = HashSet::new();
+    let mut taken: HashSet<String> = HashSet::new();
     for p in [Partition::Test, Partition::Val, Partition::Fit] {
         for f in Family::ALL {
             for b in [1u8, 2] {
@@ -92,7 +79,7 @@ pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], groups: &[Group], parts: 
                             if got >= CAP_PER_ROOT_PER_CLASS || count >= quota(p) {
                                 break;
                             }
-                            if !taken.insert((c.key.clone(), b)) {
+                            if !taken.insert(c.key.clone()) {
                                 continue;
                             }
                             out.push(T1Meta {
@@ -105,7 +92,7 @@ pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], groups: &[Group], parts: 
                                     fen: c.fen.clone(),
                                     key: c.key.clone(),
                                     root_id: r.id.clone(),
-                                    group_id: groups[root_group[ri]].id.clone(),
+                                    group_id: String::new(),
                                     root_fen: r.fen.clone(),
                                     root_depth: r.depth,
                                     mv: c.mv.clone(),
@@ -122,6 +109,32 @@ pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], groups: &[Group], parts: 
         }
     }
     (out, counts)
+}
+
+/// Reporting/bootstrap groups: connected components (shared canonical children) among the CONTRIBUTING roots of
+/// each partition, computed separately per partition. Reproducible from the stored contributing pool.
+pub fn attach_groups(seed: &MasterSeed, metas: &mut [T1Meta], roots: &[RootRec]) -> HashMap<String, usize> {
+    let used: HashSet<&str> = metas.iter().map(|m| m.ex.root_id.as_str()).collect();
+    let mut part_of_root: HashMap<&str, Partition> = HashMap::new();
+    for m in metas.iter() {
+        part_of_root.insert(m.ex.root_id.as_str(), m.ex.partition);
+    }
+    let mut group_of: HashMap<String, String> = HashMap::new();
+    let mut counts = HashMap::new();
+    for p in [Partition::Fit, Partition::Val, Partition::Test] {
+        let sub: Vec<RootRec> = roots.iter().filter(|r| used.contains(r.id.as_str()) && part_of_root.get(r.id.as_str()) == Some(&p)).cloned().collect();
+        let groups = build_groups(seed, &sub);
+        counts.insert(pname(p).to_string(), groups.len());
+        for g in &groups {
+            for &i in &g.roots {
+                group_of.insert(sub[i].id.clone(), format!("{}-{}", pname(p), g.id));
+            }
+        }
+    }
+    for m in metas.iter_mut() {
+        m.ex.group_id = group_of[&m.ex.root_id].clone();
+    }
+    counts
 }
 
 pub fn feasible(counts: &BTreeMap<String, usize>) -> bool {
