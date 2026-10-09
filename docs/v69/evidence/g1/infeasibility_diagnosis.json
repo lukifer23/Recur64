@@ -1,0 +1,1846 @@
+{
+  "diagnostic_only": true,
+  "no_rows_or_panel_written": true,
+  "rounds": [
+    {
+      "direct_overlap_fraction": 0.4090338770388959,
+      "largest_component_before_exclusion": 8,
+      "per_root_rule_variant": {
+        "examples_short": 209,
+        "groups": 430,
+        "kept_roots": 471,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 40,
+          "KQQvK/n2/pos": 40,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 118,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 105
+        }
+      },
+      "pool_roots": 797,
+      "roots_with_direct_gen001_overlap": 326,
+      "round": 0,
+      "strict_rule": {
+        "examples_short": 231,
+        "groups": 400,
+        "kept_roots": 435,
+        "largest_group": 3,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 34,
+          "KQQvK/n2/pos": 34,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 112,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 101
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.413151364764268,
+      "largest_component_before_exclusion": 9,
+      "per_root_rule_variant": {
+        "examples_short": 116,
+        "groups": 801,
+        "kept_roots": 946,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 70,
+          "KQQvK/n2/pos": 70,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 1612,
+      "roots_with_direct_gen001_overlap": 666,
+      "round": 1,
+      "strict_rule": {
+        "examples_short": 156,
+        "groups": 680,
+        "kept_roots": 781,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 50,
+          "KQQvK/n2/pos": 50,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4159592529711375,
+      "largest_component_before_exclusion": 19,
+      "per_root_rule_variant": {
+        "examples_short": 36,
+        "groups": 1070,
+        "kept_roots": 1376,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 110,
+          "KQQvK/n2/pos": 110,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 2356,
+      "roots_with_direct_gen001_overlap": 980,
+      "round": 2,
+      "strict_rule": {
+        "examples_short": 144,
+        "groups": 836,
+        "kept_roots": 1000,
+        "largest_group": 6,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 56,
+          "KQQvK/n2/pos": 56,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4087096774193548,
+      "largest_component_before_exclusion": 65,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1311,
+        "kept_roots": 1833,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 3100,
+      "roots_with_direct_gen001_overlap": 1267,
+      "round": 3,
+      "strict_rule": {
+        "examples_short": 132,
+        "groups": 959,
+        "kept_roots": 1195,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 62,
+          "KQQvK/n2/pos": 62,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4027207392197125,
+      "largest_component_before_exclusion": 93,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1521,
+        "kept_roots": 2327,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 3896,
+      "roots_with_direct_gen001_overlap": 1569,
+      "round": 4,
+      "strict_rule": {
+        "examples_short": 116,
+        "groups": 1016,
+        "kept_roots": 1302,
+        "largest_group": 9,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 70,
+          "KQQvK/n2/pos": 70,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4027420736932305,
+      "largest_component_before_exclusion": 160,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1671,
+        "kept_roots": 2788,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 4668,
+      "roots_with_direct_gen001_overlap": 1880,
+      "round": 5,
+      "strict_rule": {
+        "examples_short": 100,
+        "groups": 1057,
+        "kept_roots": 1373,
+        "largest_group": 9,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 78,
+          "KQQvK/n2/pos": 78,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4043334557473375,
+      "largest_component_before_exclusion": 222,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1793,
+        "kept_roots": 3244,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 5446,
+      "roots_with_direct_gen001_overlap": 2202,
+      "round": 6,
+      "strict_rule": {
+        "examples_short": 112,
+        "groups": 1068,
+        "kept_roots": 1437,
+        "largest_group": 14,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 72,
+          "KQQvK/n2/pos": 72,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4074372182871861,
+      "largest_component_before_exclusion": 346,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1861,
+        "kept_roots": 3681,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 6212,
+      "roots_with_direct_gen001_overlap": 2531,
+      "round": 7,
+      "strict_rule": {
+        "examples_short": 132,
+        "groups": 1046,
+        "kept_roots": 1428,
+        "largest_group": 15,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 62,
+          "KQQvK/n2/pos": 62,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.41031870801772186,
+      "largest_component_before_exclusion": 420,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1854,
+        "kept_roots": 4126,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 6997,
+      "roots_with_direct_gen001_overlap": 2871,
+      "round": 8,
+      "strict_rule": {
+        "examples_short": 160,
+        "groups": 976,
+        "kept_roots": 1301,
+        "largest_group": 8,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 48,
+          "KQQvK/n2/pos": 48,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4074026474746177,
+      "largest_component_before_exclusion": 493,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1823,
+        "kept_roots": 4611,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 7781,
+      "roots_with_direct_gen001_overlap": 3170,
+      "round": 9,
+      "strict_rule": {
+        "examples_short": 188,
+        "groups": 915,
+        "kept_roots": 1212,
+        "largest_group": 8,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 34,
+          "KQQvK/n2/pos": 34,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4061804986538687,
+      "largest_component_before_exclusion": 559,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1784,
+        "kept_roots": 5073,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 8543,
+      "roots_with_direct_gen001_overlap": 3470,
+      "round": 10,
+      "strict_rule": {
+        "examples_short": 252,
+        "groups": 849,
+        "kept_roots": 1127,
+        "largest_group": 13,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 110,
+          "KQQvK/n1/pos": 106,
+          "KQQvK/n2/neg": 22,
+          "KQQvK/n2/pos": 22,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.4024481907011704,
+      "largest_component_before_exclusion": 598,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1743,
+        "kept_roots": 5565,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 9313,
+      "roots_with_direct_gen001_overlap": 3748,
+      "round": 11,
+      "strict_rule": {
+        "examples_short": 290,
+        "groups": 790,
+        "kept_roots": 1051,
+        "largest_group": 13,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 98,
+          "KQQvK/n1/pos": 94,
+          "KQQvK/n2/neg": 24,
+          "KQQvK/n2/pos": 24,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 110,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.40013876499157497,
+      "largest_component_before_exclusion": 653,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1651,
+        "kept_roots": 6052,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 10089,
+      "roots_with_direct_gen001_overlap": 4037,
+      "round": 12,
+      "strict_rule": {
+        "examples_short": 394,
+        "groups": 712,
+        "kept_roots": 966,
+        "largest_group": 15,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 62,
+          "KQQvK/n1/pos": 58,
+          "KQQvK/n2/neg": 14,
+          "KQQvK/n2/pos": 14,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 98,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39776372468151405,
+      "largest_component_before_exclusion": 727,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1578,
+        "kept_roots": 6571,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 10911,
+      "roots_with_direct_gen001_overlap": 4340,
+      "round": 13,
+      "strict_rule": {
+        "examples_short": 403,
+        "groups": 665,
+        "kept_roots": 898,
+        "largest_group": 19,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 68,
+          "KQQvK/n1/pos": 62,
+          "KQQvK/n2/neg": 10,
+          "KQQvK/n2/pos": 10,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 124,
+          "KRRvK/n1/pos": 91,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39758520294570987,
+      "largest_component_before_exclusion": 789,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1456,
+        "kept_roots": 7035,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 11678,
+      "roots_with_direct_gen001_overlap": 4643,
+      "round": 14,
+      "strict_rule": {
+        "examples_short": 479,
+        "groups": 595,
+        "kept_roots": 809,
+        "largest_group": 19,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 58,
+          "KQQvK/n1/pos": 52,
+          "KQQvK/n2/neg": 8,
+          "KQQvK/n2/pos": 8,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 94,
+          "KRRvK/n1/pos": 69,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3981362467866324,
+      "largest_component_before_exclusion": 839,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1382,
+        "kept_roots": 7492,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 12448,
+      "roots_with_direct_gen001_overlap": 4956,
+      "round": 15,
+      "strict_rule": {
+        "examples_short": 490,
+        "groups": 556,
+        "kept_roots": 726,
+        "largest_group": 15,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 52,
+          "KQQvK/n1/pos": 46,
+          "KQQvK/n2/neg": 8,
+          "KQQvK/n2/pos": 8,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 96,
+          "KRRvK/n1/pos": 70,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 126
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.397172236503856,
+      "largest_component_before_exclusion": 899,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1288,
+        "kept_roots": 7973,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 13226,
+      "roots_with_direct_gen001_overlap": 5253,
+      "round": 16,
+      "strict_rule": {
+        "examples_short": 537,
+        "groups": 501,
+        "kept_roots": 658,
+        "largest_group": 11,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 46,
+          "KQQvK/n1/pos": 40,
+          "KQQvK/n2/neg": 8,
+          "KQQvK/n2/pos": 8,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 82,
+          "KRRvK/n1/pos": 60,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 115
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3987332764019357,
+      "largest_component_before_exclusion": 959,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1205,
+        "kept_roots": 8449,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 14052,
+      "roots_with_direct_gen001_overlap": 5603,
+      "round": 17,
+      "strict_rule": {
+        "examples_short": 587,
+        "groups": 452,
+        "kept_roots": 576,
+        "largest_group": 12,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 42,
+          "KQQvK/n1/pos": 37,
+          "KQQvK/n2/neg": 4,
+          "KQQvK/n2/pos": 4,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 72,
+          "KRRvK/n1/pos": 50,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 100
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3974962982904832,
+      "largest_component_before_exclusion": 1026,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1115,
+        "kept_roots": 8952,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 14858,
+      "roots_with_direct_gen001_overlap": 5906,
+      "round": 18,
+      "strict_rule": {
+        "examples_short": 623,
+        "groups": 413,
+        "kept_roots": 544,
+        "largest_group": 22,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 32,
+          "KQQvK/n1/pos": 28,
+          "KQQvK/n2/neg": 4,
+          "KQQvK/n2/pos": 4,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 66,
+          "KRRvK/n1/pos": 49,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 90
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3986304876487905,
+      "largest_component_before_exclusion": 1086,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 1037,
+        "kept_roots": 9397,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 15626,
+      "roots_with_direct_gen001_overlap": 6229,
+      "round": 19,
+      "strict_rule": {
+        "examples_short": 665,
+        "groups": 378,
+        "kept_roots": 505,
+        "largest_group": 30,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 30,
+          "KQQvK/n1/pos": 26,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 54,
+          "KRRvK/n1/pos": 39,
+          "KRRvK/n2/neg": 126,
+          "KRRvK/n2/pos": 80
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39835616438356164,
+      "largest_component_before_exclusion": 1137,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 962,
+        "kept_roots": 9882,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 16425,
+      "roots_with_direct_gen001_overlap": 6543,
+      "round": 20,
+      "strict_rule": {
+        "examples_short": 744,
+        "groups": 331,
+        "kept_roots": 415,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 28,
+          "KQQvK/n1/pos": 24,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 40,
+          "KRRvK/n1/pos": 27,
+          "KRRvK/n2/neg": 98,
+          "KRRvK/n2/pos": 59
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39885873995574705,
+      "largest_component_before_exclusion": 1200,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 900,
+        "kept_roots": 10324,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 17174,
+      "roots_with_direct_gen001_overlap": 6850,
+      "round": 21,
+      "strict_rule": {
+        "examples_short": 768,
+        "groups": 301,
+        "kept_roots": 379,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 24,
+          "KQQvK/n1/pos": 21,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 38,
+          "KRRvK/n1/pos": 25,
+          "KRRvK/n2/neg": 90,
+          "KRRvK/n2/pos": 54
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3983504235399019,
+      "largest_component_before_exclusion": 1254,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 826,
+        "kept_roots": 10796,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 17944,
+      "roots_with_direct_gen001_overlap": 7148,
+      "round": 22,
+      "strict_rule": {
+        "examples_short": 811,
+        "groups": 276,
+        "kept_roots": 341,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 16,
+          "KQQvK/n1/pos": 13,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 30,
+          "KRRvK/n1/pos": 18,
+          "KRRvK/n2/neg": 84,
+          "KRRvK/n2/pos": 48
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3980426760789347,
+      "largest_component_before_exclusion": 1314,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 764,
+        "kept_roots": 11256,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 18699,
+      "roots_with_direct_gen001_overlap": 7443,
+      "round": 23,
+      "strict_rule": {
+        "examples_short": 831,
+        "groups": 257,
+        "kept_roots": 314,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 14,
+          "KQQvK/n1/pos": 11,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 22,
+          "KRRvK/n1/pos": 13,
+          "KRRvK/n2/neg": 82,
+          "KRRvK/n2/pos": 47
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39837774013039684,
+      "largest_component_before_exclusion": 1371,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 681,
+        "kept_roots": 11719,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 19479,
+      "roots_with_direct_gen001_overlap": 7760,
+      "round": 24,
+      "strict_rule": {
+        "examples_short": 839,
+        "groups": 222,
+        "kept_roots": 260,
+        "largest_group": 7,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 14,
+          "KQQvK/n1/pos": 11,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 20,
+          "KRRvK/n1/pos": 12,
+          "KRRvK/n2/neg": 80,
+          "KRRvK/n2/pos": 44
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3983683559950556,
+      "largest_component_before_exclusion": 1427,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 638,
+        "kept_roots": 12168,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 20225,
+      "roots_with_direct_gen001_overlap": 8057,
+      "round": 25,
+      "strict_rule": {
+        "examples_short": 851,
+        "groups": 213,
+        "kept_roots": 253,
+        "largest_group": 9,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 12,
+          "KQQvK/n1/pos": 9,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 123,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 18,
+          "KRRvK/n1/pos": 11,
+          "KRRvK/n2/neg": 80,
+          "KRRvK/n2/pos": 44
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39850412081368203,
+      "largest_component_before_exclusion": 1480,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 608,
+        "kept_roots": 12626,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 20991,
+      "roots_with_direct_gen001_overlap": 8365,
+      "round": 26,
+      "strict_rule": {
+        "examples_short": 884,
+        "groups": 194,
+        "kept_roots": 225,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 10,
+          "KQQvK/n1/pos": 8,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 112,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 16,
+          "KRRvK/n1/pos": 9,
+          "KRRvK/n2/neg": 70,
+          "KRRvK/n2/pos": 39
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39814474650991916,
+      "largest_component_before_exclusion": 1545,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 565,
+        "kept_roots": 13106,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 21776,
+      "roots_with_direct_gen001_overlap": 8670,
+      "round": 27,
+      "strict_rule": {
+        "examples_short": 917,
+        "groups": 179,
+        "kept_roots": 208,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 8,
+          "KQQvK/n1/pos": 6,
+          "KQQvK/n2/neg": 2,
+          "KQQvK/n2/pos": 2,
+          "KQRvK/n1/neg": 118,
+          "KQRvK/n1/pos": 99,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 10,
+          "KRRvK/n1/pos": 6,
+          "KRRvK/n2/neg": 72,
+          "KRRvK/n2/pos": 40
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3988042515500443,
+      "largest_component_before_exclusion": 1603,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 531,
+        "kept_roots": 13575,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 22580,
+      "roots_with_direct_gen001_overlap": 9005,
+      "round": 28,
+      "strict_rule": {
+        "examples_short": 966,
+        "groups": 166,
+        "kept_roots": 190,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 4,
+          "KQQvK/n1/pos": 4,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 100,
+          "KQRvK/n1/pos": 84,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 10,
+          "KRRvK/n1/pos": 6,
+          "KRRvK/n2/neg": 68,
+          "KRRvK/n2/pos": 38
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3990756985750353,
+      "largest_component_before_exclusion": 1661,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 478,
+        "kept_roots": 14043,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 23369,
+      "roots_with_direct_gen001_overlap": 9326,
+      "round": 29,
+      "strict_rule": {
+        "examples_short": 1016,
+        "groups": 148,
+        "kept_roots": 173,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 82,
+          "KQRvK/n1/pos": 70,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 6,
+          "KRRvK/n1/pos": 3,
+          "KRRvK/n2/neg": 66,
+          "KRRvK/n2/pos": 37
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39893264934635114,
+      "largest_component_before_exclusion": 1724,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 447,
+        "kept_roots": 14529,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 24172,
+      "roots_with_direct_gen001_overlap": 9643,
+      "round": 30,
+      "strict_rule": {
+        "examples_short": 1042,
+        "groups": 140,
+        "kept_roots": 162,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 82,
+          "KQRvK/n1/pos": 71,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 124,
+          "KRRvK/n1/neg": 4,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 54,
+          "KRRvK/n2/pos": 29
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.399054070303419,
+      "largest_component_before_exclusion": 1769,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 415,
+        "kept_roots": 14993,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 24949,
+      "roots_with_direct_gen001_overlap": 9956,
+      "round": 31,
+      "strict_rule": {
+        "examples_short": 1078,
+        "groups": 128,
+        "kept_roots": 149,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 68,
+          "KQRvK/n1/pos": 62,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 118,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 1,
+          "KRRvK/n2/neg": 52,
+          "KRRvK/n2/pos": 27
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3991139437276543,
+      "largest_component_before_exclusion": 1823,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 390,
+        "kept_roots": 15462,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 25732,
+      "roots_with_direct_gen001_overlap": 10270,
+      "round": 32,
+      "strict_rule": {
+        "examples_short": 1090,
+        "groups": 124,
+        "kept_roots": 145,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 64,
+          "KQRvK/n1/pos": 59,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 116,
+          "KRRvK/n1/neg": 0,
+          "KRRvK/n1/pos": 0,
+          "KRRvK/n2/neg": 52,
+          "KRRvK/n2/pos": 27
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3990960451977401,
+      "largest_component_before_exclusion": 1875,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 364,
+        "kept_roots": 15954,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 26550,
+      "roots_with_direct_gen001_overlap": 10596,
+      "round": 33,
+      "strict_rule": {
+        "examples_short": 1089,
+        "groups": 123,
+        "kept_roots": 143,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 64,
+          "KQRvK/n1/pos": 59,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 113,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 52,
+          "KRRvK/n2/pos": 27
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3989087047277255,
+      "largest_component_before_exclusion": 1921,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 331,
+        "kept_roots": 16414,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 27307,
+      "roots_with_direct_gen001_overlap": 10893,
+      "round": 34,
+      "strict_rule": {
+        "examples_short": 1109,
+        "groups": 114,
+        "kept_roots": 135,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 2,
+          "KQQvK/n1/pos": 1,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 56,
+          "KQRvK/n1/pos": 50,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 104,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 54,
+          "KRRvK/n2/pos": 28
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.398505072076882,
+      "largest_component_before_exclusion": 1986,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 313,
+        "kept_roots": 16899,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 28095,
+      "roots_with_direct_gen001_overlap": 11196,
+      "round": 35,
+      "strict_rule": {
+        "examples_short": 1131,
+        "groups": 107,
+        "kept_roots": 126,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 2,
+          "KQQvK/n1/pos": 1,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 56,
+          "KQRvK/n1/pos": 49,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 93,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 48,
+          "KRRvK/n2/pos": 24
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3984467096595243,
+      "largest_component_before_exclusion": 2035,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 290,
+        "kept_roots": 17350,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 28842,
+      "roots_with_direct_gen001_overlap": 11492,
+      "round": 36,
+      "strict_rule": {
+        "examples_short": 1153,
+        "groups": 98,
+        "kept_roots": 117,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 2,
+          "KQQvK/n1/pos": 1,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 48,
+          "KQRvK/n1/pos": 41,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 87,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 48,
+          "KRRvK/n2/pos": 24
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3986351812438769,
+      "largest_component_before_exclusion": 2090,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 267,
+        "kept_roots": 17801,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 29601,
+      "roots_with_direct_gen001_overlap": 11800,
+      "round": 37,
+      "strict_rule": {
+        "examples_short": 1171,
+        "groups": 92,
+        "kept_roots": 111,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 42,
+          "KQRvK/n1/pos": 37,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 85,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 46,
+          "KRRvK/n2/pos": 23
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.3989795918367347,
+      "largest_component_before_exclusion": 2139,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 254,
+        "kept_roots": 18259,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 30380,
+      "roots_with_direct_gen001_overlap": 12121,
+      "round": 38,
+      "strict_rule": {
+        "examples_short": 1203,
+        "groups": 84,
+        "kept_roots": 101,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 36,
+          "KQRvK/n1/pos": 31,
+          "KQRvK/n2/neg": 120,
+          "KQRvK/n2/pos": 76,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 44,
+          "KRRvK/n2/pos": 22
+        }
+      }
+    },
+    {
+      "direct_overlap_fraction": 0.39925457057481606,
+      "largest_component_before_exclusion": 2191,
+      "per_root_rule_variant": {
+        "examples_short": 0,
+        "groups": 243,
+        "kept_roots": 18697,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 128,
+          "KQQvK/n1/pos": 128,
+          "KQQvK/n2/neg": 128,
+          "KQQvK/n2/pos": 128,
+          "KQRvK/n1/neg": 128,
+          "KQRvK/n1/pos": 128,
+          "KQRvK/n2/neg": 128,
+          "KQRvK/n2/pos": 128,
+          "KRRvK/n1/neg": 128,
+          "KRRvK/n1/pos": 128,
+          "KRRvK/n2/neg": 128,
+          "KRRvK/n2/pos": 128
+        }
+      },
+      "pool_roots": 31123,
+      "roots_with_direct_gen001_overlap": 12426,
+      "round": 39,
+      "strict_rule": {
+        "examples_short": 1212,
+        "groups": 81,
+        "kept_roots": 98,
+        "largest_group": 5,
+        "per_cell_available": {
+          "KQQvK/n1/neg": 0,
+          "KQQvK/n1/pos": 0,
+          "KQQvK/n2/neg": 0,
+          "KQQvK/n2/pos": 0,
+          "KQRvK/n1/neg": 32,
+          "KQRvK/n1/pos": 28,
+          "KQRvK/n2/neg": 118,
+          "KQRvK/n2/pos": 76,
+          "KRRvK/n1/neg": 2,
+          "KRRvK/n1/pos": 2,
+          "KRRvK/n2/neg": 44,
+          "KRRvK/n2/pos": 22
+        }
+      }
+    }
+  ]
+}
