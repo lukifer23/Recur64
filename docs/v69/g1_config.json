@@ -1,0 +1,27 @@
+{
+  "experiment": "V69-G1 fresh same-domain generalization evaluation of three frozen candidates",
+  "status": "evaluation only: no training, tuning, calibration, ensemble or threshold search",
+  "precision": "CUDA backend: f32 storage and accumulation, matmul inputs possibly TF32 (autotune-selected); NOT strict FP32. Baseline inference is host-side f64.",
+  "candidates": {
+    "A": "d3/fits/A/final (D3-A update-12,000 checkpoint; model.mpk, meta.json; provenance d3/fits/A/provenance.json)",
+    "M": "d3/fits/M/final (D3-M update-12,000 checkpoint)",
+    "B": "d1/baseline/model.json (D1 shallow logistic baseline with its original standardization and weights)"
+  },
+  "threshold": "logit 0",
+  "data": {
+    "families": ["KQQvK", "KQRvK", "KRRvK"],
+    "mate_depths": [2, 3],
+    "examples": 1536,
+    "per_cell": 128,
+    "cells": "3 families x remaining budget {1,2} x class {neg,pos}",
+    "per_root_cap_per_class": 2,
+    "node_limit_per_query": 5000000,
+    "exclusion": "connected groups sharing a canonical root or any immediate-child canonical identity with gen-001 (full 65-byte keys) are removed",
+    "streams": ["generation/<family>", "selection/root", "selection/child", "g1/intervention/<family>/<budget>", "g1/bootstrap"]
+  },
+  "controls": {"derangement": "cyclic shift of keyed shuffle within family x budget cells (label independent, bijective, no fixed points); complete board instance replaced; recipient budget kept", "erasure": "A,M: all 64 squares empty, budget/attacker-to-move/constant rule scalars kept; B: all board-derived base features replaced by fit means, budget indicator kept, interactions recomputed", "donor_consistency_tolerance": {"neural_abs_logit": 0.002, "baseline_abs_logit": 1e-9}},
+  "bootstrap": {"resamples": 5000, "unit": "connected G1 group_id", "paired": true},
+  "transfer_criterion_A_M": {"balanced_accuracy_min": 0.75, "bce_max": 0.55, "derangement_drop_min_pp": 15},
+  "improvement_over_baseline": {"balanced_accuracy_gain_min_pp": 5, "paired_95ci_excludes_zero": true, "bce_no_worse_than_baseline": true},
+  "limits": {"native_hours_total": 2, "generation_audit_min": 60, "evaluation_min_each": 10, "aggregation_min": 20, "host_gib": 8, "device_mib_sampled": 3072}
+}

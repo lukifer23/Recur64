@@ -284,3 +284,8 @@ pub fn movement<B: AutodiffBackend, M: Module<B>>(model: &M, theta0: &[(Vec<usiz
 pub fn inv_of<B: Backend, M: Module<B>>(m: &M) -> Vec<ParamInfo> {
     inventory::<B, M>(m)
 }
+
+/// Load the model weights of a saved MLP checkpoint for inference only (no optimizer state).
+pub fn load_mlp_eval<B: Backend>(dir: &Path, device: &B::Device) -> anyhow::Result<Mlp<B>> {
+    Mlp::<B>::new(device).load_file(dir.join("model"), &rec(), device).map_err(|e| anyhow::anyhow!("load mlp: {e}"))
+}

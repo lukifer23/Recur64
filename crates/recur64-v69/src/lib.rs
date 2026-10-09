@@ -13,6 +13,7 @@ pub mod d1_metrics;
 pub mod d2;
 pub mod dataset;
 pub mod features;
+pub mod g1;
 pub mod generate;
 pub mod metrics;
 pub mod oracle;
