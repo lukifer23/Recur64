@@ -1,0 +1,30 @@
+{
+  "experiment": "V69-D2 bounded fitting-set scaling diagnostic",
+  "status": "fitting-only diagnostic; no validation or sealed use; no new data",
+  "dataset": "gen-001 fitting partition only",
+  "precision": "CUDA backend: f32 storage and accumulation, matmul inputs possibly TF32 (autotune-selected); NOT strict FP32",
+  "sizes": [64, 256, 768],
+  "nesting": "panel(32) in 64 in 256 in 768",
+  "neural": {
+    "updates": 2400,
+    "microbatch": 2,
+    "accumulation_steps": 8,
+    "optimizer": "AdamW",
+    "betas": [0.9, 0.999],
+    "epsilon": 1e-8,
+    "weight_decay": 1e-4,
+    "peak_lr": 5e-4,
+    "final_lr": 5e-5,
+    "warmup_updates": 20,
+    "lr_rule": "u in 0..1999 exactly the D1 rule (u<20: peak*(u+1)/20; else final+0.5*(peak-final)*(1+cos(pi*(u-20)/1979))); u in 2000..2399: hold final_lr",
+    "grad_clip_global_norm": 1.0,
+    "snapshot_updates": [0, 50, 100, 200, 400, 600, 800, 1000, 1600, 2000, 2400],
+    "equal_exposure_checkpoints": {"12.5": {"64": 50, "256": 200, "768": 600}, "50": {"64": 200, "256": 800, "768": 2400}},
+    "strong_fit": "balanced accuracy >= 0.95 and BCE <= 0.05",
+    "exact_memorization": "accuracy == 1.0 and BCE <= 0.05",
+    "a_init": "init/canonical_init.bin (E1 canonical UNTRAINED init)",
+    "m_init": "d1/mlp_init.bin (D1 UNTRAINED MLP init)",
+    "order_stream": "d2_train_order/<N>/<epoch>"
+  },
+  "limits": {"device_mib_sampled": 3072, "host_gib": 8, "native_hours_total": 2, "qualification_min": 30, "a_fit_min": 25, "m_fit_min": 5}
+}

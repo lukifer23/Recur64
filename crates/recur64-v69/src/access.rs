@@ -75,22 +75,22 @@ impl Access {
     /// Output prefixes (relative to the V69 artifact root) the role may write.
     fn allowed_write_prefixes(role: Role) -> &'static [&'static str] {
         match role {
-            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/"],
+            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/"],
             Role::Evaluator => &["eval/", "intervention/", "d1/"],
-            Role::MetricAggregator => &["report/", "d1/"],
-            Role::DataAudit => &["audit/", "d1/"],
-            Role::D1Panel => &["d1/"],
+            Role::MetricAggregator => &["report/", "d1/", "d2/"],
+            Role::DataAudit => &["audit/", "d1/", "d2/"],
+            Role::D1Panel => &["d1/", "d2/"],
         }
     }
 
     /// Non-dataset V69 files readable by role (relative prefixes under the root).
     fn allowed_other_read_prefixes(role: Role) -> &'static [&'static str] {
         match role {
-            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/"],
+            Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/"],
             Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/", "d1/"],
-            Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/"],
-            Role::DataAudit => &["audit/", "spec/", "d1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
-            Role::D1Panel => &["d1/", "spec/", "init/"],
+            Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/", "d2/"],
+            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
+            Role::D1Panel => &["d1/", "d2/", "spec/", "init/"],
         }
     }
 

@@ -10,6 +10,7 @@ pub mod canon;
 pub mod custody;
 pub mod d1;
 pub mod d1_metrics;
+pub mod d2;
 pub mod dataset;
 pub mod features;
 pub mod generate;

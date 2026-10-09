@@ -24,3 +24,7 @@ path = "src/bin/v69_aggregate.rs"
 [[bin]]
 name = "v69-d1"
 path = "src/bin/v69_d1.rs"
+
+[[bin]]
+name = "v69-d2"
+path = "src/bin/v69_d2.rs"
