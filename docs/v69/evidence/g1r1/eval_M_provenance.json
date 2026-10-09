@@ -1,0 +1,27 @@
+{
+  "candidate": "M",
+  "candidate_files": {
+    "d3/fits/M/final/meta.json": "1a0618621554c7f00257e4baccd52e56ccb66efddebb720c22acb2c4c350bef9",
+    "d3/fits/M/final/model.mpk": "bbba3b7f9d51e5500daeba3d0a00cb95c555cf9d4cf12f01d4d7ea59261753d2"
+  },
+  "data_manifest_sha256": "0b45df62089a968d525730608ea164f754cc210b10b026a9d92bb6e09414fc57",
+  "evaluator_source": {
+    "digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f",
+    "git_head": "13227499ea8c79ff446e72c206c3ddcadececb86"
+  },
+  "frozen_g1_sha256": "7eb6444026865f79f9408debe857fe6e2be737c84392a62ad644d83ba7016ec6",
+  "g1_rows_sha256": "54ec00f7db82784d748f4b0d03236ad91dffdef8758d2cc235ef8855f2afc83b",
+  "intervention_map_sha256": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+  "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (not strict FP32); baseline host f64",
+  "predictions_sha256": "e4335bff8c650eb9f310be45ff7dfbdd20cd35268d793ee74c1f70610a96ea33",
+  "protocol_sha256": "8b18e4f500061d22571f382500e87ddf61dd3ebe3fcb28077bfad42e719d76c5",
+  "provenance_id": "9da7594a00c1c9897a3155cd4a885386e473f02e098d76c3bb92bd64a205b298",
+  "timing": {
+    "batch_size": 16,
+    "evaluator_process_wall_ms_excluding_aggregation": 1091.3378,
+    "real_pass_incl_first_batch_jit_ms": 723.7489,
+    "startup_cuda_init_and_model_load_ms": 93.3147,
+    "warm_full_pass_1536_inference_only_ms": 38.9982,
+    "warmed_synchronized_batch16_median_ms": 0.32989999999999997
+  }
+}

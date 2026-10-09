@@ -1,0 +1,117 @@
+{
+  "exclusion": {
+    "child_key_overlaps": 1285,
+    "groups_after": 1392,
+    "groups_before": 1730,
+    "groups_removed": 0,
+    "root_key_overlaps": 4,
+    "roots_after": 1959,
+    "roots_before": 3244,
+    "roots_removed": 1285,
+    "roots_with_gen001_overlap": 1285
+  },
+  "exclusion_index": {
+    "gen001_children": 62229,
+    "gen001_roots": 1628,
+    "index_sha256": "b6a9a3dd326394f5778a3a49bb159fd08dbdf27eba0fff520170742035a209af"
+  },
+  "feasible": true,
+  "groups": {
+    "count": 1392,
+    "largest": 18,
+    "size_histogram_roots": {
+      "1": 1089,
+      "10": 1,
+      "11": 2,
+      "16": 1,
+      "18": 1,
+      "2": 196,
+      "3": 54,
+      "4": 18,
+      "5": 13,
+      "6": 9,
+      "7": 5,
+      "8": 3
+    }
+  },
+  "kept_roots": 1959,
+  "limits": {
+    "node_limit_per_query": 5000000,
+    "threads": 10,
+    "wall_secs": 3300
+  },
+  "per_family_stats": {
+    "KQQvK": {
+      "accepted_m2": 885,
+      "accepted_m3": 172,
+      "analyzed": 1405,
+      "attempted": 4000,
+      "duplicate": 1,
+      "illegal_adjacent_kings": 403,
+      "illegal_defender_in_check": 1843,
+      "illegal_other": 0,
+      "illegal_overlap": 348,
+      "rejected_m1": 348,
+      "rejected_no_mate_within_3": 0,
+      "unresolved_node_limit": 0
+    },
+    "KQRvK": {
+      "accepted_m2": 627,
+      "accepted_m3": 525,
+      "analyzed": 1633,
+      "attempted": 4000,
+      "duplicate": 2,
+      "illegal_adjacent_kings": 400,
+      "illegal_defender_in_check": 1619,
+      "illegal_other": 0,
+      "illegal_overlap": 346,
+      "rejected_m1": 210,
+      "rejected_no_mate_within_3": 271,
+      "unresolved_node_limit": 0
+    },
+    "KRRvK": {
+      "accepted_m2": 596,
+      "accepted_m3": 439,
+      "analyzed": 2007,
+      "attempted": 4000,
+      "duplicate": 3,
+      "illegal_adjacent_kings": 408,
+      "illegal_defender_in_check": 1240,
+      "illegal_other": 0,
+      "illegal_overlap": 342,
+      "rejected_m1": 144,
+      "rejected_no_mate_within_3": 828,
+      "unresolved_node_limit": 0
+    }
+  },
+  "pool_roots_before_exclusion": 3244,
+  "round_size_per_family": 1000,
+  "rounds": 4,
+  "seed_fingerprint": "8a82104fcb055419",
+  "selected": {
+    "distinct_groups": 393,
+    "distinct_roots": 456,
+    "examples": 1536,
+    "per_cell": {
+      "KQQvK/n1/neg": 128,
+      "KQQvK/n1/pos": 128,
+      "KQQvK/n2/neg": 128,
+      "KQQvK/n2/pos": 128,
+      "KQRvK/n1/neg": 128,
+      "KQRvK/n1/pos": 128,
+      "KQRvK/n2/neg": 128,
+      "KQRvK/n2/pos": 128,
+      "KRRvK/n1/neg": 128,
+      "KRRvK/n1/pos": 128,
+      "KRRvK/n2/neg": 128,
+      "KRRvK/n2/pos": 128
+    }
+  },
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "13227499ea8c79ff446e72c206c3ddcadececb86",
+    "source_digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f"
+  },
+  "status": "complete_feasible",
+  "wall_secs": 1.5199047
+}

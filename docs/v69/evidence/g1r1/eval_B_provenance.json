@@ -1,0 +1,25 @@
+{
+  "candidate": "B",
+  "candidate_files": {
+    "d1/baseline/model.json": "1c3b775a169ed055c7cbdbff8c34de4e26306a0e24166e225f88531bbc009415"
+  },
+  "data_manifest_sha256": "0b45df62089a968d525730608ea164f754cc210b10b026a9d92bb6e09414fc57",
+  "evaluator_source": {
+    "digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f",
+    "git_head": "13227499ea8c79ff446e72c206c3ddcadececb86"
+  },
+  "frozen_g1_sha256": "7eb6444026865f79f9408debe857fe6e2be737c84392a62ad644d83ba7016ec6",
+  "g1_rows_sha256": "54ec00f7db82784d748f4b0d03236ad91dffdef8758d2cc235ef8855f2afc83b",
+  "intervention_map_sha256": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+  "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (not strict FP32); baseline host f64",
+  "predictions_sha256": "9a13a75dd04ff389c93366a5d13f4d8d459aeb9ed077f4c67b33354ebbe9a338",
+  "protocol_sha256": "8b18e4f500061d22571f382500e87ddf61dd3ebe3fcb28077bfad42e719d76c5",
+  "provenance_id": "f1c62b728a6a7d8c8d9b7f9c9e633a1a01803b9493e921cf736c2788d03237fb",
+  "timing": {
+    "device": "host f64 (no GPU)",
+    "evaluator_process_wall_ms_excluding_aggregation": 136.9532,
+    "feature_extraction_total_ms_1536_rows_incl_parse_and_legal_move_features": 1.7359,
+    "logit_computation_ms_1536": 0.029,
+    "startup_cuda_init_and_model_load_ms": 0.4622
+  }
+}

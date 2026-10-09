@@ -1,0 +1,5 @@
+[g1] seed fingerprint 8a82104fcb055419 | exclusion index: 1628 roots, 62229 children | limits 3300s, 5000000 nodes, 10 threads
+[g1] round 0: pool 798 roots, kept 489 after exclusion (450 groups), 201 examples short | 0s
+[g1] round 1: pool 1635 roots, kept 1013 after exclusion (847 groups), 84 examples short | 1s
+[g1] round 2: pool 2457 roots, kept 1493 after exclusion (1135 groups), 8 examples short | 1s
+[g1] round 3: pool 3244 roots, kept 1959 after exclusion (1392 groups), 0 examples short | 1s

@@ -1,0 +1,5 @@
+{
+  "git_head": "13227499ea8c79ff446e72c206c3ddcadececb86",
+  "note": "executable source of the G1 evaluator (data crate + model crate + core rules + lock + toolchain)",
+  "source_digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f"
+}

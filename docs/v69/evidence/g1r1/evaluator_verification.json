@@ -1,0 +1,46 @@
+{
+  "checks": [
+    {
+      "candidate": "A",
+      "classification_agreement": 768,
+      "max_abs_logit_diff_vs_recorded_d3_update12000": 1.7763568394002505e-15,
+      "of": 768,
+      "pass": true,
+      "target_separation_features_independent_of_labels_ids": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "M",
+      "classification_agreement": 768,
+      "max_abs_logit_diff_vs_recorded_d3_update12000": 1.7763568394002505e-15,
+      "of": 768,
+      "pass": true,
+      "target_separation_features_independent_of_labels_ids": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "B",
+      "max_abs_logit_diff_vs_recorded_d1_fit_predictions": 8.881784197001252e-16,
+      "pass": true,
+      "standardization": "stored fit statistics (not recomputed)",
+      "tolerance": 1e-9
+    },
+    {
+      "baseline": true,
+      "name": "erasure_definitions_consistent",
+      "neural": true,
+      "pass": true
+    }
+  ],
+  "evaluator_source_digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f",
+  "fixture": "D2 s768 fitting rows (fitting-only); recorded D3 update-12000 and D1 baseline fitting predictions",
+  "fixture_rows_sha256": "17cd652a57cd9e3123e3b8018d827e5ffa773fc247da8e7074249e6d00b667b1",
+  "no_g1_labels_or_outputs_used": true,
+  "ok": true,
+  "protocol_hashes_verified": 14,
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "13227499ea8c79ff446e72c206c3ddcadececb86",
+    "source_digest": "f0a0e8c2818171793007b601088160071f1c62e540163572fe11671266a93f7f"
+  }
+}

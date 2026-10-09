@@ -1,5 +1,7 @@
 # Recur64 V69 — G1 fresh generalization evaluation: STOPPED at data construction (no inference run)
 
+> **Superseded:** G1 was completed under the owner-approved revision R1 — see `RESULTS_G1_R1.md`. This file is kept as the record of the stopped first attempt.
+
 Contract: `G1_CONTRACT.md` (+ `g1_config.json`), frozen before the seed was drawn. Evidence: `evidence/g1/`. Labels: **MEASURED**, **INFERRED**, **NOT RUN**.
 
 ## Decision
