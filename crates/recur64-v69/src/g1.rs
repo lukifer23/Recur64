@@ -171,3 +171,31 @@ pub fn intervention_map(seed: &MasterSeed, examples: &[Example]) -> Result<BTree
     ensure!(map.len() == examples.len() && donors.len() == map.len() && map.iter().all(|(k, v)| k != v), "not a derangement");
     Ok(map)
 }
+
+/// R1 (owner-approved amendment): identity-level exclusion first, grouping afterwards.
+/// A new root is removed iff its canonical root key, or any of its immediate-child keys, occurs in the
+/// gen-001 index (full 65-byte keys). Connected groups are then formed among the survivors (for
+/// deduplication and the cluster bootstrap). Guarantee: no kept root/child canonical identity occurs
+/// in gen-001. Not guaranteed: transitive component-level separation from gen-001.
+pub fn apply_exclusion_r1(seed: &MasterSeed, pool: Vec<RootRec>, idx: &ExclusionIndex) -> (Vec<RootRec>, Vec<Group>, ExclusionStats) {
+    let rset: HashSet<&str> = idx.roots.iter().map(String::as_str).collect();
+    let cset: HashSet<&str> = idx.children.iter().map(String::as_str).collect();
+    let mut st = ExclusionStats { roots_before: pool.len(), groups_before: build_groups(seed, &pool).len(), ..Default::default() };
+    let mut kept = Vec::with_capacity(pool.len());
+    for r in pool {
+        let rk = rset.contains(r.key.as_str());
+        let ck = r.children.iter().any(|c| cset.contains(c.key.as_str()));
+        st.root_key_overlaps += rk as usize;
+        st.child_key_overlaps += ck as usize;
+        if rk || ck {
+            st.roots_with_gen001_overlap += 1;
+        } else {
+            kept.push(r);
+        }
+    }
+    st.roots_removed = st.roots_with_gen001_overlap;
+    let groups = build_groups(seed, &kept);
+    st.roots_after = kept.len();
+    st.groups_after = groups.len();
+    (kept, groups, st)
+}

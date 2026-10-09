@@ -41,7 +41,7 @@ impl Env {
         Ok(Self {
             custody: Custody::new(Path::new(&arg(args, "--artifacts").context("--artifacts")?))?,
             run: PathBuf::from("gen-001"),
-            seed_rel: PathBuf::from("g1/seed/g1_master_seed.hex"),
+            seed_rel: PathBuf::from("g1r1/seed/g1_master_seed.hex"),
         })
     }
     fn access(&self) -> Result<Access> {
@@ -94,10 +94,10 @@ fn m_logits(m: &Mlp<G>, f: &[&Features], dev: &CudaDevice) -> Vec<f32> {
 
 /// Verify the listed prefixes of the frozen protocol file that this role may read.
 fn verify_protocol(a: &Access) -> Result<usize> {
-    let fz: FrozenD1 = serde_json::from_slice(&a.read(Path::new("g1/frozen_protocol.json"))?)?;
+    let fz: FrozenD1 = serde_json::from_slice(&a.read(Path::new("g1r1/frozen_protocol.json"))?)?;
     let mut n = 0;
     for (rel, want) in &fz.groups["protocol"] {
-        let readable = (rel.starts_with("d3/fits/") && !rel.contains("/final/opt")) || rel.starts_with("d1/baseline/") || rel == "d2/subsets/s768_rows.jsonl" || rel == "g1/G1_CONTRACT.md" || rel == "g1/config.json";
+        let readable = (rel.starts_with("d3/fits/") && !rel.contains("/final/opt")) || rel.starts_with("d1/baseline/") || rel == "d2/subsets/s768_rows.jsonl" || rel.starts_with("g1r1/G1_") || rel == "g1r1/config.json";
         if !readable {
             continue;
         }
@@ -172,7 +172,7 @@ fn cmd_verify(args: &[String]) -> Result<()> {
     checks.push(json!({"name": "erasure_definitions_consistent", "neural": erased_ok, "baseline": berased_ok, "pass": erased_ok && berased_ok}));
     let ok = checks.iter().all(|c| c["pass"].as_bool() == Some(true));
     let rep = json!({"ok": ok, "protocol_hashes_verified": np, "fixture": "D2 s768 fitting rows (fitting-only); recorded D3 update-12000 and D1 baseline fitting predictions", "fixture_rows_sha256": rows_sha, "checks": checks, "no_g1_labels_or_outputs_used": true, "source": source_id(), "evaluator_source_digest": source_digest()});
-    write_new(&a, "g1/receipts/evaluator_verification.json", serde_json::to_string_pretty(&rep)?.as_bytes())?;
+    write_new(&a, "g1r1/receipts/evaluator_verification.json", serde_json::to_string_pretty(&rep)?.as_bytes())?;
     println!("{}", serde_json::to_string_pretty(&rep)?);
     if !ok {
         std::process::exit(5);
@@ -188,20 +188,20 @@ fn cmd_eval(args: &[String]) -> Result<()> {
     let a = env.access()?;
     let cand = arg(args, "--candidate").context("--candidate A|M|B")?;
     ensure!(["A", "M", "B"].contains(&cand.as_str()), "candidate must be A, M or B");
-    let out = format!("g1/eval/{cand}");
+    let out = format!("g1r1/eval/{cand}");
     ensure!(!a.custody().resolve(Path::new(&out))?.join("provenance.json").exists(), "candidate {cand} already evaluated: one registered evaluation only");
     // frozen hashes + executable-source identity
-    let frozen: FrozenD1 = serde_json::from_slice(&a.read(Path::new("g1/frozen_g1.json"))?)?;
+    let frozen: FrozenD1 = serde_json::from_slice(&a.read(Path::new("g1r1/frozen_g1.json"))?)?;
     let nv = verify_group(&a, &env.run, &frozen, "evaluator")?;
-    let src: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1/evaluator_source.json"))?)?;
+    let src: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1r1/evaluator_source.json"))?)?;
     let sid = source_id();
     ensure!(sid.git_dirty_files == 0, "evaluator must run from a clean tree ({} dirty files)", sid.git_dirty_files);
     ensure!(src["source_digest"].as_str() == Some(source_digest().as_str()), "EVALUATOR SOURCE DIGEST MISMATCH: the verified evaluator source is frozen");
     eprintln!("[g1 eval {cand}] {nv} frozen hashes verified; source digest matches");
-    let (rows, feats, fb, rows_sha) = load_rows(&a, "g1/rows/g1_rows.jsonl")?;
+    let (rows, feats, fb, rows_sha) = load_rows(&a, "g1r1/rows/g1_rows.jsonl")?;
     ensure!(rows.len() == 1536, "G1 rows");
     let idx: HashMap<&str, usize> = rows.iter().enumerate().map(|(i, r)| (r.id.as_str(), i)).collect();
-    let map_bytes = a.read(Path::new("g1/intervention/map.json"))?;
+    let map_bytes = a.read(Path::new("g1r1/intervention/map.json"))?;
     let map_v: serde_json::Value = serde_json::from_slice(&map_bytes)?;
     let donor_of: Vec<usize> = rows.iter().map(|r| idx[map_v["map"][&r.id].as_str().unwrap()]).collect();
     ensure!(donor_of.iter().enumerate().all(|(i, d)| *d != i), "frozen map has a fixed point");
@@ -288,9 +288,9 @@ fn cmd_eval(args: &[String]) -> Result<()> {
     timing.insert("evaluator_process_wall_ms_excluding_aggregation".into(), json!(t_proc.elapsed().as_secs_f64() * 1e3));
     let prov = json!({
         "candidate": cand, "evaluator_source": {"git_head": sid.git_head, "digest": src["source_digest"]},
-        "frozen_g1_sha256": sha256_hex(&a.read(Path::new("g1/frozen_g1.json"))?),
-        "protocol_sha256": sha256_hex(&a.read(Path::new("g1/frozen_protocol.json"))?),
-        "data_manifest_sha256": sha256_hex(&a.read(Path::new("g1/MANIFEST.sha256.json"))?),
+        "frozen_g1_sha256": sha256_hex(&a.read(Path::new("g1r1/frozen_g1.json"))?),
+        "protocol_sha256": sha256_hex(&a.read(Path::new("g1r1/frozen_protocol.json"))?),
+        "data_manifest_sha256": sha256_hex(&a.read(Path::new("g1r1/MANIFEST.sha256.json"))?),
         "g1_rows_sha256": rows_sha, "intervention_map_sha256": sha256_hex(&map_bytes),
         "candidate_files": files, "predictions_sha256": sha256_hex(text.as_bytes()),
         "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (not strict FP32); baseline host f64",

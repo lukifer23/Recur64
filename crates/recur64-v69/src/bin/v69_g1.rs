@@ -39,7 +39,7 @@ impl Env {
         Ok(Self {
             custody: Custody::new(Path::new(&arg(args, "--artifacts").context("--artifacts")?))?,
             run: PathBuf::from("gen-001"),
-            seed_rel: PathBuf::from("g1/seed/g1_master_seed.hex"),
+            seed_rel: PathBuf::from("g1r1/seed/g1_master_seed.hex"),
         })
     }
     fn access(&self, role: Role) -> Result<Access> {
@@ -74,8 +74,8 @@ struct Fam {
     unresolved_node_limit: u64,
 }
 
-const FROZEN_PROTOCOL: &str = "g1/frozen_protocol.json";
-const FROZEN_G1: &str = "g1/frozen_g1.json";
+const FROZEN_PROTOCOL: &str = "g1r1/frozen_protocol.json";
+const FROZEN_G1: &str = "g1r1/frozen_g1.json";
 
 // ------------------------------------------------------------------ protocol-freeze
 
@@ -84,7 +84,7 @@ fn cmd_protocol_freeze(args: &[String]) -> Result<()> {
     let a = env.access(Role::DataAudit)?;
     ensure!(!a.custody().resolve(Path::new(FROZEN_PROTOCOL))?.exists(), "protocol already frozen");
     ensure!(!a.custody().resolve(&env.seed_rel)?.exists(), "protocol must be frozen BEFORE the G1 seed exists");
-    let mut files: Vec<String> = ["g1/G1_CONTRACT.md", "g1/config.json", "g1/d3_supplementary_manifest.json", "g1/receipts/preservation_start.json", "d1/e1_supplementary_manifest.json", "d2/d1_supplementary_manifest.json", "d3/d2_supplementary_manifest.json", "spec/frozen.json", "d1/frozen_d1.json", "d2/frozen_d2.json", "d3/frozen_d3.json", "d1/baseline/model.json", "d1/baseline/predictions_fit.jsonl", "d2/subsets/s768_rows.jsonl", "d3/report/d3_report.json", "d1/report/d1_report.json", "dataset:MANIFEST.sha256.json"].iter().map(|s| s.to_string()).collect();
+    let mut files: Vec<String> = ["g1r1/G1_CONTRACT.md", "g1r1/G1_AMENDMENT_R1.md", "g1r1/config.json", "g1r1/g1_attempt1_manifest.json", "g1r1/d3_supplementary_manifest.json", "g1r1/receipts/preservation_start.json", "d1/e1_supplementary_manifest.json", "d2/d1_supplementary_manifest.json", "d3/d2_supplementary_manifest.json", "spec/frozen.json", "d1/frozen_d1.json", "d2/frozen_d2.json", "d3/frozen_d3.json", "d1/baseline/model.json", "d1/baseline/predictions_fit.jsonl", "d2/subsets/s768_rows.jsonl", "d3/report/d3_report.json", "d1/report/d1_report.json", "dataset:MANIFEST.sha256.json"].iter().map(|s| s.to_string()).collect();
     for m in ["A", "M"] {
         for f in ["model.mpk", "meta.json", "opt_decay.mpk", "opt_nodecay.mpk"] {
             files.push(format!("d3/fits/{m}/final/{f}"));
@@ -117,7 +117,7 @@ fn cmd_preserve(args: &[String]) -> Result<()> {
     let label = arg(args, "--label").context("--label")?;
     let mut mismatches = Vec::new();
     let mut n = 0;
-    for (mf, what) in [("d1/e1_supplementary_manifest.json", "E1"), ("d2/d1_supplementary_manifest.json", "D1"), ("d3/d2_supplementary_manifest.json", "D2"), ("g1/d3_supplementary_manifest.json", "D3")] {
+    for (mf, what) in [("d1/e1_supplementary_manifest.json", "E1"), ("d2/d1_supplementary_manifest.json", "D1"), ("d3/d2_supplementary_manifest.json", "D2"), ("g1r1/d3_supplementary_manifest.json", "D3"), ("g1r1/g1_attempt1_manifest.json", "G1-attempt1")] {
         let man: serde_json::Value = serde_json::from_slice(&a.read(Path::new(mf))?)?;
         for (rel, v) in man["files"].as_object().context("files")? {
             n += 1;
@@ -137,7 +137,7 @@ fn cmd_preserve(args: &[String]) -> Result<()> {
     let rep = json!({"label": label, "ok": ok, "files_checked": n, "mismatches": mismatches,
         "documented_e1_deviation": "E1 audit receipt audit/gen-001_audit_receipt_v2.json was overwritten in place by the E1 post-campaign audit; pre-run copy preserved. G1 never writes to audit/; receipts are append-only.",
         "source": source_id()});
-    write_new(&a, &format!("g1/receipts/preservation_{label}.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
+    write_new(&a, &format!("g1r1/receipts/preservation_{label}.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
     println!("{}", serde_json::to_string_pretty(&rep)?);
     if !ok {
         std::process::exit(4);
@@ -163,15 +163,15 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     let node_limit: u64 = arg(args, "--node-limit").map(|s| s.parse()).transpose()?.unwrap_or(5_000_000);
     let threads: usize = arg(args, "--threads").map(|s| s.parse()).transpose()?.unwrap_or(10);
     let round_size: u64 = arg(args, "--round-size").map(|s| s.parse()).transpose()?.unwrap_or(1000);
-    ensure!(!a.custody().resolve(Path::new("g1/rows/g1_rows.jsonl"))?.exists(), "G1 data already generated; no regeneration");
+    ensure!(!a.custody().resolve(Path::new("g1r1/rows/g1_rows.jsonl"))?.exists(), "G1 data already generated; no regeneration");
     if arg(args, "--diagnose-rounds").is_none() {
-        ensure!(!a.custody().resolve(Path::new("g1/meta/infeasibility_diagnosis.json"))?.exists(), "a failed construction was already diagnosed; the registered procedure is not retried");
+        ensure!(!a.custody().resolve(Path::new("g1r1/meta/infeasibility_diagnosis.json"))?.exists(), "a failed construction was already diagnosed; the registered procedure is not retried");
     }
     // contamination-exclusion index from gen-001 roots and ALL their immediate children (data-only)
     let gen001 = load_gen001_pool(&a, &env.run)?;
     let idx = ExclusionIndex::from_pool(&gen001);
     let idx_text = serde_json::to_string(&idx)?;
-    a.write(Path::new("g1/index/gen001_exclusion_index.json"), idx_text.as_bytes())?;
+    a.write(Path::new("g1r1/index/gen001_exclusion_index.json"), idx_text.as_bytes())?;
     eprintln!("[g1] seed fingerprint {} | exclusion index: {} roots, {} children | limits {time_limit}s, {node_limit} nodes, {threads} threads", seed.fingerprint(), idx.roots.len(), idx.children.len());
     let deadline = t_start + Duration::from_secs(time_limit);
     let mut stats: BTreeMap<&'static str, Fam> = Family::ALL.iter().map(|f| (f.name(), Fam::default())).collect();
@@ -253,7 +253,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
             }
         }
         rounds = round + 1;
-        let (kept, groups, est) = apply_exclusion(&seed, pool.clone(), &idx);
+        let (kept, groups, est) = apply_exclusion_r1(&seed, pool.clone(), &idx);
         let (examples, counts) = select_g1(&seed, &kept, &groups);
         let short: usize = counts.values().map(|c| G1_QUOTA.saturating_sub(*c)).sum();
         eprintln!("[g1] round {round}: pool {} roots, kept {} after exclusion ({} groups), {short} examples short | {:.0}s", pool.len(), kept.len(), groups.len(), t_start.elapsed().as_secs_f64());
@@ -267,7 +267,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
             let largest_pre = build_groups(&seed, &pool).iter().map(|g| g.roots.len()).max().unwrap_or(0);
             diag.push(json!({"round": round, "pool_roots": pool.len(), "roots_with_direct_gen001_overlap": direct_bad, "direct_overlap_fraction": direct_bad as f64 / pool.len() as f64, "largest_component_before_exclusion": largest_pre, "strict_rule": {"kept_roots": kept.len(), "groups": groups.len(), "largest_group": largest, "examples_short": short, "per_cell_available": counts}, "per_root_rule_variant": {"kept_roots": kept2.len(), "groups": groups2.len(), "examples_short": counts2.values().map(|c| G1_QUOTA.saturating_sub(*c)).sum::<usize>(), "per_cell_available": counts2}}));
             if round + 1 >= max_rounds {
-                a.write(Path::new("g1/meta/infeasibility_diagnosis.json"), serde_json::to_string_pretty(&json!({"diagnostic_only": true, "no_rows_or_panel_written": true, "rounds": diag}))?.as_bytes())?;
+                a.write(Path::new("g1r1/meta/infeasibility_diagnosis.json"), serde_json::to_string_pretty(&json!({"diagnostic_only": true, "no_rows_or_panel_written": true, "rounds": diag}))?.as_bytes())?;
                 println!("diagnosis written after {max_rounds} rounds");
                 return Ok(());
             }
@@ -280,7 +280,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     }
     let Some((kept, groups, est, examples, counts)) = result else {
         let rep = json!({"status": status, "feasible": false, "rounds": rounds, "per_family_stats": stats, "pool_roots_before_exclusion": pool.len(), "wall_secs": t_start.elapsed().as_secs_f64()});
-        a.write(Path::new("g1/meta/generation_report_FAILED.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
+        a.write(Path::new("g1r1/meta/generation_report_FAILED.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
         eprintln!("[g1] GENERATION INFEASIBLE within limits: {rep}");
         std::process::exit(3);
     };
@@ -296,9 +296,9 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     }
     let rows: Vec<Row> = sorted.iter().map(|e| Row { id: &e.id, fen: &e.fen, budget: e.budget, label: e.label }).collect();
     let (t_rows, t_meta, t_pool) = (text_of(&rows), text_of(&sorted), text_of(&kept));
-    a.write(Path::new("g1/rows/g1_rows.jsonl"), t_rows.as_bytes())?;
-    a.write(Path::new("g1/meta/g1_meta.jsonl"), t_meta.as_bytes())?;
-    a.write(Path::new("g1/pool/roots.jsonl"), t_pool.as_bytes())?;
+    a.write(Path::new("g1r1/rows/g1_rows.jsonl"), t_rows.as_bytes())?;
+    a.write(Path::new("g1r1/meta/g1_meta.jsonl"), t_meta.as_bytes())?;
+    a.write(Path::new("g1r1/pool/roots.jsonl"), t_pool.as_bytes())?;
     let used_groups: HashSet<&str> = sorted.iter().map(|e| e.group_id.as_str()).collect();
     let used_roots: HashSet<&str> = sorted.iter().map(|e| e.root_id.as_str()).collect();
     let mut size_hist: BTreeMap<usize, usize> = BTreeMap::new();
@@ -316,14 +316,14 @@ fn cmd_generate(args: &[String]) -> Result<()> {
         "selected": {"examples": sorted.len(), "distinct_groups": used_groups.len(), "distinct_roots": used_roots.len(), "per_cell": counts},
         "source": source_id(),
     });
-    a.write(Path::new("g1/meta/generation_report.json"), serde_json::to_string_pretty(&report)?.as_bytes())?;
+    a.write(Path::new("g1r1/meta/generation_report.json"), serde_json::to_string_pretty(&report)?.as_bytes())?;
     let mut man = BTreeMap::new();
-    for (rel, t) in [("g1/rows/g1_rows.jsonl", &t_rows), ("g1/meta/g1_meta.jsonl", &t_meta), ("g1/pool/roots.jsonl", &t_pool)] {
+    for (rel, t) in [("g1r1/rows/g1_rows.jsonl", &t_rows), ("g1r1/meta/g1_meta.jsonl", &t_meta), ("g1r1/pool/roots.jsonl", &t_pool)] {
         man.insert(rel.to_string(), sha256_hex(t.as_bytes()));
     }
-    man.insert("g1/index/gen001_exclusion_index.json".into(), sha256_hex(idx_text.as_bytes()));
-    man.insert("g1/meta/generation_report.json".into(), sha256_hex(&a.read(Path::new("g1/meta/generation_report.json"))?));
-    a.write(Path::new("g1/MANIFEST.sha256.json"), serde_json::to_string_pretty(&man)?.as_bytes())?;
+    man.insert("g1r1/index/gen001_exclusion_index.json".into(), sha256_hex(idx_text.as_bytes()));
+    man.insert("g1r1/meta/generation_report.json".into(), sha256_hex(&a.read(Path::new("g1r1/meta/generation_report.json"))?));
+    a.write(Path::new("g1r1/MANIFEST.sha256.json"), serde_json::to_string_pretty(&man)?.as_bytes())?;
     println!("G1 generation complete: {} examples, {} roots kept ({} excluded in {} groups), {} groups, wall {:.1}s", sorted.len(), kept.len(), est.roots_removed, est.groups_removed, groups.len(), t_start.elapsed().as_secs_f64());
     Ok(())
 }
@@ -345,14 +345,14 @@ fn cmd_audit(args: &[String]) -> Result<()> {
             }
         };
     }
-    let man: BTreeMap<String, String> = serde_json::from_slice(&a.read(Path::new("g1/MANIFEST.sha256.json"))?)?;
+    let man: BTreeMap<String, String> = serde_json::from_slice(&a.read(Path::new("g1r1/MANIFEST.sha256.json"))?)?;
     for (f, h) in &man {
         check!("manifest", sha256_hex(&a.read(Path::new(f))?) == *h, format!("hash mismatch {f}"));
     }
     ensure!(failures.is_empty(), "manifest mismatch: {failures:?}");
-    let rows = read_rows(&a.read_to_string(Path::new("g1/rows/g1_rows.jsonl"))?)?;
-    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1/meta/g1_meta.jsonl"))?)?;
-    let pool: Vec<RootRec> = jsonl(&a.read_to_string(Path::new("g1/pool/roots.jsonl"))?)?;
+    let rows = read_rows(&a.read_to_string(Path::new("g1r1/rows/g1_rows.jsonl"))?)?;
+    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1r1/meta/g1_meta.jsonl"))?)?;
+    let pool: Vec<RootRec> = jsonl(&a.read_to_string(Path::new("g1r1/pool/roots.jsonl"))?)?;
     let mm: HashMap<&str, &Example> = meta.iter().map(|e| (e.id.as_str(), e)).collect();
     check!("rows", rows.len() == G1_TOTAL && meta.len() == G1_TOTAL && mm.len() == G1_TOTAL, "count/duplicate");
     for r in &rows {
@@ -420,7 +420,7 @@ fn cmd_audit(args: &[String]) -> Result<()> {
         }
     }
     check!("exclusion", overlaps == 0, format!("{overlaps} canonical overlaps with gen-001"));
-    let stored_idx: ExclusionIndex = serde_json::from_slice(&a.read(Path::new("g1/index/gen001_exclusion_index.json"))?)?;
+    let stored_idx: ExclusionIndex = serde_json::from_slice(&a.read(Path::new("g1r1/index/gen001_exclusion_index.json"))?)?;
     check!("exclusion", stored_idx.roots == idx.roots && stored_idx.children == idx.children, "stored exclusion index differs from the rebuilt one");
     // groups rebuilt
     let seed = env.seed(&a)?;
@@ -545,7 +545,7 @@ fn cmd_audit(args: &[String]) -> Result<()> {
         "gen001_overlaps_found": overlaps, "gen001_index_sizes": {"roots": idx.roots.len(), "children": idx.children.len()},
         "reference_shared_dependencies": "cozy-chess move generator/legality (cross-checked vs brute-force is_legal in tests), FEN parser, domain definition; NOT the search, cache, node budget or rules::classify code",
         "audit_wall_secs": t0.elapsed().as_secs_f64(), "source": source_id()});
-    write_new(&a, "g1/receipts/audit_receipt_g1.json", serde_json::to_string_pretty(&rep)?.as_bytes())?;
+    write_new(&a, "g1r1/receipts/audit_receipt_g1.json", serde_json::to_string_pretty(&rep)?.as_bytes())?;
     println!("{}", serde_json::to_string_pretty(&rep)?);
     if !ok {
         std::process::exit(4);
@@ -559,12 +559,12 @@ fn cmd_intervention(args: &[String]) -> Result<()> {
     let env = Env::from(args)?;
     let a = env.access(Role::G1Builder)?;
     let seed = env.seed(&a)?;
-    ensure!(a.read_to_string(Path::new("g1/receipts/audit_receipt_g1.json")).map(|t| t.contains("\"audit_pass\": true")).unwrap_or(false), "audit must pass before the intervention map is frozen");
-    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1/meta/g1_meta.jsonl"))?)?;
+    ensure!(a.read_to_string(Path::new("g1r1/receipts/audit_receipt_g1.json")).map(|t| t.contains("\"audit_pass\": true")).unwrap_or(false), "audit must pass before the intervention map is frozen");
+    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1r1/meta/g1_meta.jsonl"))?)?;
     let map = intervention_map(&seed, &meta)?; // label-independent: uses only family, budget and id
     let body = serde_json::to_string_pretty(&json!({"derangement": "cyclic shift of a keyed shuffle within family x budget cells; label independent", "stream": format!("{STREAM_G1_INTERVENTION}/<family>/<budget>"), "seed_fingerprint": seed.fingerprint(), "map": map}))?;
-    write_new(&a, "g1/intervention/map.json", body.as_bytes())?;
-    write_new(&a, "g1/intervention/map.sha256", sha256_hex(body.as_bytes()).as_bytes())?;
+    write_new(&a, "g1r1/intervention/map.json", body.as_bytes())?;
+    write_new(&a, "g1r1/intervention/map.sha256", sha256_hex(body.as_bytes()).as_bytes())?;
     println!("intervention map sha256 {}", sha256_hex(body.as_bytes()));
     Ok(())
 }
@@ -576,7 +576,7 @@ fn cmd_freeze(args: &[String]) -> Result<()> {
     let a = env.access(Role::DataAudit)?;
     ensure!(!a.custody().resolve(Path::new(FROZEN_G1))?.exists(), "G1 already frozen");
     let h = |rel: &str| -> Result<String> { Ok(sha256_hex(&a.read(Path::new(rel)).with_context(|| format!("hash {rel}"))?)) };
-    let mut ev: Vec<String> = ["g1/G1_CONTRACT.md", "g1/config.json", FROZEN_PROTOCOL, "g1/rows/g1_rows.jsonl", "g1/MANIFEST.sha256.json", "g1/intervention/map.json", "g1/intervention/map.sha256", "g1/evaluator_source.json", "g1/receipts/evaluator_verification.json", "d1/baseline/model.json", "d1/baseline/predictions_fit.jsonl", "d2/subsets/s768_rows.jsonl"].iter().map(|s| s.to_string()).collect();
+    let mut ev: Vec<String> = ["g1r1/G1_CONTRACT.md", "g1r1/G1_AMENDMENT_R1.md", "g1r1/config.json", FROZEN_PROTOCOL, "g1r1/rows/g1_rows.jsonl", "g1r1/MANIFEST.sha256.json", "g1r1/intervention/map.json", "g1r1/intervention/map.sha256", "g1r1/evaluator_source.json", "g1r1/receipts/evaluator_verification.json", "d1/baseline/model.json", "d1/baseline/predictions_fit.jsonl", "d2/subsets/s768_rows.jsonl"].iter().map(|s| s.to_string()).collect();
     for m in ["A", "M"] {
         for f in ["model.mpk", "meta.json"] {
             ev.push(format!("d3/fits/{m}/final/{f}"));
@@ -584,7 +584,7 @@ fn cmd_freeze(args: &[String]) -> Result<()> {
         ev.push(format!("d3/fits/{m}/provenance.json"));
         ev.push(format!("d3/fits/{m}/predictions.jsonl"));
     }
-    let agg: Vec<String> = ["g1/G1_CONTRACT.md", "g1/config.json", FROZEN_PROTOCOL, "g1/rows/g1_rows.jsonl", "g1/meta/g1_meta.jsonl", "g1/MANIFEST.sha256.json", "g1/intervention/map.json", "g1/receipts/audit_receipt_g1.json", "g1/receipts/evaluator_verification.json", "d3/report/d3_report.json", "d1/report/d1_report.json"].iter().map(|s| s.to_string()).collect();
+    let agg: Vec<String> = ["g1r1/G1_CONTRACT.md", "g1r1/G1_AMENDMENT_R1.md", "g1r1/config.json", FROZEN_PROTOCOL, "g1r1/rows/g1_rows.jsonl", "g1r1/meta/g1_meta.jsonl", "g1r1/MANIFEST.sha256.json", "g1r1/intervention/map.json", "g1r1/receipts/audit_receipt_g1.json", "g1r1/receipts/evaluator_verification.json", "d3/report/d3_report.json", "d1/report/d1_report.json"].iter().map(|s| s.to_string()).collect();
     let mut groups = BTreeMap::new();
     for (n, list) in [("evaluator", ev), ("aggregator", agg)] {
         let mut m = BTreeMap::new();
@@ -608,7 +608,7 @@ fn cmd_source(args: &[String]) -> Result<()> {
     let a = env.access(Role::DataAudit)?;
     let sid = source_id();
     ensure!(sid.git_dirty_files == 0, "evaluator source must be committed and clean before it is frozen ({} dirty files)", sid.git_dirty_files);
-    write_new(&a, "g1/evaluator_source.json", serde_json::to_string_pretty(&json!({"git_head": sid.git_head, "source_digest": source_digest(), "note": "executable source of the G1 evaluator (data crate + model crate + core rules + lock + toolchain)"}))?.as_bytes())?;
+    write_new(&a, "g1r1/evaluator_source.json", serde_json::to_string_pretty(&json!({"git_head": sid.git_head, "source_digest": source_digest(), "note": "executable source of the G1 evaluator (data crate + model crate + core rules + lock + toolchain)"}))?.as_bytes())?;
     println!("evaluator source {} digest {}", sid.git_head, sid.source_digest);
     Ok(())
 }
@@ -667,12 +667,12 @@ fn cmd_aggregate(args: &[String]) -> Result<()> {
     let frozen: FrozenD1 = serde_json::from_slice(&a.read(Path::new(FROZEN_G1))?)?;
     let nv = verify_group(&a, &env.run, &frozen, "aggregator")?;
     eprintln!("[g1 aggregate] {nv} frozen hashes verified");
-    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1/meta/g1_meta.jsonl"))?)?;
+    let meta: Vec<Example> = jsonl(&a.read_to_string(Path::new("g1r1/meta/g1_meta.jsonl"))?)?;
     ensure!(meta.len() == G1_TOTAL, "meta size");
     let mm: HashMap<&str, &Example> = meta.iter().map(|e| (e.id.as_str(), e)).collect();
-    let map_v: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1/intervention/map.json"))?)?;
+    let map_v: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1r1/intervention/map.json"))?)?;
     let dmap: HashMap<String, String> = map_v["map"].as_object().unwrap().iter().map(|(k, v)| (k.clone(), v.as_str().unwrap().to_string())).collect();
-    let audit: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1/receipts/audit_receipt_g1.json"))?)?;
+    let audit: serde_json::Value = serde_json::from_slice(&a.read(Path::new("g1r1/receipts/audit_receipt_g1.json"))?)?;
     let audit_ok = audit["audit_pass"].as_bool() == Some(true);
     let fz_sha = sha256_hex(&a.read(Path::new(FROZEN_G1))?);
     // group index
@@ -692,7 +692,7 @@ fn cmd_aggregate(args: &[String]) -> Result<()> {
     let mut summ: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new(); // ba, acc, bce, drop
     let mut integrity_ok = audit_ok;
     for cand in ["A", "M", "B"] {
-        let dir = format!("g1/eval/{cand}");
+        let dir = format!("g1r1/eval/{cand}");
         let prov: serde_json::Value = serde_json::from_slice(&a.read(Path::new(&format!("{dir}/provenance.json")))?).with_context(|| format!("candidate {cand} evaluation missing/failed"))?;
         let pb = a.read(Path::new(&format!("{dir}/predictions.jsonl")))?;
         ensure!(prov["predictions_sha256"].as_str() == Some(sha256_hex(&pb).as_str()), "{cand}: predictions hash differs from provenance");
@@ -851,7 +851,7 @@ fn cmd_aggregate(args: &[String]) -> Result<()> {
     report.insert("label".into(), json!("G1 is same-domain generalization on one fresh evaluation-only panel; not an architecture, recurrence, hierarchy or move-selection claim."));
     report.insert("source".into(), serde_json::to_value(source_id())?);
     let text = serde_json::to_string_pretty(&serde_json::Value::Object(report))?;
-    a.write(Path::new("g1/report/g1_report.json"), text.as_bytes())?;
+    a.write(Path::new("g1r1/report/g1_report.json"), text.as_bytes())?;
     for n in &notes {
         println!("{n}");
     }

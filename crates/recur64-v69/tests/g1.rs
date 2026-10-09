@@ -81,28 +81,46 @@ fn intervention_map_is_a_label_independent_derangement_within_cells() {
 fn g1_roles_are_restricted() {
     let dir = std::env::temp_dir().join(format!("v69-g1-test-{}", std::process::id())).join("artifacts").join("v69");
     let _ = std::fs::remove_dir_all(dir.parent().unwrap());
-    for p in ["g1/rows", "g1/meta", "g1/index", "g1/seed", "g1/eval", "d3/fits/A/final", "gen-001/data", "gen-001/pool", "gen-001/sealed", "d1/baseline"] {
+    for p in ["g1r1/rows", "g1r1/meta", "g1r1/index", "g1r1/seed", "g1r1/eval", "d3/fits/A/final", "gen-001/data", "gen-001/pool", "gen-001/sealed", "d1/baseline"] {
         std::fs::create_dir_all(dir.join(p)).unwrap();
     }
-    for p in ["g1/rows/g1_rows.jsonl", "g1/meta/g1_meta.jsonl", "g1/index/i.json", "g1/seed/g1_master_seed.hex", "d3/fits/A/final/model.mpk", "d3/fits/A/final/opt_decay.mpk", "gen-001/data/val.jsonl", "gen-001/pool/roots.jsonl", "gen-001/sealed/test.jsonl", "d1/baseline/model.json"] {
+    for p in ["g1r1/rows/g1_rows.jsonl", "g1r1/meta/g1_meta.jsonl", "g1r1/index/i.json", "g1r1/seed/g1_master_seed.hex", "d3/fits/A/final/model.mpk", "d3/fits/A/final/opt_decay.mpk", "gen-001/data/val.jsonl", "gen-001/pool/roots.jsonl", "gen-001/sealed/test.jsonl", "d1/baseline/model.json"] {
         std::fs::write(dir.join(p), b"x").unwrap();
     }
     let c = Custody::new(&dir).unwrap();
-    let acc = |r| Access::new(&c, r, Path::new("gen-001"), Path::new("g1/seed/g1_master_seed.hex")).unwrap();
+    let acc = |r| Access::new(&c, r, Path::new("gen-001"), Path::new("g1r1/seed/g1_master_seed.hex")).unwrap();
     let ev = acc(Role::G1Evaluator);
-    for ok in ["g1/rows/g1_rows.jsonl", "d3/fits/A/final/model.mpk", "d1/baseline/model.json"] {
+    for ok in ["g1r1/rows/g1_rows.jsonl", "d3/fits/A/final/model.mpk", "d1/baseline/model.json"] {
         assert!(ev.read(Path::new(ok)).is_ok(), "{ok}");
     }
-    for bad in ["g1/meta/g1_meta.jsonl", "g1/index/i.json", "d3/fits/A/final/opt_decay.mpk", "gen-001/data/val.jsonl", "gen-001/pool/roots.jsonl", "gen-001/sealed/test.jsonl"] {
+    for bad in ["g1r1/meta/g1_meta.jsonl", "g1r1/index/i.json", "d3/fits/A/final/opt_decay.mpk", "gen-001/data/val.jsonl", "gen-001/pool/roots.jsonl", "gen-001/sealed/test.jsonl"] {
         assert!(ev.read(Path::new(bad)).unwrap_err().to_string().contains("ACCESS VIOLATION"), "{bad}");
     }
-    assert!(ev.write(Path::new("g1/eval/A/p.jsonl"), b"ok").is_ok());
-    assert!(ev.write(Path::new("g1/rows/g1_rows.jsonl"), b"no").is_err());
+    assert!(ev.write(Path::new("g1r1/eval/A/p.jsonl"), b"ok").is_ok());
+    assert!(ev.write(Path::new("g1r1/rows/g1_rows.jsonl"), b"no").is_err());
     let ag = acc(Role::G1Aggregator);
-    assert!(ag.read(Path::new("g1/meta/g1_meta.jsonl")).is_ok());
+    assert!(ag.read(Path::new("g1r1/meta/g1_meta.jsonl")).is_ok());
     assert!(ag.read(&Path::new("gen-001").join("sealed/test.jsonl")).is_err());
     let b = acc(Role::G1Builder);
     assert!(b.read(&Path::new("gen-001").join("pool/roots.jsonl")).is_ok());
     assert!(b.read(&Path::new("gen-001").join("sealed/test.jsonl")).is_err());
-    assert!(b.write(Path::new("g1/meta/x.json"), b"ok").is_ok());
+    assert!(b.write(Path::new("g1r1/meta/x.json"), b"ok").is_ok());
+}
+
+#[test]
+fn r1_excludes_roots_by_identity_then_groups_survivors() {
+    let gen001 = vec![root("g0", "G0", &["x1", "x2"])];
+    let idx = ExclusionIndex::from_pool(&gen001);
+    // r1 shares child x2 with gen-001 (removed); r2 is connected to r1 only through y1 but has no direct overlap (kept);
+    // r3 has gen-001's root key (removed); r4 clean (kept)
+    let pool = vec![root("r1", "R1", &["x2", "y1"]), root("r2", "R2", &["y1", "y2"]), root("r3", "G0", &["z1"]), root("r4", "R4", &["w1"])];
+    let (kept, groups, st) = apply_exclusion_r1(&seed(), pool, &idx);
+    let ids: Vec<&str> = kept.iter().map(|r| r.id.as_str()).collect();
+    assert_eq!(ids, vec!["r2", "r4"], "only directly overlapping roots are removed");
+    assert_eq!((st.roots_removed, st.root_key_overlaps, st.child_key_overlaps), (2, 1, 1));
+    assert_eq!(groups.len(), 2, "groups are formed after exclusion");
+    for r in &kept {
+        assert!(!idx.roots.contains(&r.key));
+        assert!(r.children.iter().all(|c| !idx.children.contains(&c.key)), "no kept child identity occurs in gen-001");
+    }
 }

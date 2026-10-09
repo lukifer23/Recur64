@@ -86,11 +86,11 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["eval/", "intervention/", "d1/"],
             Role::MetricAggregator => &["report/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/"],
+            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/", "g1r1/"],
             Role::D1Panel => &["d1/", "d2/", "d3/"],
-            Role::G1Builder => &["g1/"],
-            Role::G1Evaluator => &["g1/eval/", "g1/receipts/"],
-            Role::G1Aggregator => &["g1/report/"],
+            Role::G1Builder => &["g1r1/"],
+            Role::G1Evaluator => &["g1r1/eval/", "g1r1/receipts/"],
+            Role::G1Aggregator => &["g1r1/report/"],
         }
     }
 
@@ -100,18 +100,18 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/", "d1/"],
             Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
+            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
             Role::D1Panel => &["d1/", "d2/", "d3/", "spec/", "init/"],
-            Role::G1Builder => &["g1/", "spec/"],
-            Role::G1Evaluator => &["g1/", "d3/fits/", "d1/baseline/", "d2/subsets/s768_rows.jsonl"],
-            Role::G1Aggregator => &["g1/", "d3/report/", "d1/report/"],
+            Role::G1Builder => &["g1r1/", "spec/"],
+            Role::G1Evaluator => &["g1r1/", "d3/fits/", "d1/baseline/", "d2/subsets/s768_rows.jsonl"],
+            Role::G1Aggregator => &["g1r1/", "d3/report/", "d1/report/"],
         }
     }
 
     /// Parts the G1 evaluator must never read: root-bearing metadata, exclusion index, pool,
     /// and optimizer states (inference-only candidate loading).
     fn g1_eval_denied(rel: &str) -> bool {
-        ["g1/meta/", "g1/pool/", "g1/index/", "d3/fits/a/final/opt", "d3/fits/m/final/opt"].iter().any(|d| rel.starts_with(d))
+        ["g1r1/meta/", "g1r1/pool/", "g1r1/index/", "g1/", "d3/fits/a/final/opt", "d3/fits/m/final/opt"].iter().any(|d| rel.starts_with(d))
     }
 
     fn rel_to_root(&self, resolved: &Path) -> Option<String> {
