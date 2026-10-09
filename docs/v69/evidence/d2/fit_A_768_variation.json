@@ -1,0 +1,79 @@
+[
+  {
+    "update": 0,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.12078202072495803,
+      "workspace_pool_std_over_mean_norm": 0.10099046784452521
+    }
+  },
+  {
+    "update": 50,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.044059860850743635,
+      "workspace_pool_std_over_mean_norm": 0.026322790471264047
+    }
+  },
+  {
+    "update": 100,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.037083430823219785,
+      "workspace_pool_std_over_mean_norm": 0.019737342951190232
+    }
+  },
+  {
+    "update": 200,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.03234316018974259,
+      "workspace_pool_std_over_mean_norm": 0.015866176733568084
+    }
+  },
+  {
+    "update": 400,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.026467691083247827,
+      "workspace_pool_std_over_mean_norm": 0.011008837959551978
+    }
+  },
+  {
+    "update": 600,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02342098309898835,
+      "workspace_pool_std_over_mean_norm": 0.008989325534127481
+    }
+  },
+  {
+    "update": 800,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02269805413865386,
+      "workspace_pool_std_over_mean_norm": 0.008449234077975364
+    }
+  },
+  {
+    "update": 1000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02217285408351958,
+      "workspace_pool_std_over_mean_norm": 0.008080156780285256
+    }
+  },
+  {
+    "update": 1600,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.021757139765323175,
+      "workspace_pool_std_over_mean_norm": 0.007806681039923285
+    }
+  },
+  {
+    "update": 2000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.021724037005104203,
+      "workspace_pool_std_over_mean_norm": 0.007780244474360414
+    }
+  },
+  {
+    "update": 2400,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.021673844519969905,
+      "workspace_pool_std_over_mean_norm": 0.0077512655467126225
+    }
+  }
+]

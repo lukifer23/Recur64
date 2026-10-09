@@ -1,0 +1,123 @@
+{
+  "hashes": {
+    "s256": {
+      "exposure_min_max": [
+        150,
+        150
+      ],
+      "meta_sha256": "111dba3808e526331333adfff0234ae17575de1e72dced1c54a66bd180aded21",
+      "order_sha256": "706acb75ec43a378467c06868c55c97b2694f8cf84297642414d801c7bfb658a",
+      "rows_sha256": "99d6c6df3a25ed9ff501d47a37a3c4756570a168222271fe8219b69777533635"
+    },
+    "s64": {
+      "exposure_min_max": [
+        600,
+        600
+      ],
+      "meta_sha256": "5afd7b936304171da3768846eb3cb9b03ff3f0aa62ca96007c30ddaa77867f5f",
+      "order_sha256": "e5e877a072b85001dccabae7726494350c967b2b6997dfe335a91249960beaa9",
+      "rows_sha256": "36415316c974995e9d85b6e1b6548860d9983c057d98857c43a3a592346bcb3a"
+    },
+    "s768": {
+      "exposure_min_max": [
+        50,
+        50
+      ],
+      "meta_sha256": "7fdf2c2f6e2a9aefa444a5675b5dd207ad7460517d00c9891a0f30321f02fea4",
+      "order_sha256": "942af8acb8429ab9de01d24f58ead807d73a4dd3eeaa79e73215655a67cafe9a",
+      "rows_sha256": "17cd652a57cd9e3123e3b8018d827e5ffa773fc247da8e7074249e6d00b667b1"
+    }
+  },
+  "seed_fingerprint": "5710d34e89d9dd35",
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "5d7734c6bf595d024b6a26a9f88e21a3298f5233",
+    "source_digest": "20c31d7a8fc9b848794ebf23262016c78b7d26d0122dc2809f48ec47c1b9a066"
+  },
+  "summaries": [
+    {
+      "contains_d1_panel": true,
+      "distinct_groups": 63,
+      "distinct_roots": 63,
+      "extra_pair_strata": [
+        "KRRvK/n1",
+        "KQQvK/n1"
+      ],
+      "negatives": 32,
+      "per_cell": {
+        "KQQvK/n1/neg": 6,
+        "KQQvK/n1/pos": 6,
+        "KQQvK/n2/neg": 5,
+        "KQQvK/n2/pos": 5,
+        "KQRvK/n1/neg": 5,
+        "KQRvK/n1/pos": 5,
+        "KQRvK/n2/neg": 5,
+        "KQRvK/n2/pos": 5,
+        "KRRvK/n1/neg": 6,
+        "KRRvK/n1/pos": 6,
+        "KRRvK/n2/neg": 5,
+        "KRRvK/n2/pos": 5
+      },
+      "per_stratum_balanced": true,
+      "positives": 32,
+      "q_per_cell": 5,
+      "repeated_group_memberships": 1,
+      "size": 64
+    },
+    {
+      "contains_d1_panel": true,
+      "distinct_groups": 200,
+      "distinct_roots": 203,
+      "extra_pair_strata": [
+        "KQQvK/n1",
+        "KQQvK/n2"
+      ],
+      "negatives": 128,
+      "per_cell": {
+        "KQQvK/n1/neg": 22,
+        "KQQvK/n1/pos": 22,
+        "KQQvK/n2/neg": 22,
+        "KQQvK/n2/pos": 22,
+        "KQRvK/n1/neg": 21,
+        "KQRvK/n1/pos": 21,
+        "KQRvK/n2/neg": 21,
+        "KQRvK/n2/pos": 21,
+        "KRRvK/n1/neg": 21,
+        "KRRvK/n1/pos": 21,
+        "KRRvK/n2/neg": 21,
+        "KRRvK/n2/pos": 21
+      },
+      "per_stratum_balanced": true,
+      "positives": 128,
+      "q_per_cell": 21,
+      "repeated_group_memberships": 56,
+      "size": 256
+    },
+    {
+      "contains_d1_panel": true,
+      "distinct_groups": 204,
+      "distinct_roots": 228,
+      "extra_pair_strata": [],
+      "negatives": 384,
+      "per_cell": {
+        "KQQvK/n1/neg": 64,
+        "KQQvK/n1/pos": 64,
+        "KQQvK/n2/neg": 64,
+        "KQQvK/n2/pos": 64,
+        "KQRvK/n1/neg": 64,
+        "KQRvK/n1/pos": 64,
+        "KQRvK/n2/neg": 64,
+        "KQRvK/n2/pos": 64,
+        "KRRvK/n1/neg": 64,
+        "KRRvK/n1/pos": 64,
+        "KRRvK/n2/neg": 64,
+        "KRRvK/n2/pos": 64
+      },
+      "per_stratum_balanced": true,
+      "positives": 384,
+      "q_per_cell": 64,
+      "repeated_group_memberships": 564,
+      "size": 768
+    }
+  ]
+}

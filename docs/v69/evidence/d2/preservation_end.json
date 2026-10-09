@@ -1,0 +1,12 @@
+{
+  "documented_e1_deviation": "E1 audit receipt audit/gen-001_audit_receipt_v2.json was overwritten in place by the E1 post-campaign audit; the pre-run copy is preserved (d1/e1_preserved and committed evidence). D2 never writes to audit/ and receipts here are append-only.",
+  "files_checked": 127,
+  "label": "end",
+  "mismatches": [],
+  "ok": true,
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "5d7734c6bf595d024b6a26a9f88e21a3298f5233",
+    "source_digest": "20c31d7a8fc9b848794ebf23262016c78b7d26d0122dc2809f48ec47c1b9a066"
+  }
+}

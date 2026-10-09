@@ -1,0 +1,7 @@
+N=64 D2-A (cap 1500s): reason=completed exit_code=0 wall_secs=640 peak_host_mib=444 peak_gpu_mib_sampled=488 orphans=0
+N=64 D2-M (cap 300s): reason=completed exit_code=0 wall_secs=56 peak_host_mib=282 peak_gpu_mib_sampled=167 orphans=0
+N=256 D2-A (cap 1500s): reason=completed exit_code=0 wall_secs=719 peak_host_mib=448 peak_gpu_mib_sampled=288 orphans=0
+N=256 D2-M (cap 300s): reason=completed exit_code=0 wall_secs=52 peak_host_mib=282 peak_gpu_mib_sampled=95 orphans=0
+N=768 D2-A (cap 1500s): reason=completed exit_code=0 wall_secs=756 peak_host_mib=451 peak_gpu_mib_sampled=225 orphans=0
+N=768 D2-M (cap 300s): reason=completed exit_code=0 wall_secs=94 peak_host_mib=282 peak_gpu_mib_sampled=95 orphans=0
+native seconds spent in fits: 2317

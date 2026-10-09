@@ -1,0 +1,284 @@
+{
+  "result": {
+    "checks": [
+      {
+        "detail": {
+          "got": 13.593992233276367,
+          "logit_range": [
+            -88,
+            88
+          ],
+          "max_grad_abs_err": 3.91425290444114e-9,
+          "reference_f64": 13.59399189021511,
+          "reference_self_check_fd_err": 5.84228845856849e-12
+        },
+        "name": "stable_bce_value_and_gradient",
+        "pass": true
+      },
+      {
+        "detail": {
+          "inputs_width": 842,
+          "max_abs_logit_error": 0.00015949736166800954,
+          "one_hot_check_rowsum": 64.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-M:forward_matches_f64_reference",
+        "pass": true
+      },
+      {
+        "detail": {
+          "targets": [
+            {
+              "f64_fd": 0.6259123144052303,
+              "gpu_grad_norm": 0.6256884746760515,
+              "param": "fc1.weight",
+              "pass": true,
+              "rel_err": 0.00035774948434957876
+            },
+            {
+              "f64_fd": 0.24568498145610684,
+              "gpu_grad_norm": 0.24562936202856647,
+              "param": "fc2.weight",
+              "pass": true,
+              "rel_err": 0.00022643639620699126
+            },
+            {
+              "f64_fd": 0.1820311835308286,
+              "gpu_grad_norm": 0.18200325713795246,
+              "param": "fc3.weight",
+              "pass": true,
+              "rel_err": 0.00015343897310016096
+            },
+            {
+              "f64_fd": 0.07483421361248466,
+              "gpu_grad_norm": 0.07480481862181407,
+              "param": "fc1.bias",
+              "pass": true,
+              "rel_err": 0.00039295584445167407
+            },
+            {
+              "f64_fd": 0.12061850028183274,
+              "gpu_grad_norm": 0.12058776143576333,
+              "param": "fc2.bias",
+              "pass": true,
+              "rel_err": 0.00025490850566776486
+            }
+          ]
+        },
+        "name": "D1-M:gradient_matches_f64_finite_differences",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 0.7044813606071706,
+          "global_norm_full": 0.7044813628766051,
+          "loss_accum": 0.7094845324754715,
+          "loss_full": 0.7094845175743103,
+          "worst_err_over_scale": 1.7441555744912712e-7
+        },
+        "name": "D1-M:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 6
+        },
+        "name": "D1-M:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 0.999999982304871,
+          "big_pre": 281.7925095395851,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.0007045488044769881
+        },
+        "name": "D1-M:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 3,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 3,
+          "worst_rel_err": 7.576051826513578e-8
+        },
+        "name": "D1-M:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.00031782686710357666,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-M:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-M:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-M:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 95,
+          "device_mib_before": 95,
+          "update_median_ms": 12.8291
+        },
+        "name": "D1-M:latency_memory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "init": "E1 canonical untrained init (forward only, no training)",
+          "max_abs_error_vs_f64_reference": 0.0008090271973364704,
+          "max_diff_vs_E1_code_path": 0.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-A:forward_at_canonical_init_matches_E1_one_pass",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 1.72614679065946,
+          "global_norm_full": 1.7261467899072362,
+          "loss_accum": 0.6376918070018291,
+          "loss_full": 0.6376917958259583,
+          "worst_err_over_scale": 2.158153825760156e-6
+        },
+        "name": "D1-A:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 107
+        },
+        "name": "D1-A:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 1.0000000356411587,
+          "big_pre": 690.5037935168459,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.0017267293160864552
+        },
+        "name": "D1-A:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 41,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 66,
+          "worst_rel_err": 7.611310686753166e-8
+        },
+        "name": "D1-A:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.0003745071589946747,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-A:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-A:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-A:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 1187,
+          "device_mib_before": 1187,
+          "update_median_ms": 233.0914
+        },
+        "name": "D1-A:latency_memory",
+        "pass": true
+      }
+    ],
+    "d2_extra_checks": [
+      {
+        "detail": {
+          "lr0": 0.000025,
+          "lr19": 0.0005,
+          "lr1999": 0.00005,
+          "lr20": 0.0005,
+          "lr2000": 0.00005,
+          "lr2399": 0.00005
+        },
+        "name": "D2:scheduler_boundaries",
+        "pass": true
+      },
+      {
+        "detail": [
+          {
+            "epochs_are_permutations": true,
+            "shape": true,
+            "size": 64,
+            "within_update_distinct_or_boundary": true
+          },
+          {
+            "epochs_are_permutations": true,
+            "shape": true,
+            "size": 256,
+            "within_update_distinct_or_boundary": true
+          },
+          {
+            "epochs_are_permutations": true,
+            "shape": true,
+            "size": 768,
+            "within_update_distinct_or_boundary": true
+          }
+        ],
+        "name": "D2:example_stream_indexing",
+        "pass": true
+      }
+    ],
+    "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (adopted as measured)",
+    "qualified": true,
+    "wall_secs": 20.7007803,
+    "weights": "disposable (d1_qualification_init); never used to initialize a fit"
+  },
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "5d7734c6bf595d024b6a26a9f88e21a3298f5233",
+    "source_digest": "20c31d7a8fc9b848794ebf23262016c78b7d26d0122dc2809f48ec47c1b9a066"
+  }
+}

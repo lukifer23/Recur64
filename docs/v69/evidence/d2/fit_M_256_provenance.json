@@ -1,0 +1,28 @@
+{
+  "checkpoint_file_sha256": {
+    "meta.json": "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+    "model.mpk": "3a4f2789d40dbeddd1589e339ad76b4c119d587c7434008c394aa32046370581",
+    "opt_decay.mpk": "206e7da2c994db59306616057ad11afb873cdf2932ec0070a4013eb9c7b9c3d1",
+    "opt_nodecay.mpk": "ddce71cb04c2deb247e4daf02d86f787aaf80f01311021c58da2d9072a029b93"
+  },
+  "clip_ops": 2400,
+  "completed_updates": 2400,
+  "config_sha256": "ed184ab07761c7d01eecc39ab0726707c3bcbdb560ef52b998c149b2fea9531e",
+  "consumer_source": {
+    "git_dirty_files": 0,
+    "git_head": "5d7734c6bf595d024b6a26a9f88e21a3298f5233",
+    "source_digest": "20c31d7a8fc9b848794ebf23262016c78b7d26d0122dc2809f48ec47c1b9a066"
+  },
+  "contract_sha256": "ae218acbead07ded8dc0c9f7c3c769daf1ab6f66c68b38193c080838b501c95d",
+  "data_producer_git_head": "36a81508b456ede1cb682f2f03fe678fd08db70f",
+  "frozen_d2_sha256": "7b80b9e9f8adb8816b4ccb870b06f615ce7bff226b5e4abd4661a5d70a60a035",
+  "init_file_sha256": "0228b6ea622a5139c01538d44af3ed4d8fe0a421b2a155697faa949cc53ae8b2",
+  "init_tensors_sha256": "3b61d9f8e566cc0a3ce8c10d47f7e0470ff8a15c6e9258561f7d09e16a109214",
+  "model": "M",
+  "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (not strict FP32)",
+  "predictions_sha256": "00dea29efa1b48273e38f0a67d0159b7502a2c783cf5c32e8351e133da5e3cd1",
+  "provenance_id": "e14109eb4800abb52bcaf46c0c47b1c42a01f1d9212104276f50b423c840f755",
+  "size": 256,
+  "subset_rows_sha256": "99d6c6df3a25ed9ff501d47a37a3c4756570a168222271fe8219b69777533635",
+  "train_order_sha256": "706acb75ec43a378467c06868c55c97b2694f8cf84297642414d801c7bfb658a"
+}
