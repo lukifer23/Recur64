@@ -3,3 +3,4 @@
 /runs
 /artifacts
 *.log
+/crates/target-*
