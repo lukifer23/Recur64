@@ -1,0 +1,77 @@
+{
+  "file_sha256": "0228b6ea622a5139c01538d44af3ed4d8fe0a421b2a155697faa949cc53ae8b2",
+  "inventory": [
+    {
+      "component": "fc1",
+      "decay": true,
+      "index": 0,
+      "leaf": "weight",
+      "numel": 107776,
+      "path": "fc1",
+      "shape": [
+        842,
+        128
+      ]
+    },
+    {
+      "component": "fc1",
+      "decay": false,
+      "index": 1,
+      "leaf": "bias",
+      "numel": 128,
+      "path": "fc1",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "component": "fc2",
+      "decay": true,
+      "index": 2,
+      "leaf": "weight",
+      "numel": 8192,
+      "path": "fc2",
+      "shape": [
+        128,
+        64
+      ]
+    },
+    {
+      "component": "fc2",
+      "decay": false,
+      "index": 3,
+      "leaf": "bias",
+      "numel": 64,
+      "path": "fc2",
+      "shape": [
+        64
+      ]
+    },
+    {
+      "component": "fc3",
+      "decay": true,
+      "index": 4,
+      "leaf": "weight",
+      "numel": 64,
+      "path": "fc3",
+      "shape": [
+        64,
+        1
+      ]
+    },
+    {
+      "component": "fc3",
+      "decay": false,
+      "index": 5,
+      "leaf": "bias",
+      "numel": 1,
+      "path": "fc3",
+      "shape": [
+        1
+      ]
+    }
+  ],
+  "parameters": 116225,
+  "stream": "d1_mlp_init/0",
+  "tensors_sha256": "3b61d9f8e566cc0a3ce8c10d47f7e0470ff8a15c6e9258561f7d09e16a109214"
+}

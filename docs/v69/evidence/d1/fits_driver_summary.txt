@@ -1,0 +1,2 @@
+D1-A : reason=completed exit_code=0 wall_secs=466 peak_host_mib=444 peak_gpu_mib_sampled=225 orphans=0
+D1-M : reason=completed exit_code=0 wall_secs=33 peak_host_mib=281 peak_gpu_mib_sampled=95 orphans=0

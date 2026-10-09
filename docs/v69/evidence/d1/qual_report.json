@@ -1,0 +1,246 @@
+{
+  "result": {
+    "checks": [
+      {
+        "detail": {
+          "got": 13.593992233276367,
+          "logit_range": [
+            -88,
+            88
+          ],
+          "max_grad_abs_err": 3.91425290444114e-9,
+          "reference_f64": 13.59399189021511,
+          "reference_self_check_fd_err": 5.84228845856849e-12
+        },
+        "name": "stable_bce_value_and_gradient",
+        "pass": true
+      },
+      {
+        "detail": {
+          "inputs_width": 842,
+          "max_abs_logit_error": 0.00014933273442507833,
+          "one_hot_check_rowsum": 64.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-M:forward_matches_f64_reference",
+        "pass": true
+      },
+      {
+        "detail": {
+          "targets": [
+            {
+              "f64_fd": 0.6797244885613507,
+              "gpu_grad_norm": 0.6794928904929673,
+              "param": "fc1.weight",
+              "pass": true,
+              "rel_err": 0.00034083957554777546
+            },
+            {
+              "f64_fd": 0.2681044076342509,
+              "gpu_grad_norm": 0.26802805900425186,
+              "param": "fc2.weight",
+              "pass": true,
+              "rel_err": 0.00028485312426877523
+            },
+            {
+              "f64_fd": 0.18965634584094948,
+              "gpu_grad_norm": 0.1896167399896111,
+              "param": "fc3.weight",
+              "pass": true,
+              "rel_err": 0.00020887317934353662
+            },
+            {
+              "f64_fd": 0.08257668783939742,
+              "gpu_grad_norm": 0.08254539824763776,
+              "param": "fc1.bias",
+              "pass": true,
+              "rel_err": 0.0003790591895357944
+            },
+            {
+              "f64_fd": 0.12290316831836678,
+              "gpu_grad_norm": 0.12286574508668477,
+              "param": "fc2.bias",
+              "pass": true,
+              "rel_err": 0.0003045863731637533
+            }
+          ]
+        },
+        "name": "D1-M:gradient_matches_f64_finite_differences",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 0.4897362702632359,
+          "global_norm_full": 0.4897362685491703,
+          "loss_accum": 0.7064884603023529,
+          "loss_full": 0.7064884901046753,
+          "worst_err_over_scale": 1.2428419612600727e-7
+        },
+        "name": "D1-M:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 6
+        },
+        "name": "D1-M:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 1.0000000526197241,
+          "big_pre": 195.93929347140715,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.0004898413287567767
+        },
+        "name": "D1-M:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 3,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 3,
+          "worst_rel_err": 7.576051826513578e-8
+        },
+        "name": "D1-M:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.000321350060403347,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-M:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-M:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-M:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 95,
+          "device_mib_before": 95,
+          "update_median_ms": 23.7315
+        },
+        "name": "D1-M:latency_memory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "init": "E1 canonical untrained init (forward only, no training)",
+          "max_abs_error_vs_f64_reference": 0.0008090271973364704,
+          "max_diff_vs_E1_code_path": 0.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-A:forward_at_canonical_init_matches_E1_one_pass",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 2.1587780780658754,
+          "global_norm_full": 2.158778083024602,
+          "loss_accum": 0.6993961706757545,
+          "loss_full": 0.6993961930274963,
+          "worst_err_over_scale": 4.005458981080683e-7
+        },
+        "name": "D1-A:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 107
+        },
+        "name": "D1-A:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 1.000000037567064,
+          "big_pre": 864.457018782842,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.002160210413226148
+        },
+        "name": "D1-A:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 41,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 66,
+          "worst_rel_err": 7.611310686753166e-8
+        },
+        "name": "D1-A:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.00037759914994239807,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-A:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-A:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-A:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 1187,
+          "device_mib_before": 1187,
+          "update_median_ms": 226.1145
+        },
+        "name": "D1-A:latency_memory",
+        "pass": true
+      }
+    ],
+    "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (adopted as measured)",
+    "qualified": true,
+    "wall_secs": 22.6804706,
+    "weights": "disposable (d1_qualification_init); never used to initialize a fit"
+  },
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "d39d787ffd6a8b19a0bc5ba8005d387349a722a6",
+    "source_digest": "78bf379a63a49212a163f0a112fe910343a75753836c7a40377eb7bfd9c30c28"
+  }
+}

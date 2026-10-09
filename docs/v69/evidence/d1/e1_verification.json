@@ -1,0 +1,11 @@
+{
+  "files_checked": 65,
+  "known_deviation": "E1 audit receipt audit/gen-001_audit_receipt_v2.json was overwritten in place by the post-campaign audit re-run; frozen hash verified against preserved pre-run copy (d1/e1_preserved), live file verified equal to the post-run copy. All other E1 frozen dependencies matched exactly.",
+  "mismatches": [],
+  "ok": true,
+  "source": {
+    "git_dirty_files": 16,
+    "git_head": "c99b45b10fd8889ca5d1e36044240ff8d19ab6ab",
+    "source_digest": "78bf379a63a49212a163f0a112fe910343a75753836c7a40377eb7bfd9c30c28"
+  }
+}
