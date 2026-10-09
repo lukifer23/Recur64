@@ -164,6 +164,9 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     let threads: usize = arg(args, "--threads").map(|s| s.parse()).transpose()?.unwrap_or(10);
     let round_size: u64 = arg(args, "--round-size").map(|s| s.parse()).transpose()?.unwrap_or(1000);
     ensure!(!a.custody().resolve(Path::new("g1/rows/g1_rows.jsonl"))?.exists(), "G1 data already generated; no regeneration");
+    if arg(args, "--diagnose-rounds").is_none() {
+        ensure!(!a.custody().resolve(Path::new("g1/meta/infeasibility_diagnosis.json"))?.exists(), "a failed construction was already diagnosed; the registered procedure is not retried");
+    }
     // contamination-exclusion index from gen-001 roots and ALL their immediate children (data-only)
     let gen001 = load_gen001_pool(&a, &env.run)?;
     let idx = ExclusionIndex::from_pool(&gen001);
@@ -177,6 +180,8 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     let mut status = "wall_limit_reached".to_string();
     let mut result: Option<(Vec<RootRec>, Vec<recur64_v69::dataset::Group>, ExclusionStats, Vec<Example>, BTreeMap<String, usize>)> = None;
     let mut rounds = 0u64;
+    let diagnose_rounds: Option<u64> = arg(args, "--diagnose-rounds").map(|s| s.parse()).transpose()?;
+    let mut diag: Vec<serde_json::Value> = Vec::new();
     for round in 0..10_000u64 {
         if Instant::now() >= deadline {
             break;
@@ -252,6 +257,21 @@ fn cmd_generate(args: &[String]) -> Result<()> {
         let (examples, counts) = select_g1(&seed, &kept, &groups);
         let short: usize = counts.values().map(|c| G1_QUOTA.saturating_sub(*c)).sum();
         eprintln!("[g1] round {round}: pool {} roots, kept {} after exclusion ({} groups), {short} examples short | {:.0}s", pool.len(), kept.len(), groups.len(), t_start.elapsed().as_secs_f64());
+        if let Some(max_rounds) = diagnose_rounds {
+            // DIAGNOSTIC ONLY (statistics; no rows/panel are written): strict whole-component exclusion vs a per-root exclusion variant
+            let direct_bad = pool.iter().filter(|r| idx.roots.binary_search(&r.key).is_ok() || r.children.iter().any(|c| idx.children.binary_search(&c.key).is_ok())).count();
+            let kept2: Vec<RootRec> = pool.iter().filter(|r| !(idx.roots.binary_search(&r.key).is_ok() || r.children.iter().any(|c| idx.children.binary_search(&c.key).is_ok()))).cloned().collect();
+            let groups2 = build_groups(&seed, &kept2);
+            let (_, counts2) = select_g1(&seed, &kept2, &groups2);
+            let largest = groups.iter().map(|g| g.roots.len()).max().unwrap_or(0);
+            let largest_pre = build_groups(&seed, &pool).iter().map(|g| g.roots.len()).max().unwrap_or(0);
+            diag.push(json!({"round": round, "pool_roots": pool.len(), "roots_with_direct_gen001_overlap": direct_bad, "direct_overlap_fraction": direct_bad as f64 / pool.len() as f64, "largest_component_before_exclusion": largest_pre, "strict_rule": {"kept_roots": kept.len(), "groups": groups.len(), "largest_group": largest, "examples_short": short, "per_cell_available": counts}, "per_root_rule_variant": {"kept_roots": kept2.len(), "groups": groups2.len(), "examples_short": counts2.values().map(|c| G1_QUOTA.saturating_sub(*c)).sum::<usize>(), "per_cell_available": counts2}}));
+            if round + 1 >= max_rounds {
+                a.write(Path::new("g1/meta/infeasibility_diagnosis.json"), serde_json::to_string_pretty(&json!({"diagnostic_only": true, "no_rows_or_panel_written": true, "rounds": diag}))?.as_bytes())?;
+                println!("diagnosis written after {max_rounds} rounds");
+                return Ok(());
+            }
+        }
         if feasible(&counts) {
             status = "complete_feasible".into();
             result = Some((kept, groups, est, examples, counts));
