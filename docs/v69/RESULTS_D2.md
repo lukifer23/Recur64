@@ -16,8 +16,8 @@ This is not evidence that more training would succeed, and not evidence about ge
 ## 1. Identity, integrity, provenance — MEASURED
 
 - Consumer head for all D2 qualification, fits and aggregation: `5d7734c6…` (clean tree, 0 dirty files). Data producer `36a81508…` (distinct).
-- Frozen: `d2/frozen_d2.json` (evidence copy) holds expected hashes in two role groups; every fit re-verified the learner group (18 hashes counted by the aggregator group
-  log line; fits verified their group) through the role-restricted layer and would abort on mismatch; hash-enforcement failure is unit-tested.
+- Frozen: `d2/frozen_d2.json` (evidence copy) holds expected hashes in two role groups; every fit re-verified the 37-hash learner group (logs: "37 frozen hashes verified"; the aggregator verified its own 18)
+  through the role-restricted layer and would abort on mismatch; hash-enforcement failure is unit-tested.
   Each of the six `provenance.json` files binds source identity, contract/config/frozen hashes, subset-rows/example-stream hashes, init hashes (A: E1 canonical `3bc80e9f…`; M:
   D1 MLP `0228b6ea…`, each loaded-tensor hash verified), completed updates (2,400 in all six), actual checkpoint/optimizer/metadata file hashes and the prediction-file hash;
   the aggregator re-checked them and the recorded exposure counts against the frozen streams.
@@ -41,7 +41,7 @@ Streams: 38,400 samples per size, per-epoch permutations, identical for A and M;
 ## 3. Qualification — MEASURED (passed first attempt, 22 s, 20 checks + 2 D2 checks)
 
 The qualified D1 machinery was reused unchanged; the D2-specific additions passed (LR boundaries: u=0 2.5e-5, u=19/20 5e-4, u=1,999 and 2,000–2,399 exactly 5e-5, monotone; example-stream shape, epoch-permutation and within-update-distinctness
-checks for all three sizes). Disposable weights only. **Preserved failures:** none in qualification; the only failing events in D2 development were none beyond compilation. Host peak 1,490 MiB, sampled device 1,187 MiB.
+checks for all three sizes). Disposable weights only. **Preserved failures:** none in qualification; Host peak 1,490 MiB, sampled device 1,187 MiB.
 Precision as measured: f32 storage/accumulation, matmul inputs possibly TF32; not strict FP32.
 
 ## 4. Six fixed endpoints (update 2,400) — MEASURED
