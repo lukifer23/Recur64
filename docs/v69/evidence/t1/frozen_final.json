@@ -1,0 +1,50 @@
+{
+  "created_utc": "unix:1791529574",
+  "run": "gen-001",
+  "seed_fingerprint": "b52ad95c925672dc",
+  "groups": {
+    "aggregator": {
+      "g1r1/intervention/map.json": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+      "g1r1/meta/g1_meta.jsonl": "f92a1dc423f37a9f19971e9f9f9c1b1883bbff86e7750ecd23535474532780be",
+      "t1/MANIFEST.sha256.json": "0fdc2ce695e3dd25908d80330185edc7f1f7c46e7676f29bab1b7922849dc228",
+      "t1/T1_AMENDMENT_A1.md": "56c2143bda2ed10ca68df56ceef3e89a9a4b203fcbbaa296afcb19077013a332",
+      "t1/T1_AMENDMENT_A2.md": "66819c3f7617ea17b4b6876d3a3b89f8a983823e4ec2589f956fbbe52e397ab5",
+      "t1/T1_CONTRACT.md": "b8a5da553b1e1c645c3ccd4b2ee196c039920609e5c16aab2a9f8785f339cc8e",
+      "t1/config.json": "41ff0ebcd8202d53fa3b3b01fce6680614ace5ff5fef2c91356c857bdbb4a150",
+      "t1/frozen_train.json": "b74a8972d6c3a1e962b14bb347617db20e1f6a6d0d6ebcb431d9366323420889",
+      "t1/intervention/test_map.json": "b3797e41e91265f5f14842b1c5c2312d3a717091384bb65463bf3ad231880f6d",
+      "t1/meta/test.meta.jsonl": "56dde80efca804d60537d99ba227efe45d044117af97780b248bfe9176ea3dc2",
+      "t1/receipts/audit_receipt_t1.json": "d64a8a612c40469e10c7d030a78076f4361b0401e2fe13b90c1ef5e99af19844",
+      "t1/receipts/evaluator_verification.json": "8899cda31739a4662a8b2a5e581f29a7336dc7aaa490007a7d475a5b15ad01d3",
+      "t1/report/selection.json": "f763c08f4ea80abb75d68c951f442da05865c4a718d0d9cbf15e3e6dbd526176",
+      "t1/rows/test.jsonl": "814d599b30e8dd478838318a23a555fc6d3bfc29787852b053959cfd3d7d4298"
+    },
+    "evaluator": {
+      "d1/baseline/model.json": "1c3b775a169ed055c7cbdbff8c34de4e26306a0e24166e225f88531bbc009415",
+      "g1r1/intervention/map.json": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+      "g1r1/rows/g1_rows.jsonl": "54ec00f7db82784d748f4b0d03236ad91dffdef8758d2cc235ef8855f2afc83b",
+      "t1/MANIFEST.sha256.json": "0fdc2ce695e3dd25908d80330185edc7f1f7c46e7676f29bab1b7922849dc228",
+      "t1/T1_AMENDMENT_A1.md": "56c2143bda2ed10ca68df56ceef3e89a9a4b203fcbbaa296afcb19077013a332",
+      "t1/T1_AMENDMENT_A2.md": "66819c3f7617ea17b4b6876d3a3b89f8a983823e4ec2589f956fbbe52e397ab5",
+      "t1/T1_CONTRACT.md": "b8a5da553b1e1c645c3ccd4b2ee196c039920609e5c16aab2a9f8785f339cc8e",
+      "t1/baseline_refit/model.json": "f174004b96ab794d5d6d5a07fd60a745ae0082051be0d621b741b7b745520f14",
+      "t1/baseline_refit/predictions_val.jsonl": "af6049ec44429da8b05658e8a1e0e807af97fb4c6873b60f02bd7cd9b1be73df",
+      "t1/config.json": "41ff0ebcd8202d53fa3b3b01fce6680614ace5ff5fef2c91356c857bdbb4a150",
+      "t1/evaluator_source.json": "baffd2decb949908f6a0473c383f029ade7e02a4f67273663ff9964f370c6810",
+      "t1/frozen_train.json": "b74a8972d6c3a1e962b14bb347617db20e1f6a6d0d6ebcb431d9366323420889",
+      "t1/intervention/test_map.json": "b3797e41e91265f5f14842b1c5c2312d3a717091384bb65463bf3ad231880f6d",
+      "t1/receipts/evaluator_verification.json": "8899cda31739a4662a8b2a5e581f29a7336dc7aaa490007a7d475a5b15ad01d3",
+      "t1/report/selection.json": "f763c08f4ea80abb75d68c951f442da05865c4a718d0d9cbf15e3e6dbd526176",
+      "t1/rows/test.jsonl": "814d599b30e8dd478838318a23a555fc6d3bfc29787852b053959cfd3d7d4298",
+      "t1/rows/val.jsonl": "6d1ecc240e5a2adbb366a35245ecfc47b9e0558d4252cb757052a27c4ddadb4a",
+      "t1/train_runs/A_k2000_d8_lr5e-4/final/meta.json": "b0db6b0552276b23e6954438b6519e3a08ad1a670e6528f05fbfec2f6b6d0577",
+      "t1/train_runs/A_k2000_d8_lr5e-4/final/model.mpk": "e7b993d53921b92290649f4386a4f5010e2a4b1b9d1d9b51d4be37629f41503e",
+      "t1/train_runs/A_k2000_d8_lr5e-4/provenance.json": "31f9f1367e1f493d62022903f0df6a1ffc0cbafd491c17bd8e2e338fa13734fb",
+      "t1/train_runs/A_k2000_d8_lr5e-4/val_predictions.jsonl": "1c90e6077d276e8e0e557a1e4a8f3d7c80a08c03b389e94dd2ec5c5e567c6b65",
+      "t1/train_runs/M_k2000_d8_lr3e-3/final/meta.json": "d4c36a36d484c0770fee56da9254c84e1e4056e23e0399c1ee579b0eb895de14",
+      "t1/train_runs/M_k2000_d8_lr3e-3/final/model.mpk": "1fd1e42f6a7388ead19d4768fedc8ee691a3371107be11fed79c2cab25b5e05b",
+      "t1/train_runs/M_k2000_d8_lr3e-3/provenance.json": "9f9330026746b4cc82da6595d2232ed952372d5a50d1c1a7bf5197c8ea614c8f",
+      "t1/train_runs/M_k2000_d8_lr3e-3/val_predictions.jsonl": "d0192ecf858fc19079cfa886d1b2b2b3433ec88823d3ae06564957800801e1ea"
+    }
+  }
+}

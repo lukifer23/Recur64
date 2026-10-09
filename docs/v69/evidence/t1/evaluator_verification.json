@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "candidate": "A",
+      "classification_agreement": 1536,
+      "d8_identity": true,
+      "max_abs_logit_diff_vs_recorded_val_final": 2.220446049250313e-16,
+      "of": 1536,
+      "pass": true,
+      "run_id": "A_k2000_d8_lr5e-4",
+      "target_separation": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "M",
+      "classification_agreement": 1536,
+      "d8_identity": true,
+      "max_abs_logit_diff_vs_recorded_val_final": 1.7763568394002505e-15,
+      "of": 1536,
+      "pass": true,
+      "run_id": "M_k2000_d8_lr3e-3",
+      "target_separation": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "B",
+      "deterministic": true,
+      "erasure_definition_consistent": true,
+      "pass": true
+    },
+    {
+      "candidate": "B2",
+      "max_abs_logit_diff_vs_recorded_refit_val": 2.220446049250313e-15,
+      "pass": true,
+      "tolerance": 1e-9
+    },
+    {
+      "name": "neural_erasure_definition",
+      "pass": true
+    }
+  ],
+  "evaluator_source_digest": "db3b16df604e74621dfba49304e3e1e46c1f35a15caad7350cd9a1af97b24799",
+  "fixture": "T1 validation rows (no test/G1 labels or outputs touched)",
+  "ok": true,
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "70bd2104bb2d85f87d110a08adf8d1aec8a572c8",
+    "source_digest": "db3b16df604e74621dfba49304e3e1e46c1f35a15caad7350cd9a1af97b24799"
+  },
+  "val_rows_sha256": "6d1ecc240e5a2adbb366a35245ecfc47b9e0558d4252cb757052a27c4ddadb4a"
+}

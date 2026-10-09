@@ -1,0 +1,22 @@
+{
+  "created_utc": "unix:1791524403",
+  "run": "gen-001",
+  "seed_fingerprint": "(not yet drawn)",
+  "groups": {
+    "protocol": {
+      "d1/baseline/model.json": "1c3b775a169ed055c7cbdbff8c34de4e26306a0e24166e225f88531bbc009415",
+      "d1/e1_supplementary_manifest.json": "aedaeea78cdaa6e33d4e874be315c5d213d4fdaf0f4cb76c7d21e1f1a5f0e586",
+      "d2/d1_supplementary_manifest.json": "e07fd9055ad05144b6bae5a494e81a8935574250468d25152be675d599250768",
+      "d3/d2_supplementary_manifest.json": "027ef9054e28d3d72c45ca5ed34d706dcd647a065fff1cf938e13a0df1b690d3",
+      "dataset:MANIFEST.sha256.json": "3da360e6ea1714712b69fd50bf65714a385b0921f49c117c63b6c0088f626d6c",
+      "g1r1/MANIFEST.sha256.json": "0b45df62089a968d525730608ea164f754cc210b10b026a9d92bb6e09414fc57",
+      "g1r1/d3_supplementary_manifest.json": "36fe2f2a6d7ce2b5705b59f15afb85ade9efa464fd06750246864b9af29af2c7",
+      "g1r1/g1_attempt1_manifest.json": "b63bd2d09189050e23a741eef0704ea0b3f8381dbad6328a57e28ad20d57f119",
+      "g1r1/report/g1_report.json": "9791b205d0303d1834989ed7bdf7065313b5f065298a11b40b8a3062fd5b1807",
+      "t1/T1_CONTRACT.md": "b8a5da553b1e1c645c3ccd4b2ee196c039920609e5c16aab2a9f8785f339cc8e",
+      "t1/config.json": "41ff0ebcd8202d53fa3b3b01fce6680614ace5ff5fef2c91356c857bdbb4a150",
+      "t1/g1r1_manifest.json": "12613a5ef6defc37e571e29d662e597e55532258e9a718afaab152006b59b1f6",
+      "t1/receipts/preservation_start.json": "24d28f6d2fb557dcd29d484eaebbd74657a889e39e8fe07722f76433051c5eea"
+    }
+  }
+}

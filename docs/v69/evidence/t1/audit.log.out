@@ -1,0 +1,27 @@
+{
+  "audit_pass": true,
+  "audit_wall_secs": 5.5051209,
+  "contributing_roots_reanalysed_empty_cache": 8553,
+  "examples": 28608,
+  "failure_count": 0,
+  "failures": [],
+  "prior_index_sizes": {
+    "children": 135746,
+    "roots": 3587
+  },
+  "prior_overlaps_found": 0,
+  "reference_child_checks": 216,
+  "reference_m3_minimal_depth_checks": 30,
+  "reference_shared_dependencies": "cozy-chess move generator/legality, FEN parser, domain definition; NOT the search, cache, node budget or rules::classify code",
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "79ffd1429e55e00d2767ffa482f89ced63668720",
+    "source_digest": "06258cd20a6fcacdb6df80cec86ca5d23e21bc18a3def409b269a208b206f343"
+  },
+  "symmetry_label_invariance": {
+    "examples": 1500,
+    "oracle_queries": 10500,
+    "transforms_per_example": 7
+  },
+  "targets_requeried_exact": 28608
+}

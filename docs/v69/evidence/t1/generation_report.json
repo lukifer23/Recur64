@@ -1,0 +1,120 @@
+{
+  "accepted_roots": 108387,
+  "distinct_groups_by_partition": {
+    "fit": 1302,
+    "test": 752,
+    "val": 404
+  },
+  "examples_written": {
+    "test": 3072,
+    "train": 24000,
+    "train_s1000": 12000,
+    "train_s2000": 24000,
+    "train_s250": 3000,
+    "val": 1536
+  },
+  "excluded_direct_prior_overlap": 73004,
+  "feasible": true,
+  "groups_among_contributing_roots_by_partition": {
+    "test": 752,
+    "train": 1302,
+    "val": 404
+  },
+  "kept_roots": 35383,
+  "per_cell": {
+    "test/KQQvK/n1/neg": 256,
+    "test/KQQvK/n1/pos": 256,
+    "test/KQQvK/n2/neg": 256,
+    "test/KQQvK/n2/pos": 256,
+    "test/KQRvK/n1/neg": 256,
+    "test/KQRvK/n1/pos": 256,
+    "test/KQRvK/n2/neg": 256,
+    "test/KQRvK/n2/pos": 256,
+    "test/KRRvK/n1/neg": 256,
+    "test/KRRvK/n1/pos": 256,
+    "test/KRRvK/n2/neg": 256,
+    "test/KRRvK/n2/pos": 256,
+    "train/KQQvK/n1/neg": 2000,
+    "train/KQQvK/n1/pos": 2000,
+    "train/KQQvK/n2/neg": 2000,
+    "train/KQQvK/n2/pos": 2000,
+    "train/KQRvK/n1/neg": 2000,
+    "train/KQRvK/n1/pos": 2000,
+    "train/KQRvK/n2/neg": 2000,
+    "train/KQRvK/n2/pos": 2000,
+    "train/KRRvK/n1/neg": 2000,
+    "train/KRRvK/n1/pos": 2000,
+    "train/KRRvK/n2/neg": 2000,
+    "train/KRRvK/n2/pos": 2000,
+    "val/KQQvK/n1/neg": 128,
+    "val/KQQvK/n1/pos": 128,
+    "val/KQQvK/n2/neg": 128,
+    "val/KQQvK/n2/pos": 128,
+    "val/KQRvK/n1/neg": 128,
+    "val/KQRvK/n1/pos": 128,
+    "val/KQRvK/n2/neg": 128,
+    "val/KQRvK/n2/pos": 128,
+    "val/KRRvK/n1/neg": 128,
+    "val/KRRvK/n1/pos": 128,
+    "val/KRRvK/n2/neg": 128,
+    "val/KRRvK/n2/pos": 128
+  },
+  "per_family_stats": {
+    "KQQvK": {
+      "accepted_m2": 27592,
+      "accepted_m3": 5737,
+      "analyzed": 45742,
+      "attempted": 144000,
+      "duplicate": 3163,
+      "illegal_adjacent_kings": 13621,
+      "illegal_defender_in_check": 68382,
+      "illegal_other": 0,
+      "illegal_overlap": 13092,
+      "rejected_m1": 12400,
+      "rejected_no_mate_within_3": 13,
+      "unresolved_node_limit": 0
+    },
+    "KQRvK": {
+      "accepted_m2": 22977,
+      "accepted_m3": 17749,
+      "analyzed": 57360,
+      "attempted": 144000,
+      "duplicate": 2091,
+      "illegal_adjacent_kings": 13554,
+      "illegal_defender_in_check": 57790,
+      "illegal_other": 0,
+      "illegal_overlap": 13205,
+      "rejected_m1": 7333,
+      "rejected_no_mate_within_3": 9301,
+      "unresolved_node_limit": 0
+    },
+    "KRRvK": {
+      "accepted_m2": 18441,
+      "accepted_m3": 15891,
+      "analyzed": 67039,
+      "attempted": 144000,
+      "duplicate": 4729,
+      "illegal_adjacent_kings": 13680,
+      "illegal_defender_in_check": 45497,
+      "illegal_other": 0,
+      "illegal_overlap": 13055,
+      "rejected_m1": 5358,
+      "rejected_no_mate_within_3": 27349,
+      "unresolved_node_limit": 0
+    }
+  },
+  "prior_index": {
+    "children": 135746,
+    "roots": 3587
+  },
+  "round_size_per_family": 4000,
+  "rounds": 36,
+  "seed_fingerprint": "b52ad95c925672dc",
+  "source": {
+    "git_dirty_files": 7,
+    "git_head": "27612ede9626942832c46d999d6207a405a23125",
+    "source_digest": "578f215753f9c15ada017b960ec2620db823cf6d0615bc1ce2043cff513ed557"
+  },
+  "status": "complete_feasible",
+  "wall_secs": 43.4717759
+}

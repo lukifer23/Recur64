@@ -1,0 +1,32 @@
+{
+  "audit_pass": false,
+  "audit_wall_secs": 5.191989,
+  "contributing_roots_reanalysed_empty_cache": 8544,
+  "examples": 28608,
+  "failure_count": 4,
+  "failures": [
+    "[scales] scale 250: 3000 rows",
+    "[scales] scale 1000: 12000 rows",
+    "[scales] scale 2000: 24000 rows",
+    "[isolation] a group/root/example-child identity spans partitions"
+  ],
+  "prior_index_sizes": {
+    "children": 135746,
+    "roots": 3587
+  },
+  "prior_overlaps_found": 0,
+  "reference_child_checks": 216,
+  "reference_m3_minimal_depth_checks": 30,
+  "reference_shared_dependencies": "cozy-chess move generator/legality, FEN parser, domain definition; NOT the search, cache, node budget or rules::classify code",
+  "source": {
+    "git_dirty_files": 4,
+    "git_head": "27612ede9626942832c46d999d6207a405a23125",
+    "source_digest": "ab01ad02d1ee91fbc74052ba79c2b49fa87e0f493f1fc4f5537c121f1b2db9a8"
+  },
+  "symmetry_label_invariance": {
+    "examples": 1500,
+    "oracle_queries": 10500,
+    "transforms_per_example": 7
+  },
+  "targets_requeried_exact": 28608
+}

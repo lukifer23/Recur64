@@ -1,0 +1,25 @@
+{
+  "created_utc": "unix:1791525203",
+  "run": "gen-001",
+  "seed_fingerprint": "b52ad95c925672dc",
+  "groups": {
+    "learner": {
+      "d1/mlp_init.bin": "0228b6ea622a5139c01538d44af3ed4d8fe0a421b2a155697faa949cc53ae8b2",
+      "init/canonical_init.bin": "3bc80e9fef855375713af0a02030acb46df1b98ba782fa0674dab6607c637cdf",
+      "t1/MANIFEST.sha256.json": "0fdc2ce695e3dd25908d80330185edc7f1f7c46e7676f29bab1b7922849dc228",
+      "t1/T1_AMENDMENT_A1.md": "56c2143bda2ed10ca68df56ceef3e89a9a4b203fcbbaa296afcb19077013a332",
+      "t1/T1_AMENDMENT_A2.md": "66819c3f7617ea17b4b6876d3a3b89f8a983823e4ec2589f956fbbe52e397ab5",
+      "t1/T1_CONTRACT.md": "b8a5da553b1e1c645c3ccd4b2ee196c039920609e5c16aab2a9f8785f339cc8e",
+      "t1/config.json": "41ff0ebcd8202d53fa3b3b01fce6680614ace5ff5fef2c91356c857bdbb4a150",
+      "t1/frozen_protocol.json": "dbdbd5f704a895dea720ce1dc50305ff5da7466c8b2bc44fd10fdc8e6cd4bf4b",
+      "t1/frozen_protocol_a1.json": "84c584b096edbd3fe9216f1268e6523744b3cb5c20a3ab5c28b8196b8c447bb9",
+      "t1/receipts/audit_receipt_t1.json": "d64a8a612c40469e10c7d030a78076f4361b0401e2fe13b90c1ef5e99af19844",
+      "t1/rows/train.jsonl": "fdc677d887466da188a7bc03bfb622f54252cb1f1c4ec88c64feddfdb2bdf92c",
+      "t1/rows/train_s1000.jsonl": "9f730c38f4500a1f4b111f079a6cd695c4e697bc1e3f41c20a23ee58e7db844e",
+      "t1/rows/train_s2000.jsonl": "fdc677d887466da188a7bc03bfb622f54252cb1f1c4ec88c64feddfdb2bdf92c",
+      "t1/rows/train_s250.jsonl": "09521eb5b4fa5da43eda05ab899e1accd4139f96fa12b9064a3d08c00c8979f4",
+      "t1/rows/val.jsonl": "6d1ecc240e5a2adbb366a35245ecfc47b9e0558d4252cb757052a27c4ddadb4a",
+      "t1/seed/t1_master_seed.hex": "2d915408217d213e8346a6cf8fc7899ce11509d996f395cacd7b966a9ce35289"
+    }
+  }
+}
