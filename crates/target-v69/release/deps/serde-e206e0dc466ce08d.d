@@ -1,0 +1,14 @@
+C:\Users\Caitl\Desktop\Code Projects\Recur64-v69\crates\target-v69\release\deps\serde-e206e0dc466ce08d.d: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Caitl\Desktop\Code\ Projects\Recur64-v69\crates\target-v69\release\build\serde-009d67ca170ca123\out/private.rs
+
+C:\Users\Caitl\Desktop\Code Projects\Recur64-v69\crates\target-v69\release\deps\libserde-e206e0dc466ce08d.rlib: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Caitl\Desktop\Code\ Projects\Recur64-v69\crates\target-v69\release\build\serde-009d67ca170ca123\out/private.rs
+
+C:\Users\Caitl\Desktop\Code Projects\Recur64-v69\crates\target-v69\release\deps\libserde-e206e0dc466ce08d.rmeta: C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Caitl\Desktop\Code\ Projects\Recur64-v69\crates\target-v69\release\build\serde-009d67ca170ca123\out/private.rs
+
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs:
+C:\Users\Caitl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs:
+C:\Users\Caitl\Desktop\Code\ Projects\Recur64-v69\crates\target-v69\release\build\serde-009d67ca170ca123\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\Caitl\\Desktop\\Code Projects\\Recur64-v69\\crates\\target-v69\\release\\build\\serde-009d67ca170ca123\\out

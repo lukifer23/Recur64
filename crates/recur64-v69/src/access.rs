@@ -28,6 +28,14 @@ pub enum Role {
     G1Evaluator,
     /// G1 metric aggregator: G1 metadata + predictions + fitting reports.
     G1Aggregator,
+    /// T1 data builder/auditor (gen-001 + G1 pools for identity exclusion; writes t1/).
+    T1Builder,
+    /// T1 trainer: T1 train/val rows and canonical inits; writes t1/runs/. Never test rows or metadata.
+    T1Trainer,
+    /// T1 final evaluator: frozen candidates + T1 test rows (+ G1 panel rows); no metadata, no train rows.
+    T1Evaluator,
+    /// T1 aggregator: metadata + predictions.
+    T1Aggregator,
 }
 
 #[derive(Clone)]
@@ -75,8 +83,8 @@ impl Access {
             Role::MetricAggregator => &["meta/fit.meta.jsonl", "meta/val.meta.jsonl", "MANIFEST.sha256.json"],
             Role::DataAudit => &[],
             Role::D1Panel => &["data/fit.jsonl", "meta/fit.meta.jsonl", "MANIFEST.sha256.json"],
-            Role::G1Builder => &["pool/roots.jsonl", "MANIFEST.sha256.json"],
-            Role::G1Evaluator | Role::G1Aggregator => &[],
+            Role::G1Builder | Role::T1Builder => &["pool/roots.jsonl", "MANIFEST.sha256.json"],
+            Role::G1Evaluator | Role::G1Aggregator | Role::T1Trainer | Role::T1Evaluator | Role::T1Aggregator => &[],
         }
     }
 
@@ -86,11 +94,15 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["eval/", "intervention/", "d1/"],
             Role::MetricAggregator => &["report/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/", "g1r1/"],
+            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/"],
             Role::D1Panel => &["d1/", "d2/", "d3/"],
             Role::G1Builder => &["g1r1/"],
             Role::G1Evaluator => &["g1r1/eval/", "g1r1/receipts/"],
             Role::G1Aggregator => &["g1r1/report/"],
+            Role::T1Builder => &["t1/"],
+            Role::T1Trainer => &["t1/runs/"],
+            Role::T1Evaluator => &["t1/final/", "t1/receipts/"],
+            Role::T1Aggregator => &["t1/report/"],
         }
     }
 
@@ -100,18 +112,28 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/", "d1/"],
             Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
+            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
             Role::D1Panel => &["d1/", "d2/", "d3/", "spec/", "init/"],
             Role::G1Builder => &["g1r1/", "spec/"],
             Role::G1Evaluator => &["g1r1/", "d3/fits/", "d1/baseline/", "d2/subsets/s768_rows.jsonl"],
             Role::G1Aggregator => &["g1r1/", "d3/report/", "d1/report/"],
+            Role::T1Builder => &["t1/", "g1r1/pool/", "g1r1/index/", "spec/"],
+            Role::T1Trainer => &["t1/", "init/canonical_init.bin", "d1/mlp_init.bin"],
+            Role::T1Evaluator => &["t1/", "g1r1/rows/", "g1r1/intervention/", "d1/baseline/"],
+            Role::T1Aggregator => &["t1/", "g1r1/meta/", "g1r1/intervention/", "g1r1/eval/", "d3/report/", "d1/report/"],
         }
     }
 
-    /// Parts the G1 evaluator must never read: root-bearing metadata, exclusion index, pool,
-    /// and optimizer states (inference-only candidate loading).
-    fn g1_eval_denied(rel: &str) -> bool {
-        ["g1r1/meta/", "g1r1/pool/", "g1r1/index/", "g1/", "d3/fits/a/final/opt", "d3/fits/m/final/opt"].iter().any(|d| rel.starts_with(d))
+    /// Parts a role must never read even inside an otherwise allowed prefix: root-bearing
+    /// metadata, exclusion indexes, pools, held-out rows and optimizer states.
+    fn denied(role: Role, rel: &str) -> bool {
+        let g1 = ["g1r1/meta/", "g1r1/pool/", "g1r1/index/", "g1/", "d3/fits/a/final/opt", "d3/fits/m/final/opt"];
+        match role {
+            Role::G1Evaluator => g1.iter().any(|d| rel.starts_with(d)),
+            Role::T1Trainer => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/test", "t1/final/"].iter().any(|d| rel.starts_with(d)),
+            Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train", "t1/rows/val"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/runs/") && rel.contains("/opt_")),
+            _ => false,
+        }
     }
 
     fn rel_to_root(&self, resolved: &Path) -> Option<String> {
@@ -141,7 +163,7 @@ impl Access {
             bail!("ACCESS VIOLATION: role {:?} may not read dataset file '{rel}'", self.role);
         }
         if let Some(rel) = self.rel_to_root(&resolved) {
-            if self.role == Role::G1Evaluator && Self::g1_eval_denied(&rel) {
+            if Self::denied(self.role, &rel) {
                 bail!("ACCESS VIOLATION: role {:?} may not read '{rel}'", self.role);
             }
             if Self::allowed_other_read_prefixes(self.role).iter().any(|a| rel.starts_with(a)) {

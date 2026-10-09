@@ -138,3 +138,76 @@ pub fn read_rows(text: &str) -> Result<Vec<ModelRow>> {
     }
     Ok(rows)
 }
+
+/// Square index after applying element `t` (0..8) of the dihedral group D8 to (file, rank).
+pub fn d8_square(idx: usize, t: usize) -> usize {
+    let (f, r) = (idx % 8, idx / 8);
+    let (f, r) = match t {
+        0 => (f, r),
+        1 => (7 - f, r),
+        2 => (f, 7 - r),
+        3 => (7 - f, 7 - r),
+        4 => (r, f),
+        5 => (7 - r, f),
+        6 => (r, 7 - f),
+        _ => (7 - r, 7 - f),
+    };
+    r * 8 + f
+}
+
+impl Features {
+    /// Label-preserving augmentation: apply D8 element `t` to the attacker-relative piece grid.
+    /// (The pawnless, castling-free domain is invariant under all 8 board symmetries; the colour
+    /// relabelling half of the 16-fold group is already quotiented out by `featurize`.)
+    pub fn d8(&self, t: usize) -> Features {
+        let mut piece = [0u8; 64];
+        for sq in 0..64 {
+            piece[d8_square(sq, t)] = self.piece[sq];
+        }
+        Features { piece, ..self.clone() }
+    }
+}
+
+/// FEN of the position with the board geometrically transformed by `t` (same pieces/colours, same side to move).
+pub fn transform_fen(fen: &str, t: usize) -> Result<String> {
+    let b: Board = fen.parse().map_err(|e| anyhow::anyhow!("fen: {e}"))?;
+    let mut grid = [[' '; 8]; 8];
+    for sq in Square::ALL {
+        if let Some(p) = b.piece_on(sq) {
+            let c = match p {
+                Piece::King => 'k',
+                Piece::Queen => 'q',
+                Piece::Rook => 'r',
+                Piece::Bishop => 'b',
+                Piece::Knight => 'n',
+                Piece::Pawn => 'p',
+            };
+            let ch = if b.color_on(sq).unwrap() == Color::White { c.to_ascii_uppercase() } else { c };
+            let ni = d8_square(sq.rank() as usize * 8 + sq.file() as usize, t);
+            grid[ni / 8][ni % 8] = ch;
+        }
+    }
+    let mut out = String::new();
+    for r in (0..8).rev() {
+        let mut e = 0;
+        for f in 0..8 {
+            if grid[r][f] == ' ' {
+                e += 1;
+            } else {
+                if e > 0 {
+                    out.push_str(&e.to_string());
+                    e = 0;
+                }
+                out.push(grid[r][f]);
+            }
+        }
+        if e > 0 {
+            out.push_str(&e.to_string());
+        }
+        if r > 0 {
+            out.push('/');
+        }
+    }
+    let stm = if b.side_to_move() == Color::White { 'w' } else { 'b' };
+    Ok(format!("{out} {stm} - - {} 1", b.halfmove_clock()))
+}

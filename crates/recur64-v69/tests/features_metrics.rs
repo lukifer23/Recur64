@@ -153,3 +153,30 @@ fn aggregator_rejects_bad_inputs() {
     bad.push(pr("e1", "derange", 0.0, Some("e0")));
     assert!(aggregate("A", &bad, &good, &metas, &metas, &seed).is_err());
 }
+
+#[test]
+fn d8_augmentation_orbit_matches_transformed_boards_for_both_attacker_colours() {
+    use recur64_v69::features::{d8_square, transform_fen};
+    for fen in [W_ATT, B_ATT, "7k/8/5K2/8/8/8/8/R5Q1 b - - 1 1"] {
+        let f = featurize(fen, 1).unwrap().0;
+        // identity and group closure on the grid
+        assert_eq!(f.d8(0), f);
+        let mut orbit_feat: Vec<[u8; 64]> = (0..8).map(|t| f.d8(t).piece).collect();
+        let mut orbit_board: Vec<[u8; 64]> = (0..8).map(|t| featurize(&transform_fen(fen, t).unwrap(), 1).unwrap().0.piece).collect();
+        orbit_feat.sort();
+        orbit_board.sort();
+        assert_eq!(orbit_feat, orbit_board, "feature-grid orbit must equal the orbit of real transformed boards: {fen}");
+        for t in 0..8 {
+            let g = f.d8(t);
+            assert_eq!((g.budget, g.attacker_to_move, g.scalars), (f.budget, f.attacker_to_move, f.scalars));
+        }
+    }
+    // d8_square is a bijection for every t
+    for t in 0..8 {
+        let mut seen = [false; 64];
+        for s in 0..64 {
+            seen[d8_square(s, t)] = true;
+        }
+        assert!(seen.iter().all(|x| *x));
+    }
+}

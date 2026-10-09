@@ -36,3 +36,7 @@ path = "src/bin/v69_d3.rs"
 [[bin]]
 name = "v69-g1"
 path = "src/bin/v69_g1.rs"
+
+[[bin]]
+name = "v69-t1"
+path = "src/bin/v69_t1.rs"

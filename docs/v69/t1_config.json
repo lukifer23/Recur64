@@ -1,0 +1,25 @@
+{
+  "experiment": "V69-T1 representation/generalization campaign: scale + exact symmetry augmentation vs the shallow baseline",
+  "precision": "CUDA backend: f32 storage/accumulation, matmul inputs possibly TF32; NOT strict FP32. Baselines are host-side f64.",
+  "data": {
+    "partitions": {"train": "2000 per family x budget x class cell (24000), nested subsets rank<k for k in {250,1000,2000}", "val": "128 per cell (1536)", "test": "256 per cell (3072), sealed until final evaluation"},
+    "exclusion": "identity-level (full 65-byte canonical keys) against gen-001 AND the G1 pool: a root is removed iff its root key or any child key occurs in the prior index; groups then formed; partitions assigned per connected group (size>50 -> train, else keyed hash 80/10/10)",
+    "per_root_cap_per_class": 2, "node_limit_per_query": 5000000
+  },
+  "training": {
+    "batch_size": 64, "optimizer": "AdamW", "betas": [0.9, 0.999], "epsilon": 1e-8, "weight_decay": 1e-4, "grad_clip_global_norm": 1.0,
+    "schedule": "linear warmup 200 updates to peak lr, cosine decay to 0.1*peak at the final update (update index u: u<200: peak*(u+1)/200; else 0.1*peak+0.45*peak*(1+cos(pi*(u-200)/(U-1-200))))",
+    "augmentation": {"off": "none", "d8": "per-sample random element of the 8-element board symmetry group applied to the attacker-relative piece grid (label-preserving; colour relabelling already quotiented by the encoding); stream t1_aug"},
+    "init": {"A": "init/canonical_init.bin (E1 canonical untrained)", "M": "d1/mlp_init.bin (D1 untrained MLP)"},
+    "no_early_stopping_no_best_checkpoint": true
+  },
+  "grid": {
+    "M": {"k": [250, 1000, 2000], "aug": ["off", "d8"], "peak_lr": [0.0003, 0.001, 0.003], "epochs": 30},
+    "A": [{"k": 2000, "aug": "d8", "peak_lr": 0.0005}, {"k": 2000, "aug": "off", "peak_lr": 0.0005}, {"k": 1000, "aug": "d8", "peak_lr": 0.0005}, {"k": 250, "aug": "d8", "peak_lr": 0.0005}],
+    "A_epochs": {"2000": 12, "1000": 20, "250": 40}
+  },
+  "selection": "per model family (A, M): lowest FINAL-update validation BCE among completed runs (ties: higher validation balanced accuracy); validation only; test untouched",
+  "final": {"candidates": ["A_star", "M_star", "B (frozen D1 baseline)", "B2 (baseline refit on T1 train)"], "datasets": ["T1 test (primary)", "G1 panel (secondary, report-only)"], "controls": "derangement and erasure as in G1; neural candidates also report 8-fold symmetry test-time-augmentation logits (report-only variant, same invocation)", "bootstrap": {"resamples": 5000, "unit": "connected group_id", "paired": true}},
+  "decision": {"transfer": {"balanced_accuracy_min": 0.75, "bce_max": 0.55, "derangement_drop_min_pp": 15}, "improvement_over_baseline": {"gain_pp_min": 5, "paired_95ci_excludes_zero": true, "bce_no_worse": true, "against": ["B", "B2"]}},
+  "limits": {"native_hours_total": 3.5, "host_gib": 8, "device_mib_sampled": 3072}
+}
