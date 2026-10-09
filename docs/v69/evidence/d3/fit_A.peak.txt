@@ -1,0 +1,1 @@
+peak_host_mib=461 peak_gpu_mib_sampled=225

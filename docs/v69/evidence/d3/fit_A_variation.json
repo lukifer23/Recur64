@@ -1,0 +1,149 @@
+[
+  {
+    "update": 0,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.12078202072495803,
+      "workspace_pool_std_over_mean_norm": 0.10099046784452521
+    }
+  },
+  {
+    "update": 50,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.04407410649033659,
+      "workspace_pool_std_over_mean_norm": 0.026341946415881036
+    }
+  },
+  {
+    "update": 100,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.03702091180547215,
+      "workspace_pool_std_over_mean_norm": 0.01967662217898483
+    }
+  },
+  {
+    "update": 200,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.032130946913536185,
+      "workspace_pool_std_over_mean_norm": 0.015674583634147667
+    }
+  },
+  {
+    "update": 400,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02697097156121003,
+      "workspace_pool_std_over_mean_norm": 0.011315662505500415
+    }
+  },
+  {
+    "update": 600,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.0235913043543009,
+      "workspace_pool_std_over_mean_norm": 0.009003666160851947
+    }
+  },
+  {
+    "update": 800,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.022884862114232393,
+      "workspace_pool_std_over_mean_norm": 0.00853653079342118
+    }
+  },
+  {
+    "update": 1000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02252173452224556,
+      "workspace_pool_std_over_mean_norm": 0.00825456270024026
+    }
+  },
+  {
+    "update": 1600,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.021970718136955707,
+      "workspace_pool_std_over_mean_norm": 0.007930645345545368
+    }
+  },
+  {
+    "update": 2000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.021923643463943977,
+      "workspace_pool_std_over_mean_norm": 0.007896154813339763
+    }
+  },
+  {
+    "update": 2400,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.02187824088272279,
+      "workspace_pool_std_over_mean_norm": 0.007867863354981791
+    }
+  },
+  {
+    "update": 3000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.022776601869621337,
+      "workspace_pool_std_over_mean_norm": 0.008095039968806972
+    }
+  },
+  {
+    "update": 4000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.43559718575306544,
+      "workspace_pool_std_over_mean_norm": 0.22873140843754974
+    }
+  },
+  {
+    "update": 5000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 0.8290939899258633,
+      "workspace_pool_std_over_mean_norm": 0.5411593070381238
+    }
+  },
+  {
+    "update": 6000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.3351322780607022,
+      "workspace_pool_std_over_mean_norm": 0.9827182308474691
+    }
+  },
+  {
+    "update": 7000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.6927156510850045,
+      "workspace_pool_std_over_mean_norm": 1.3383122666201888
+    }
+  },
+  {
+    "update": 8000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.8165708239431597,
+      "workspace_pool_std_over_mean_norm": 2.17483594841245
+    }
+  },
+  {
+    "update": 9000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.3709735759548132,
+      "workspace_pool_std_over_mean_norm": 1.4951154373358115
+    }
+  },
+  {
+    "update": 10000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.385254016440175,
+      "workspace_pool_std_over_mean_norm": 1.557505919252625
+    }
+  },
+  {
+    "update": 11000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.4147209388596562,
+      "workspace_pool_std_over_mean_norm": 1.7705098349588844
+    }
+  },
+  {
+    "update": 12000,
+    "variation": {
+      "encoder_pool_std_over_mean_norm": 1.5484993058071306,
+      "workspace_pool_std_over_mean_norm": 1.9516046944651837
+    }
+  }
+]

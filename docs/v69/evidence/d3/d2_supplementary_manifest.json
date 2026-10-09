@@ -1,0 +1,438 @@
+{
+    "kind":  "supplementary verification of D2 artifacts taken at D3 start; not a launch-time receipt",
+    "created_utc":  "2026-10-09T01:22:01.7852898Z",
+    "files":  {
+                  "d2/aggregate.log":  {
+                                           "sha256":  "336c0bcf056967d7bfd2cac8081c2cdd386036cce92a172589cb894ea661279e",
+                                           "bytes":  41
+                                       },
+                  "d2/aggregate.log.exit":  {
+                                                "sha256":  "09803f9810d155ee8ca5cfaaf6caa68dfccf85e0492ccb67d1275723770e0192",
+                                                "bytes":  65
+                                            },
+                  "d2/aggregate.log.out":  {
+                                               "sha256":  "48ebc887eba7c39edcf6fde74d67f49391cb628df12911cfa3d3a10229dace32",
+                                               "bytes":  131
+                                           },
+                  "d2/aggregate.log.peak":  {
+                                                "sha256":  "3fae99d72394d575af521b0aac3b7089abb0418522a6488a65b685b93868b8bf",
+                                                "bytes":  40
+                                            },
+                  "d2/config.json":  {
+                                         "sha256":  "ed184ab07761c7d01eecc39ab0726707c3bcbdb560ef52b998c149b2fea9531e",
+                                         "bytes":  1494
+                                     },
+                  "d2/d1_supplementary_manifest.json":  {
+                                                            "sha256":  "e07fd9055ad05144b6bae5a494e81a8935574250468d25152be675d599250768",
+                                                            "bytes":  17668
+                                                        },
+                  "d2/D2_CONTRACT.md":  {
+                                            "sha256":  "ae218acbead07ded8dc0c9f7c3c769daf1ab6f66c68b38193c080838b501c95d",
+                                            "bytes":  8415
+                                        },
+                  "d2/fit-A-256.log":  {
+                                           "sha256":  "450d6e6013a02fd3fdc9f19db5b79308b02895f791cbf383ae4c148330ff59f3",
+                                           "bytes":  43
+                                       },
+                  "d2/fit-A-256.log.exit":  {
+                                                "sha256":  "8f0c3883777dbfd69f95071a7b88b76d5e6826d18eec984eec62135e1f8585aa",
+                                                "bytes":  67
+                                            },
+                  "d2/fit-A-256.log.out":  {
+                                               "sha256":  "702610591404ca2e677776357867057c8cfa0dde5ab56a951d7fbc07c6cd4140",
+                                               "bytes":  5717
+                                           },
+                  "d2/fit-A-256.log.peak":  {
+                                                "sha256":  "0c9a57f5e969e05627934eb6df1be7aa42b0ac92c698f9c578b9f05aadd63514",
+                                                "bytes":  44
+                                            },
+                  "d2/fit-A-64.log":  {
+                                          "sha256":  "cde2b818d60c02f262c67fe13595c58c73d4b885ecf11b0cace465764fd40ead",
+                                          "bytes":  42
+                                      },
+                  "d2/fit-A-64.log.exit":  {
+                                               "sha256":  "c8df8690b1be14b37b2c808c7043a843fd0c983827e45e5b465b31145f367bd8",
+                                               "bytes":  67
+                                           },
+                  "d2/fit-A-64.log.out":  {
+                                              "sha256":  "edb5b453c54ee0eb6cc40248ef214eddc590572a74dbf3ea79c5b0c5c00a34a2",
+                                              "bytes":  5643
+                                          },
+                  "d2/fit-A-64.log.peak":  {
+                                               "sha256":  "63fdfac18312e087017266bde99b707d7d7a9787cf70ed3c8a40ec0b9318513b",
+                                               "bytes":  44
+                                           },
+                  "d2/fit-A-768.log":  {
+                                           "sha256":  "6253e258f247cfc48854b914dd6af9d249aad6df454b2e7d3738772fccd4cf7b",
+                                           "bytes":  43
+                                       },
+                  "d2/fit-A-768.log.exit":  {
+                                                "sha256":  "cbf75901af3b3737070f1c3a131e5af8f4b617e2bba1eefa2d562e9397c80cc8",
+                                                "bytes":  67
+                                            },
+                  "d2/fit-A-768.log.out":  {
+                                               "sha256":  "c34780d8fcfebd8ca25d7ddfd2d6ba56f35f068c9ea0e1e802c8bb0e5f41ead6",
+                                               "bytes":  5488
+                                           },
+                  "d2/fit-A-768.log.peak":  {
+                                                "sha256":  "ed4615610618a6e5f24535cf816e6f350c018728a07df62f2373cbc5241a3008",
+                                                "bytes":  44
+                                            },
+                  "d2/fit-M-256.log":  {
+                                           "sha256":  "d67bc6e6c9b02fa3c25da2f849e1d77b657022020dd66669bdffadee98192957",
+                                           "bytes":  43
+                                       },
+                  "d2/fit-M-256.log.exit":  {
+                                                "sha256":  "87fedfabe0a8450cca75ed435a65d18e3fd09a2a4a9f0d691751b581485d4cb5",
+                                                "bytes":  66
+                                            },
+                  "d2/fit-M-256.log.out":  {
+                                               "sha256":  "2b18430a49b5b0de2119e672e4b239c788ba8a1f4fde90531ae366af3d838bfa",
+                                               "bytes":  5565
+                                           },
+                  "d2/fit-M-256.log.peak":  {
+                                                "sha256":  "559dd40c4f8402b32bd87c31103cc102cf09de3dd943ca38eadc2463efcdbb66",
+                                                "bytes":  43
+                                            },
+                  "d2/fit-M-64.log":  {
+                                          "sha256":  "3fdc6a74ef3d87f39b3a38a5ecb22201a3d72d8b47f5c4bb9a74467799d801b1",
+                                          "bytes":  42
+                                      },
+                  "d2/fit-M-64.log.exit":  {
+                                               "sha256":  "4761e29ed2814eb1da46b1241ab52edc4dcf2e730f7d96f4d19dd020471ad4dd",
+                                               "bytes":  66
+                                           },
+                  "d2/fit-M-64.log.out":  {
+                                              "sha256":  "febfa020eb28097eca6665bbba5cb45ab6bdd80d9e0e963f8d9ade1f50a445fb",
+                                              "bytes":  5680
+                                          },
+                  "d2/fit-M-64.log.peak":  {
+                                               "sha256":  "de84c25d4fd8c09706c3e5eb6d5f316f9d4e03d249e09162a4eeb361e567493c",
+                                               "bytes":  44
+                                           },
+                  "d2/fit-M-768.log":  {
+                                           "sha256":  "34dd23851300450a11290b6fa7512f848d07face638db5540d9cf1b0bc167ae5",
+                                           "bytes":  43
+                                       },
+                  "d2/fit-M-768.log.exit":  {
+                                                "sha256":  "9addae6713470415f578475d8bda0d90d5081fdccdcab5704d21376c52de51db",
+                                                "bytes":  66
+                                            },
+                  "d2/fit-M-768.log.out":  {
+                                               "sha256":  "8ec150228fa90d82a3fe0806b992226768f4c787dc0b34ae458d2e8390c64b95",
+                                               "bytes":  5652
+                                           },
+                  "d2/fit-M-768.log.peak":  {
+                                                "sha256":  "559dd40c4f8402b32bd87c31103cc102cf09de3dd943ca38eadc2463efcdbb66",
+                                                "bytes":  43
+                                            },
+                  "d2/fits/A/s256/final/meta.json":  {
+                                                         "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                         "bytes":  75
+                                                     },
+                  "d2/fits/A/s256/final/model.mpk":  {
+                                                         "sha256":  "c8d228b94fdf6a1881a12aab8a95dcfe7910586083993424dd729ad3fa7264ae",
+                                                         "bytes":  7512850
+                                                     },
+                  "d2/fits/A/s256/final/opt_decay.mpk":  {
+                                                             "sha256":  "2b5670323c705715f21543b80f5a26997ad121374098a6fb063c83ff10bfbc14",
+                                                             "bytes":  14905189
+                                                         },
+                  "d2/fits/A/s256/final/opt_nodecay.mpk":  {
+                                                               "sha256":  "a7783103d2c3cdf23a4fef809c15426549c96d9b54dcfa56c4fbc3967186f7d0",
+                                                               "bytes":  121177
+                                                           },
+                  "d2/fits/A/s256/movement.json":  {
+                                                       "sha256":  "9c345cece4461d00e7bdb048ba75757c7dfca040fc2c6f394135fbd4c540aae9",
+                                                       "bytes":  15722
+                                                   },
+                  "d2/fits/A/s256/predictions.jsonl":  {
+                                                           "sha256":  "bdcfbc3fe0abea2941e2c3374681419281afda6077bf6654fbf79f50b1af71ad",
+                                                           "bytes":  226538
+                                                       },
+                  "d2/fits/A/s256/provenance.json":  {
+                                                         "sha256":  "6aef00ec8ab43fb4e3f99289551af234e114ab0a0ca85552468c0b83d314ce0f",
+                                                         "bytes":  1642
+                                                     },
+                  "d2/fits/A/s256/status.json":  {
+                                                     "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                     "bytes":  46
+                                                 },
+                  "d2/fits/A/s256/trace.json":  {
+                                                    "sha256":  "0ca93b2e8df4fbde245cabebdd4db91e6441cb3a9df93d6952c501e8aa17dd67",
+                                                    "bytes":  483829
+                                                },
+                  "d2/fits/A/s256/variation.json":  {
+                                                        "sha256":  "c4edb52251ddae8e566fff3eb71685955b9f0980c06ee023af5106ee93df5d1a",
+                                                        "bytes":  1945
+                                                    },
+                  "d2/fits/A/s64/final/meta.json":  {
+                                                        "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                        "bytes":  75
+                                                    },
+                  "d2/fits/A/s64/final/model.mpk":  {
+                                                        "sha256":  "12c3d34bb823e63fb874d77178fe8172c542d900bdac915350f62e8f15df6c00",
+                                                        "bytes":  7512850
+                                                    },
+                  "d2/fits/A/s64/final/opt_decay.mpk":  {
+                                                            "sha256":  "3ffeaf6b48f83d7e282c985ff84c0ca821589c87202442f7533c0624f99fd4dc",
+                                                            "bytes":  14905189
+                                                        },
+                  "d2/fits/A/s64/final/opt_nodecay.mpk":  {
+                                                              "sha256":  "80bc29e34a135407ec952f3678b89d61453490ff7e1068136f36c329c39159e7",
+                                                              "bytes":  121177
+                                                          },
+                  "d2/fits/A/s64/movement.json":  {
+                                                      "sha256":  "b796a6275c79b0b98ff5418f1000b6b18cdf37878fb5dda13ca4ab8b21a00747",
+                                                      "bytes":  15756
+                                                  },
+                  "d2/fits/A/s64/predictions.jsonl":  {
+                                                          "sha256":  "ad5eccb8dabb7820696eb70bbd5d2c10240e6669c4f7ce3655826df535c55871",
+                                                          "bytes":  56830
+                                                      },
+                  "d2/fits/A/s64/provenance.json":  {
+                                                        "sha256":  "bf2de38aebb5a045aa35b26668cf9084de633546298614cc2e8f0f091731cb1c",
+                                                        "bytes":  1641
+                                                    },
+                  "d2/fits/A/s64/status.json":  {
+                                                    "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                    "bytes":  46
+                                                },
+                  "d2/fits/A/s64/trace.json":  {
+                                                   "sha256":  "427b2a27eef03350f5f5fc08a66694afb803dba1f210b7663dcfb051aca2280c",
+                                                   "bytes":  481923
+                                               },
+                  "d2/fits/A/s64/variation.json":  {
+                                                       "sha256":  "7985df7fd5af26c63b496748f1449c14257f00d28114cfa1c5452801e738b77e",
+                                                       "bytes":  1943
+                                                   },
+                  "d2/fits/A/s768/final/meta.json":  {
+                                                         "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                         "bytes":  75
+                                                     },
+                  "d2/fits/A/s768/final/model.mpk":  {
+                                                         "sha256":  "4415db5b9b725937318faa0abb4498033c98fdb4bd808077f129d6dc719f519c",
+                                                         "bytes":  7512850
+                                                     },
+                  "d2/fits/A/s768/final/opt_decay.mpk":  {
+                                                             "sha256":  "356dfc5622d456c8717b5d63e68db47bb79ce6c46ea463bcfa12ef1a95c59fb8",
+                                                             "bytes":  14905189
+                                                         },
+                  "d2/fits/A/s768/final/opt_nodecay.mpk":  {
+                                                               "sha256":  "6f1e550cd7e0c1e1ab379105f5a475e4824cfc77dc366f54b118f7fa31493d63",
+                                                               "bytes":  121177
+                                                           },
+                  "d2/fits/A/s768/movement.json":  {
+                                                       "sha256":  "f84e681474d24e6dd749305a027bbb43b4ea9fd8a4a9853e0141e16fd26ef660",
+                                                       "bytes":  15777
+                                                   },
+                  "d2/fits/A/s768/predictions.jsonl":  {
+                                                           "sha256":  "036cb024671e7e911d2c61d72d868577adc035272277ada6ace4b31c11651c7e",
+                                                           "bytes":  692868
+                                                       },
+                  "d2/fits/A/s768/provenance.json":  {
+                                                         "sha256":  "2ece7c0677496f4ee30633823b51882095a0918fd44fbf8815a873b3238f371d",
+                                                         "bytes":  1642
+                                                     },
+                  "d2/fits/A/s768/status.json":  {
+                                                     "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                     "bytes":  46
+                                                 },
+                  "d2/fits/A/s768/trace.json":  {
+                                                    "sha256":  "7c0361350c3a12af4e65dac506e0be207855b9d83040d03a9b95889f565ae685",
+                                                    "bytes":  465796
+                                                },
+                  "d2/fits/A/s768/variation.json":  {
+                                                        "sha256":  "0a0ac3309d4cac4903935c46c07c123b1ae2bfa2460d75929567580a47ec95e2",
+                                                        "bytes":  1978
+                                                    },
+                  "d2/fits/M/s256/final/meta.json":  {
+                                                         "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                         "bytes":  75
+                                                     },
+                  "d2/fits/M/s256/final/model.mpk":  {
+                                                         "sha256":  "3a4f2789d40dbeddd1589e339ad76b4c119d587c7434008c394aa32046370581",
+                                                         "bytes":  465463
+                                                     },
+                  "d2/fits/M/s256/final/opt_decay.mpk":  {
+                                                             "sha256":  "206e7da2c994db59306616057ad11afb873cdf2932ec0070a4013eb9c7b9c3d1",
+                                                             "bytes":  928861
+                                                         },
+                  "d2/fits/M/s256/final/opt_nodecay.mpk":  {
+                                                               "sha256":  "ddce71cb04c2deb247e4daf02d86f787aaf80f01311021c58da2d9072a029b93",
+                                                               "bytes":  2131
+                                                           },
+                  "d2/fits/M/s256/movement.json":  {
+                                                       "sha256":  "2b96163743b01eaa393ab3f6fd722b0329c477b8097cee692a9665480f148341",
+                                                       "bytes":  3889
+                                                   },
+                  "d2/fits/M/s256/predictions.jsonl":  {
+                                                           "sha256":  "00dea29efa1b48273e38f0a67d0159b7502a2c783cf5c32e8351e133da5e3cd1",
+                                                           "bytes":  226067
+                                                       },
+                  "d2/fits/M/s256/provenance.json":  {
+                                                         "sha256":  "16966a16d0904a9412a8be10cd9c85f67a1a53c73528fa6c7abf09a63416b63e",
+                                                         "bytes":  1642
+                                                     },
+                  "d2/fits/M/s256/status.json":  {
+                                                     "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                     "bytes":  46
+                                                 },
+                  "d2/fits/M/s256/trace.json":  {
+                                                    "sha256":  "1bfa93e06a653a008dcb385dfd5b4e5be6248a1129e963867a824c510d5b1222",
+                                                    "bytes":  475477
+                                                },
+                  "d2/fits/M/s64/final/meta.json":  {
+                                                        "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                        "bytes":  75
+                                                    },
+                  "d2/fits/M/s64/final/model.mpk":  {
+                                                        "sha256":  "6264bc243f5576689251c1af5efd5d7d89cbf075ace8b90b529ee1336beee595",
+                                                        "bytes":  465463
+                                                    },
+                  "d2/fits/M/s64/final/opt_decay.mpk":  {
+                                                            "sha256":  "122d48e3113910f9d2567fed4f11d528a5c67cea6bd5bb63c93b929b06c1bced",
+                                                            "bytes":  928861
+                                                        },
+                  "d2/fits/M/s64/final/opt_nodecay.mpk":  {
+                                                              "sha256":  "658578f9b8ffecc393a2ed62b091674702e2c293641a8195a1fe38670e280963",
+                                                              "bytes":  2131
+                                                          },
+                  "d2/fits/M/s64/movement.json":  {
+                                                      "sha256":  "63ff90fca9c9de4eba55c4771bdfcb19534d30b06ef7049588b14c4746c79c1a",
+                                                      "bytes":  3899
+                                                  },
+                  "d2/fits/M/s64/predictions.jsonl":  {
+                                                          "sha256":  "e875999b4ab5ed27bbd953adb049da2a3421582c3c0d0c3bf1c96335f9af9e9f",
+                                                          "bytes":  56345
+                                                      },
+                  "d2/fits/M/s64/provenance.json":  {
+                                                        "sha256":  "a0efee39b0be292f1a4d72c02b26ae22010a1c010ae51b7dccaa66cd54c5ffb2",
+                                                        "bytes":  1641
+                                                    },
+                  "d2/fits/M/s64/status.json":  {
+                                                    "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                    "bytes":  46
+                                                },
+                  "d2/fits/M/s64/trace.json":  {
+                                                   "sha256":  "3b4ea57d26912b14e66d9575babb5c11fe26b3614075ab2951619f7d2e08e9a1",
+                                                   "bytes":  480112
+                                               },
+                  "d2/fits/M/s768/final/meta.json":  {
+                                                         "sha256":  "c7bd4b75e7dfe2aa56a4f82e9a925c1c2170f219796159d0fda8e939892a78f1",
+                                                         "bytes":  75
+                                                     },
+                  "d2/fits/M/s768/final/model.mpk":  {
+                                                         "sha256":  "7015f26134f3dad3a51cd91ca8aa14ede3ca09643aca2eed74aa7d51aa577fe1",
+                                                         "bytes":  465463
+                                                     },
+                  "d2/fits/M/s768/final/opt_decay.mpk":  {
+                                                             "sha256":  "e584fbf335ba76adbe414555e617771e73a8e36c1edb958b6ce22b16067696d2",
+                                                             "bytes":  928861
+                                                         },
+                  "d2/fits/M/s768/final/opt_nodecay.mpk":  {
+                                                               "sha256":  "fb9a45e276b43960e87682dfe4c31d8bef2b71b43b3dbd157e3e976bfe59eaf9",
+                                                               "bytes":  2131
+                                                           },
+                  "d2/fits/M/s768/movement.json":  {
+                                                       "sha256":  "d4f60a677c32b8ad702ebd2c07125757d72307469cea329d1d8d131aa30666fb",
+                                                       "bytes":  3912
+                                                   },
+                  "d2/fits/M/s768/predictions.jsonl":  {
+                                                           "sha256":  "71ebc2d580f3deff1094a1a2609de1a1aa2906cec27a03b55acefe74e9ca4e76",
+                                                           "bytes":  683399
+                                                       },
+                  "d2/fits/M/s768/provenance.json":  {
+                                                         "sha256":  "b7a5db84339132ce4007d4a4e6842b4fc55fff1a42547c8e6d3ec4a0dc01e0c6",
+                                                         "bytes":  1642
+                                                     },
+                  "d2/fits/M/s768/status.json":  {
+                                                     "sha256":  "ab7ded73aeae54738603bb68c2298e6ebe0d435fd7f859df5eedd9f2be1bf16b",
+                                                     "bytes":  46
+                                                 },
+                  "d2/fits/M/s768/trace.json":  {
+                                                    "sha256":  "4710410486f29fa852d6817b21271f71f8191f133c5effec6ac2bfd1c2d1f73b",
+                                                    "bytes":  485502
+                                                },
+                  "d2/fits_driver_summary.txt":  {
+                                                     "sha256":  "47519044165befdd83f846cb555aff4eb9e13f5709ab0fdb2a53bb3a30cae312",
+                                                     "bytes":  752
+                                                 },
+                  "d2/frozen_d2.json":  {
+                                            "sha256":  "7b80b9e9f8adb8816b4ccb870b06f615ce7bff226b5e4abd4661a5d70a60a035",
+                                            "bytes":  5829
+                                        },
+                  "d2/qual_report.json":  {
+                                              "sha256":  "fb0a7996b5d309a0f6ac5453d1636d99a52279f11114218bd8c1c70be71b897c",
+                                              "bytes":  7938
+                                          },
+                  "d2/qualify.log":  {
+                                         "sha256":  "3b9414c1d64a2c035307492d818aeb48e1747a077e4f14616ade4bf68bfff4f5",
+                                         "bytes":  1011
+                                     },
+                  "d2/qualify.log.exit":  {
+                                              "sha256":  "767b2197a8efc40548c947b545e5a3eb89b39c3cec6073a089465a54da2802b9",
+                                              "bytes":  66
+                                          },
+                  "d2/qualify.log.out":  {
+                                             "sha256":  "98148115f054e3805b6fb188d2288fdd9abe3655afe9e5827481dc688e752aa1",
+                                             "bytes":  18
+                                         },
+                  "d2/qualify.log.peak":  {
+                                              "sha256":  "431655e81369b44621beb2fc16eb7dbc2bbcddd11d8a0aeb4417783236ccafc2",
+                                              "bytes":  46
+                                          },
+                  "d2/receipts/preservation_end.json":  {
+                                                            "sha256":  "62dd11916f252bc50207163af36645613effb42ea55e75510c843892fb41602e",
+                                                            "bytes":  545
+                                                        },
+                  "d2/receipts/preservation_start.json":  {
+                                                              "sha256":  "f71c56249f20f32d101518f2af2d817e87b7e15e0bcc62dc77e5b689635bf0bc",
+                                                              "bytes":  547
+                                                          },
+                  "d2/report/d2_report.json":  {
+                                                   "sha256":  "e69cf379892afd04b66978a716f20e83595e2a75212160c0ae58ac5c8c5fff47",
+                                                   "bytes":  224561
+                                               },
+                  "d2/subsets/s256_meta.jsonl":  {
+                                                     "sha256":  "111dba3808e526331333adfff0234ae17575de1e72dced1c54a66bd180aded21",
+                                                     "bytes":  109355
+                                                 },
+                  "d2/subsets/s256_order.json":  {
+                                                     "sha256":  "706acb75ec43a378467c06868c55c97b2694f8cf84297642414d801c7bfb658a",
+                                                     "bytes":  137251
+                                                 },
+                  "d2/subsets/s256_rows.jsonl":  {
+                                                     "sha256":  "99d6c6df3a25ed9ff501d47a37a3c4756570a168222271fe8219b69777533635",
+                                                     "bytes":  26973
+                                                 },
+                  "d2/subsets/s64_meta.jsonl":  {
+                                                    "sha256":  "5afd7b936304171da3768846eb3cb9b03ff3f0aa62ca96007c30ddaa77867f5f",
+                                                    "bytes":  27332
+                                                },
+                  "d2/subsets/s64_order.json":  {
+                                                    "sha256":  "e5e877a072b85001dccabae7726494350c967b2b6997dfe335a91249960beaa9",
+                                                    "bytes":  109349
+                                                },
+                  "d2/subsets/s64_rows.jsonl":  {
+                                                    "sha256":  "36415316c974995e9d85b6e1b6548860d9983c057d98857c43a3a592346bcb3a",
+                                                    "bytes":  6741
+                                                },
+                  "d2/subsets/s768_meta.jsonl":  {
+                                                     "sha256":  "7fdf2c2f6e2a9aefa444a5675b5dd207ad7460517d00c9891a0f30321f02fea4",
+                                                     "bytes":  328099
+                                                 },
+                  "d2/subsets/s768_order.json":  {
+                                                     "sha256":  "942af8acb8429ab9de01d24f58ead807d73a4dd3eeaa79e73215655a67cafe9a",
+                                                     "bytes":  148251
+                                                 },
+                  "d2/subsets/s768_rows.jsonl":  {
+                                                     "sha256":  "17cd652a57cd9e3123e3b8018d827e5ffa773fc247da8e7074249e6d00b667b1",
+                                                     "bytes":  80944
+                                                 },
+                  "d2/subsets/subset_summary.json":  {
+                                                         "sha256":  "a6c80f5cd5e80483a458ad86e754e8ece4bc12b3d579c069116587e062c91189",
+                                                         "bytes":  3395
+                                                     }
+              }
+}

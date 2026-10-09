@@ -1,0 +1,270 @@
+{
+  "result": {
+    "checks": [
+      {
+        "detail": {
+          "got": 13.593992233276367,
+          "logit_range": [
+            -88,
+            88
+          ],
+          "max_grad_abs_err": 3.91425290444114e-9,
+          "reference_f64": 13.59399189021511,
+          "reference_self_check_fd_err": 5.84228845856849e-12
+        },
+        "name": "stable_bce_value_and_gradient",
+        "pass": true
+      },
+      {
+        "detail": {
+          "inputs_width": 842,
+          "max_abs_logit_error": 0.0001502639354611368,
+          "one_hot_check_rowsum": 64.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-M:forward_matches_f64_reference",
+        "pass": true
+      },
+      {
+        "detail": {
+          "targets": [
+            {
+              "f64_fd": 1.0905076378628364,
+              "gpu_grad_norm": 1.0900462526428454,
+              "param": "fc1.weight",
+              "pass": true,
+              "rel_err": 0.0004232712317228937
+            },
+            {
+              "f64_fd": 0.42594403866752506,
+              "gpu_grad_norm": 0.4258128997099012,
+              "param": "fc2.weight",
+              "pass": true,
+              "rel_err": 0.00030797319130817044
+            },
+            {
+              "f64_fd": 0.32411162533174664,
+              "gpu_grad_norm": 0.32403479677330616,
+              "param": "fc3.weight",
+              "pass": true,
+              "rel_err": 0.00023709971646729765
+            },
+            {
+              "f64_fd": 0.13942156819996,
+              "gpu_grad_norm": 0.13936328958736324,
+              "param": "fc1.bias",
+              "pass": true,
+              "rel_err": 0.00041817764756631046
+            },
+            {
+              "f64_fd": 0.21126523885311999,
+              "gpu_grad_norm": 0.21120794536201307,
+              "param": "fc2.bias",
+              "pass": true,
+              "rel_err": 0.00027126579451694954
+            }
+          ]
+        },
+        "name": "D1-M:gradient_matches_f64_finite_differences",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 1.0081474835571334,
+          "global_norm_full": 1.0081474745014265,
+          "loss_accum": 0.7403678148984909,
+          "loss_full": 0.7403677701950073,
+          "worst_err_over_scale": 1.0711424332051382e-7
+        },
+        "name": "D1-M:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 6
+        },
+        "name": "D1-M:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 0.999999956227838,
+          "big_pre": 403.3128750070897,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.0010084493780519285
+        },
+        "name": "D1-M:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 3,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 3,
+          "worst_rel_err": 7.576051826513578e-8
+        },
+        "name": "D1-M:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.000317305326461792,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-M:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-M:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-M:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 95,
+          "device_mib_before": 95,
+          "update_median_ms": 13.8143
+        },
+        "name": "D1-M:latency_memory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "init": "E1 canonical untrained init (forward only, no training)",
+          "max_abs_error_vs_f64_reference": 0.0006731650950226875,
+          "max_diff_vs_E1_code_path": 0.0,
+          "tolerance": 0.002
+        },
+        "name": "D1-A:forward_at_canonical_init_matches_E1_one_pass",
+        "pass": true
+      },
+      {
+        "detail": {
+          "global_norm_accum": 2.0016492439728455,
+          "global_norm_full": 2.0016492555263548,
+          "loss_accum": 0.6406258791685104,
+          "loss_full": 0.6406258940696716,
+          "worst_err_over_scale": 8.223132451809326e-7
+        },
+        "name": "D1-A:accumulation_8x2_equals_batch16",
+        "pass": true
+      },
+      {
+        "detail": {
+          "exactly_zero": [],
+          "missing": 0,
+          "nonfinite": 0,
+          "params": 107
+        },
+        "name": "D1-A:gradient_inventory",
+        "pass": true
+      },
+      {
+        "detail": {
+          "big_post": 0.9999999716392012,
+          "big_pre": 799.6410359648844,
+          "clip_ops_in_3_updates": 3,
+          "small_clipped": false,
+          "small_pre": 0.0020005565240873774
+        },
+        "name": "D1-A:global_clip_once_per_update",
+        "pass": true
+      },
+      {
+        "detail": {
+          "decay_tensors": 41,
+          "nodecay_changed": 0,
+          "nodecay_tensors": 66,
+          "worst_rel_err": 7.611310686753166e-8
+        },
+        "name": "D1-A:weight_decay_groups",
+        "pass": true
+      },
+      {
+        "detail": {
+          "continued_max_diff": 0.0,
+          "fresh_optimizer_control_diff": 0.00038202665746212006,
+          "restored_weights_max_diff": 0.0
+        },
+        "name": "D1-A:checkpoint_restores_weights_optimizers_schedule",
+        "pass": true
+      },
+      {
+        "detail": {
+          "max_diff_repeat": 0.0,
+          "max_diff_solo_or_reordered": 0.0
+        },
+        "name": "D1-A:state_independence",
+        "pass": true
+      },
+      {
+        "detail": {
+          "features_identical": true,
+          "max_prediction_diff": 0.0
+        },
+        "name": "D1-A:labels_ids_never_inputs",
+        "pass": true
+      },
+      {
+        "detail": {
+          "ceiling": 3072,
+          "device_mib_after": 1187,
+          "device_mib_before": 1187,
+          "update_median_ms": 228.0375
+        },
+        "name": "D1-A:latency_memory",
+        "pass": true
+      }
+    ],
+    "d3_extra_checks": [
+      {
+        "detail": {
+          "lr0": 0.000025,
+          "lr11999": 0.00005,
+          "lr19": 0.0005,
+          "lr1999": 0.00005,
+          "lr20": 0.0005,
+          "lr2000": 0.00005
+        },
+        "name": "D3:lr_rule_all_12000_updates_and_boundaries",
+        "pass": true
+      },
+      {
+        "detail": {
+          "epochs_are_permutations": true,
+          "every_example_250_exposures": true,
+          "len": 192000,
+          "prefix_equals_d2_38400": true
+        },
+        "name": "D3:order_extension_prefix_and_exposure",
+        "pass": true
+      }
+    ],
+    "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (adopted as measured)",
+    "qualified": true,
+    "wall_secs": 19.3938827,
+    "weights": "disposable (d1_qualification_init); never used to initialize a fit"
+  },
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "50f95b5f2f75fcb9f3f6eaf019d21711564aa442",
+    "source_digest": "37a927a342dfc37eb0da6416ed284e7f585da74d2ad25ae34578f35782b3dd53"
+  }
+}

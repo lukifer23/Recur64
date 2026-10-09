@@ -1,0 +1,3 @@
+D3-A (cap 4800s): reason=completed exit_code=0 wall_secs=2781 peak_host_mib=461 peak_gpu_mib_sampled=225 orphans=0
+D3-M (cap 600s): reason=completed exit_code=0 wall_secs=179 peak_host_mib=289 peak_gpu_mib_sampled=95 orphans=0
+native seconds spent in fits: 2960
