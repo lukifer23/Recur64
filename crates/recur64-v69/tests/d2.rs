@@ -179,3 +179,20 @@ fn receipts_are_append_only_hashes_enforced_and_roles_restricted() {
     assert!(agg.read(&Path::new("gen-001").join("meta/fit.meta.jsonl")).is_ok());
     assert!(agg.read(&Path::new("gen-001").join("data/fit.jsonl")).is_err());
 }
+
+#[test]
+fn d3_order_extends_d2_exactly_with_250_exposures() {
+    let s = seed();
+    let d2 = d2_order(&s, 768, 768);
+    let d3 = d3_order(&s, 768, 768, D3_UPDATES);
+    assert_eq!(d3.len(), D3_UPDATES * D2_BATCH);
+    assert_eq!(&d3[..d2.len()], &d2[..], "D3 prefix must equal the D2 stream");
+    let mut expo = vec![0u32; 768];
+    for i in &d3 {
+        expo[*i] += 1;
+    }
+    assert!(expo.iter().all(|e| *e == 250));
+    assert_eq!(d3, d3_order(&s, 768, 768, D3_UPDATES), "deterministic");
+    assert_eq!(D3_SNAPSHOTS.len(), 21);
+    assert!(D2_SNAPSHOTS.iter().all(|u| D3_SNAPSHOTS.contains(u)));
+}

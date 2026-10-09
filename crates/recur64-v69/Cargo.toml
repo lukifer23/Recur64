@@ -28,3 +28,7 @@ path = "src/bin/v69_d1.rs"
 [[bin]]
 name = "v69-d2"
 path = "src/bin/v69_d2.rs"
+
+[[bin]]
+name = "v69-d3"
+path = "src/bin/v69_d3.rs"

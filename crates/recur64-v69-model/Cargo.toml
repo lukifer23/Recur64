@@ -25,3 +25,7 @@ path = "src/bin/v69_d1_fit.rs"
 [[bin]]
 name = "v69-d2-fit"
 path = "src/bin/v69_d2_fit.rs"
+
+[[bin]]
+name = "v69-d3-fit"
+path = "src/bin/v69_d3_fit.rs"

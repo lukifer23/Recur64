@@ -1,0 +1,29 @@
+{
+  "experiment": "V69-D3 bounded additional-update diagnostic on the full 768 fitting partition",
+  "status": "fitting-only diagnostic; no validation or sealed use; no new data",
+  "dataset": "gen-001 fitting partition; D2 s768 rows exactly",
+  "precision": "CUDA backend: f32 storage and accumulation, matmul inputs possibly TF32 (autotune-selected); NOT strict FP32",
+  "size": 768,
+  "neural": {
+    "updates": 12000,
+    "microbatch": 2,
+    "accumulation_steps": 8,
+    "optimizer": "AdamW",
+    "betas": [0.9, 0.999],
+    "epsilon": 1e-8,
+    "weight_decay": 1e-4,
+    "peak_lr": 5e-4,
+    "final_lr": 5e-5,
+    "warmup_updates": 20,
+    "lr_rule": "u<20: peak*(u+1)/20; 20<=u<=1999: final+0.5*(peak-final)*(1+cos(pi*(u-20)/1979)); u>=2000: final (cosine NOT stretched)",
+    "grad_clip_global_norm": 1.0,
+    "snapshot_updates": [0, 50, 100, 200, 400, 600, 800, 1000, 1600, 2000, 2400, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000],
+    "order": "d2_train_order/768/<epoch> extended to 12000x16 samples; first 38400 identical to D2; every example exactly 250 exposures",
+    "strong_fit": "balanced accuracy >= 0.95 and BCE <= 0.05",
+    "exact_memorization": "accuracy == 1.0 and BCE <= 0.05",
+    "plateau_escape": "first snapshot with BA >= 0.60 and BCE <= 0.65, confirmed (also met) at the next scheduled snapshot; temporary improvements reported separately",
+    "a_init": "init/canonical_init.bin (E1 canonical UNTRAINED init)",
+    "m_init": "d1/mlp_init.bin (D1 UNTRAINED MLP init)"
+  },
+  "limits": {"device_mib_sampled": 3072, "host_gib": 8, "native_hours_total": 2, "qualification_min": 30, "a_fit_min": 80, "m_fit_min": 10}
+}

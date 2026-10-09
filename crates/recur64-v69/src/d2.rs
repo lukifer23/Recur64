@@ -159,3 +159,26 @@ pub fn write_new(access: &Access, rel: &str, bytes: &[u8]) -> Result<()> {
     access.write(Path::new(rel), bytes)?;
     Ok(())
 }
+
+pub const D3_UPDATES: usize = 12_000;
+pub const D3_SNAPSHOTS: [usize; 21] = [0, 50, 100, 200, 400, 600, 800, 1000, 1600, 2000, 2400, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000];
+
+/// D3 example stream: the D2 stream `d2_train_order/<n>/<epoch>` extended (same per-epoch
+/// permutations, no new shuffle stream) to `updates` x 16 samples. The first D2_UPDATES x 16
+/// samples are identical to `d2_order` by construction.
+pub fn d3_order(seed: &MasterSeed, rows: usize, n: usize, updates: usize) -> Vec<usize> {
+    let total = updates * D2_BATCH;
+    let mut out = Vec::with_capacity(total);
+    let mut e = 0u64;
+    while out.len() < total {
+        let mut p: Vec<usize> = (0..rows).collect();
+        let mut rng = seed.stream(&format!("{LABEL_ORDER}/{n}"), e);
+        for i in (1..rows).rev() {
+            p.swap(i, rng.below(i as u64 + 1) as usize);
+        }
+        out.extend(p);
+        e += 1;
+    }
+    out.truncate(total);
+    out
+}
