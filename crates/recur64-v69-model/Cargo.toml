@@ -37,3 +37,7 @@ path = "src/bin/v69_g1_eval.rs"
 [[bin]]
 name = "v69-t1-train"
 path = "src/bin/v69_t1_train.rs"
+
+[[bin]]
+name = "v69-t1-final"
+path = "src/bin/v69_t1_final.rs"

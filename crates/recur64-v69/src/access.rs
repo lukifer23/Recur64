@@ -131,7 +131,7 @@ impl Access {
         match role {
             Role::G1Evaluator => g1.iter().any(|d| rel.starts_with(d)),
             Role::T1Trainer => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/test", "t1/final/"].iter().any(|d| rel.starts_with(d)),
-            Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train", "t1/rows/val"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/train_runs/") && rel.contains("/opt_")),
+            Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/train_runs/") && rel.contains("/opt_")),
             _ => false,
         }
     }

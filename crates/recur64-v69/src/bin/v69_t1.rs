@@ -7,7 +7,7 @@ use cozy_chess::Board;
 use recur64_v69::access::{Access, Role};
 use recur64_v69::canon::{canonical_key, key_hex, key_id};
 use recur64_v69::custody::Custody;
-use recur64_v69::d1::{BaselineModel, FrozenD1, N_BASELINE, baseline_features, fit_baseline};
+use recur64_v69::d1::{BaselineModel, FrozenD1, N_BASELINE, baseline_features, fit_baseline, verify_group};
 use recur64_v69::d2::write_new;
 use recur64_v69::dataset::{Partition, RootOutcome, RootRec, analyze_root};
 use recur64_v69::features::{featurize, read_rows, transform_fen};
@@ -642,6 +642,393 @@ fn cmd_freeze_train(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+// ------------------------------------------------------------------ intervention map for the T1 test (label-independent)
+
+fn cmd_intervention(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::T1Builder)?;
+    let seed = env.seed(&a)?;
+    ensure!(a.read_to_string(Path::new("t1/receipts/audit_receipt_t1.json")).map(|t| t.contains("\"audit_pass\": true")).unwrap_or(false), "audit must pass first");
+    let meta: Vec<T1Meta> = jsonl(&a.read_to_string(Path::new("t1/meta/test.meta.jsonl"))?)?;
+    let exs: Vec<recur64_v69::dataset::Example> = meta.into_iter().map(|m| m.ex).collect();
+    let map = recur64_v69::g1::intervention_map(&seed, &exs)?; // uses only family, budget and id
+    let body = serde_json::to_string_pretty(&json!({"derangement": "cyclic shift of a keyed shuffle within family x budget cells; label independent", "seed_fingerprint": seed.fingerprint(), "map": map}))?;
+    write_new(&a, "t1/intervention/test_map.json", body.as_bytes())?;
+    println!("t1 test intervention map sha256 {}", sha256_hex(body.as_bytes()));
+    Ok(())
+}
+
+// ------------------------------------------------------------------ selection (validation only)
+
+fn run_id(model: &str, k: usize, aug: &str, lr: f64) -> String {
+    format!("{model}_k{k}_{aug}_lr{lr:e}")
+}
+
+fn registered_runs() -> Vec<(String, &'static str, usize, &'static str, f64)> {
+    let mut v = Vec::new();
+    for k in [250usize, 1000, 2000] {
+        for aug in ["off", "d8"] {
+            for lr in [3e-4, 1e-3, 3e-3] {
+                v.push((run_id("M", k, aug, lr), "M", k, aug, lr));
+            }
+        }
+    }
+    for (k, aug) in [(2000usize, "d8"), (2000, "off"), (1000, "d8"), (250, "d8")] {
+        v.push((run_id("A", k, aug, 5e-4), "A", k, aug, 5e-4));
+    }
+    v
+}
+
+fn val_metrics(z: &[(String, f64)], labels: &HashMap<String, bool>) -> (f64, f64, f64) {
+    let (mut tp, mut tn, mut np, mut nn, mut bce) = (0f64, 0f64, 0f64, 0f64, 0f64);
+    for (id, zz) in z {
+        let y = labels[id];
+        bce += zz.max(0.0) - zz * (y as u8 as f64) + (-zz.abs()).exp().ln_1p();
+        if y {
+            np += 1.0;
+            tp += (*zz > 0.0) as u8 as f64;
+        } else {
+            nn += 1.0;
+            tn += (*zz <= 0.0) as u8 as f64;
+        }
+    }
+    (bce / z.len() as f64, 0.5 * (tp / np + tn / nn), (tp + tn) / z.len() as f64)
+}
+
+fn cmd_select(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::T1Aggregator)?;
+    ensure!(!a.custody().resolve(Path::new("t1/report/selection.json"))?.exists(), "selection already made");
+    let val = read_rows(&a.read_to_string(Path::new("t1/rows/val.jsonl"))?)?;
+    let labels: HashMap<String, bool> = val.iter().map(|r| (r.id.clone(), r.label)).collect();
+    let mut all = Vec::new();
+    let mut best: HashMap<&str, (f64, f64, serde_json::Value)> = HashMap::new();
+    for (id, model, k, aug, lr) in registered_runs() {
+        let base = format!("t1/train_runs/{id}");
+        let prov: serde_json::Value = match a.read(Path::new(&format!("{base}/provenance.json"))) {
+            Ok(b) => serde_json::from_slice(&b)?,
+            Err(_) => {
+                all.push(json!({"run_id": id, "model": model, "k": k, "aug": aug, "peak_lr": lr, "status": "INCOMPLETE_OR_NOT_RUN"}));
+                continue;
+            }
+        };
+        let total = prov["updates"].as_u64().unwrap();
+        let pb = a.read(Path::new(&format!("{base}/val_predictions.jsonl")))?;
+        ensure!(prov["val_predictions_sha256"].as_str() == Some(sha256_hex(&pb).as_str()), "{id}: val predictions hash differs from provenance");
+        let pv: Vec<serde_json::Value> = jsonl(std::str::from_utf8(&pb)?)?;
+        let mut snaps = serde_json::Map::new();
+        let mut fin = (0.0, 0.0, 0.0);
+        let mut ups: Vec<u64> = pv.iter().map(|v| v["update"].as_u64().unwrap()).collect();
+        ups.sort();
+        ups.dedup();
+        for u in &ups {
+            let z: Vec<(String, f64)> = pv.iter().filter(|v| v["update"].as_u64() == Some(*u)).map(|v| (v["id"].as_str().unwrap().to_string(), v["logit"].as_f64().unwrap())).collect();
+            ensure!(z.len() == val.len(), "{id}: val prediction count");
+            let m = val_metrics(&z, &labels);
+            snaps.insert(u.to_string(), json!({"val_bce": m.0, "val_bal_acc": m.1, "val_acc": m.2}));
+            if *u == total {
+                fin = m;
+            }
+        }
+        let tr: serde_json::Value = serde_json::from_slice(&a.read(Path::new(&format!("{base}/trace.json")))?)?;
+        let last_train = tr["trace"].as_array().and_then(|t| t.last()).map(|t| t["train_loss_mean_last_window"].clone());
+        let entry = json!({"run_id": id, "model": model, "k": k, "aug": aug, "peak_lr": lr, "status": "complete", "updates": total, "final_val_bce": fin.0, "final_val_bal_acc": fin.1, "final_val_acc": fin.2, "snapshots": snaps, "last_window_train_loss": last_train, "wall_secs": prov["wall_secs"], "provenance_id": prov["provenance_id"]});
+        let cur = best.get(model);
+        if cur.map(|c| fin.0 < c.0 || (fin.0 == c.0 && fin.1 > c.1)).unwrap_or(true) {
+            best.insert(model, (fin.0, fin.1, json!({"run_id": id, "final_update": total, "k": k, "aug": aug, "peak_lr": lr, "final_val_bce": fin.0, "final_val_bal_acc": fin.1})));
+        }
+        all.push(entry);
+    }
+    ensure!(best.contains_key("A") && best.contains_key("M"), "no completed run for a family");
+    let rep = json!({"rule": "per family, lowest final-update validation BCE (ties: higher balanced accuracy); validation only", "A": best["A"].2, "M": best["M"].2, "runs": all, "source": source_id()});
+    a.write(Path::new("t1/report/selection.json"), serde_json::to_string_pretty(&rep)?.as_bytes())?;
+    println!("A* = {}\nM* = {}", best["A"].2, best["M"].2);
+    Ok(())
+}
+
+// ------------------------------------------------------------------ evaluator source record and final freeze
+
+fn cmd_source(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::DataAudit)?;
+    let sid = source_id();
+    ensure!(sid.git_dirty_files == 0, "evaluator source must be committed and clean before it is frozen ({} dirty files)", sid.git_dirty_files);
+    write_new(&a, "t1/evaluator_source.json", serde_json::to_string_pretty(&json!({"git_head": sid.git_head, "source_digest": recur64_v69::provenance::source_digest(), "note": "executable source of the T1 evaluator (data crate + model crate + core rules + lock + toolchain)"}))?.as_bytes())?;
+    println!("evaluator source {} digest {}", sid.git_head, sid.source_digest);
+    Ok(())
+}
+
+fn cmd_freeze_final(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::DataAudit)?;
+    ensure!(!a.custody().resolve(Path::new("t1/frozen_final.json"))?.exists(), "final already frozen");
+    let ver: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/receipts/evaluator_verification.json"))?)?;
+    ensure!(ver["ok"] == json!(true), "evaluator verification must pass before the test is opened");
+    let sel: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/report/selection.json"))?)?;
+    let h = |rel: &str| -> Result<String> { Ok(sha256_hex(&a.read(Path::new(rel)).with_context(|| format!("hash {rel}"))?)) };
+    let mut ev: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/rows/val.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/evaluator_source.json", "t1/receipts/evaluator_verification.json", "t1/baseline_refit/model.json", "t1/baseline_refit/predictions_val.jsonl", "d1/baseline/model.json", "g1r1/rows/g1_rows.jsonl", "g1r1/intervention/map.json", "g1r1/MANIFEST.sha256.json"].iter().map(|s| s.to_string()).collect();
+    for m in ["A", "M"] {
+        let id = sel[m]["run_id"].as_str().context("run id")?;
+        for f in ["final/model.mpk", "final/meta.json", "provenance.json", "val_predictions.jsonl"] {
+            ev.push(format!("t1/train_runs/{id}/{f}"));
+        }
+    }
+    let agg: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/meta/test.meta.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/receipts/audit_receipt_t1.json", "t1/receipts/evaluator_verification.json", "g1r1/meta/g1_meta.jsonl", "g1r1/intervention/map.json", "g1r1/receipts/audit_receipt_g1.json"].iter().map(|s| s.to_string()).collect();
+    let mut groups = BTreeMap::new();
+    for (n, list) in [("evaluator", ev), ("aggregator", agg)] {
+        let mut m = BTreeMap::new();
+        for rel in list {
+            m.insert(rel.clone(), h(&rel)?);
+        }
+        groups.insert(n.to_string(), m);
+    }
+    let seed = env.seed(&a)?;
+    let fz = FrozenD1 { created_utc: format!("unix:{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()), run: "gen-001".into(), seed_fingerprint: seed.fingerprint(), groups };
+    let text = serde_json::to_string_pretty(&fz)?;
+    write_new(&a, "t1/frozen_final.json", text.as_bytes())?;
+    println!("frozen_final.json sha256 {}", sha256_hex(text.as_bytes()));
+    Ok(())
+}
+
+// ------------------------------------------------------------------ aggregate
+
+#[derive(Clone, Default)]
+struct Counts {
+    tn: f64,
+    fp: f64,
+    fnn: f64,
+    tp: f64,
+    bce: f64,
+    n: f64,
+}
+
+impl Counts {
+    fn add(&mut self, z: f64, y: bool) {
+        match (y, z > 0.0) {
+            (true, true) => self.tp += 1.0,
+            (true, false) => self.fnn += 1.0,
+            (false, false) => self.tn += 1.0,
+            (false, true) => self.fp += 1.0,
+        }
+        self.bce += z.max(0.0) - z * (y as u8 as f64) + (-z.abs()).exp().ln_1p();
+        self.n += 1.0;
+    }
+    fn merge(&mut self, o: &Counts) {
+        self.tn += o.tn;
+        self.fp += o.fp;
+        self.fnn += o.fnn;
+        self.tp += o.tp;
+        self.bce += o.bce;
+        self.n += o.n;
+    }
+    fn acc(&self) -> f64 {
+        (self.tp + self.tn) / self.n.max(1.0)
+    }
+    fn ba(&self) -> f64 {
+        0.5 * (self.tp / (self.tp + self.fnn).max(1.0) + self.tn / (self.tn + self.fp).max(1.0))
+    }
+    fn bce(&self) -> f64 {
+        self.bce / self.n.max(1.0)
+    }
+}
+
+fn pct(v: &mut [f64], p: f64) -> f64 {
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    v[((v.len() as f64 - 1.0) * p).round() as usize]
+}
+
+const CANDS: [&str; 4] = ["A", "M", "B", "B2"];
+
+fn cmd_aggregate(args: &[String]) -> Result<()> {
+    let env = Env::from(args)?;
+    let a = env.access(Role::T1Aggregator)?;
+    let seed = env.seed(&a)?;
+    let frozen: FrozenD1 = serde_json::from_slice(&a.read(Path::new("t1/frozen_final.json"))?)?;
+    let nv = verify_group(&a, &env.run, &frozen, "aggregator")?;
+    eprintln!("[t1 aggregate] {nv} frozen hashes verified");
+    let fz_sha = sha256_hex(&a.read(Path::new("t1/frozen_final.json"))?);
+    let audit: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/receipts/audit_receipt_t1.json"))?)?;
+    let mut integrity_ok = audit["audit_pass"] == json!(true);
+    let sel: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/report/selection.json"))?)?;
+    let resamples = 5000usize;
+    let mut report = serde_json::Map::new();
+    let mut decisions_all = serde_json::Map::new();
+    for (ds, meta_rel, map_rel, n_expected) in [("test", "t1/meta/test.meta.jsonl", "t1/intervention/test_map.json", 3072usize), ("g1", "g1r1/meta/g1_meta.jsonl", "g1r1/intervention/map.json", 1536usize)] {
+        let meta: Vec<recur64_v69::dataset::Example> = if ds == "test" {
+            jsonl::<T1Meta>(&a.read_to_string(Path::new(meta_rel))?)?.into_iter().map(|m| m.ex).collect()
+        } else {
+            jsonl(&a.read_to_string(Path::new(meta_rel))?)?
+        };
+        ensure!(meta.len() == n_expected, "{ds} meta size");
+        let mm: HashMap<&str, &recur64_v69::dataset::Example> = meta.iter().map(|e| (e.id.as_str(), e)).collect();
+        let map_v: serde_json::Value = serde_json::from_slice(&a.read(Path::new(map_rel))?)?;
+        let dmap: HashMap<String, String> = map_v["map"].as_object().unwrap().iter().map(|(k, v)| (k.clone(), v.as_str().unwrap().to_string())).collect();
+        let mut gids: Vec<&str> = meta.iter().map(|e| e.group_id.as_str()).collect::<HashSet<_>>().into_iter().collect();
+        gids.sort();
+        let gpos: HashMap<&str, usize> = gids.iter().enumerate().map(|(i, g)| (*g, i)).collect();
+        let ng = gids.len();
+        let mut rng = seed.stream(&format!("t1/bootstrap/{ds}"), 0);
+        let draws: Vec<Vec<usize>> = (0..resamples).map(|_| (0..ng).map(|_| rng.below(ng as u64) as usize).collect()).collect();
+        let mut per_group: BTreeMap<String, (Vec<Counts>, Vec<Counts>)> = BTreeMap::new();
+        let mut summ: BTreeMap<String, (f64, f64, f64, f64)> = BTreeMap::new();
+        let mut points: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+        for cand in CANDS {
+            let dir = format!("t1/final/{cand}");
+            let prov: serde_json::Value = serde_json::from_slice(&a.read(Path::new(&format!("{dir}/provenance.json")))?).with_context(|| format!("candidate {cand} evaluation missing"))?;
+            let pb = a.read(Path::new(&format!("{dir}/predictions_{ds}.jsonl")))?;
+            ensure!(prov["predictions_sha256"][ds].as_str() == Some(sha256_hex(&pb).as_str()), "{cand}: predictions hash differs from provenance");
+            ensure!(prov["frozen_final_sha256"].as_str() == Some(fz_sha.as_str()), "{cand}: evaluation not bound to the frozen final file");
+            #[derive(serde::Deserialize)]
+            struct P {
+                id: String,
+                mode: String,
+                logit: f64,
+                donor_id: Option<String>,
+            }
+            let preds: Vec<P> = jsonl(std::str::from_utf8(&pb)?)?;
+            let mut real: HashMap<&str, f64> = HashMap::new();
+            let (mut der, mut ers, mut tta): (Vec<&P>, Vec<&P>, Vec<&P>) = (vec![], vec![], vec![]);
+            for p in &preds {
+                ensure!(mm.contains_key(p.id.as_str()) && p.logit.is_finite(), "{cand}: unknown id or non-finite logit {}", p.id);
+                match p.mode.as_str() {
+                    "real" => ensure!(real.insert(&p.id, p.logit).is_none(), "duplicate real prediction"),
+                    "derange" => der.push(p),
+                    "erase" => ers.push(p),
+                    "tta8" => tta.push(p),
+                    m => bail!("unknown mode {m}"),
+                }
+            }
+            ensure!(real.len() == n_expected && der.len() == n_expected && ers.len() == n_expected, "{cand}: incomplete predictions");
+            let neural = cand == "A" || cand == "M";
+            ensure!(tta.len() == if neural { n_expected } else { 0 }, "{cand}: tta rows");
+            let mut cnt = Counts::default();
+            let mut pg_real = vec![Counts::default(); ng];
+            let mut cells: BTreeMap<String, Counts> = BTreeMap::new();
+            let mut brier = 0.0;
+            let (mut pos, mut neg) = (Vec::new(), Vec::new());
+            let (mut err_conf, mut err_n) = (0.0f64, 0.0f64);
+            for e in &meta {
+                let z = real[e.id.as_str()];
+                cnt.add(z, e.label);
+                pg_real[gpos[e.group_id.as_str()]].add(z, e.label);
+                cells.entry(format!("{}/n{}/{}", e.family, e.budget, if e.label { "pos" } else { "neg" })).or_default().add(z, e.label);
+                brier += (1.0 / (1.0 + (-z).exp()) - e.label as u8 as f64).powi(2);
+                if (z > 0.0) != e.label {
+                    err_conf += z.abs();
+                    err_n += 1.0;
+                }
+                if e.label { pos.push(z) } else { neg.push(z) }
+            }
+            let auroc = recur64_v69::d1_metrics::auroc(&meta.iter().map(|e| real[e.id.as_str()]).collect::<Vec<_>>(), &meta.iter().map(|e| e.label).collect::<Vec<_>>());
+            let (mut rc, mut dc) = (Counts::default(), Counts::default());
+            let mut pg_der = vec![Counts::default(); ng];
+            let (mut maxdiff, mut agree) = (0f64, 0usize);
+            for p in &der {
+                let e = mm[p.id.as_str()];
+                let donor = p.donor_id.as_deref().context("derange row without donor")?;
+                ensure!(dmap.get(&p.id).map(String::as_str) == Some(donor), "{cand}: donor differs from the frozen map");
+                let de = mm.get(donor).context("donor")?;
+                ensure!(de.family == e.family && de.budget == e.budget, "donor outside cell");
+                rc.add(p.logit, e.label);
+                dc.add(p.logit, de.label);
+                pg_der[gpos[e.group_id.as_str()]].add(p.logit, e.label);
+                agree += (e.label == de.label) as usize;
+                maxdiff = maxdiff.max((p.logit - real[donor]).abs());
+            }
+            let tol = if neural { 2e-3 } else { 1e-9 };
+            let donor_ok = maxdiff <= tol;
+            integrity_ok &= donor_ok;
+            let mut ec = Counts::default();
+            let mut epos = 0.0;
+            for p in &ers {
+                ec.add(p.logit, mm[p.id.as_str()].label);
+                epos += (p.logit > 0.0) as u8 as f64;
+            }
+            let tta_json = if neural {
+                let mut tc = Counts::default();
+                for p in &tta {
+                    tc.add(p.logit, mm[p.id.as_str()].label);
+                }
+                json!({"balanced_accuracy": tc.ba(), "accuracy": tc.acc(), "bce": tc.bce(), "note": "report-only 8-fold board-symmetry test-time augmentation (mean logit); not used for any decision"})
+            } else {
+                json!(null)
+            };
+            summ.insert(cand.into(), (cnt.ba(), cnt.acc(), cnt.bce(), cnt.ba() - rc.ba()));
+            per_group.insert(cand.into(), (pg_real, pg_der));
+            let cell_json: BTreeMap<String, serde_json::Value> = cells.iter().map(|(k, c)| (k.clone(), json!({"n": c.n, "acc": c.acc(), "mean_bce": c.bce()}))).collect();
+            let mean = |v: &Vec<f64>| v.iter().sum::<f64>() / v.len() as f64;
+            points.insert(cand.into(), json!({
+                "prediction_provenance_id": prov["provenance_id"], "selected_run_id": prov["selected_run_id"],
+                "real": {"balanced_accuracy": cnt.ba(), "accuracy": cnt.acc(), "bce": cnt.bce(), "brier": brier / n_expected as f64, "auroc": auroc, "confusion": {"tn": cnt.tn, "fp": cnt.fp, "fn": cnt.fnn, "tp": cnt.tp}, "logit_pos_mean": mean(&pos), "logit_neg_mean": mean(&neg), "mean_abs_logit_on_errors": if err_n > 0.0 { err_conf / err_n } else { f64::NAN }, "errors": err_n, "per_cell": cell_json},
+                "derangement": {"balanced_accuracy_vs_recipient_labels": rc.ba(), "accuracy_vs_recipient_labels": rc.acc(), "balanced_accuracy_vs_donor_labels": dc.ba(), "donor_label_agreement_rate": agree as f64 / n_expected as f64, "max_abs_logit_diff_vs_donor_ordinary": maxdiff, "donor_predictions_consistent": donor_ok, "drop_pp": (cnt.ba() - rc.ba()) * 100.0},
+                "erasure_ood_diagnostic": {"balanced_accuracy": ec.ba(), "accuracy": ec.acc(), "bce": ec.bce(), "predicted_positive_rate": epos / n_expected as f64},
+                "tta8": tta_json, "timing": prov["timing"],
+            }));
+        }
+        let metric = |c: &Counts, k: &str| -> f64 { match k { "ba" => c.ba(), "acc" => c.acc(), _ => c.bce() } };
+        let tot = |v: &Vec<Counts>, d: &Vec<usize>| -> Counts { let mut t = Counts::default(); for &i in d { t.merge(&v[i]); } t };
+        let pairs = [("A", "B"), ("A", "B2"), ("M", "B"), ("M", "B2"), ("A", "M"), ("B2", "B")];
+        let mut samples: BTreeMap<String, Vec<f64>> = BTreeMap::new();
+        for d in &draws {
+            let real: BTreeMap<&str, Counts> = CANDS.iter().map(|c| (*c, tot(&per_group[*c].0, d))).collect();
+            let der: BTreeMap<&str, Counts> = CANDS.iter().map(|c| (*c, tot(&per_group[*c].1, d))).collect();
+            for c in CANDS {
+                for k in ["ba", "acc", "bce"] {
+                    samples.entry(format!("{c}.{k}")).or_default().push(metric(&real[c], k));
+                }
+                samples.entry(format!("{c}.drop_pp")).or_default().push((real[c].ba() - der[c].ba()) * 100.0);
+            }
+            for (x, y) in pairs {
+                for k in ["ba", "acc", "bce"] {
+                    samples.entry(format!("{x}-{y}.{k}")).or_default().push(metric(&real[x], k) - metric(&real[y], k));
+                }
+            }
+        }
+        let mut ci: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+        for (k, v) in samples.iter_mut() {
+            let (lo, hi) = (pct(v, 0.025), pct(v, 0.975));
+            ci.insert(k.clone(), json!({"lo95": lo, "hi95": hi}));
+        }
+        let pt = |c: &str, m: &str| -> f64 { let s = summ[c]; match m { "ba" => s.0, "acc" => s.1, "bce" => s.2, _ => s.3 * 100.0 } };
+        let mut paired = serde_json::Map::new();
+        for (x, y) in pairs {
+            for k in ["ba", "acc", "bce"] {
+                paired.insert(format!("{x}-{y}.{k}"), json!({"point": pt(x, k) - pt(y, k), "ci": ci[&format!("{x}-{y}.{k}")]}));
+            }
+        }
+        let mut decisions = serde_json::Map::new();
+        for c in ["A", "M"] {
+            let (ba, _acc, bce, drop) = summ[c];
+            let transfer = ba >= 0.75 && bce <= 0.55 && drop * 100.0 >= 15.0 && integrity_ok;
+            let mut d = json!({"transfer_criterion_met": transfer, "ba_ge_75": ba >= 0.75, "bce_le_055": bce <= 0.55, "drop_ge_15pp": drop * 100.0 >= 15.0});
+            for base in ["B", "B2"] {
+                let gain = ba - summ[base].0;
+                let lo = ci[&format!("{c}-{base}.ba")]["lo95"].as_f64().unwrap();
+                d[format!("improvement_over_{base}")] = json!({"met": gain >= 0.05 && lo > 0.0 && bce <= summ[base].2, "ba_gain_pp": gain * 100.0, "ci_lo_excludes_zero": lo > 0.0, "bce_no_worse": bce <= summ[base].2});
+            }
+            decisions.insert(c.into(), d);
+        }
+        let mut r = serde_json::Map::new();
+        r.insert("candidates".into(), json!(points));
+        r.insert("point_summary".into(), json!(summ.iter().map(|(k, v)| (k.clone(), json!({"ba": v.0, "acc": v.1, "bce": v.2, "drop_ba_pp": v.3 * 100.0}))).collect::<BTreeMap<_, _>>()));
+        r.insert("bootstrap".into(), json!({"resamples": resamples, "groups": ng, "unit": "connected group_id (per-partition connected components of contributing roots)", "paired": "identical group draws for every candidate and comparison", "intervals": ci}));
+        r.insert("paired_differences".into(), serde_json::Value::Object(paired));
+        if ds == "test" {
+            decisions_all = decisions.clone();
+        }
+        r.insert("decision_flags".into(), serde_json::Value::Object(decisions));
+        report.insert(ds.into(), serde_json::Value::Object(r));
+    }
+    report.insert("selection".into(), sel);
+    report.insert("integrity_ok".into(), json!(integrity_ok));
+    report.insert("label".into(), json!("T1: same-domain generalization on a fresh sealed test (primary) and the spent G1 panel (secondary, report-only). Not an architecture, recurrence, hierarchy or move-selection claim."));
+    report.insert("source".into(), serde_json::to_value(source_id())?);
+    let text = serde_json::to_string_pretty(&serde_json::Value::Object(report))?;
+    a.write(Path::new("t1/report/t1_report.json"), text.as_bytes())?;
+    println!("{}", serde_json::to_string_pretty(&serde_json::Value::Object(decisions_all))?);
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
@@ -651,6 +1038,11 @@ fn main() -> Result<()> {
         Some("audit") => cmd_audit(&args[2..]),
         Some("baseline-refit") => cmd_baseline_refit(&args[2..]),
         Some("freeze-train") => cmd_freeze_train(&args[2..]),
+        Some("intervention") => cmd_intervention(&args[2..]),
+        Some("select") => cmd_select(&args[2..]),
+        Some("source") => cmd_source(&args[2..]),
+        Some("freeze-final") => cmd_freeze_final(&args[2..]),
+        Some("aggregate") => cmd_aggregate(&args[2..]),
         _ => bail!("usage: v69-t1 <preserve|protocol-freeze|generate|audit|baseline-refit> --artifacts DIR"),
     }
 }
