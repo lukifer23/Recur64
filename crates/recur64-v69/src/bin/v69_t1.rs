@@ -766,14 +766,14 @@ fn cmd_freeze_final(args: &[String]) -> Result<()> {
     ensure!(ver["ok"] == json!(true), "evaluator verification must pass before the test is opened");
     let sel: serde_json::Value = serde_json::from_slice(&a.read(Path::new("t1/report/selection.json"))?)?;
     let h = |rel: &str| -> Result<String> { Ok(sha256_hex(&a.read(Path::new(rel)).with_context(|| format!("hash {rel}"))?)) };
-    let mut ev: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/rows/val.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/evaluator_source.json", "t1/receipts/evaluator_verification.json", "t1/baseline_refit/model.json", "t1/baseline_refit/predictions_val.jsonl", "d1/baseline/model.json", "g1r1/rows/g1_rows.jsonl", "g1r1/intervention/map.json", "g1r1/MANIFEST.sha256.json"].iter().map(|s| s.to_string()).collect();
+    let mut ev: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/rows/val.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/evaluator_source.json", "t1/receipts/evaluator_verification.json", "t1/baseline_refit/model.json", "t1/baseline_refit/predictions_val.jsonl", "d1/baseline/model.json", "g1r1/rows/g1_rows.jsonl", "g1r1/intervention/map.json"].iter().map(|s| s.to_string()).collect();
     for m in ["A", "M"] {
         let id = sel[m]["run_id"].as_str().context("run id")?;
         for f in ["final/model.mpk", "final/meta.json", "provenance.json", "val_predictions.jsonl"] {
             ev.push(format!("t1/train_runs/{id}/{f}"));
         }
     }
-    let agg: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/meta/test.meta.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/receipts/audit_receipt_t1.json", "t1/receipts/evaluator_verification.json", "g1r1/meta/g1_meta.jsonl", "g1r1/intervention/map.json", "g1r1/receipts/audit_receipt_g1.json"].iter().map(|s| s.to_string()).collect();
+    let agg: Vec<String> = ["t1/T1_CONTRACT.md", "t1/T1_AMENDMENT_A1.md", "t1/T1_AMENDMENT_A2.md", "t1/config.json", "t1/frozen_train.json", "t1/rows/test.jsonl", "t1/meta/test.meta.jsonl", "t1/MANIFEST.sha256.json", "t1/intervention/test_map.json", "t1/report/selection.json", "t1/receipts/audit_receipt_t1.json", "t1/receipts/evaluator_verification.json", "g1r1/meta/g1_meta.jsonl", "g1r1/intervention/map.json"].iter().map(|s| s.to_string()).collect();
     let mut groups = BTreeMap::new();
     for (n, list) in [("evaluator", ev), ("aggregator", agg)] {
         let mut m = BTreeMap::new();
