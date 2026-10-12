@@ -245,7 +245,7 @@ fn cmd_eval(args: &[String]) -> Result<()> {
     eprintln!("[t1 final {cand}] {nv} frozen hashes verified; source digest matches");
     let sel = selection(&a)?;
     let mut sets: Vec<(&str, Data, HashMap<String, String>)> = Vec::new();
-    for (name, rows_rel, map_rel, n) in [("test", "t2/rows/test.jsonl", "t2/intervention/test_map.json", 3072usize), ("g1", "g1r1/rows/g1_rows.jsonl", "g1r1/intervention/map.json", 1536usize)] {
+    for (name, rows_rel, map_rel, n) in [("test", "t2/rows/test.jsonl", "t2/intervention/test_map.json", 6144usize), ("g1", "g1r1/rows/g1_rows.jsonl", "g1r1/intervention/map.json", 1536usize)] {
         let d = load_rows(&a, rows_rel)?;
         ensure!(d.rows.len() == n, "{name} rows");
         let mv: serde_json::Value = serde_json::from_slice(&a.read(Path::new(map_rel))?)?;
