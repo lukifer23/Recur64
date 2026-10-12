@@ -921,7 +921,7 @@ fn cmd_aggregate(args: &[String]) -> Result<()> {
                 }
             }
             ensure!(real.len() == n_expected && der.len() == n_expected && ers.len() == n_expected, "{cand}: incomplete predictions");
-            let neural = cand == "A" || cand == "M";
+            let neural = cand == "A" || cand == "M" || cand == "P";
             ensure!(tta.len() == if neural { n_expected } else { 0 }, "{cand}: tta rows");
             let mut cnt = Counts::default();
             let mut pg_real = vec![Counts::default(); ng];
