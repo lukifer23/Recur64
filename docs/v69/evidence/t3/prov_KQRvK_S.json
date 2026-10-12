@@ -1,0 +1,30 @@
+{
+  "batch": 64,
+  "checkpoint_file_sha256": {
+    "meta.json": "6871b51b3161971674a99358f5c4b4b0bc2ded340ecd14852276986fc5e56602",
+    "model.mpk": "c2f9fd3229b6d020bfc68778ae46b195c1ba6fb0c0605582794e8248d32aabc5"
+  },
+  "completed_updates": 22500,
+  "consumer_source": {
+    "git_dirty_files": 0,
+    "git_head": "4b693edb2a8fb5ab1205cce3627a1e88b45b8a50",
+    "source_digest": "6ea1b100d260ba5e8e4c1cd7d3c42f559571d6754d7c89a29cb5276a11e47318"
+  },
+  "contract_sha256": "9261dee13555d9bd55787527f56f445df67c8db3c543e0046453c38b057999a0",
+  "epochs": 30,
+  "fold": "KQRvK",
+  "init_file_sha256": "0228b6ea622a5139c01538d44af3ed4d8fe0a421b2a155697faa949cc53ae8b2",
+  "mode": "sym",
+  "n_heldout": 24000,
+  "n_train": 48000,
+  "peak_lr": 0.003,
+  "precision": "f32 storage/accumulation; matmul inputs possibly TF32 (not strict FP32); baselines host f64",
+  "predictions_heldout_sha256": "b70ca025af382529b7c484b24b4a3a0ec2b3a92898cded1226c7049efbfe851e",
+  "provenance_id": "ffd12cb26d003e307578dbbcfedce1bd0fe676b28417f77b8658bd10855904f8",
+  "recipe": "S",
+  "run_id": "KQRvK_S",
+  "train_meta_sha256": "ce58cd5ece608006d510e96eba1b8482654f2a64b6fcbf8a81a8e3f0dd47f8d5",
+  "train_rows_sha256": "d3038782501bac18e4660f1a929c95b7dff1a0bfc35e2d3ed7ba9f0c2167fd71",
+  "updates": 22500,
+  "wall_secs": 216.3003414
+}

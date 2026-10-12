@@ -1,0 +1,7 @@
+﻿reason=completed exit_code=0 wall_secs=232 peak_host_mib=341 peak_gpu_mib_sampled=95 orphans=0
+reason=completed exit_code=0 wall_secs=230 peak_host_mib=339 peak_gpu_mib_sampled=95 orphans=0
+reason=completed exit_code=0 wall_secs=233 peak_host_mib=335 peak_gpu_mib_sampled=95 orphans=0
+reason=completed exit_code=0 wall_secs=158 peak_host_mib=335 peak_gpu_mib_sampled=95 orphans=0
+reason=completed exit_code=0 wall_secs=158 peak_host_mib=336 peak_gpu_mib_sampled=95 orphans=0
+reason=completed exit_code=0 wall_secs=156 peak_host_mib=370 peak_gpu_mib_sampled=95 orphans=0
+GRID DONE

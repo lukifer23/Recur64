@@ -1,0 +1,521 @@
+{
+  "resamples": 5000,
+  "runs": {
+    "KQQvK_D": {
+      "b2f": {
+        "balanced_accuracy": 0.7459166666666667,
+        "bce": 0.521121719259292
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.7569166666666667,
+        "bce": 0.49072190136282084,
+        "model_minus_b_ba_ci95": [
+          -0.08463239438231707,
+          -0.024996480251841535
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.5052083333333334,
+        "drop_pp": 19.50833333333334
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.7001953125,
+          "bce": 0.8774722755524974,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.87060546875,
+          "bce": 0.2767502794095908,
+          "n": 2048
+        }
+      },
+      "fold": "KQQvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "P",
+        "family_accuracy": 0.80810546875
+      },
+      "model": {
+        "auroc": 0.8147293333333333,
+        "balanced_accuracy": 0.7002916666666668,
+        "bce": 0.8449626999646567,
+        "confusion": {
+          "fn": 5410.0,
+          "fp": 1783.0,
+          "tn": 10217.0,
+          "tp": 6590.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.8805,
+            "mean_bce": 0.25397081603627314,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.6441666666666667,
+            "mean_bce": 1.0620238948341585,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.8223333333333334,
+            "mean_bce": 0.3397856227066525,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.45416666666666666,
+            "mean_bce": 1.7240704662815505,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 30,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          -7.708301902958858,
+          -1.2205269167699373
+        ],
+        "ba_gain_pp": -4.562499999999991,
+        "bce_ci95": [
+          0.22692231527110263,
+          0.4073269069629689
+        ],
+        "bce_diff": 0.3238409807053647
+      },
+      "recipe": "D",
+      "transfer_criterion_met": false
+    },
+    "KQQvK_S": {
+      "b2f": {
+        "balanced_accuracy": 0.7459166666666667,
+        "bce": 0.521121719259292
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.7569166666666667,
+        "bce": 0.49072190136282084,
+        "model_minus_b_ba_ci95": [
+          -0.08421849861160202,
+          -0.00895722595538384
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.5033333333333334,
+        "drop_pp": 20.61666666666666
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.6865234375,
+          "bce": 4.192824607215687,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.93896484375,
+          "bce": 0.3686154153922262,
+          "n": 2048
+        }
+      },
+      "fold": "KQQvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "M",
+        "family_accuracy": 0.89306640625
+      },
+      "model": {
+        "auroc": 0.8192864722222222,
+        "balanced_accuracy": 0.7095,
+        "bce": 3.8996968968189583,
+        "confusion": {
+          "fn": 5753.0,
+          "fp": 1219.0,
+          "tn": 10781.0,
+          "tp": 6247.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.8988333333333334,
+            "mean_bce": 0.7226905234534672,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.651,
+            "mean_bce": 4.162463587930339,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.898,
+            "mean_bce": 0.7426091207151491,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.39016666666666666,
+            "mean_bce": 9.971024355177041,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 30,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          -7.580618367251068,
+          0.405361063642351
+        ],
+        "ba_gain_pp": -3.6416666666666653,
+        "bce_ci95": [
+          2.4809889769315676,
+          4.10097670020904
+        ],
+        "bce_diff": 3.378575177559666
+      },
+      "recipe": "S",
+      "transfer_criterion_met": false
+    },
+    "KQRvK_D": {
+      "b2f": {
+        "balanced_accuracy": 0.7618750000000001,
+        "bce": 0.492239314263542
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.7581666666666667,
+        "bce": 0.4914635527146052,
+        "model_minus_b_ba_ci95": [
+          0.010140089566499033,
+          0.055317269367750055
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.50175,
+        "drop_pp": 29.08333333333333
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.796875,
+          "bce": 0.4450367831905383,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.84228515625,
+          "bce": 0.33925752860616293,
+          "n": 2048
+        }
+      },
+      "fold": "KQRvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "P",
+        "family_accuracy": 0.84326171875
+      },
+      "model": {
+        "auroc": 0.8704891944444444,
+        "balanced_accuracy": 0.7925833333333333,
+        "bce": 0.4608198598173467,
+        "confusion": {
+          "fn": 1353.0,
+          "fp": 3625.0,
+          "tn": 8375.0,
+          "tp": 10647.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.7995,
+            "mean_bce": 0.41415243025528303,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.9213333333333333,
+            "mean_bce": 0.2803434081227961,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.5963333333333334,
+            "mean_bce": 0.718675428667385,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.8531666666666666,
+            "mean_bce": 0.4301081722239113,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 230,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          0.5192895635380057,
+          5.352083925974815
+        ],
+        "ba_gain_pp": 3.0708333333333226,
+        "bce_ci95": [
+          -0.07928684471076408,
+          0.02461409484662297
+        ],
+        "bce_diff": -0.031419454446195316
+      },
+      "recipe": "D",
+      "transfer_criterion_met": false
+    },
+    "KQRvK_S": {
+      "b2f": {
+        "balanced_accuracy": 0.7618750000000001,
+        "bce": 0.492239314263542
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.7581666666666667,
+        "bce": 0.4914635527146052,
+        "model_minus_b_ba_ci95": [
+          0.008850031366724576,
+          0.06458521098037184
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.5020416666666667,
+        "drop_pp": 29.566666666666663
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.7939453125,
+          "bce": 1.008562183053861,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.8974609375,
+          "bce": 0.3387549599184743,
+          "n": 2048
+        }
+      },
+      "fold": "KQRvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "M",
+        "family_accuracy": 0.8984375
+      },
+      "model": {
+        "auroc": 0.8868473819444445,
+        "balanced_accuracy": 0.7977083333333334,
+        "bce": 0.9975990568281966,
+        "confusion": {
+          "fn": 2769.0,
+          "fp": 2086.0,
+          "tn": 9914.0,
+          "tp": 9231.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.8975,
+            "mean_bce": 0.5049152066183781,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.845,
+            "mean_bce": 0.7432022955864968,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.7548333333333334,
+            "mean_bce": 1.1473397852700218,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.6935,
+            "mean_bce": 1.5949389398379008,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 230,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          0.43656531603899484,
+          6.270280631992575
+        ],
+        "ba_gain_pp": 3.5833333333333273,
+        "bce_ci95": [
+          0.32176708076322336,
+          0.7121450775675516
+        ],
+        "bce_diff": 0.5053597425646545
+      },
+      "recipe": "S",
+      "transfer_criterion_met": false
+    },
+    "KRRvK_D": {
+      "b2f": {
+        "balanced_accuracy": 0.8133333333333334,
+        "bce": 0.4665230544390616
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.8176666666666667,
+        "bce": 0.45011769640210497,
+        "model_minus_b_ba_ci95": [
+          -0.08806849735719369,
+          -0.008507826032786658
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.49887499999999996,
+        "drop_pp": 27.500000000000004
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.78125,
+          "bce": 0.5157240351002008,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.8125,
+          "bce": 0.3961706228096866,
+          "n": 2048
+        }
+      },
+      "fold": "KRRvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "P",
+        "family_accuracy": 0.8935546875
+      },
+      "model": {
+        "auroc": 0.8784168958333334,
+        "balanced_accuracy": 0.773875,
+        "bce": 0.540376092980301,
+        "confusion": {
+          "fn": 3587.0,
+          "fp": 1840.0,
+          "tn": 10160.0,
+          "tp": 8413.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.8566666666666667,
+            "mean_bce": 0.31883304481868857,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.76,
+            "mean_bce": 0.7313338064551143,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.8366666666666667,
+            "mean_bce": 0.2947800711817852,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.6421666666666667,
+            "mean_bce": 0.8165574494656108,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 28,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          -8.64303176911404,
+          -0.21604689143459588
+        ],
+        "ba_gain_pp": -3.9458333333333373,
+        "bce_ci95": [
+          -0.005236496090426757,
+          0.20541675144967175
+        ],
+        "bce_diff": 0.07385303854123937
+      },
+      "recipe": "D",
+      "transfer_criterion_met": false
+    },
+    "KRRvK_S": {
+      "b2f": {
+        "balanced_accuracy": 0.8133333333333334,
+        "bce": 0.4665230544390616
+      },
+      "b_frozen_d1_report_only": {
+        "balanced_accuracy": 0.8176666666666667,
+        "bce": 0.45011769640210497,
+        "model_minus_b_ba_ci95": [
+          -0.094398747846127,
+          -0.008241696787081754
+        ]
+      },
+      "derangement": {
+        "balanced_accuracy_vs_recipient_labels": 0.5068333333333334,
+        "drop_pp": 26.25833333333333
+      },
+      "diagnostics_val_report_only": {
+        "val_heldout_family": {
+          "balanced_accuracy": 0.7841796875,
+          "bce": 1.0312132175446898,
+          "n": 1024
+        },
+        "val_trained_families": {
+          "balanced_accuracy": 0.88330078125,
+          "bce": 0.38517441346527753,
+          "n": 2048
+        }
+      },
+      "fold": "KRRvK",
+      "in_family_reference_t2_test_report_only": {
+        "candidate": "M",
+        "family_accuracy": 0.94580078125
+      },
+      "model": {
+        "auroc": 0.9232982569444445,
+        "balanced_accuracy": 0.7694166666666666,
+        "bce": 1.3246257827811665,
+        "confusion": {
+          "fn": 4737.0,
+          "fp": 797.0,
+          "tn": 11203.0,
+          "tp": 7263.0
+        },
+        "per_cell": {
+          "n1/neg": {
+            "accuracy": 0.9353333333333333,
+            "mean_bce": 0.35279459921041734,
+            "n": 6000.0
+          },
+          "n1/pos": {
+            "accuracy": 0.7085,
+            "mean_bce": 1.5731553481442597,
+            "n": 6000.0
+          },
+          "n2/neg": {
+            "accuracy": 0.9318333333333333,
+            "mean_bce": 0.26466933087108113,
+            "n": 6000.0
+          },
+          "n2/pos": {
+            "accuracy": 0.502,
+            "mean_bce": 3.107883852898907,
+            "n": 6000.0
+          }
+        }
+      },
+      "n_groups": 28,
+      "paired_vs_b2f": {
+        "ba_ci95_pp": [
+          -9.404470671771037,
+          0.04642973310402532
+        ],
+        "ba_gain_pp": -4.391666666666671,
+        "bce_ci95": [
+          0.6122177025156698,
+          1.2911892560654796
+        ],
+        "bce_diff": 0.8581027283421049
+      },
+      "recipe": "S",
+      "transfer_criterion_met": false
+    }
+  },
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "4b693edb2a8fb5ab1205cce3627a1e88b45b8a50",
+    "source_digest": "6ea1b100d260ba5e8e4c1cd7d3c42f559571d6754d7c89a29cb5276a11e47318"
+  },
+  "unit": "connected group_id (T2 train metadata)",
+  "verdict": {
+    "D": {
+      "claim": "family-specific",
+      "folds_passing": 0,
+      "of": 3
+    },
+    "S": {
+      "claim": "family-specific",
+      "folds_passing": 0,
+      "of": 3
+    }
+  }
+}
