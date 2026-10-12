@@ -1,0 +1,25 @@
+{
+  "experiment": "V69-T2: symmetry-averaged training, extended scale/LR for M, scaled schedule for A, vs the shallow baselines",
+  "precision": "CUDA backend: f32 storage/accumulation, matmul inputs possibly TF32; NOT strict FP32. Baselines are host-side f64.",
+  "data": {
+    "partitions": {"train": "6000 per family x budget x class cell (72000), nested subsets rank<k for k in {2000,6000}", "val": "256 per cell (3072)", "test": "512 per cell (6144), sealed until final evaluation"},
+    "exclusion": "identity-level (full 65-byte canonical keys) against gen-001, the G1 pool and the T1 contributing pool",
+    "partitioning": "root-level keyed hash 80/10/10; taken-set over canonical child keys alone; groups = per-partition connected components of contributing roots",
+    "per_root_cap_per_class": 2, "node_limit_per_query": 5000000
+  },
+  "training": {
+    "batch_size": 64, "optimizer": "AdamW", "betas": [0.9, 0.999], "epsilon": 1e-8, "weight_decay": 1e-4, "grad_clip_global_norm": 1.0,
+    "schedule": "linear warmup 200 updates to peak lr, cosine decay to 0.1*peak at the final update",
+    "modes": {"d8": "per-sample keyed-random board symmetry; stream t2_aug", "sym": "M only: BCE of the mean logit over all 8 board symmetries of each example; registered inference = same 8-view mean logit"},
+    "init": {"A": "init/canonical_init.bin", "M": "d1/mlp_init.bin"},
+    "no_early_stopping_no_best_checkpoint": true
+  },
+  "grid": {
+    "M": {"k": [2000, 6000], "mode": ["d8", "sym"], "peak_lr": [0.003, 0.01], "epochs": 30, "extra": [{"k": 6000, "mode": "d8", "peak_lr": 0.003, "epochs": 60}, {"k": 6000, "mode": "sym", "peak_lr": 0.003, "epochs": 60}]},
+    "A": [{"k": 6000, "mode": "d8", "peak_lr": 0.0005, "epochs": 18}, {"k": 6000, "mode": "d8", "peak_lr": 0.001, "epochs": 18}, {"k": 2000, "mode": "d8", "peak_lr": 0.0005, "epochs": 54}]
+  },
+  "selection": "A*: best A; M*: best M of any mode; P*: best M with mode d8; each lowest FINAL-update validation BCE (ties: higher balanced accuracy); validation only",
+  "final": {"candidates": ["A*", "M*", "P*", "B (frozen D1 baseline)", "B2 (baseline refit on T2 train)"], "datasets": ["T2 test (primary)", "G1 panel (secondary, report-only)"], "controls": "derangement and erasure; neural candidates also report 8-fold symmetry TTA logits (report-only)", "bootstrap": {"resamples": 5000, "unit": "connected group_id", "paired": true}},
+  "decision": {"transfer": {"balanced_accuracy_min": 0.75, "bce_max": 0.55, "derangement_drop_min_pp": 15}, "practical_improvement": {"gain_pp_min": 5, "paired_95ci_excludes_zero": true, "bce_no_worse": true, "against": ["B", "B2"]}, "significant_improvement": {"gain_pp_min": 0, "paired_95ci_excludes_zero": true, "bce_no_worse": true}},
+  "limits": {"native_hours_total": 4, "host_gib": 8, "device_mib_sampled": 3072}
+}

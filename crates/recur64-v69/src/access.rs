@@ -36,6 +36,11 @@ pub enum Role {
     T1Evaluator,
     /// T1 aggregator: metadata + predictions.
     T1Aggregator,
+    /// T2 roles mirror the T1 roles under the t2/ namespace (builder also reads the T1 contributing pool).
+    T2Builder,
+    T2Trainer,
+    T2Evaluator,
+    T2Aggregator,
 }
 
 #[derive(Clone)]
@@ -83,8 +88,8 @@ impl Access {
             Role::MetricAggregator => &["meta/fit.meta.jsonl", "meta/val.meta.jsonl", "MANIFEST.sha256.json"],
             Role::DataAudit => &[],
             Role::D1Panel => &["data/fit.jsonl", "meta/fit.meta.jsonl", "MANIFEST.sha256.json"],
-            Role::G1Builder | Role::T1Builder => &["pool/roots.jsonl", "MANIFEST.sha256.json"],
-            Role::G1Evaluator | Role::G1Aggregator | Role::T1Trainer | Role::T1Evaluator | Role::T1Aggregator => &[],
+            Role::G1Builder | Role::T1Builder | Role::T2Builder => &["pool/roots.jsonl", "MANIFEST.sha256.json"],
+            Role::G1Evaluator | Role::G1Aggregator | Role::T1Trainer | Role::T1Evaluator | Role::T1Aggregator | Role::T2Trainer | Role::T2Evaluator | Role::T2Aggregator => &[],
         }
     }
 
@@ -94,7 +99,7 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["eval/", "intervention/", "d1/"],
             Role::MetricAggregator => &["report/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/"],
+            Role::DataAudit => &["audit/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/", "t2/"],
             Role::D1Panel => &["d1/", "d2/", "d3/"],
             Role::G1Builder => &["g1r1/"],
             Role::G1Evaluator => &["g1r1/eval/", "g1r1/receipts/"],
@@ -103,6 +108,10 @@ impl Access {
             Role::T1Trainer => &["t1/train_runs/"],
             Role::T1Evaluator => &["t1/final/", "t1/receipts/"],
             Role::T1Aggregator => &["t1/report/"],
+            Role::T2Builder => &["t2/"],
+            Role::T2Trainer => &["t2/train_runs/"],
+            Role::T2Evaluator => &["t2/final/", "t2/receipts/"],
+            Role::T2Aggregator => &["t2/report/"],
         }
     }
 
@@ -112,7 +121,7 @@ impl Access {
             Role::Learner => &["fits/", "qual/", "init/", "spec/", "d1/", "d2/", "d3/"],
             Role::Evaluator => &["fits/", "init/", "spec/", "intervention/", "eval/", "d1/"],
             Role::MetricAggregator => &["eval/", "intervention/", "spec/", "report/", "fits/", "d1/", "d2/", "d3/"],
-            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
+            Role::DataAudit => &["audit/", "spec/", "d1/", "d2/", "d3/", "g1/", "g1r1/", "t1/", "t2/", "fits/", "eval/", "report/", "init/", "intervention/", "qual/"],
             Role::D1Panel => &["d1/", "d2/", "d3/", "spec/", "init/"],
             Role::G1Builder => &["g1r1/", "spec/"],
             Role::G1Evaluator => &["g1r1/", "d3/fits/", "d1/baseline/", "d2/subsets/s768_rows.jsonl"],
@@ -121,6 +130,10 @@ impl Access {
             Role::T1Trainer => &["t1/", "init/canonical_init.bin", "d1/mlp_init.bin"],
             Role::T1Evaluator => &["t1/", "g1r1/rows/", "g1r1/intervention/", "d1/baseline/"],
             Role::T1Aggregator => &["t1/", "g1r1/meta/", "g1r1/intervention/", "g1r1/eval/", "d3/report/", "d1/report/"],
+            Role::T2Builder => &["t2/", "t1/pool/", "g1r1/pool/", "g1r1/index/", "spec/"],
+            Role::T2Trainer => &["t2/", "init/canonical_init.bin", "d1/mlp_init.bin"],
+            Role::T2Evaluator => &["t2/", "g1r1/rows/", "g1r1/intervention/", "d1/baseline/"],
+            Role::T2Aggregator => &["t2/", "g1r1/meta/", "g1r1/intervention/"],
         }
     }
 
@@ -132,6 +145,8 @@ impl Access {
             Role::G1Evaluator => g1.iter().any(|d| rel.starts_with(d)),
             Role::T1Trainer => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/test", "t1/final/"].iter().any(|d| rel.starts_with(d)),
             Role::T1Evaluator => ["t1/meta/", "t1/pool/", "t1/index/", "t1/rows/train"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t1/train_runs/") && rel.contains("/opt_")),
+            Role::T2Trainer => ["t2/meta/", "t2/pool/", "t2/index/", "t2/rows/test", "t2/final/"].iter().any(|d| rel.starts_with(d)),
+            Role::T2Evaluator => ["t2/meta/", "t2/pool/", "t2/index/", "t2/rows/train"].iter().any(|d| rel.starts_with(d)) || (rel.starts_with("t2/train_runs/") && rel.contains("/opt_")),
             _ => false,
         }
     }

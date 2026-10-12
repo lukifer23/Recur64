@@ -172,6 +172,40 @@ impl<B: AutodiffBackend, M: DiagModel<B> + AutodiffModule<B>> DTrainer<B, M> {
         (grads, lv)
     }
 
+    /// Symmetry-averaged objective (T2): BCE of the mean logit over the 8 board symmetries of every example.
+    pub fn micro_grads_sym(&self, feats: &[&Features], labels: &[bool], scale: f32) -> (GradientsParams, f64) {
+        let mut sum: Option<Tensor<B, 1>> = None;
+        for t in 0..8 {
+            let tf: Vec<Features> = feats.iter().map(|f| f.d8(t)).collect();
+            let refs: Vec<&Features> = tf.iter().collect();
+            let zt = self.model.logits(&refs, &self.device);
+            sum = Some(match sum {
+                None => zt,
+                Some(s) => s + zt,
+            });
+        }
+        let z = sum.unwrap().div_scalar(8.0);
+        let y = Tensor::<B, 1>::from_floats(labels.iter().map(|&l| l as u8 as f32).collect::<Vec<_>>().as_slice(), &self.device);
+        let loss = bce_mean(z, y);
+        let lv = loss.clone().into_data().to_vec::<f32>().unwrap()[0] as f64;
+        let grads = GradientsParams::from_grads(loss.mul_scalar(scale).backward(), &self.model);
+        (grads, lv)
+    }
+
+    /// One update with the symmetry-averaged objective at an explicit LR.
+    pub fn step_lr_sym(&mut self, micros: &[(Vec<&Features>, Vec<bool>)], lr: f64) -> StepStats {
+        let t0 = std::time::Instant::now();
+        let n = micros.len() as f32;
+        let mut acc = GradientsAccumulator::<M>::new();
+        let mut loss = 0.0;
+        for (f, l) in micros {
+            let (g, lv) = self.micro_grads_sym(f, l, 1.0 / n);
+            acc.accumulate(&self.model, g);
+            loss += lv / n as f64;
+        }
+        self.apply_lr(acc.grads(), loss, t0, lr)
+    }
+
     pub fn clip_and_split(&self, acc: GradientsParams) -> (GradientsParams, GradientsParams, f64, f64, bool) {
         let (norm, missing) = global_norm::<B, M>(&self.model, &acc);
         assert_eq!(missing, 0, "{missing} parameters received no gradient");
