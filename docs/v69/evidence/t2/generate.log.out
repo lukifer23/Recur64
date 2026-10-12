@@ -1,0 +1,1 @@
+T2 generation complete: {"test": 6144, "train": 72000, "train_s2000": 24000, "train_s6000": 72000, "val": 3072}; accepted 73596, excluded 902, kept 72694; wall 42.0s

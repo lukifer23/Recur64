@@ -1,0 +1,50 @@
+{
+  "created_utc": "unix:1791819800",
+  "run": "gen-001",
+  "seed_fingerprint": "bb2885388f46713b",
+  "groups": {
+    "aggregator": {
+      "g1r1/intervention/map.json": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+      "g1r1/meta/g1_meta.jsonl": "f92a1dc423f37a9f19971e9f9f9c1b1883bbff86e7750ecd23535474532780be",
+      "t2/MANIFEST.sha256.json": "1f68efff74c5c493ffc8cde3032eb4a140d3db74d85d36ed1eb8fd6bd78c3a7d",
+      "t2/T2_CONTRACT.md": "dc3531a5dc9339053db2341bda28f0803bb1eec14e829b9a689007628dd717fb",
+      "t2/config.json": "bdfbdaf405be7971ed298727900afef12c0a458d2afadd487941d89ae8d42e70",
+      "t2/frozen_train.json": "0ef59aa2997226c61e9f9a31b82ebdde31b70768044ded1af3b21b7c698e2511",
+      "t2/intervention/test_map.json": "fbab2db599924a116f30a743aae6257e6e20cb31ae985555969b39c83fb1a350",
+      "t2/meta/test.meta.jsonl": "e3222dfa1f29e58386ffc57669c5ddfcbb6183fde4a297336fd87c46d57424fb",
+      "t2/receipts/audit_receipt_t1.json": "058502414c506176bc1d68cce098a168d504341df691265146356edb59af1a81",
+      "t2/receipts/evaluator_verification.json": "4d014ec21286a3a585ec42133561c2dec09db90c0f8e2969911d6e67d170b9c4",
+      "t2/report/selection.json": "fea26261b2367cfd9c91c25b761b701331e6a8f394a96250be637835c08f7b00",
+      "t2/rows/test.jsonl": "143b62ba7947e22f3a8d06fe647cc8687dbd8ee6621b868842cbe54dffc48913"
+    },
+    "evaluator": {
+      "d1/baseline/model.json": "1c3b775a169ed055c7cbdbff8c34de4e26306a0e24166e225f88531bbc009415",
+      "g1r1/intervention/map.json": "74d4d568bd231402b0670fb090556832465fcf8c7b47de33759818be58aadc95",
+      "g1r1/rows/g1_rows.jsonl": "54ec00f7db82784d748f4b0d03236ad91dffdef8758d2cc235ef8855f2afc83b",
+      "t2/MANIFEST.sha256.json": "1f68efff74c5c493ffc8cde3032eb4a140d3db74d85d36ed1eb8fd6bd78c3a7d",
+      "t2/T2_CONTRACT.md": "dc3531a5dc9339053db2341bda28f0803bb1eec14e829b9a689007628dd717fb",
+      "t2/baseline_refit/model.json": "b3afd57ee113438b42c612e5f625ba020349f52aa21a2d60364e258a342a93d3",
+      "t2/baseline_refit/predictions_val.jsonl": "b5f4192605ec892534a927df20c348c4912b721dce1288066b75b87d6c9a0bf1",
+      "t2/config.json": "bdfbdaf405be7971ed298727900afef12c0a458d2afadd487941d89ae8d42e70",
+      "t2/evaluator_source.json": "58288484304177279ce494f9d2b713cd88e9dfdfbd7bfac0ef1749dd2831c6df",
+      "t2/frozen_train.json": "0ef59aa2997226c61e9f9a31b82ebdde31b70768044ded1af3b21b7c698e2511",
+      "t2/intervention/test_map.json": "fbab2db599924a116f30a743aae6257e6e20cb31ae985555969b39c83fb1a350",
+      "t2/receipts/evaluator_verification.json": "4d014ec21286a3a585ec42133561c2dec09db90c0f8e2969911d6e67d170b9c4",
+      "t2/report/selection.json": "fea26261b2367cfd9c91c25b761b701331e6a8f394a96250be637835c08f7b00",
+      "t2/rows/test.jsonl": "143b62ba7947e22f3a8d06fe647cc8687dbd8ee6621b868842cbe54dffc48913",
+      "t2/rows/val.jsonl": "0e5cd62ada03e401f228271112f9b109c1d6d394b9f3920ab48d8d6465d29a90",
+      "t2/train_runs/A_k2000_d8_lr5e-4_e54/final/meta.json": "6c98c005ca5ed78531f33bbd8267ef5b08814520b8adc53db5be93feb0fc8383",
+      "t2/train_runs/A_k2000_d8_lr5e-4_e54/final/model.mpk": "5e16366e06483f42c53e4dd0695818a6d987d15c1de93ba58d8291a4832cd98c",
+      "t2/train_runs/A_k2000_d8_lr5e-4_e54/provenance.json": "304c365395d4ace16ff7fe58c63fe10e41cbbefdb5c6363ecac023fc9d8a62f6",
+      "t2/train_runs/A_k2000_d8_lr5e-4_e54/val_predictions.jsonl": "fe0a316c5f9d1b70219a65e5ddb999fa7052662cc162d5138e0a5768868894ba",
+      "t2/train_runs/M_k6000_d8_lr3e-3_e60/final/meta.json": "46e829e2648eaf0fcef4e141dc3f5ec1b48a7380d411d4bada80155120c29209",
+      "t2/train_runs/M_k6000_d8_lr3e-3_e60/final/model.mpk": "d9ed89afc7c71b5295a46d08c15914891714a2470c240c56aa2d5d8a0b21ebfd",
+      "t2/train_runs/M_k6000_d8_lr3e-3_e60/provenance.json": "6cae9d0fa38c0054a831109b55a89c70a0ec5ccffb529ee289019abe132c9c10",
+      "t2/train_runs/M_k6000_d8_lr3e-3_e60/val_predictions.jsonl": "5af4ef62e0bb5e3e05a35bc1e2468cba3cedda821c0e99c1be204fb5008efb57",
+      "t2/train_runs/M_k6000_sym_lr3e-3_e30/final/meta.json": "c404ba6fdcb52ea64c5779108736a64c5b8e4125cd1ffdbdd1e9362a36a43306",
+      "t2/train_runs/M_k6000_sym_lr3e-3_e30/final/model.mpk": "3d30fe980c98a86fb5d4611dc5c605ce7e5833fc764a8688b1e3d9d659eecd7f",
+      "t2/train_runs/M_k6000_sym_lr3e-3_e30/provenance.json": "dbad6930f587030de2d1316f76aaa40502a9848647385bd82346dd9f4b1546a9",
+      "t2/train_runs/M_k6000_sym_lr3e-3_e30/val_predictions.jsonl": "881b352f525c3e618490e2a8f103accfbfee4632b3ae6f299134294036f9bc13"
+    }
+  }
+}

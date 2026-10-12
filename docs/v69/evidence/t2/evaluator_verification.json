@@ -1,0 +1,62 @@
+{
+  "checks": [
+    {
+      "candidate": "A",
+      "classification_agreement": 3072,
+      "d8_identity": true,
+      "max_abs_logit_diff_vs_recorded_val_final": 4.440892098500626e-16,
+      "of": 3072,
+      "pass": true,
+      "run_id": "A_k2000_d8_lr5e-4_e54",
+      "target_separation": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "M",
+      "classification_agreement": 3072,
+      "d8_identity": true,
+      "max_abs_logit_diff_vs_recorded_val_final": 0.00001150369644165039,
+      "of": 3072,
+      "pass": true,
+      "run_id": "M_k6000_sym_lr3e-3_e30",
+      "target_separation": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "P",
+      "classification_agreement": 3072,
+      "d8_identity": true,
+      "max_abs_logit_diff_vs_recorded_val_final": 3.552713678800501e-15,
+      "of": 3072,
+      "pass": true,
+      "run_id": "M_k6000_d8_lr3e-3_e60",
+      "target_separation": true,
+      "tolerance": 0.002
+    },
+    {
+      "candidate": "B",
+      "deterministic": true,
+      "erasure_definition_consistent": true,
+      "pass": true
+    },
+    {
+      "candidate": "B2",
+      "max_abs_logit_diff_vs_recorded_refit_val": 1.7763568394002505e-15,
+      "pass": true,
+      "tolerance": 1e-9
+    },
+    {
+      "name": "neural_erasure_definition",
+      "pass": true
+    }
+  ],
+  "evaluator_source_digest": "d829856072f46eaa2e46cf1ec95042e3531ad6069b2944cdd7fd8f06632ebffa",
+  "fixture": "T2 validation rows (no test/G1 labels or outputs touched)",
+  "ok": true,
+  "source": {
+    "git_dirty_files": 0,
+    "git_head": "5f807f4db53f9b16a391c1f2eddd8278567de5e2",
+    "source_digest": "d829856072f46eaa2e46cf1ec95042e3531ad6069b2944cdd7fd8f06632ebffa"
+  },
+  "val_rows_sha256": "0e5cd62ada03e401f228271112f9b109c1d6d394b9f3920ab48d8d6465d29a90"
+}

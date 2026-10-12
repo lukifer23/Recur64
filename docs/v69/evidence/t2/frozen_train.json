@@ -1,0 +1,21 @@
+{
+  "created_utc": "unix:1791809886",
+  "run": "gen-001",
+  "seed_fingerprint": "bb2885388f46713b",
+  "groups": {
+    "learner": {
+      "d1/mlp_init.bin": "0228b6ea622a5139c01538d44af3ed4d8fe0a421b2a155697faa949cc53ae8b2",
+      "init/canonical_init.bin": "3bc80e9fef855375713af0a02030acb46df1b98ba782fa0674dab6607c637cdf",
+      "t2/MANIFEST.sha256.json": "1f68efff74c5c493ffc8cde3032eb4a140d3db74d85d36ed1eb8fd6bd78c3a7d",
+      "t2/T2_CONTRACT.md": "dc3531a5dc9339053db2341bda28f0803bb1eec14e829b9a689007628dd717fb",
+      "t2/config.json": "bdfbdaf405be7971ed298727900afef12c0a458d2afadd487941d89ae8d42e70",
+      "t2/frozen_protocol.json": "84c88f3d9db80e7d10e485a4c775ac2fde191c3f8a9bc41a89bc97f022e32f4d",
+      "t2/receipts/audit_receipt_t1.json": "058502414c506176bc1d68cce098a168d504341df691265146356edb59af1a81",
+      "t2/rows/train.jsonl": "d3038782501bac18e4660f1a929c95b7dff1a0bfc35e2d3ed7ba9f0c2167fd71",
+      "t2/rows/train_s2000.jsonl": "8798f686e65618a46a3ef6f01b0eb9cef7deae782b624e2a81d4b8eeb676c291",
+      "t2/rows/train_s6000.jsonl": "d3038782501bac18e4660f1a929c95b7dff1a0bfc35e2d3ed7ba9f0c2167fd71",
+      "t2/rows/val.jsonl": "0e5cd62ada03e401f228271112f9b109c1d6d394b9f3920ab48d8d6465d29a90",
+      "t2/seed/t2_master_seed.hex": "aed0e6118d4d4928503e6b3d962a5ef37fac74468fd082640a677a64a2b6f817"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "documented_e1_deviation": "E1 audit receipt was overwritten in place by the E1 post-campaign audit; pre-run copy preserved. T2 never writes to audit/; receipts are append-only.",
+  "files_checked": 837,
+  "label": "start",
+  "mismatches": [],
+  "ok": true,
+  "source": {
+    "git_dirty_files": 11,
+    "git_head": "04b06b48b0163fe067967a579af48f3f9872f287",
+    "source_digest": "7e570ef85984770defafce2a68d042d6bf4b45a1834f592c62baff2b52e9edf4"
+  }
+}
