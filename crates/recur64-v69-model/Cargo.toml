@@ -49,3 +49,7 @@ path = "src/bin/v69_t2_train.rs"
 [[bin]]
 name = "v69-t2-final"
 path = "src/bin/v69_t2_final.rs"
+
+[[bin]]
+name = "v69-t3"
+path = "src/bin/v69_t3.rs"
