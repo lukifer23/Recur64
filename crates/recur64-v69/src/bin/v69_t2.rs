@@ -155,14 +155,28 @@ fn load_prior_index(a: &Access, run: &Path) -> Result<ExclusionIndex> {
     let b = a.read(&run.join("pool/roots.jsonl"))?;
     ensure!(manifest.get("pool/roots.jsonl") == Some(&sha256_hex(&b)), "gen-001 pool hash mismatch");
     let mut pool: Vec<RootRec> = jsonl(std::str::from_utf8(&b)?)?;
+    let gen_children = ExclusionIndex::from_pool(&pool).children;
     let g1: Vec<RootRec> = jsonl(&a.read_to_string(Path::new("g1r1/pool/roots.jsonl"))?)?;
     pool.extend(g1);
     pool.extend(jsonl::<RootRec>(&a.read_to_string(Path::new("t1/pool/roots.jsonl"))?)?);
-    Ok(ExclusionIndex::from_pool(&pool))
+    // Amendment A1: roots are excluded by root key against ALL prior pools; child positions are forbidden as
+    // model inputs against (all children of gen-001 pool roots) + (the T1 and G1 EXAMPLES actually used).
+    let mut idx = ExclusionIndex::from_pool(&pool);
+    let mut children: Vec<String> = gen_children;
+    for rel in ["t1/meta/train.meta.jsonl", "t1/meta/val.meta.jsonl", "t1/meta/test.meta.jsonl", "g1r1/meta/g1_meta.jsonl"] {
+        for l in a.read_to_string(Path::new(rel))?.lines() {
+            let v: serde_json::Value = serde_json::from_str(l)?;
+            children.push(v["key"].as_str().context("example key")?.to_string());
+        }
+    }
+    children.sort();
+    children.dedup();
+    idx.children = children;
+    Ok(idx)
 }
 
 fn direct_overlap(r: &RootRec, idx: &ExclusionIndex) -> bool {
-    idx.roots.binary_search(&r.key).is_ok() || r.children.iter().any(|c| idx.children.binary_search(&c.key).is_ok())
+    idx.roots.binary_search(&r.key).is_ok()
 }
 
 fn cmd_generate(args: &[String]) -> Result<()> {
@@ -177,6 +191,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
     ensure!(!a.custody().resolve(Path::new("t2/rows/train.jsonl"))?.exists(), "T2 data already generated; no regeneration");
     let idx = load_prior_index(&a, &env.run)?;
     let idx_text = serde_json::to_string(&idx)?;
+    let forbidden: HashSet<String> = idx.children.iter().cloned().collect();
     a.write(Path::new("t2/index/prior_exclusion_index.json"), idx_text.as_bytes())?;
     eprintln!("[t2] seed {} | prior exclusion index (gen-001 + G1 pool): {} roots, {} children", seed.fingerprint(), idx.roots.len(), idx.children.len());
     let deadline = t_start + Duration::from_secs(time_limit);
@@ -265,7 +280,7 @@ fn cmd_generate(args: &[String]) -> Result<()> {
         rounds = round + 1;
         if rounds % 3 == 0 {
             let parts = assign_roots(&seed, &kept);
-            let (examples, counts) = select_t1(&seed, &kept, &parts);
+            let (examples, counts) = select_t1(&seed, &kept, &parts, &forbidden);
             let short: usize = counts.iter().map(|(k, c)| quota(if k.starts_with("train/") { Partition::Fit } else if k.starts_with("val/") { Partition::Val } else { Partition::Test }).saturating_sub(*c)).sum();
             eprintln!("[t2] round {round}: accepted {accepted_total}, excluded {excluded}, kept {}, {short} examples short | {:.0}s", kept.len(), t_start.elapsed().as_secs_f64());
             if feasible(&counts) {
@@ -425,7 +440,7 @@ fn cmd_audit(args: &[String]) -> Result<()> {
     let (rs, cs): (HashSet<&str>, HashSet<&str>) = (idx.roots.iter().map(String::as_str).collect(), idx.children.iter().map(String::as_str).collect());
     let mut overlaps = 0;
     for r in &pool {
-        overlaps += (rs.contains(r.key.as_str()) || r.children.iter().any(|c| cs.contains(c.key.as_str()))) as usize;
+        overlaps += rs.contains(r.key.as_str()) as usize;
     }
     overlaps += all_meta.iter().filter(|m| cs.contains(m.ex.key.as_str()) || rs.contains(m.ex.key.as_str())).count();
     check!("exclusion", overlaps == 0, format!("{overlaps} canonical overlaps with prior V69 data"));

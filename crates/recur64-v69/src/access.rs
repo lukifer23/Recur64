@@ -130,7 +130,7 @@ impl Access {
             Role::T1Trainer => &["t1/", "init/canonical_init.bin", "d1/mlp_init.bin"],
             Role::T1Evaluator => &["t1/", "g1r1/rows/", "g1r1/intervention/", "d1/baseline/"],
             Role::T1Aggregator => &["t1/", "g1r1/meta/", "g1r1/intervention/", "g1r1/eval/", "d3/report/", "d1/report/"],
-            Role::T2Builder => &["t2/", "t1/pool/", "g1r1/pool/", "g1r1/index/", "spec/"],
+            Role::T2Builder => &["t2/", "t1/pool/", "t1/meta/", "g1r1/pool/", "g1r1/meta/", "g1r1/index/", "spec/"],
             Role::T2Trainer => &["t2/", "init/canonical_init.bin", "d1/mlp_init.bin"],
             Role::T2Evaluator => &["t2/", "g1r1/rows/", "g1r1/intervention/", "d1/baseline/"],
             Role::T2Aggregator => &["t2/", "g1r1/meta/", "g1r1/intervention/"],

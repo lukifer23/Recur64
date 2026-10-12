@@ -55,10 +55,10 @@ pub fn assign_roots(seed: &MasterSeed, roots: &[RootRec]) -> Vec<Partition> {
 /// Deterministic keyed selection per partition and family x budget x class cell; per-root cap 2 per class.
 /// Partitions are filled test, val, train with ONE global taken-set of (canonical child, budget), so no
 /// identical child position appears in two partitions. `group_id` is attached afterwards (`attach_groups`).
-pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], root_part: &[Partition]) -> (Vec<T2Meta>, BTreeMap<String, usize>) {
+pub fn select_t1(seed: &MasterSeed, roots: &[RootRec], root_part: &[Partition], forbidden: &HashSet<String>) -> (Vec<T2Meta>, BTreeMap<String, usize>) {
     let mut out = Vec::new();
     let mut counts = BTreeMap::new();
-    let mut taken: HashSet<String> = HashSet::new();
+    let mut taken: HashSet<String> = forbidden.clone();
     for p in [Partition::Test, Partition::Val, Partition::Fit] {
         for f in Family::ALL {
             for b in [1u8, 2] {

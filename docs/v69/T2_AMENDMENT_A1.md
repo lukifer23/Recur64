@@ -1,0 +1,10 @@
+# Recur64 V69 — T2 amendment A1 (exclusion scope)
+
+Amends `T2_CONTRACT.md` §1 (frozen; unedited) after the first T2 generation attempt (same seed, fingerprint bb2885388f46713b) showed — before any row, label, partition file or model existed — that **strict "any prior child" exclusion is infeasible**. With the T1 contributing pool added to the prior index (12,140 prior roots, 420,930 prior child keys), 96% of freshly generated accepted roots were excluded (910,394 of 950,591 after 725 rounds / 638 s) and the kept pool grew by only ~28 roots per round; the examples shortfall fell by ~3 per round (36,499 short), i.e. the finite mate-in-2/3 domain is nearly exhausted for roots whose *entire* child set must be disjoint from all prior children. The attempt was killed; its log and prior index are preserved in `t2/attempt1_infeasible_strict_exclusion/`. No data, label or model was produced.
+
+## A1 changes
+1. **Root exclusion** is by canonical root key against all prior pools (gen-001, G1, T1), as before.
+2. **Child exclusion applies to model-visible positions only:** a child position may not be an example in T2 if it (a) is a child of any gen-001 pool root (unchanged, all children), or (b) is a model-visible **example** of T1 (train/val/test) or of the G1 panel. Unselected children of T1/G1 contributing roots are no longer forbidden.
+3. The cross-partition taken-set (canonical child key) is initialised with this forbidden set; all T2 partitions are therefore example-disjoint from T1 and G1 examples and from every gen-001 child, and from each other.
+Stated limitation: T2 contributing roots may share *unselected* children with T1/G1 roots; no model-visible T2 example equals any T1, G1 or gen-001 example/child position. The audit checks exactly this (root keys vs all prior roots; example keys vs the forbidden set; all T2 example keys pairwise distinct across partitions).
+Everything else is unchanged (quotas, partitioning, audit, grid, selection, decision rules, limits). Same seed reused (only generation statistics seen). Frozen in `t2/frozen_protocol_a1.json` before generation resumes.
