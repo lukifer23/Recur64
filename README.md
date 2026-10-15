@@ -218,7 +218,7 @@ with the CUDA environment below. The measured schedule is in
 
 ### GPU (CUDA)
 
-```sh
+```powershell
 $env:CUDA_PATH = "$env:LOCALAPPDATA\Recur64\cuda\12.9.1"
 $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
 
@@ -227,9 +227,9 @@ $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
 cargo run --release -p recur64-cli --features cuda -- cuda-smoke --config configs/r10-probe.toml
 
 # Synchronized GPU benchmark.
-cargo run --release -p recur64-cli --features cuda -- bench \
-    --config configs/r10-probe.toml --device cuda --output runs/r10-cuda \
-    --inference-batches 1,16,64,128 --recurrences 1,2,4 \
+cargo run --release -p recur64-cli --features cuda -- bench `
+    --config configs/r10-probe.toml --device cuda --output runs/r10-cuda `
+    --inference-batches 1,16,64,128 --recurrences 1,2,4 `
     --train-batches 32,64,128 --iters 20 --warmup 5 --train-steps 3
 ```
 
