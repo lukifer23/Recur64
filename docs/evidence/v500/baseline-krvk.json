@@ -1,0 +1,1102 @@
+{
+  "budget": 1000000,
+  "configs": [
+    {
+      "config": "blind_full",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 1.7624999999999999e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.000014367500000000006,
+          "median_nodes_solved": 30,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.00015648749999999998,
+          "median_nodes_solved": 530,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.0011086850000000003,
+          "median_nodes_solved": 3050,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 5,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.0038154024999999996,
+          "median_nodes_solved": 9345,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.6,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 6,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.0154294975,
+          "median_nodes_solved": 34025,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.04994193749999999,
+          "median_nodes_solved": 78859,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.75,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 8,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.10557063000000003,
+          "median_nodes_solved": 169252,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.175,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 9,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.24448137000000006,
+          "median_nodes_solved": 311858,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.05,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 10,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.3899492475,
+          "median_nodes_solved": 474365,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 11,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.5939251299999999,
+          "median_nodes_solved": 595773,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.85
+        },
+        {
+          "depth": 12,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.90477159,
+          "median_nodes_solved": 868545,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.5
+        },
+        {
+          "depth": 13,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.9544623674999999,
+          "median_nodes_solved": 929820,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.15
+        },
+        {
+          "depth": 14,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.9564816525000002,
+          "median_nodes_solved": 889760,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.025
+        },
+        {
+          "depth": 15,
+          "mean_overhead": null,
+          "mean_secs": 0.9976264199999998,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 16,
+          "mean_overhead": null,
+          "mean_secs": 1.019601,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        }
+      ],
+      "width": null
+    },
+    {
+      "config": "classical_full",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 2.8875e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.000011715000000000002,
+          "median_nodes_solved": 4,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.00017564499999999996,
+          "median_nodes_solved": 58,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.0015319549999999998,
+          "median_nodes_solved": 848,
+          "n": 40,
+          "solve_1e3": 0.65,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 5,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.008115425,
+          "median_nodes_solved": 4230,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 6,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.030485540000000005,
+          "median_nodes_solved": 17441,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.125,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.08158427000000003,
+          "median_nodes_solved": 46009,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.975,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 8,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.1497943625,
+          "median_nodes_solved": 90699,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.675,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 9,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.26124744750000006,
+          "median_nodes_solved": 152509,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.175,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 10,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.38555925999999996,
+          "median_nodes_solved": 228915,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.025,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 11,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.5462476875,
+          "median_nodes_solved": 329246,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 12,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.787750535,
+          "median_nodes_solved": 427534,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 13,
+          "mean_overhead": 0.0,
+          "mean_secs": 1.0344437499999999,
+          "median_nodes_solved": 626551,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 14,
+          "mean_overhead": 0.0,
+          "mean_secs": 1.3407622350000001,
+          "median_nodes_solved": 713774,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 15,
+          "mean_overhead": 0.0,
+          "mean_secs": 1.7341448025,
+          "median_nodes_solved": 848462,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 16,
+          "mean_overhead": 0.0,
+          "mean_secs": 2.229665322499999,
+          "median_nodes_solved": 952311,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.9
+        }
+      ],
+      "width": null
+    },
+    {
+      "config": "classical_w4",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 3.3225e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.075,
+          "mean_secs": 0.000012272500000000005,
+          "median_nodes_solved": 4,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 0.45,
+          "mean_secs": 0.00012689749999999998,
+          "median_nodes_solved": 22,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 0.675,
+          "mean_secs": 0.0003356,
+          "median_nodes_solved": 169,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 5,
+          "mean_overhead": 0.48717948717948717,
+          "mean_secs": 0.005793442499999999,
+          "median_nodes_solved": 305,
+          "n": 40,
+          "solve_1e3": 0.95,
+          "solve_1e4": 0.975,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 6,
+          "mean_overhead": 0.7948717948717948,
+          "mean_secs": 0.008763614999999999,
+          "median_nodes_solved": 1485,
+          "n": 40,
+          "solve_1e3": 0.275,
+          "solve_1e4": 0.95,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 1.0769230769230769,
+          "mean_secs": 0.014919972500000007,
+          "median_nodes_solved": 3908,
+          "n": 40,
+          "solve_1e3": 0.125,
+          "solve_1e4": 0.875,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 8,
+          "mean_overhead": 1.3333333333333333,
+          "mean_secs": 0.026405450000000004,
+          "median_nodes_solved": 8147,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.575,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 9,
+          "mean_overhead": 1.475,
+          "mean_secs": 0.0358615425,
+          "median_nodes_solved": 14633,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.225,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 10,
+          "mean_overhead": 1.4473684210526316,
+          "mean_secs": 0.059534409999999996,
+          "median_nodes_solved": 23339,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.075,
+          "solve_1e5": 0.95,
+          "solve_1e6": 0.95
+        },
+        {
+          "depth": 11,
+          "mean_overhead": 1.9444444444444444,
+          "mean_secs": 0.1194647025,
+          "median_nodes_solved": 50444,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.875,
+          "solve_1e6": 0.9
+        },
+        {
+          "depth": 12,
+          "mean_overhead": 2.1666666666666665,
+          "mean_secs": 0.17474767500000005,
+          "median_nodes_solved": 76663,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.675,
+          "solve_1e6": 0.9
+        },
+        {
+          "depth": 13,
+          "mean_overhead": 2.189189189189189,
+          "mean_secs": 0.3028532275,
+          "median_nodes_solved": 109604,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.4,
+          "solve_1e6": 0.925
+        },
+        {
+          "depth": 14,
+          "mean_overhead": 2.1176470588235294,
+          "mean_secs": 0.38490659749999995,
+          "median_nodes_solved": 131809,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.225,
+          "solve_1e6": 0.85
+        },
+        {
+          "depth": 15,
+          "mean_overhead": 2.32,
+          "mean_secs": 0.621118105,
+          "median_nodes_solved": 174419,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.025,
+          "solve_1e6": 0.625
+        },
+        {
+          "depth": 16,
+          "mean_overhead": 2.0,
+          "mean_secs": 0.4394879225,
+          "median_nodes_solved": 202035,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.175
+        }
+      ],
+      "width": 4
+    },
+    {
+      "config": "classical_w3",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 2.3775000000000005e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.075,
+          "mean_secs": 0.000010130000000000003,
+          "median_nodes_solved": 4,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 0.525,
+          "mean_secs": 0.00012001249999999996,
+          "median_nodes_solved": 20,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 0.825,
+          "mean_secs": 0.0002126975,
+          "median_nodes_solved": 118,
+          "n": 40,
+          "solve_1e3": 0.975,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 5,
+          "mean_overhead": 0.5128205128205128,
+          "mean_secs": 0.0028736225000000003,
+          "median_nodes_solved": 179,
+          "n": 40,
+          "solve_1e3": 0.975,
+          "solve_1e4": 0.975,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 6,
+          "mean_overhead": 1.3076923076923077,
+          "mean_secs": 0.005250835000000001,
+          "median_nodes_solved": 800,
+          "n": 40,
+          "solve_1e3": 0.6,
+          "solve_1e4": 0.95,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 1.435897435897436,
+          "mean_secs": 0.0079049525,
+          "median_nodes_solved": 1712,
+          "n": 40,
+          "solve_1e3": 0.275,
+          "solve_1e4": 0.95,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 8,
+          "mean_overhead": 1.4864864864864864,
+          "mean_secs": 0.020315229999999997,
+          "median_nodes_solved": 3712,
+          "n": 40,
+          "solve_1e3": 0.025,
+          "solve_1e4": 0.9,
+          "solve_1e5": 0.925,
+          "solve_1e6": 0.925
+        },
+        {
+          "depth": 9,
+          "mean_overhead": 2.282051282051282,
+          "mean_secs": 0.03649244749999999,
+          "median_nodes_solved": 8925,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.575,
+          "solve_1e5": 0.95,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 10,
+          "mean_overhead": 2.057142857142857,
+          "mean_secs": 0.0550446875,
+          "median_nodes_solved": 12063,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.325,
+          "solve_1e5": 0.85,
+          "solve_1e6": 0.875
+        },
+        {
+          "depth": 11,
+          "mean_overhead": 2.7096774193548385,
+          "mean_secs": 0.09645401249999999,
+          "median_nodes_solved": 34640,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.05,
+          "solve_1e5": 0.75,
+          "solve_1e6": 0.775
+        },
+        {
+          "depth": 12,
+          "mean_overhead": 3.0303030303030303,
+          "mean_secs": 0.15355694999999997,
+          "median_nodes_solved": 47715,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.725,
+          "solve_1e6": 0.825
+        },
+        {
+          "depth": 13,
+          "mean_overhead": 3.107142857142857,
+          "mean_secs": 0.275459225,
+          "median_nodes_solved": 86088,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.425,
+          "solve_1e6": 0.7
+        },
+        {
+          "depth": 14,
+          "mean_overhead": 2.5,
+          "mean_secs": 0.23411367500000005,
+          "median_nodes_solved": 86000,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.3,
+          "solve_1e6": 0.4
+        },
+        {
+          "depth": 15,
+          "mean_overhead": 2.857142857142857,
+          "mean_secs": 0.22465870249999997,
+          "median_nodes_solved": 111279,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.05,
+          "solve_1e6": 0.175
+        },
+        {
+          "depth": 16,
+          "mean_overhead": null,
+          "mean_secs": 0.152675135,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        }
+      ],
+      "width": 3
+    },
+    {
+      "config": "classical_w2",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 3.3125e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.15,
+          "mean_secs": 0.000014000000000000001,
+          "median_nodes_solved": 4,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 1.75,
+          "mean_secs": 0.0004714350000000002,
+          "median_nodes_solved": 18,
+          "n": 40,
+          "solve_1e3": 0.925,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 2.25,
+          "mean_secs": 0.0008604925,
+          "median_nodes_solved": 74,
+          "n": 40,
+          "solve_1e3": 0.825,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 5,
+          "mean_overhead": 1.1538461538461537,
+          "mean_secs": 0.0010087525,
+          "median_nodes_solved": 111,
+          "n": 40,
+          "solve_1e3": 0.925,
+          "solve_1e4": 0.975,
+          "solve_1e5": 0.975,
+          "solve_1e6": 0.975
+        },
+        {
+          "depth": 6,
+          "mean_overhead": 3.236842105263158,
+          "mean_secs": 0.0035158925000000002,
+          "median_nodes_solved": 516,
+          "n": 40,
+          "solve_1e3": 0.625,
+          "solve_1e4": 0.925,
+          "solve_1e5": 0.95,
+          "solve_1e6": 0.95
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 3.027027027027027,
+          "mean_secs": 0.0039630425,
+          "median_nodes_solved": 697,
+          "n": 40,
+          "solve_1e3": 0.525,
+          "solve_1e4": 0.9,
+          "solve_1e5": 0.925,
+          "solve_1e6": 0.925
+        },
+        {
+          "depth": 8,
+          "mean_overhead": 3.888888888888889,
+          "mean_secs": 0.007728422499999997,
+          "median_nodes_solved": 2143,
+          "n": 40,
+          "solve_1e3": 0.25,
+          "solve_1e4": 0.875,
+          "solve_1e5": 0.9,
+          "solve_1e6": 0.9
+        },
+        {
+          "depth": 9,
+          "mean_overhead": 4.875,
+          "mean_secs": 0.015463020000000004,
+          "median_nodes_solved": 5095,
+          "n": 40,
+          "solve_1e3": 0.125,
+          "solve_1e4": 0.575,
+          "solve_1e5": 0.8,
+          "solve_1e6": 0.8
+        },
+        {
+          "depth": 10,
+          "mean_overhead": 4.703703703703703,
+          "mean_secs": 0.019194165,
+          "median_nodes_solved": 6857,
+          "n": 40,
+          "solve_1e3": 0.025,
+          "solve_1e4": 0.4,
+          "solve_1e5": 0.675,
+          "solve_1e6": 0.675
+        },
+        {
+          "depth": 11,
+          "mean_overhead": 4.529411764705882,
+          "mean_secs": 0.025738100000000007,
+          "median_nodes_solved": 10097,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.2,
+          "solve_1e5": 0.425,
+          "solve_1e6": 0.425
+        },
+        {
+          "depth": 12,
+          "mean_overhead": 4.125,
+          "mean_secs": 0.0252907225,
+          "median_nodes_solved": 12738,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.025,
+          "solve_1e5": 0.2,
+          "solve_1e6": 0.2
+        },
+        {
+          "depth": 13,
+          "mean_overhead": 3.0,
+          "mean_secs": 0.023706337500000004,
+          "median_nodes_solved": 19296,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.025,
+          "solve_1e6": 0.025
+        },
+        {
+          "depth": 14,
+          "mean_overhead": null,
+          "mean_secs": 0.021911769999999994,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 15,
+          "mean_overhead": null,
+          "mean_secs": 0.017377354999999997,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 16,
+          "mean_overhead": null,
+          "mean_secs": 0.016456547499999995,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        }
+      ],
+      "width": 2
+    },
+    {
+      "config": "classical_w1",
+      "rows": [
+        {
+          "depth": 1,
+          "mean_overhead": 0.0,
+          "mean_secs": 2.9325000000000003e-6,
+          "median_nodes_solved": 1,
+          "n": 40,
+          "solve_1e3": 1.0,
+          "solve_1e4": 1.0,
+          "solve_1e5": 1.0,
+          "solve_1e6": 1.0
+        },
+        {
+          "depth": 2,
+          "mean_overhead": 0.11538461538461539,
+          "mean_secs": 0.00009164249999999998,
+          "median_nodes_solved": 4,
+          "n": 40,
+          "solve_1e3": 0.65,
+          "solve_1e4": 0.65,
+          "solve_1e5": 0.65,
+          "solve_1e6": 0.65
+        },
+        {
+          "depth": 3,
+          "mean_overhead": 0.1111111111111111,
+          "mean_secs": 0.00021919249999999995,
+          "median_nodes_solved": 9,
+          "n": 40,
+          "solve_1e3": 0.225,
+          "solve_1e4": 0.225,
+          "solve_1e5": 0.225,
+          "solve_1e6": 0.225
+        },
+        {
+          "depth": 4,
+          "mean_overhead": 0.7142857142857143,
+          "mean_secs": 0.0002539574999999999,
+          "median_nodes_solved": 25,
+          "n": 40,
+          "solve_1e3": 0.175,
+          "solve_1e4": 0.175,
+          "solve_1e5": 0.175,
+          "solve_1e6": 0.175
+        },
+        {
+          "depth": 5,
+          "mean_overhead": null,
+          "mean_secs": 0.000233265,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 6,
+          "mean_overhead": null,
+          "mean_secs": 0.00021784000000000004,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 7,
+          "mean_overhead": 0.0,
+          "mean_secs": 0.0002675825,
+          "median_nodes_solved": 55,
+          "n": 40,
+          "solve_1e3": 0.05,
+          "solve_1e4": 0.05,
+          "solve_1e5": 0.05,
+          "solve_1e6": 0.05
+        },
+        {
+          "depth": 8,
+          "mean_overhead": null,
+          "mean_secs": 0.00030893000000000007,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 9,
+          "mean_overhead": null,
+          "mean_secs": 0.0003566375,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 10,
+          "mean_overhead": null,
+          "mean_secs": 0.0003903949999999999,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 11,
+          "mean_overhead": null,
+          "mean_secs": 0.0003583099999999999,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 12,
+          "mean_overhead": null,
+          "mean_secs": 0.00032869500000000005,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 13,
+          "mean_overhead": null,
+          "mean_secs": 0.0003524024999999999,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 14,
+          "mean_overhead": null,
+          "mean_secs": 0.00039843750000000003,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 15,
+          "mean_overhead": null,
+          "mean_secs": 0.00032482999999999996,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        },
+        {
+          "depth": 16,
+          "mean_overhead": null,
+          "mean_secs": 0.00043136499999999996,
+          "median_nodes_solved": null,
+          "n": 40,
+          "solve_1e3": 0.0,
+          "solve_1e4": 0.0,
+          "solve_1e5": 0.0,
+          "solve_1e6": 0.0
+        }
+      ],
+      "width": 1
+    }
+  ],
+  "material": "KRvK",
+  "max_n": 18,
+  "per_depth": 40,
+  "schema": "v500_baseline_v1",
+  "split": "TEST"
+}

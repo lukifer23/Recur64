@@ -26,6 +26,11 @@ impl Orderer for Blind {
     fn defender(&mut self, _b: &Board, _m: &mut Vec<Move>) {}
 }
 
+/// True for dead positions (bare kings, or a lone minor piece); public for orderers.
+pub fn dead(b: &Board) -> bool {
+    is_dead(b)
+}
+
 fn ongoing(b: &Board) -> bool {
     b.status() == GameStatus::Ongoing && !is_dead(b)
 }
@@ -121,7 +126,7 @@ pub struct Solved {
     pub budget_exhausted: bool,
 }
 
-pub struct Prover<'a, O: Orderer> {
+pub struct Prover<'a, O: Orderer + ?Sized> {
     orderer: &'a mut O,
     width: Option<usize>,
     budget: u64,
@@ -133,7 +138,7 @@ pub struct Prover<'a, O: Orderer> {
 
 struct Out;
 
-impl<'a, O: Orderer> Prover<'a, O> {
+impl<'a, O: Orderer + ?Sized> Prover<'a, O> {
     pub fn new(orderer: &'a mut O, width: Option<usize>, budget: u64) -> Self {
         Self {
             orderer,

@@ -4512,6 +4512,7 @@ name = "recur64-prove"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "burn",
  "cozy-chess",
  "recur64-runtime",
  "serde",

@@ -1,0 +1,22 @@
+# V500 — experiment ledger
+
+Plan: `docs/V500_RESEARCH_PLAN.md`. Branch `experiment/workstation-v500-learned-prover`. Entries are written BEFORE the result they precede.
+
+## V500-E1 — P1/P2a: exact tablebase and sound prover (TESTED)
+- **Date:** 2026-11-11. `recur64-prove`: retrograde tablebase for KQvK / KRvK; AND/OR prover with ordering, width limit, node budget; independent proof checker; classical heuristic; symmetry-aware 80/10/10 split.
+- **TESTED (7 tests, 0 failed):** KRvK longest mate 31 plies (16 moves) and KQvK 19 plies (10 moves) match the known maxima exactly; the tablebase agrees with the repo's independent forward `MateSolver` on thousands of positions (white and black to move, depth <= 3); full-width search stops at exactly the optimal depth and every proof passes the checker; width-limited proofs never fail the checker; the checker rejects a missing reply, a wrong first move and an illegal move; the split is symmetry-invariant.
+- **Defect found and fixed during the build:** cozy-chess accepts adjacent kings and positions with the non-mover in check, which let a "capture the king" move into the enumeration; legality is now filtered explicitly (caught by the MateSolver cross-check test).
+
+## V500-E2 — P2: BLIND and CLASSICAL baselines on the TEST split (MEASURED)
+- **Command:** `baseline <KQvK|KRvK> 40 1000000 <out.json> 12` -> `docs/evidence/v500/baseline-{kqvk,krvk}.json`. 40 TEST positions per depth (KRvK 640 over depths 1..16; KQvK 360 over 1..10); each config run once at budget 1e6; a position counts as solved at budget b iff its CHECKED proof used at most b nodes.
+- **KQvK is saturated:** classical width 4 solves 100% of depths 1-9 within 1e5 nodes, so it cannot show a learned advantage and is not gated.
+- **KRvK (the test):** blind full-width solves 100% only up to depth 8 at 1e6 and fails beyond 12; classical full-width (complete and optimal) reaches 90% at depth 16 only at 1e6 nodes; classical width 4 solves depths <= 10 at >= 0.95 at 1e5 nodes but only 0.88 / 0.68 / 0.40 / 0.23 / 0.03 / 0.00 at depths 11-16. Best single classical config per depth at 1e5 nodes for depths 11-16: 0.88 / 0.72 / 0.42 / 0.30 / 0.05 / 0.00, mean **0.395** (`docs/evidence/v500/classical-reference.json`).
+
+## V500-E3 — FROZEN GATE THRESHOLDS (written after the baselines, BEFORE any learned evaluation)
+All on KRvK TEST, 40 positions per depth, deep stratum = optimal depths 11-16, node budget B* = 1e5, a CHECKED proof required. Reference = the best classical config per depth (generous to the baseline), mean 0.395. The learned width is ONE fixed value in {2,3,4} chosen on the VALIDATION split, never on TEST. Three training seeds; positions pooled; paired bootstrap (20,000 resamples) over test positions.
+- **G0** plumbing: 0 unsound proofs (every returned proof passes the independent checker) and the deployed Rust forward matches the burn forward within 1e-4.
+- **G1 usefulness (FULL-depth training):** mean solve@1e5 over depths 11-16 >= 0.395 + 0.15 = **0.545**, the paired-bootstrap CI of (learned - classical reference) wholly > 0, every seed > 0.395 + 0.05.
+- **G2 extrapolation (EXTRAP training, positions deeper than 8 moves withheld from training):** mean solve@1e5 over depths 11-16 >= **0.395** (not worse than the best classical) AND >= 0.75 x the FULL-training mean.
+- **G3 efficiency:** over depths 10-14, with unsolved positions censored at 1e6 nodes, the learned median nodes-to-proof <= 0.5 x the best classical config's median at the same depth, at every one of those five depths where the classical median is not itself censored.
+- **KILL:** G0 failure is fixed once and logged. If G1 fails, V500's central claim fails and it is written up as a negative result (the baselines stand as results). G2 and G3 failures are reported, not hidden. Passing G1-G3 triggers P6 (an unseen-material escalation with its own pre-registered rule).
+- **Secondary, reported not gated:** wall-clock per position (scorer cost), proof-length overhead, solve rates at 1e3/1e4/1e6, KQvK, and a KQvK-trained / KRvK-tested transfer run.
