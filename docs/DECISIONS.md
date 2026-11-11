@@ -1405,3 +1405,13 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   base starves itself of gradient. A successor design should avoid gated residual side channels and show its signal in a cheap
   smoke before any architecture investment.
 - **Next:** V420, a new identity, pre-registered in `docs/V420_RESEARCH_PLAN.md` before any code.
+
+## V420-D1 - V420 CLOSED (2026-11-11): `STOP_DEPTH_DOES_NOT_HELP`
+
+- **Status:** RESULT of the pre-registered rules (V420-E2), applied once. **Decision:** V420 stops, as the owner approved in advance: no retry,
+  no retuning, no halting follow-on (P3), option 2 (iterative plan refinement) stays unbuilt. `v4_tune_v1` and HOLDOUT_C stayed untouched.
+- **Why:** one shared block applied K=4 times gained +0.022 headline top-1 over one application (CI lower bound 0, one seed exactly 0, floor +0.03),
+  and a 4.7M one-block model was within 0.02 headline / 0.003 all-dev of 14.6M and 27.7M unshared models. Capacity and depth are not what limits this task here.
+- **Lineage reading (INFERRED, NOT TESTED):** V3, V3.5, V4 and V420 together point away from "more or better single-position computation" and toward whatever
+  limits mate-in-3 accuracy beyond the position network (search-like lookahead or label structure). Not established.
+- **Evidence:** `docs/V420_RESULTS.md`, `docs/evidence/v420/v420-measure.json`.

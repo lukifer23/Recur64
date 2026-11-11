@@ -52,3 +52,11 @@ Every entry below is written BEFORE the result it precedes. Status words: MEASUR
   Stop and ask if the first full run implies more than 3.
 - **NOT RUN:** any training run, any evaluation on dev, any gate. HOLDOUT_C and `v4_tune_v1` untouched.
 - **P2 launcher:** `scripts/v420_run.sh` (fail-stop; BASE8 first, so the pipeline check S4 is known after about 15 minutes).
+
+## V420-E2 — P2: result `STOP_DEPTH_DOES_NOT_HELP`
+- **Date:** 2026-11-11. **Status:** MEASURED, applying the rules frozen in the plan and amendment A1 once.
+- **Commands:** `scripts/v420_run.sh` (BASE8 seed 5101, then R1/RK2/RK4/RV/WIDE for seeds 5101-5103, then `recur64 v420 measure`).
+  Started 12:05, finished 13:52 local (about 1.8 h, inside the 3 GPU-hour ceiling). No run was aborted, repeated or discarded.
+- **Result:** S0 PASS; S4 PASS (BASE8 0.8474 vs 0.8403); S1 FAIL (RK4 − R1 mean +0.0217, CI [+2.7e-18, +0.0427], per seed 0.0000 / +0.0335 / +0.0316,
+  below the +0.03 floor); S2 passes but is moot; S3 OK. Verdict `STOP_DEPTH_DOES_NOT_HELP`. Details: `docs/V420_RESULTS.md`.
+- **Consequence:** per the plan, V420 stops. No retry, no tuning, P3 (halting) and option 2 not authorised. Decision V420-D1.
