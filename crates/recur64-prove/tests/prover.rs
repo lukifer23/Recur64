@@ -111,3 +111,22 @@ fn the_split_is_symmetry_invariant_and_roughly_80_10_10() {
     let m: cozy_chess::Board = "8/8/8/3k4/8/8/8/3K3R w - - 0 1".parse().unwrap();
     assert_eq!(canon_key(&b), canon_key(&m));
 }
+
+#[test]
+fn network_tokens_are_in_range_and_translation_invariant_for_relations() {
+    use recur64_prove::net::{MAXP, SQ_TOKENS, TOKENS, tokens};
+    let tb = Tablebase::build("KRvK", &[Piece::Rook]).unwrap();
+    for b in tb.positions.iter().step_by(997) {
+        let (t, n) = tokens(b);
+        assert!(n <= MAXP && n == 6, "KRvK has 3 piece-square + 3 relative tokens, got {n}");
+        assert!(t[..n].iter().all(|&v| (v as usize) < TOKENS));
+        assert!(t[..3].iter().all(|&v| (v as usize) < SQ_TOKENS) && t[3..n].iter().all(|&v| (v as usize) >= SQ_TOKENS));
+    }
+    // The same king-rook geometry shifted across the board gives the same relative tokens.
+    let a: cozy_chess::Board = "8/8/8/8/2k5/8/1R6/K7 w - - 0 1".parse().unwrap();
+    let b: cozy_chess::Board = "8/8/8/8/3k4/8/2R5/1K6 w - - 0 1".parse().unwrap();
+    let (ta, _) = tokens(&a);
+    let (tb2, _) = tokens(&b);
+    assert_eq!(ta[3..6], tb2[3..6], "relative tokens must not depend on the absolute position");
+    assert_ne!(ta[..3], tb2[..3]);
+}

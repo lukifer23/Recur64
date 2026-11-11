@@ -15,9 +15,15 @@ use crate::tb::moves_of;
 
 /// Planes: white K, Q, R, B, N, then black K.
 pub const PLANES: usize = 6;
-pub const TOKENS: usize = PLANES * 64;
+/// Piece-square tokens.
+pub const SQ_TOKENS: usize = PLANES * 64;
+/// Relative-displacement tokens: for each of (wK-bK, piece-bK, piece-wK) a 15x15 grid of (dfile, drank).
+pub const REL_GRID: usize = 15 * 15;
+pub const REL_KINDS: usize = 3;
+pub const TOKENS: usize = SQ_TOKENS + REL_KINDS * REL_GRID;
 pub const EXTRA: usize = 3;
-pub const MAXP: usize = 4;
+/// At most 4 piece-square tokens plus 5 relative tokens (two extra pieces) fit in 10 slots.
+pub const MAXP: usize = 10;
 /// Value of a position with no forced mate (a draw or a dead position): `log2(1 + 64)`.
 pub const DRAW_PLIES: f32 = 64.0;
 
@@ -37,20 +43,40 @@ fn plane(color: Color, piece: Piece) -> Option<usize> {
     }
 }
 
-/// Piece-square tokens (at most [`MAXP`]) and the number actually present.
+fn rel(a: (i32, i32), b: (i32, i32), kind: usize) -> u16 {
+    let (df, dr) = (a.0 - b.0 + 7, a.1 - b.1 + 7);
+    (SQ_TOKENS + kind * REL_GRID) as u16 + (df * 15 + dr) as u16
+}
+
+/// Piece-square tokens followed by king-relative displacement tokens (translation-invariant relations the
+/// network can learn from: where the pieces are relative to each king). At most [`MAXP`]; returns the count.
 pub fn tokens(b: &Board) -> ([u16; MAXP], usize) {
     let mut t = [0u16; MAXP];
     let mut n = 0;
+    let mut push = |v: u16, n: &mut usize| {
+        assert!(*n < MAXP, "more than {MAXP} tokens: the V500 network covers at most K+2 pieces vs K");
+        t[*n] = v;
+        *n += 1;
+    };
+    let mut others: Vec<(i32, i32)> = Vec::new();
     for color in [Color::White, Color::Black] {
         for piece in [Piece::King, Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
             if let Some(p) = plane(color, piece) {
                 for sq in b.colored_pieces(color, piece) {
-                    assert!(n < MAXP, "more than {MAXP} pieces: the V500 network covers K+pieces vs K only");
-                    t[n] = (p * 64 + sq as usize) as u16;
-                    n += 1;
+                    push((p * 64 + sq as usize) as u16, &mut n);
+                    if color == Color::White && piece != Piece::King {
+                        others.push((sq.file() as i32, sq.rank() as i32));
+                    }
                 }
             }
         }
+    }
+    let k = |s: cozy_chess::Square| (s.file() as i32, s.rank() as i32);
+    let (wk, bk) = (k(b.king(Color::White)), k(b.king(Color::Black)));
+    push(rel(wk, bk, 0), &mut n);
+    for &o in &others {
+        push(rel(o, bk, 1), &mut n);
+        push(rel(o, wk, 2), &mut n);
     }
     (t, n)
 }
@@ -81,7 +107,7 @@ pub struct NetFile {
     pub b3: f32,
 }
 
-pub const NET_SCHEMA: &str = "v500_net_v1";
+pub const NET_SCHEMA: &str = "v500_net_v2";
 
 #[derive(Debug, Clone)]
 pub struct Mlp {

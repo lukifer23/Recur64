@@ -5,12 +5,22 @@ edition.workspace = true
 license.workspace = true
 description.workspace = true
 
+[features]
+default = []
+train = ["dep:burn"]
+flex = ["train", "burn/flex"]
+cuda = ["train", "burn/cuda"]
+
+[[example]]
+name = "train_net"
+required-features = ["train"]
+
 [dependencies]
+burn = { workspace = true, optional = true, features = ["std", "autodiff"] }
 cozy-chess = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 
 [dev-dependencies]
-burn = { workspace = true, features = ["std", "autodiff", "flex"] }
 recur64-runtime = { path = "../recur64-runtime", default-features = false, features = ["cpu"] }
