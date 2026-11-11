@@ -3,4 +3,7 @@
 //! `tb` is the exact retrograde tablebase (label source and grader only, never used inside the search under test),
 //! `search` the sound AND/OR prover with pluggable move ordering and an independent proof checker.
 
+pub mod classical;
+pub mod search;
+pub mod split;
 pub mod tb;
