@@ -62,6 +62,25 @@ impl Proof {
         1 + self.replies.iter().map(|(_, p)| p.depth()).max().unwrap_or(0)
     }
 
+    /// The line in which the defender always plays the reply that lasts longest inside this proof
+    /// (ties: the larger sub-proof): `(attacker move, defender reply)` pairs; the last pair has no reply.
+    pub fn principal_line(&self) -> Vec<(Move, Option<Move>)> {
+        let mut line = Vec::new();
+        let mut cur = self;
+        loop {
+            match cur.replies.iter().max_by_key(|(_, p)| (p.depth(), p.size())) {
+                Some((r, next)) => {
+                    line.push((cur.mv, Some(*r)));
+                    cur = next;
+                }
+                None => {
+                    line.push((cur.mv, None));
+                    return line;
+                }
+            }
+        }
+    }
+
     pub fn size(&self) -> usize {
         1 + self.replies.iter().map(|(_, p)| p.size()).sum::<usize>()
     }
