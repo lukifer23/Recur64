@@ -4508,6 +4508,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "recur64-prove"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cozy-chess",
+ "recur64-runtime",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "recur64-runtime"
 version = "0.1.0"
 dependencies = [

@@ -1,0 +1,15 @@
+[package]
+name = "recur64-prove"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+[dependencies]
+cozy-chess = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+
+[dev-dependencies]
+recur64-runtime = { path = "../recur64-runtime", default-features = false, features = ["cpu"] }
