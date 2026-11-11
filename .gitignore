@@ -2,3 +2,4 @@
 /runs
 *.log
 /target-cuda
+/target-opt
