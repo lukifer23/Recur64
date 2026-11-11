@@ -1,8 +1,6 @@
 # V420 — adaptive-depth recurrence: research plan and pre-registration
 
-**Status: DRAFT FOR OWNER APPROVAL (2026-11-11). No code, no data and no run exists for V420.** Every threshold below is
-PROPOSED; it becomes pre-registered when the owner approves this file and the approving commit is made, before any V420 code is
-written. Branch `experiment/workstation-v420-recurrent-depth`, from V4 HEAD `d7248e7`.
+**Status: PRE-REGISTERED (owner approved 2026-11-11; thresholds, arms, kill rule and the 3 GPU-hour ceiling are FROZEN as written; a failed S1 ends V420; option 2 stays unbuilt unless S1 passes). No code, no data and no run exists for V420 at this commit.** Where the text says PROPOSED it now means approved. Branch `experiment/workstation-v420-recurrent-depth`, from V4 HEAD `d7248e7`.
 V420 is a NEW identity. It touches no frozen V4/V3.5/V3 identity, no sealed set (`v4_tune_v1`, HOLDOUT_C), and no V4 weights.
 
 ## 1. Why this, and what carries over from V4
