@@ -1391,3 +1391,17 @@ D55-D59. HP decisions are cited as `HP D<n>`.
   path does not change decisions (G exactly 0; A only +2e-6 nats; B shuffled-content CI includes 0). Suspected cause (INFERRED,
   untested): a multiplicative trust-gate dead-start. Any fix is a new pre-registered TRAIN-only step awaiting the owner. `v4_tune_v1`
   sealed and never evaluated; HOLDOUT_C sealed. Evidence: `docs/V4_P1_RESULTS.md`, `docs/evidence/v4/`.
+
+## V4-D4 - V4 CLOSED (2026-11-11): ARCHITECTURE-STOP stands; saddle diagnostic did not support a single-cause fix
+
+- **Status:** owner decision. V4 (`evidence_belief_v4`) is closed. No Stage C/D, no parameterisation retry, no V4 final science.
+  `v4_tune_v1` and HOLDOUT_C stay sealed and unevaluated.
+- **Why:** the read-only saddle diagnostic (V4-E8, `docs/evidence/v4/v4-saddle-diagnostic.json`) MEASURED that the evidence path has
+  essentially zero gradient at the trained Stage B weights on all three seeds and that its weights are near initialisation. The
+  mechanism is NOT a single initialisation saddle: trust is near 0 on seed 5101, saturated (0.999, delta at its bound) on 5102 and
+  moderate (0.54) on 5103, and most positions have delta exactly 0 for a reason not established. A single pre-registered fix
+  was therefore not clearly indicated.
+- **Lesson carried forward (INFERRED):** a bounded, tanh-gated, zero-initialised side path trained jointly with a frozen strong
+  base starves itself of gradient. A successor design should avoid gated residual side channels and show its signal in a cheap
+  smoke before any architecture investment.
+- **Next:** V420, a new identity, pre-registered in `docs/V420_RESEARCH_PLAN.md` before any code.

@@ -166,3 +166,26 @@ Labels: PRE-REGISTERED / MEASURED / INFERRED / NOT RUN. Never edit past entries;
 - **Result:** see `docs/V4_P1_RESULTS.md` section 2. A: +2.3e-6 / +2.2e-6 nats (CI wholly positive, no practical effect); B: the
   shuffled-content CI includes 0; C: bitwise exact; G: top-1 change exactly 0. Verdict: stop architecture development.
 - **NOT RUN:** Stage C (utility head, answers D/E/F), Stage D, the loss-selection study, the trust/gradient diagnostic, any V4_TUNE evaluation.
+
+## V4-E8 - V4-P2 step 1: saddle diagnostic on the finished Stage B models (read-only)
+
+- **Date:** 2026-11-11
+- **Status:** MEASURED (diagnostic only; no weight, optimiser, checkpoint, `v4_tune_v1` or HOLDOUT_C was touched).
+- **Tool:** new `recur64 v4 saddle` (`crates/recur64-v4/src/diagnose.rs`): one Stage-B-shaped gradient (base detached, FIXED schedule,
+  budget 8) on the first 128 DEV1000 positions of each seed's finished Stage B model, plus trust / delta magnitudes at query time.
+  Command: `recur64 v4 saddle --train runs/v25/p25/data/proof-train.json --device cuda --run-dirs runs/v4/b-seed5101,runs/v4/b-seed5102,runs/v4/b-seed5103 --positions 128 --budget 8 --micro 16 --output docs/evidence/v4/v4-saddle-diagnostic.json`
+- **Measured (all three seeds):**
+  - Gradient norm over the evidence-update group (`update.*`, 82k params): 3.2e-8 (5101), 7.0e-6 (5102), 2.3e-11 (5103). The evidence
+    encoder group: 1.1e-8, 2.2e-6, 2.0e-12. Weight norm of the group is about 12.5 and the per-layer weight norms are within a few
+    percent of a freshly initialised model of the same geometry: training barely moved the evidence path.
+  - Trust (`tanh(t^2)`) at query time: mean 0.042 (5101, near 0), 0.999 (5102, saturated), 0.539 (5103).
+  - Message norm is about 16-25 on every seed (the vector is normalised, so it carries no signal about content).
+  - Per-position max |delta|: median 0.0 on all seeds; p90 0.028 / 7.99 / 0.0; max 0.11 / 7.998 / 6.3. The delta bound is 8.
+- **Established (MEASURED):** at the trained Stage B weights the evidence path has essentially zero gradient on every seed, and the
+  weights are near their initial values. The path is not learning at the end of the run.
+- **INFERRED, NOT TESTED:** the mechanism differs by seed. 5101 sits near trust 0 (the planned `trust ~ t^2` saddle). 5102 has
+  saturated trust and a delta that reaches the bound (a saturation, not a saddle). 5103 has moderate trust but gradient 1e-11.
+  On all seeds most positions have delta exactly 0 while a few are large, which is bimodal rather than small-everywhere; why a
+  majority of positions receive exactly zero delta despite non-zero messages has NOT been established.
+- **Consequence:** the single "initialisation saddle" hypothesis in `docs/V4_P1_RESULTS.md` section 3 is only partly supported:
+  vanishing gradient is confirmed, a single cause is not.

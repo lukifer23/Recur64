@@ -1,6 +1,6 @@
 # V4 P0/P1 — `evidence_belief_v4`: mechanism results
 
-**Outcome: ARCHITECTURE-STOP at Stage B (TRAIN only).** The evidence mechanism is built, correct and instrumented, but as trained
+**Outcome: ARCHITECTURE-STOP at Stage B (TRAIN only). V4 CLOSED 2026-11-11 (V4-D4).** The evidence mechanism is built, correct and instrumented, but as trained
 it does not improve decisions: A holds only by a formality (2e-6 nats), B and G fail, C passes. Per the pre-registered stop rule,
 architecture development stopped; Stage C (utility head) and Stage D were not run, so D, E, F are unanswered.
 
@@ -50,8 +50,15 @@ Root-context leak into the frozen base's gradient (caught by test, V4-E1); Stage
 CUDA out-of-memory (V4-E5/E6, fixed by computing it graph-free; losses identical before and after); a character-literal typo in the
 tune-custody code (compile-time). The first Stage B failure also went unnoticed for about half an hour because the run was not checked.
 
-## 5. Recommendation for V4-P2 (owner decision; NOT started)
-1. Diagnose cheaply on the existing Stage B models (trust and gradient magnitudes per parameter group): confirm or refute the saddle.
+## 4b. Saddle diagnostic (V4-E8, MEASURED, read-only) and closure
+`recur64 v4 saddle` computed one Stage-B-shaped gradient per finished seed model. Evidence-update gradient norm: 3e-8 / 7e-6 / 2e-11
+(seeds 5101 / 5102 / 5103); weights within a few percent of fresh initialisation; trust 0.04 / 0.999 / 0.54; per-position delta median
+exactly 0 with a few values at or near the bound of 8. So vanishing gradient is CONFIRMED, but not as one initialisation saddle: seed
+5101 matches the saddle, 5102 shows saturation, 5103 is unexplained, and why most positions get delta exactly 0 is NOT established.
+Owner decision (V4-D4): V4 is closed; the work below was NOT carried out. Evidence: `docs/evidence/v4/v4-saddle-diagnostic.json`.
+
+## 5. Former recommendation for V4-P2 (NOT carried out; superseded by V4-D4)
+1. (DONE as V4-E8: partly supported, multi-cause.) Diagnose cheaply on the existing Stage B models.
 2. If confirmed, pre-register ONE parameterisation change on TRAIN only (for example a non-vanishing trust form, a larger output
    initialisation, or an evidence warm-start), rerun Stage B under the same pass rules, and proceed to Stage C only if A, B, C and G
    all hold with a practically meaningful effect.

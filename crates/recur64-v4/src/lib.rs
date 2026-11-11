@@ -16,6 +16,7 @@ pub mod base;
 pub mod belief;
 pub mod content;
 pub mod data;
+pub mod diagnose;
 pub mod ledger;
 pub mod model;
 pub mod session;

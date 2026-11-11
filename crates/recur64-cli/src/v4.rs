@@ -63,6 +63,30 @@ pub enum V4Cmd {
     SelectLr(SelectLrArgs),
     /// Apply the frozen Stage-C loss-selection rule to the two utility reports.
     SelectLoss(SelectLossArgs),
+    /// READ-ONLY saddle diagnostic on finished Stage B models (one gradient, no update, no checkpoint).
+    Saddle(SaddleArgs),
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct SaddleArgs {
+    #[arg(long)]
+    pub train: PathBuf,
+    #[arg(long, value_enum)]
+    pub device: Dev,
+    /// Comma-separated finished Stage B run directories.
+    #[arg(long)]
+    pub run_dirs: String,
+    #[arg(long)]
+    pub config: Option<PathBuf>,
+    /// DEV1000 positions used (first N).
+    #[arg(long, default_value_t = 128)]
+    pub positions: usize,
+    #[arg(long, default_value_t = 8)]
+    pub budget: usize,
+    #[arg(long, default_value_t = 16)]
+    pub micro: usize,
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug, Clone)]
@@ -256,6 +280,14 @@ pub fn run(cmd: V4Cmd) -> anyhow::Result<()> {
         V4Cmd::CudaSmoke(a) => big_stack("v4-cuda-smoke", move || cuda_smoke(a)),
         V4Cmd::SelectLr(a) => select_lr(&a),
         V4Cmd::SelectLoss(a) => select_loss(&a),
+        V4Cmd::Saddle(a) => {
+            let dev = a.device;
+            dispatch(dev, move |d| match d {
+                crate::v3_p5::Dispatch::Cpu => saddle::<recur64_model::train::CpuTrainBackend>(&a),
+                #[cfg(feature = "cuda")]
+                crate::v3_p5::Dispatch::Cuda => saddle::<burn::backend::Autodiff<burn::backend::Cuda>>(&a),
+            })
+        }
         V4Cmd::Bench(a) => {
             let dev = a.device;
             dispatch(dev, move |d| match d {
@@ -780,6 +812,28 @@ fn select_lr(a: &SelectLrArgs) -> anyhow::Result<()> {
 }
 
 /// Higher pooled DEV1000 per-state Spearman wins; within 0.02 the ranking loss is chosen.
+fn saddle<B: AutodiffBackend>(a: &SaddleArgs) -> anyhow::Result<()> {
+    let device = B::Device::default();
+    model_io::verify_device::<B>(&device)?;
+    let data = V4Data::load(&a.train)?;
+    let cfg = load_cfg(a.config.as_deref())?;
+    let idx: Vec<usize> = dev1000(&data).into_iter().take(a.positions).collect();
+    let mut seeds = Vec::new();
+    for d in a.run_dirs.split(',') {
+        let (m, meta) = load_model::<B>(Path::new(d.trim()), &cfg, &device)?;
+        let mut rep = recur64_v4::diagnose::saddle_report::<B>(&m, &data, &idx, a.budget, a.micro, &device)?;
+        rep["seed"] = meta.seed.into();
+        rep["run_dir"] = d.trim().into();
+        seeds.push(rep);
+    }
+    write_json(&a.output, &serde_json::json!({
+        "schema": "v4_saddle_v1", "seeds": seeds,
+        "v4_tune_v1_evaluated": false, "holdout_c_evaluated": false,
+    }))?;
+    println!("wrote {}", a.output.display());
+    Ok(())
+}
+
 fn select_loss(a: &SelectLossArgs) -> anyhow::Result<()> {
     let sp = |p: &Path| -> anyhow::Result<f64> {
         read_json(p)?["E"]["spearman_per_state"]["mean"]
