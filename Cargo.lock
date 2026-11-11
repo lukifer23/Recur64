@@ -4464,6 +4464,7 @@ dependencies = [
  "recur64-model",
  "recur64-runtime",
  "recur64-v4",
+ "recur64-v420",
  "serde",
  "serde_json",
  "sha2",
@@ -4554,6 +4555,21 @@ dependencies = [
  "recur64-model",
  "recur64-runtime",
  "recur64-statequery",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
+name = "recur64-v420"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "burn",
+ "recur64-core",
+ "recur64-model",
+ "recur64-runtime",
+ "recur64-v4",
  "serde",
  "serde_json",
  "sha2",

@@ -95,3 +95,14 @@ update 50 or has fallen by more than 3 orders of magnitude from update 0. The ch
 2. Approve the 3 GPU-hour ceiling.
 3. Confirm that a negative S1 ends V420 (recommended) rather than prompting a larger-scale retry.
 4. Option 2 (iterative plan refinement) stays unbuilt unless S1 passes; confirm that is acceptable.
+
+## 10. Amendments (logged; the frozen text above is unchanged)
+
+**A1 — V420-E1, owner-approved 2026-11-11, before any V420 run.** Found while reading the code for P1: S4 as written asked the 1-block R1
+arm to reproduce V4 Stage A (top-1 0.840–0.850), which used 8 UNSHARED blocks, so R1 could not be expected to meet it. Resolved by:
+- **S4 (replaces the earlier S4):** add arm **BASE8** = V4's 8 unshared 640-wide blocks, seed 5101 only, the same recipe. S4 passes iff
+  BASE8 top-1 on all of V4_TRAIN_DEV is within 0.01 of the existing V4 Stage A seed-5101 result (0.8403361344537815). BASE8 validates the
+  new pipeline only and enters no other gate. It does not change the kill rule: an S4 failure means the pipeline is not validated and no
+  V420 claim is made until it is fixed once (logged), as for S0.
+- **Recipe:** the V4 Stage A recipe for every arm (2,000 updates, peak LR 3e-4, warmup 80, batch 128, micro 64, `per_update_cell_balanced_v1`
+  sampler on V4_TRAIN_FIT, CUDA FP32, shared AdamW contract). This supersedes "training length fixed from the R1 plateau"; no per-arm tuning.
