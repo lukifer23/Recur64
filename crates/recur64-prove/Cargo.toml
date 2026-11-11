@@ -15,6 +15,10 @@ cuda = ["train", "burn/cuda"]
 name = "train_net"
 required-features = ["train"]
 
+[[example]]
+name = "check_net"
+required-features = ["flex"]
+
 [dependencies]
 burn = { workspace = true, optional = true, features = ["std", "autodiff"] }
 cozy-chess = { workspace = true }

@@ -11,7 +11,7 @@ use cozy_chess::{Board, Color, GameStatus, Move, Piece};
 use serde::{Deserialize, Serialize};
 
 use crate::search::Orderer;
-use crate::tb::moves_of;
+use crate::tb::{count_moves, moves_of};
 
 /// Planes: white K, Q, R, B, N, then black K.
 pub const PLANES: usize = 6;
@@ -58,14 +58,16 @@ pub fn tokens(b: &Board) -> ([u16; MAXP], usize) {
         t[*n] = v;
         *n += 1;
     };
-    let mut others: Vec<(i32, i32)> = Vec::new();
+    let mut others = [(0i32, 0i32); MAXP];
+    let mut n_others = 0usize;
     for color in [Color::White, Color::Black] {
         for piece in [Piece::King, Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
             if let Some(p) = plane(color, piece) {
                 for sq in b.colored_pieces(color, piece) {
                     push((p * 64 + sq as usize) as u16, &mut n);
                     if color == Color::White && piece != Piece::King {
-                        others.push((sq.file() as i32, sq.rank() as i32));
+                        others[n_others] = (sq.file() as i32, sq.rank() as i32);
+                        n_others += 1;
                     }
                 }
             }
@@ -74,7 +76,7 @@ pub fn tokens(b: &Board) -> ([u16; MAXP], usize) {
     let k = |s: cozy_chess::Square| (s.file() as i32, s.rank() as i32);
     let (wk, bk) = (k(b.king(Color::White)), k(b.king(Color::Black)));
     push(rel(wk, bk, 0), &mut n);
-    for &o in &others {
+    for &o in &others[..n_others] {
         push(rel(o, bk, 1), &mut n);
         push(rel(o, wk, 2), &mut n);
     }
@@ -83,10 +85,15 @@ pub fn tokens(b: &Board) -> ([u16; MAXP], usize) {
 
 /// Side to move is black, in check, and the number of legal moves / 32.
 pub fn extras(b: &Board) -> [f32; EXTRA] {
+    extras_with(b, count_moves(b))
+}
+
+/// [`extras`] when the legal-move count is already known (one move generation per candidate).
+pub fn extras_with(b: &Board, n_moves: usize) -> [f32; EXTRA] {
     [
         f32::from(b.side_to_move() == Color::Black),
         f32::from(!b.checkers().is_empty()),
-        moves_of(b).len() as f32 / 32.0,
+        n_moves as f32 / 32.0,
     ]
 }
 
@@ -108,6 +115,9 @@ pub struct NetFile {
 }
 
 pub const NET_SCHEMA: &str = "v500_net_v2";
+/// Stack-buffer limits of the deployed forward pass.
+pub const MAX_H1: usize = 512;
+pub const MAX_H2: usize = 128;
 
 #[derive(Debug, Clone)]
 pub struct Mlp {
@@ -117,6 +127,7 @@ pub struct Mlp {
 impl Mlp {
     pub fn new(f: NetFile) -> anyhow::Result<Self> {
         anyhow::ensure!(f.schema == NET_SCHEMA, "net schema {}", f.schema);
+        anyhow::ensure!(f.h1 <= MAX_H1 && f.h2 <= MAX_H2, "net wider than the deployed forward supports ({}x{})", f.h1, f.h2);
         anyhow::ensure!(
             f.emb.len() == TOKENS * f.h1
                 && f.we.len() == EXTRA * f.h1
@@ -139,32 +150,38 @@ impl Mlp {
         &self.f
     }
 
-    /// Value of an arbitrary position from its raw features.
+    /// Value of an arbitrary position from its raw features. Allocation-free (stack buffers of at most
+    /// [`MAX_H1`] / [`MAX_H2`] units) and row-major over `w2`, with ReLU-sparsity skipping; numerically equivalent to
+    /// the straightforward dense forward up to float summation order.
     pub fn eval_features(&self, toks: &[u16], extra: &[f32; EXTRA]) -> f32 {
         let (h1, h2) = (self.f.h1, self.f.h2);
-        let mut h = self.f.b1.clone();
+        let mut h = [0f32; MAX_H1];
+        h[..h1].copy_from_slice(&self.f.b1);
         for &t in toks {
             let row = &self.f.emb[t as usize * h1..(t as usize + 1) * h1];
-            for (a, w) in h.iter_mut().zip(row) {
+            for (a, w) in h[..h1].iter_mut().zip(row) {
                 *a += w;
             }
         }
         for (k, x) in extra.iter().enumerate() {
             let row = &self.f.we[k * h1..(k + 1) * h1];
-            for (a, w) in h.iter_mut().zip(row) {
+            for (a, w) in h[..h1].iter_mut().zip(row) {
                 *a += x * w;
             }
         }
-        for a in h.iter_mut() {
-            *a = a.max(0.0);
+        let mut z = [0f32; MAX_H2];
+        z[..h2].copy_from_slice(&self.f.b2);
+        for (i, &hv) in h[..h1].iter().enumerate() {
+            if hv > 0.0 {
+                let row = &self.f.w2[i * h2..(i + 1) * h2];
+                for (a, w) in z[..h2].iter_mut().zip(row) {
+                    *a += hv * w;
+                }
+            }
         }
         let mut y = self.f.b3;
-        for j in 0..h2 {
-            let mut z = self.f.b2[j];
-            for (i, hv) in h.iter().enumerate() {
-                z += hv * self.f.w2[i * h2 + j];
-            }
-            y += z.max(0.0) * self.f.w3[j];
+        for (zv, w) in z[..h2].iter().zip(&self.f.w3) {
+            y += zv.max(0.0) * w;
         }
         y
     }
@@ -172,6 +189,12 @@ impl Mlp {
     pub fn eval(&self, b: &Board) -> f32 {
         let (t, n) = tokens(b);
         self.eval_features(&t[..n], &extras(b))
+    }
+
+    /// Value of a child position given its legal-move count (avoids a second move generation).
+    pub fn eval_with_moves(&self, b: &Board, n_moves: usize) -> f32 {
+        let (t, n) = tokens(b);
+        self.eval_features(&t[..n], &extras_with(b, n_moves))
     }
 }
 
@@ -184,21 +207,24 @@ const BEST: f32 = -1.0e9;
 const WORST: f32 = 1.0e9;
 
 impl Learned {
+    /// Ordering key of a child position (lower sorts first). One move generation per child: a position with no legal
+    /// move is a checkmate (`BEST` for the attacker) or a stalemate (`WORST`); dead positions are `WORST`.
+    fn key(&self, child: &Board) -> f32 {
+        let nm = count_moves(child);
+        if nm == 0 {
+            return if child.checkers().is_empty() { WORST } else { BEST };
+        }
+        if crate::search::dead(child) {
+            return WORST;
+        }
+        self.net.eval_with_moves(child, nm)
+    }
+
     /// Value of the position after `m`, from the attacker's point of view (lower is better).
     pub fn attacker_key(&self, b: &Board, m: Move) -> f32 {
         let mut after = b.clone();
         after.play_unchecked(m);
-        match after.status() {
-            GameStatus::Won => BEST,
-            GameStatus::Drawn => WORST,
-            GameStatus::Ongoing => {
-                if crate::search::dead(&after) {
-                    WORST
-                } else {
-                    self.net.eval(&after)
-                }
-            }
-        }
+        self.key(&after)
     }
 }
 
@@ -216,10 +242,11 @@ impl Orderer for Learned {
                 let mut next = b.clone();
                 next.play_unchecked(m);
                 // A capture that kills the position is the best defence (an immediate refutation).
-                let v = if next.status() != GameStatus::Ongoing || crate::search::dead(&next) {
+                let nm = count_moves(&next);
+                let v = if nm == 0 || crate::search::dead(&next) {
                     WORST
                 } else {
-                    self.net.eval(&next)
+                    self.net.eval_with_moves(&next, nm)
                 };
                 (v, m)
             })

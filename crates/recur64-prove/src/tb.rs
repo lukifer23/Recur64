@@ -21,6 +21,16 @@ pub fn moves_of(b: &Board) -> Vec<Move> {
     v
 }
 
+/// Number of legal moves, without allocating.
+pub fn count_moves(b: &Board) -> usize {
+    let mut n = 0;
+    b.generate_moves(|m| {
+        n += m.len();
+        false
+    });
+    n
+}
+
 /// Plies to mate for every position in which the side to move is lost. `Attacker` = white.
 pub struct Tablebase {
     pub name: String,

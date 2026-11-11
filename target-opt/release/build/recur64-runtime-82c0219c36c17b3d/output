@@ -1,0 +1,8 @@
+cargo:rustc-env=RECUR64_GIT_SHA=2e5556e4fcebb214b8dee17e979cd345058af269-dirty
+cargo:rustc-env=RECUR64_GIT_BRANCH=experiment/workstation-v500-learned-prover
+cargo:rerun-if-changed=build.rs
+cargo:rerun-if-changed=../../.git/HEAD
+cargo:rerun-if-changed=../../.git/refs/heads
+cargo:rerun-if-changed=../../.git/packed-refs
+cargo:rerun-if-changed=../../crates
+cargo:rerun-if-changed=../../Cargo.lock
