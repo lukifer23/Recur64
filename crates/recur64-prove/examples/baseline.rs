@@ -60,12 +60,14 @@ fn main() -> anyhow::Result<()> {
     let (name, piece) = match a[1].as_str() {
         "KRvK" => ("KRvK", Piece::Rook),
         "KQvK" => ("KQvK", Piece::Queen),
+        "KBNvK" => ("KBNvK", Piece::Bishop),
         other => anyhow::bail!("unknown material {other}"),
     };
     let per_depth: usize = a[2].parse()?;
     let budget: u64 = a[3].parse()?;
     let threads: usize = a.get(5).map_or(Ok(8), |s| s.parse())?;
-    let tb = Tablebase::build(name, &[piece])?;
+    let extra: Vec<Piece> = if name == "KBNvK" { vec![Piece::Bishop, Piece::Knight] } else { vec![piece] };
+    let tb = Tablebase::build(name, &extra)?;
     let max_depth = tb.max_plies_white.div_ceil(2);
     let mut by_depth: Vec<Vec<Board>> = vec![Vec::new(); max_depth as usize + 1];
     let mut won = tb.won_white_positions();

@@ -100,56 +100,72 @@ impl Tablebase {
             .collect();
         anyhow::ensure!(index.len() == positions.len(), "board hash collision inside {name}");
 
-        // Children (positions after each legal move) as indices; a missing child is a drawn dead position.
+        // Children (positions after each legal move) as flat indices; a missing child is a drawn dead position.
+        // Flat storage keeps four-piece endings (tens of millions of positions) within memory.
         let n = positions.len();
-        let mut children: Vec<Vec<u32>> = Vec::with_capacity(n);
+        let mut child_start: Vec<u32> = Vec::with_capacity(n + 1);
+        let mut child_idx: Vec<u32> = Vec::with_capacity(n * 18);
         let mut complete: Vec<bool> = Vec::with_capacity(n);
         let mut val = vec![UNKNOWN; n];
         for (i, b) in positions.iter().enumerate() {
+            child_start.push(child_idx.len() as u32);
             let mv = moves_of(b);
-            let mut ch = Vec::with_capacity(mv.len());
             let mut all_known = true;
             for m in &mv {
                 let mut a = b.clone();
                 a.play_unchecked(*m);
                 match index.get(&a.hash()) {
-                    Some(&j) => ch.push(j),
+                    Some(&j) => child_idx.push(j),
                     None => all_known = false, // capture to a dead position: never a forced mate
                 }
             }
             if b.side_to_move() == Color::Black && b.status() == GameStatus::Won {
                 val[i] = 0; // black is checkmated
             }
-            children.push(ch);
             complete.push(all_known && !mv.is_empty());
         }
+        child_start.push(child_idx.len() as u32);
+        drop(index);
+        let kids = |i: usize| &child_idx[child_start[i] as usize..child_start[i + 1] as usize];
+        let white_to_move: Vec<bool> = positions.iter().map(|b| b.side_to_move() == Color::White).collect();
 
-        // Level-synchronous retrograde analysis. Odd levels: white to move (mate in `level` plies if some move
-        // reaches a black position of value level-1). Even levels: black to move (every reply is a known white
-        // mate; value = 1 + max child). Stop after two consecutive empty levels (one of each parity).
+        // Level-synchronous retrograde analysis, parallel over positions within a level. Odd levels: white to move
+        // (mate in `level` plies if some move reaches a black position of value level-1). Even levels: black to move
+        // (every reply is a known white mate; value = 1 + max child). Stop after two consecutive empty levels.
+        let threads = std::thread::available_parallelism().map_or(4, |t| t.get()).min(16);
         let mut level = 0u8;
         let mut empty = 0;
         while empty < 2 {
             level += 1;
             anyhow::ensure!(level < 250, "retrograde analysis did not terminate");
-            let mut assign: Vec<usize> = Vec::new();
-            for i in 0..n {
-                if val[i] != UNKNOWN {
-                    continue;
-                }
-                if level % 2 == 1 {
-                    if positions[i].side_to_move() == Color::White
-                        && children[i].iter().any(|&j| val[j as usize] == level - 1)
-                    {
-                        assign.push(i);
-                    }
-                } else if positions[i].side_to_move() == Color::Black && complete[i] {
-                    let mx = children[i].iter().map(|&j| val[j as usize]).max().unwrap_or(UNKNOWN);
-                    if mx != UNKNOWN && mx + 1 == level {
-                        assign.push(i);
-                    }
-                }
-            }
+            let chunk = n.div_ceil(threads);
+            let assign: Vec<usize> = std::thread::scope(|s| {
+                let (val, white_to_move, complete, kids) = (&val, &white_to_move, &complete, &kids);
+                let handles: Vec<_> = (0..threads)
+                    .map(|t| {
+                        s.spawn(move || {
+                            let mut out = Vec::new();
+                            for i in (t * chunk)..((t + 1) * chunk).min(n) {
+                                if val[i] != UNKNOWN {
+                                    continue;
+                                }
+                                if level % 2 == 1 {
+                                    if white_to_move[i] && kids(i).iter().any(|&j| val[j as usize] == level - 1) {
+                                        out.push(i);
+                                    }
+                                } else if !white_to_move[i] && complete[i] {
+                                    let mx = kids(i).iter().map(|&j| val[j as usize]).max().unwrap_or(UNKNOWN);
+                                    if mx != UNKNOWN && mx + 1 == level {
+                                        out.push(i);
+                                    }
+                                }
+                            }
+                            out
+                        })
+                    })
+                    .collect();
+                handles.into_iter().flat_map(|h| h.join().expect("retrograde worker")).collect()
+            });
             empty = if assign.is_empty() { empty + 1 } else { 0 };
             for i in assign {
                 val[i] = level;

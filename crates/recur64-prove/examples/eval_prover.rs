@@ -40,6 +40,7 @@ fn main() -> anyhow::Result<()> {
     let (name, piece) = match a[2].as_str() {
         "KRvK" => ("KRvK", Piece::Rook),
         "KQvK" => ("KQvK", Piece::Queen),
+        "KBNvK" => ("KBNvK", Piece::Bishop),
         other => anyhow::bail!("unknown material {other}"),
     };
     let part = match a[3].as_str() {
@@ -58,7 +59,8 @@ fn main() -> anyhow::Result<()> {
         "classical" | "blind" => None,
         path => Some(Mlp::load(std::path::Path::new(path))?),
     };
-    let tb = Tablebase::build(name, &[piece])?;
+    let extra: Vec<Piece> = if name == "KBNvK" { vec![Piece::Bishop, Piece::Knight] } else { vec![piece] };
+    let tb = Tablebase::build(name, &extra)?;
     let max_depth = tb.max_plies_white.div_ceil(2);
     let mut by_depth: Vec<Vec<Board>> = vec![Vec::new(); max_depth as usize + 1];
     let mut won = tb.won_white_positions();

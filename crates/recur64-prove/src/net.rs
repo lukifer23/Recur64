@@ -228,3 +228,49 @@ impl Orderer for Learned {
         *moves = keyed.into_iter().map(|(_, m)| m).collect();
     }
 }
+
+/// Exact ordering accuracy of the DEPLOYED forward pass on TEST white-to-move positions, by optimal depth: is the
+/// network's best-scored move an exactly optimal move (and is an optimal move among its top three)?
+pub fn ordering_accuracy(tb: &crate::tb::Tablebase, net: &Mlp, max_depth: u8) -> Vec<serde_json::Value> {
+    use crate::split::{Part, part_of};
+    let mut by: Vec<(u32, u32, u32)> = vec![(0, 0, 0); max_depth as usize + 1];
+    for b in tb
+        .positions
+        .iter()
+        .filter(|b| b.side_to_move() == Color::White && b.status() == GameStatus::Ongoing)
+    {
+        if part_of(b) != Part::Test {
+            continue;
+        }
+        let Some(p) = tb.plies_to_mate(b) else { continue };
+        let d = p.div_ceil(2) as usize;
+        let mut scored: Vec<(f32, bool)> = moves_of(b)
+            .into_iter()
+            .map(|m| {
+                let mut a = b.clone();
+                a.play_unchecked(m);
+                let optimal = a.status() == GameStatus::Won || tb.plies_to_mate(&a) == Some(p - 1);
+                let v = match a.status() {
+                    GameStatus::Won => -1e9,
+                    GameStatus::Drawn => 1e9,
+                    GameStatus::Ongoing => net.eval(&a),
+                };
+                (v, optimal)
+            })
+            .collect();
+        scored.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let e = &mut by[d];
+        e.0 += 1;
+        e.1 += u32::from(scored[0].1);
+        e.2 += u32::from(scored.iter().take(3).any(|s| s.1));
+    }
+    by.iter()
+        .enumerate()
+        .skip(1)
+        .filter(|(_, e)| e.0 > 0)
+        .map(|(d, e)| {
+            serde_json::json!({"depth": d, "n": e.0, "top1_optimal": f64::from(e.1) / f64::from(e.0),
+                               "top3_contains_optimal": f64::from(e.2) / f64::from(e.0)})
+        })
+        .collect()
+}
