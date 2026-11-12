@@ -32,7 +32,7 @@ fn main() -> anyhow::Result<()> {
         .collect();
     cands.sort_by_key(canon_key);
     let root = cands.get(index).ok_or_else(|| anyhow::anyhow!("no TEST position of depth {depth} at index {index} ({} available)", cands.len()))?.clone();
-    let mut o = Learned { net };
+    let mut o = Learned { net, top_p: None };
     let s = Prover::new(&mut o, Some(width), budget).solve(&root, depth + 4);
     let proof = s.proof.ok_or_else(|| anyhow::anyhow!("not solved within the budget ({} nodes)", s.nodes))?;
     let checked = verify(&root, &proof).map_err(|e| anyhow::anyhow!("proof failed the independent checker: {e}"))?;

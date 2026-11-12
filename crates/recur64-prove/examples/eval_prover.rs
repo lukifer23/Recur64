@@ -56,7 +56,12 @@ fn main() -> anyhow::Result<()> {
         .collect::<Result<_, _>>()?;
     let threads: usize = a.get(8).map_or(Ok(8), |s| s.parse())?;
     let min_depth: u8 = a.get(9).map_or(Ok(1), |s| s.parse())?;
-    let net = match a[1].as_str() {
+    // `net.json` or `net.json@0.95` (nucleus width: keep attacker moves up to that softmax mass).
+    let (net_path, top_p): (String, Option<f32>) = match a[1].split_once('@') {
+        Some((p, t)) => (p.to_string(), Some(t.parse()?)),
+        None => (a[1].clone(), None),
+    };
+    let net = match net_path.as_str() {
         "classical" | "blind" => None,
         path => Some(Mlp::load(std::path::Path::new(path))?),
     };
@@ -80,7 +85,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
     let max_n = max_depth + 2;
-    let kind = a[1].clone();
+    let kind = net_path.clone();
     let mut out = Vec::new();
     for width in widths {
         let t0 = Instant::now();
@@ -95,7 +100,7 @@ fn main() -> anyhow::Result<()> {
                         c.iter()
                             .map(|(d, b)| {
                                 let mut r = match (&net, kind.as_str()) {
-                                    (Some(n), _) => run_one(&mut Learned { net: n.clone() }, width, b, max_n, budget),
+                                    (Some(n), _) => run_one(&mut Learned { net: n.clone(), top_p }, width, b, max_n, budget),
                                     (None, "classical") => run_one(&mut Classical, width, b, max_n, budget),
                                     _ => run_one(&mut Blind, width, b, max_n, budget),
                                 };

@@ -18,7 +18,7 @@ use burn::prelude::*;
 use burn::tensor::activation::{log_softmax, relu};
 use burn::tensor::{Int, TensorData};
 use cozy_chess::{Board, Color, GameStatus, Piece};
-use recur64_prove::net::{EXTRA, MAXP, Mlp, NET_SCHEMA, NetFile, TOKENS, extras, ordering_accuracy, tokens};
+use recur64_prove::net::{EXTRA, MAXP, Mlp, NET_SCHEMA, NetFile, extras, ordering_accuracy, tokens_for, vocab};
 use recur64_prove::split::{Part, part_of};
 use recur64_prove::tb::{Tablebase, moves_of};
 use serde_json::json;
@@ -39,9 +39,9 @@ struct Net<B: Backend> {
 }
 
 impl<B: Backend> Net<B> {
-    fn new(h1: usize, h2: usize, device: &B::Device) -> Self {
+    fn new(h1: usize, h2: usize, vocab: usize, device: &B::Device) -> Self {
         Self {
-            emb: EmbeddingConfig::new(TOKENS, h1).init(device),
+            emb: EmbeddingConfig::new(vocab, h1).init(device),
             extra: LinearConfig::new(EXTRA, h1).with_bias(true).init(device),
             l2: LinearConfig::new(h1, h2).with_bias(true).init(device),
             l3: LinearConfig::new(h2, 1).with_bias(true).init(device),
@@ -81,7 +81,7 @@ impl Data {
         self.start.len()
     }
 
-    fn add_parent(&mut self, tb: &Tablebase, b: &Board) {
+    fn add_parent(&mut self, tb: &Tablebase, b: &Board, token_set: &str) {
         let mv = moves_of(b);
         if mv.is_empty() || mv.len() > W {
             return;
@@ -95,7 +95,7 @@ impl Data {
             a.play_unchecked(*m);
             let v = if a.status() == GameStatus::Won { Some(0) } else { tb.plies_to_mate(&a) };
             vals.push(v);
-            let (t, n) = tokens(&a);
+            let (t, n) = tokens_for(token_set, &a);
             self.toks.extend_from_slice(&t);
             self.ntok.push(n as u8);
             self.ex.extend_from_slice(&extras(&a));
@@ -217,6 +217,7 @@ fn main() -> anyhow::Result<()> {
     let h1: usize = a.get(5).map_or(Ok(256), |s| s.parse())?;
     let h2: usize = a.get(6).map_or(Ok(64), |s| s.parse())?;
     let materials = a.get(7).map_or("both", String::as_str).to_string();
+    let token_set = a.get(9).map_or("v2", String::as_str).to_string();
     std::fs::create_dir_all(&out)?;
 
     // Materials: (tablebase, extrapolation cap in plies). The cap withholds positions deeper than it from training.
@@ -247,9 +248,9 @@ fn main() -> anyhow::Result<()> {
                     if extrap && tb.plies_to_mate(b).is_some_and(|x| x > *cap) {
                         continue;
                     }
-                    train.add_parent(tb, b);
+                    train.add_parent(tb, b, &token_set);
                 }
-                Part::Val => val.add_parent(tb, b),
+                Part::Val => val.add_parent(tb, b, &token_set),
                 Part::Test => {}
             }
         }
@@ -258,7 +259,7 @@ fn main() -> anyhow::Result<()> {
 
     let device = Default::default();
     <Ad as burn::tensor::backend::Backend>::seed(&device, seed);
-    let mut model = Net::<Ad>::new(h1, h2, &device);
+    let mut model = Net::<Ad>::new(h1, h2, vocab(&token_set), &device);
     let mut optim = AdamWConfig::new().with_weight_decay(1e-4).init::<Ad, Net<Ad>>();
     let batch = 256usize;
     let steps_total = (train.parents() / batch).max(1) * epochs;
@@ -306,7 +307,7 @@ fn main() -> anyhow::Result<()> {
     let (we, b1) = wb(&inner.extra);
     let (w2, b2) = wb(&inner.l2);
     let (w3, b3) = wb(&inner.l3);
-    let file = NetFile { schema: NET_SCHEMA.into(), h1, h2, emb: vec_of(inner.emb.weight.val()), we, b1, w2, b2, w3, b3: b3[0] };
+    let file = NetFile { schema: NET_SCHEMA.into(), token_set: token_set.clone(), h1, h2, emb: vec_of(inner.emb.weight.val()), we, b1, w2, b2, w3, b3: b3[0] };
     let mlp = Mlp::new(file.clone())?;
     std::fs::write(out.join("net.json"), serde_json::to_vec(&file)?)?;
 
@@ -343,7 +344,7 @@ fn main() -> anyhow::Result<()> {
     std::fs::write(
         out.join("train-report.json"),
         serde_json::to_vec_pretty(&json!({
-            "schema": "v500_train_report_v2", "loss": "listwise_ranking", "seed": seed, "variant": a[3], "materials": materials,
+            "schema": "v500_train_report_v2", "loss": "listwise_ranking", "seed": seed, "variant": a[3], "materials": materials, "token_set": token_set,
             "epochs": epochs, "h1": h1, "h2": h2, "train_parents": train.parents(), "val_parents": val.parents(),
             "gpu_parity_max_abs_diff": parity, "epochs_log": log, "ordering_test": ordering,
             "parameters": file.emb.len() + file.we.len() + file.b1.len() + file.w2.len() + file.b2.len() + file.w3.len() + 1,

@@ -21,9 +21,20 @@ pub const SQ_TOKENS: usize = PLANES * 64;
 pub const REL_GRID: usize = 15 * 15;
 pub const REL_KINDS: usize = 3;
 pub const TOKENS: usize = SQ_TOKENS + REL_KINDS * REL_GRID;
+/// Colour-conditioned bishop tokens (token set `v3`): (bishop square colour) x (square of the black king / white king /
+/// knight), 3 x 2 x 64. They let the first layer see the colour-complex interactions that decide KBNvK.
+pub const BC_TOKENS: usize = 3 * 2 * 64;
+pub const TOKENS_V3: usize = TOKENS + BC_TOKENS;
+pub const TOKEN_SET_V2: &str = "v2";
+pub const TOKEN_SET_V3: &str = "v3";
+
+/// Vocabulary size of a token set.
+pub fn vocab(token_set: &str) -> usize {
+    if token_set == TOKEN_SET_V3 { TOKENS_V3 } else { TOKENS }
+}
 pub const EXTRA: usize = 3;
-/// At most 4 piece-square tokens plus 5 relative tokens (two extra pieces) fit in 10 slots.
-pub const MAXP: usize = 10;
+/// At most 4 piece-square tokens, 5 relative tokens (two extra pieces) and 3 colour tokens fit in 12 slots.
+pub const MAXP: usize = 12;
 /// Value of a position with no forced mate (a draw or a dead position): `log2(1 + 64)`.
 pub const DRAW_PLIES: f32 = 64.0;
 
@@ -83,6 +94,34 @@ pub fn tokens(b: &Board) -> ([u16; MAXP], usize) {
     (t, n)
 }
 
+/// Tokens of the `v3` set: the `v2` tokens plus colour-conditioned bishop tokens (a bishop contributes the colour of
+/// its square combined with where the black king, the white king and the first knight stand).
+pub fn tokens_v3(b: &Board) -> ([u16; MAXP], usize) {
+    let (mut t, mut n) = tokens(b);
+    let bk = b.king(Color::Black) as usize;
+    let wk = b.king(Color::White) as usize;
+    let knight = b.colored_pieces(Color::White, Piece::Knight).next_square().map(|s| s as usize);
+    for sq in b.colored_pieces(Color::White, Piece::Bishop) {
+        let colour = (sq.file() as usize + sq.rank() as usize) % 2;
+        let mut push = |v: usize| {
+            assert!(n < MAXP, "token overflow");
+            t[n] = (TOKENS + v) as u16;
+            n += 1;
+        };
+        push(colour * 64 + bk);
+        push(128 + colour * 64 + wk);
+        if let Some(k) = knight {
+            push(256 + colour * 64 + k);
+        }
+    }
+    (t, n)
+}
+
+/// Tokens of the named set.
+pub fn tokens_for(token_set: &str, b: &Board) -> ([u16; MAXP], usize) {
+    if token_set == TOKEN_SET_V3 { tokens_v3(b) } else { tokens(b) }
+}
+
 /// Side to move is black, in check, and the number of legal moves / 32.
 pub fn extras(b: &Board) -> [f32; EXTRA] {
     extras_with(b, count_moves(b))
@@ -100,6 +139,9 @@ pub fn extras_with(b: &Board, n_moves: usize) -> [f32; EXTRA] {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetFile {
     pub schema: String,
+    /// Token set: `v2` (default for files written before v3) or `v3`.
+    #[serde(default = "default_token_set")]
+    pub token_set: String,
     pub h1: usize,
     pub h2: usize,
     /// `[TOKENS][h1]` row-major.
@@ -115,9 +157,12 @@ pub struct NetFile {
 }
 
 pub const NET_SCHEMA: &str = "v500_net_v2";
+fn default_token_set() -> String {
+    TOKEN_SET_V2.to_string()
+}
 /// Stack-buffer limits of the deployed forward pass.
-pub const MAX_H1: usize = 512;
-pub const MAX_H2: usize = 128;
+pub const MAX_H1: usize = 1024;
+pub const MAX_H2: usize = 256;
 
 #[derive(Debug, Clone)]
 pub struct Mlp {
@@ -129,7 +174,7 @@ impl Mlp {
         anyhow::ensure!(f.schema == NET_SCHEMA, "net schema {}", f.schema);
         anyhow::ensure!(f.h1 <= MAX_H1 && f.h2 <= MAX_H2, "net wider than the deployed forward supports ({}x{})", f.h1, f.h2);
         anyhow::ensure!(
-            f.emb.len() == TOKENS * f.h1
+            f.emb.len() == vocab(&f.token_set) * f.h1
                 && f.we.len() == EXTRA * f.h1
                 && f.b1.len() == f.h1
                 && f.w2.len() == f.h1 * f.h2
@@ -187,20 +232,23 @@ impl Mlp {
     }
 
     pub fn eval(&self, b: &Board) -> f32 {
-        let (t, n) = tokens(b);
+        let (t, n) = tokens_for(&self.f.token_set, b);
         self.eval_features(&t[..n], &extras(b))
     }
 
     /// Value of a child position given its legal-move count (avoids a second move generation).
     pub fn eval_with_moves(&self, b: &Board, n_moves: usize) -> f32 {
-        let (t, n) = tokens(b);
+        let (t, n) = tokens_for(&self.f.token_set, b);
         self.eval_features(&t[..n], &extras_with(b, n_moves))
     }
 }
 
-/// The learned orderer.
+/// The learned orderer. With `top_p` set, attacker moves are additionally truncated to the smallest prefix whose
+/// softmax probability mass (under the network ranking scores, `softmax(-value)`) reaches `top_p`: width is spent
+/// where the network is uncertain and saved where it is confident (a mate in one is always kept first).
 pub struct Learned {
     pub net: Mlp,
+    pub top_p: Option<f32>,
 }
 
 const BEST: f32 = -1.0e9;
@@ -232,6 +280,24 @@ impl Orderer for Learned {
     fn attacker(&mut self, b: &Board, moves: &mut Vec<Move>) {
         let mut keyed: Vec<(f32, Move)> = moves.iter().map(|&m| (self.attacker_key(b, m), m)).collect();
         keyed.sort_by(|a, c| a.0.total_cmp(&c.0));
+        if let Some(p) = self.top_p {
+            if keyed[0].0 > BEST {
+                let best = keyed[0].0;
+                let w: Vec<f32> = keyed.iter().map(|(k, _)| if *k >= WORST { 0.0 } else { (-(k - best)).exp() }).collect();
+                let total: f32 = w.iter().sum();
+                let (mut acc, mut keep) = (0.0f32, 0usize);
+                for x in &w {
+                    keep += 1;
+                    acc += x / total;
+                    if acc >= p {
+                        break;
+                    }
+                }
+                keyed.truncate(keep.max(1));
+            } else {
+                keyed.truncate(1); // a mate in one: nothing else is needed
+            }
+        }
         *moves = keyed.into_iter().map(|(_, m)| m).collect();
     }
 

@@ -9,7 +9,7 @@ use burn::prelude::*;
 use burn::tensor::activation::relu;
 use burn::tensor::{Int, TensorData};
 use cozy_chess::{GameStatus, Piece};
-use recur64_prove::net::{EXTRA, MAXP, Mlp, TOKENS, extras, ordering_accuracy, tokens};
+use recur64_prove::net::{EXTRA, MAXP, Mlp, extras, ordering_accuracy, tokens_for, vocab};
 use recur64_prove::split::{Part, part_of};
 use recur64_prove::tb::{Tablebase, moves_of};
 use serde_json::json;
@@ -23,8 +23,8 @@ fn main() -> anyhow::Result<()> {
     let f = mlp.file().clone();
     let dev = Default::default();
     let t2 = |v: &[f32], r: usize, c: usize| Tensor::<Cpu, 2>::from_data(TensorData::new(v.to_vec(), [r, c]), &dev);
-    let mut emb: Embedding<Cpu> = EmbeddingConfig::new(TOKENS, f.h1).init(&dev);
-    emb.weight = Param::from_tensor(t2(&f.emb, TOKENS, f.h1));
+    let mut emb: Embedding<Cpu> = EmbeddingConfig::new(vocab(&f.token_set), f.h1).init(&dev);
+    emb.weight = Param::from_tensor(t2(&f.emb, vocab(&f.token_set), f.h1));
     let lin = |w: &[f32], b: &[f32], i: usize, o: usize| Linear::<Cpu> {
         weight: Param::from_tensor(t2(w, i, o)),
         bias: Some(Param::from_tensor(Tensor::<Cpu, 1>::from_data(TensorData::new(b.to_vec(), [o]), &dev))),
@@ -45,7 +45,7 @@ fn main() -> anyhow::Result<()> {
                 if c.status() != GameStatus::Ongoing {
                     continue;
                 }
-                let (t, n) = tokens(&c);
+                let (t, n) = tokens_for(&f.token_set, &c);
                 let ex = extras(&c);
                 let ti: Vec<i32> = (0..MAXP).map(|i| i32::from(t[i])).collect();
                 let mk: Vec<f32> = (0..MAXP).map(|i| f32::from(u8::from(i < n))).collect();
