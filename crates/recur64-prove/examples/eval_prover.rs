@@ -34,6 +34,15 @@ fn run_one(o: &mut dyn Orderer, width: Option<usize>, b: &Board, max_n: u8, budg
     Rec { depth: 0, solved: ok, nodes: s.nodes, bound: s.bound, secs: t.elapsed().as_secs_f64() }
 }
 
+fn run_dfpn(b: &Board, max_n: u8, budget: u64, plus: bool) -> Rec {
+    let t = Instant::now();
+    let d = if plus { recur64_prove::dfpn::DfPn::new_plus(budget) } else { recur64_prove::dfpn::DfPn::new(budget) };
+    let s = d.solve(b, max_n);
+    let ok = s.proof.as_ref().is_some_and(|p| verify(b, p).is_ok());
+    assert!(s.proof.is_none() || ok, "UNSOUND df-pn PROOF returned for {b}");
+    Rec { depth: 0, solved: ok, nodes: s.nodes, bound: s.bound, secs: t.elapsed().as_secs_f64() }
+}
+
 fn main() -> anyhow::Result<()> {
     let a: Vec<String> = std::env::args().collect();
     anyhow::ensure!(a.len() >= 8, "usage: eval_prover <net.json|classical|blind> <KRvK|KQvK> <val|test> <per_depth> <budget> <widths> <out.json> [threads]");
@@ -62,7 +71,7 @@ fn main() -> anyhow::Result<()> {
         None => (a[1].clone(), None),
     };
     let net = match net_path.as_str() {
-        "classical" | "blind" => None,
+        "classical" | "blind" | "dfpn" | "dfpn+" => None,
         path => Some(Mlp::load(std::path::Path::new(path))?),
     };
     let extra: Vec<Piece> = if name == "KBNvK" { vec![Piece::Bishop, Piece::Knight] } else { vec![piece] };
@@ -102,6 +111,8 @@ fn main() -> anyhow::Result<()> {
                                 let mut r = match (&net, kind.as_str()) {
                                     (Some(n), _) => run_one(&mut Learned { net: n.clone(), top_p }, width, b, max_n, budget),
                                     (None, "classical") => run_one(&mut Classical, width, b, max_n, budget),
+                                    (None, "dfpn") => run_dfpn(b, max_n, budget, false),
+                                    (None, "dfpn+") => run_dfpn(b, max_n, budget, true),
                                     _ => run_one(&mut Blind, width, b, max_n, budget),
                                 };
                                 r.depth = *d;

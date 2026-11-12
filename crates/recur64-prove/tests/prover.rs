@@ -130,3 +130,22 @@ fn network_tokens_are_in_range_and_translation_invariant_for_relations() {
     assert_eq!(ta[3..6], tb2[3..6], "relative tokens must not depend on the absolute position");
     assert_ne!(ta[..3], tb2[..3]);
 }
+
+
+#[test]
+fn the_df_pn_baseline_is_optimal_sound_and_checked() {
+    use recur64_prove::dfpn::DfPn;
+    for (name, piece) in [("KQvK", Piece::Queen), ("KRvK", Piece::Rook)] {
+        let tb = Tablebase::build(name, &[piece]).unwrap();
+        for depth in 1..=5u8 {
+            let boards = sample(&tb, depth, 25);
+            assert!(boards.len() >= 10, "{name} depth {depth}: {} samples", boards.len());
+            for b in &boards {
+                let s = DfPn::new(5_000_000).solve(b, depth + 2);
+                let proof = s.proof.expect("df-pn must find the forced mate within the bound");
+                assert_eq!(s.bound, Some(depth), "{name} {b}: iterative deepening stops at the optimal depth");
+                assert_eq!(verify(b, &proof).unwrap(), depth, "{name} {b}");
+            }
+        }
+    }
+}

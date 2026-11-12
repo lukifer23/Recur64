@@ -61,12 +61,10 @@ run than this phase carried out. KBNvK is therefore a limit of this phase, not a
   every held-out position up to the maximum depth, 10-20x more node-efficiently than the strongest tablebase-free heuristic I could build, and replicates
   across three training seeds. The mechanism is robust to its own errors: a wrong ranking costs nodes, never correctness.
 - **Not established:** free extrapolation beyond the training depth (G2 failed); KBNvK or any four-piece ending; wall-clock superiority (see below);
-  anything about positions with pawns, other material or full chess; a comparison against stronger published searchers (df-pn variants or a proof-number
-  search were not built or run); the contribution of each architectural choice (no ablation of the relative tokens was run; the only controlled comparison is
+  anything about positions with pawns, other material or full chess; a comparison against a proof-number search with a strong prior (plain df-pn and df-pn+ with move-count initial numbers were built and run and are
+  much weaker than the learned prover: depth 9 / 10 / 11+ at budget 1e6 for plain df-pn, but their initial numbers were not tuned); the contribution of each architectural choice (no ablation of the relative tokens was run; the only controlled comparison is
   the failed value-regression first attempt, which used neither the listwise loss nor the relative tokens, so the two changes are confounded).
-- **Wall-clock:** per search node the learned scorer is more expensive than the classical heuristic. After optimisation (3.8x faster, identical proofs) it
-  is about 25 microseconds per node against about 2 for the classical ordering, measured under CPU contention. The node advantage (10-40x) therefore
-  roughly cancels in wall-clock at moderate depth and wins at depth 16, but a quiet-machine timing comparison was NOT run, so no speed claim is made.
+- **Wall-clock:** per search node the learned scorer costs about 25 microseconds against about 2 for the classical ordering (after a 3.8x optimisation with identical proofs). A single-thread, quiet-machine timing study (V500-E11; 10 positions per depth, one seed) shows the learned prover solving 10 / 10 at every depth 10-16 in 0.03 to 0.56 s; among classical configurations that solve reliably it is about as fast at depth 10 and about 1.6x to 3.2x faster from depth 11 to 16.
 - The classical baseline is a heuristic I wrote; a better-tuned one could narrow the gap. It was frozen before any learned result and given the most
   generous reading (best config per depth) in the gates.
 

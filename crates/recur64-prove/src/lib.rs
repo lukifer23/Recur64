@@ -4,6 +4,7 @@
 //! `search` the sound AND/OR prover with pluggable move ordering and an independent proof checker.
 
 pub mod classical;
+pub mod dfpn;
 pub mod net;
 pub mod search;
 pub mod split;

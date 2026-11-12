@@ -27,10 +27,16 @@ pub const BC_TOKENS: usize = 3 * 2 * 64;
 pub const TOKENS_V3: usize = TOKENS + BC_TOKENS;
 pub const TOKEN_SET_V2: &str = "v2";
 pub const TOKEN_SET_V3: &str = "v3";
+/// Piece-square tokens only (no king-relative displacement tokens): the ablation of the relational tokens.
+pub const TOKEN_SET_SQ: &str = "sq";
 
 /// Vocabulary size of a token set.
 pub fn vocab(token_set: &str) -> usize {
-    if token_set == TOKEN_SET_V3 { TOKENS_V3 } else { TOKENS }
+    match token_set {
+        TOKEN_SET_V3 => TOKENS_V3,
+        TOKEN_SET_SQ => SQ_TOKENS,
+        _ => TOKENS,
+    }
 }
 pub const EXTRA: usize = 3;
 /// At most 4 piece-square tokens, 5 relative tokens (two extra pieces) and 3 colour tokens fit in 12 slots.
@@ -119,7 +125,15 @@ pub fn tokens_v3(b: &Board) -> ([u16; MAXP], usize) {
 
 /// Tokens of the named set.
 pub fn tokens_for(token_set: &str, b: &Board) -> ([u16; MAXP], usize) {
-    if token_set == TOKEN_SET_V3 { tokens_v3(b) } else { tokens(b) }
+    match token_set {
+        TOKEN_SET_V3 => tokens_v3(b),
+        TOKEN_SET_SQ => {
+            let (t, _) = tokens(b);
+            let n = b.occupied().len() as usize; // one piece-square token per piece, listed first
+            (t, n)
+        }
+        _ => tokens(b),
+    }
 }
 
 /// Side to move is black, in check, and the number of legal moves / 32.
