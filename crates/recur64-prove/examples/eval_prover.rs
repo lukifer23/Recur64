@@ -34,9 +34,13 @@ fn run_one(o: &mut dyn Orderer, width: Option<usize>, b: &Board, max_n: u8, budg
     Rec { depth: 0, solved: ok, nodes: s.nodes, bound: s.bound, secs: t.elapsed().as_secs_f64() }
 }
 
-fn run_dfpn(b: &Board, max_n: u8, budget: u64, plus: bool) -> Rec {
+fn run_dfpn(b: &Board, max_n: u8, budget: u64, plus: bool, prior: Option<Mlp>) -> Rec {
     let t = Instant::now();
-    let d = if plus { recur64_prove::dfpn::DfPn::new_plus(budget) } else { recur64_prove::dfpn::DfPn::new(budget) };
+    let d = match prior {
+        Some(net) => recur64_prove::dfpn::DfPn::new_prior(budget, Learned { net, top_p: None }),
+        None if plus => recur64_prove::dfpn::DfPn::new_plus(budget),
+        None => recur64_prove::dfpn::DfPn::new(budget),
+    };
     let s = d.solve(b, max_n);
     let ok = s.proof.as_ref().is_some_and(|p| verify(b, p).is_ok());
     assert!(s.proof.is_none() || ok, "UNSOUND df-pn PROOF returned for {b}");
@@ -70,9 +74,15 @@ fn main() -> anyhow::Result<()> {
         Some((p, t)) => (p.to_string(), Some(t.parse()?)),
         None => (a[1].clone(), None),
     };
+    let dfpn_prior = net_path.strip_prefix("dfpn-prior:").map(str::to_string);
     let net = match net_path.as_str() {
         "classical" | "blind" | "dfpn" | "dfpn+" => None,
+        _ if dfpn_prior.is_some() => None,
         path => Some(Mlp::load(std::path::Path::new(path))?),
+    };
+    let prior_net = match &dfpn_prior {
+        Some(p) => Some(Mlp::load(std::path::Path::new(p))?),
+        None => None,
     };
     let extra: Vec<Piece> = if name == "KBNvK" { vec![Piece::Bishop, Piece::Knight] } else { vec![piece] };
     let tb = Tablebase::build(name, &extra)?;
@@ -104,15 +114,17 @@ fn main() -> anyhow::Result<()> {
                 .chunks(chunk)
                 .map(|c| {
                     let net = net.clone();
+                    let prior_net = prior_net.clone();
                     let kind = kind.clone();
                     s.spawn(move || {
                         c.iter()
                             .map(|(d, b)| {
                                 let mut r = match (&net, kind.as_str()) {
+                                    (None, k) if k.starts_with("dfpn-prior:") => run_dfpn(b, max_n, budget, false, prior_net.clone()),
                                     (Some(n), _) => run_one(&mut Learned { net: n.clone(), top_p }, width, b, max_n, budget),
                                     (None, "classical") => run_one(&mut Classical, width, b, max_n, budget),
-                                    (None, "dfpn") => run_dfpn(b, max_n, budget, false),
-                                    (None, "dfpn+") => run_dfpn(b, max_n, budget, true),
+                                    (None, "dfpn") => run_dfpn(b, max_n, budget, false, None),
+                                    (None, "dfpn+") => run_dfpn(b, max_n, budget, true, None),
                                     _ => run_one(&mut Blind, width, b, max_n, budget),
                                 };
                                 r.depth = *d;

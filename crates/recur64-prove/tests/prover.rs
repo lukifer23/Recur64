@@ -149,3 +149,18 @@ fn the_df_pn_baseline_is_optimal_sound_and_checked() {
         }
     }
 }
+
+
+#[test]
+fn every_token_slot_is_a_valid_id_for_every_token_set() {
+    use recur64_prove::net::{MAXP, tokens_for, vocab};
+    let kr = Tablebase::build("KRvK", &[Piece::Rook]).unwrap();
+    for set in ["v2", "v3", "sq"] {
+        for b in kr.positions.iter().step_by(1013) {
+            let (t, n) = tokens_for(set, b);
+            assert!(n <= MAXP);
+            // masked slots are still fed to the embedding lookup, so ALL MAXP ids must be inside the vocabulary
+            assert!(t.iter().all(|&v| (v as usize) < vocab(set)), "{set}: out-of-vocabulary id in {t:?} (n={n}, vocab {})", vocab(set));
+        }
+    }
+}

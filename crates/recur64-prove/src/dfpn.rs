@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use cozy_chess::{Board, GameStatus};
 
+use crate::net::Learned;
 use crate::search::{Proof, Solved, dead};
 use crate::tb::{count_moves, moves_of};
 
@@ -40,6 +41,8 @@ pub struct DfPn {
     /// df-pn+ style initial numbers from the move count: an AND node needs all its replies proven
     /// (`pn` = number of replies), an OR node needs all its moves refuted (`dn` = number of moves).
     plus: bool,
+    /// Learned prior: initial numbers of a node's children come from the network ranking of the moves.
+    prior: Option<Learned>,
 }
 
 fn ongoing(b: &Board) -> bool {
@@ -52,12 +55,19 @@ fn sat(a: u32, b: u32) -> u32 {
 
 impl DfPn {
     pub fn new(budget: u64) -> Self {
-        Self { tt: HashMap::new(), nodes: 0, budget, out: false, plus: false }
+        Self { tt: HashMap::new(), nodes: 0, budget, out: false, plus: false, prior: None }
     }
 
     /// df-pn with move-count initial proof numbers (the usual practical variant).
     pub fn new_plus(budget: u64) -> Self {
         Self { plus: true, ..Self::new(budget) }
+    }
+
+    /// df-pn with initial numbers from a learned ranking: the better a move is ranked, the cheaper it looks to
+    /// prove (attacker) or to refute (defender), so the search tries the network favourites first but is free to
+    /// back up and try anything else when they fail (no move is ever pruned).
+    pub fn new_prior(budget: u64, prior: Learned) -> Self {
+        Self { prior: Some(prior), ..Self::new(budget) }
     }
 
     fn init(&self, b: &Board, or: bool) -> Pd {
@@ -68,45 +78,57 @@ impl DfPn {
         if or { Pd { pn: 1, dn: n } } else { Pd { pn: n, dn: 1 } }
     }
 
-    fn children(b: &Board, n: u8, or: bool) -> Vec<Child> {
-        if or {
-            if n == 0 || !ongoing(b) {
-                return Vec::new();
-            }
-            moves_of(b)
-                .into_iter()
-                .map(|m| {
-                    let mut after = b.clone();
-                    after.play_unchecked(m);
-                    if after.status() == GameStatus::Won {
-                        Child::Win
-                    } else if n >= 2 {
-                        Child::Node(after, n - 1, false)
-                    } else {
-                        Child::Lose
-                    }
-                })
-                .collect()
-        } else {
-            if n == 0 || !ongoing(b) {
-                return Vec::new();
-            }
-            moves_of(b)
-                .into_iter()
-                .map(|r| {
-                    let mut next = b.clone();
-                    next.play_unchecked(r);
-                    Child::Node(next, n, true)
-                })
-                .collect()
+    fn children(&self, b: &Board, n: u8, or: bool) -> Vec<(Child, Option<Pd>)> {
+        if n == 0 || !ongoing(b) {
+            return Vec::new();
         }
+        let mv = moves_of(b);
+        // rank of each move under the prior (0 = best), if there is one
+        let ranks: Option<Vec<u32>> = self.prior.as_ref().map(|l| {
+            let mut keyed: Vec<(f32, usize)> = mv
+                .iter()
+                .enumerate()
+                .map(|(i, &m)| (if or { l.attacker_key(b, m) } else { -l.defender_key(b, m) }, i))
+                .collect();
+            keyed.sort_by(|a, c| a.0.total_cmp(&c.0));
+            let mut r = vec![0u32; mv.len()];
+            for (rank, (_, i)) in keyed.into_iter().enumerate() {
+                r[i] = rank as u32;
+            }
+            r
+        });
+        mv.into_iter()
+            .enumerate()
+            .map(|(i, m)| {
+                let mut nb = b.clone();
+                nb.play_unchecked(m);
+                let rank = ranks.as_ref().map(|r| r[i]);
+                if or {
+                    if nb.status() == GameStatus::Won {
+                        (Child::Win, None)
+                    } else if n >= 2 {
+                        // AND child: cost of proving it grows with how poorly the attacker move is ranked
+                        (Child::Node(nb, n - 1, false), rank.map(|r| Pd { pn: 1 + r, dn: 1 }))
+                    } else {
+                        (Child::Lose, None)
+                    }
+                } else {
+                    // OR child after a defender reply: the more resilient the reply, the cheaper to refute
+                    (Child::Node(nb, n, true), rank.map(|r| Pd { pn: 1, dn: 1 + r }))
+                }
+            })
+            .collect()
     }
 
-    fn value(&self, c: &Child) -> Pd {
+    fn value(&self, c: &Child, prior_init: Option<Pd>) -> Pd {
         match c {
             Child::Win => Pd { pn: 0, dn: INF },
             Child::Lose => Pd { pn: INF, dn: 0 },
-            Child::Node(b, n, or) => self.tt.get(&Key(b.hash(), *n, *or)).copied().unwrap_or_else(|| self.init(b, *or)),
+            Child::Node(b, n, or) => self
+                .tt
+                .get(&Key(b.hash(), *n, *or))
+                .copied()
+                .unwrap_or_else(|| prior_init.unwrap_or_else(|| self.init(b, *or))),
         }
     }
 
@@ -121,14 +143,14 @@ impl DfPn {
             self.out = true;
             return;
         }
-        let kids = Self::children(b, n, or);
+        let kids = self.children(b, n, or);
         if kids.is_empty() {
             // an OR node with no way to win (bound exhausted, finished position) or an AND node that cannot continue
             self.tt.insert(key, Pd { pn: INF, dn: 0 });
             return;
         }
         loop {
-            let vals: Vec<Pd> = kids.iter().map(|c| self.value(c)).collect();
+            let vals: Vec<Pd> = kids.iter().map(|(c, pi)| self.value(c, *pi)).collect();
             let (pn, dn) = if or {
                 (vals.iter().map(|v| v.pn).min().unwrap(), vals.iter().fold(0, |a, v| sat(a, v.dn)))
             } else {
@@ -164,8 +186,17 @@ impl DfPn {
                 }
                 (bi, thpn.saturating_sub(pn).saturating_add(vals[bi].pn), thdn.min(b2.saturating_add(1)))
             };
-            match &kids[best] {
-                Child::Node(cb, cn, cor) => self.mid(cb, *cn, *cor, c_thpn, c_thdn),
+            match &kids[best].0 {
+                Child::Node(cb, cn, cor) => {
+                    // the child is entered with its prior numbers so a later lookup finds them
+                    let key = Key(cb.hash(), *cn, *cor);
+                    if !self.tt.contains_key(&key) {
+                        let v = self.value(&kids[best].0, kids[best].1);
+                        self.tt.insert(key, v);
+                    }
+                    let (cb, cn, cor) = (cb.clone(), *cn, *cor);
+                    self.mid(&cb, cn, cor, c_thpn, c_thdn)
+                }
                 _ => return, // a leaf cannot be expanded (its value already decided the node)
             }
         }

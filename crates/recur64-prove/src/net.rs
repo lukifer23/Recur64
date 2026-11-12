@@ -128,8 +128,11 @@ pub fn tokens_for(token_set: &str, b: &Board) -> ([u16; MAXP], usize) {
     match token_set {
         TOKEN_SET_V3 => tokens_v3(b),
         TOKEN_SET_SQ => {
-            let (t, _) = tokens(b);
+            let (full, _) = tokens(b);
             let n = b.occupied().len() as usize; // one piece-square token per piece, listed first
+            // Unused slots must hold a valid id (0): leftover relative-token ids would index past this smaller vocabulary.
+            let mut t = [0u16; MAXP];
+            t[..n].copy_from_slice(&full[..n]);
             (t, n)
         }
         _ => tokens(b),
@@ -280,6 +283,18 @@ impl Learned {
             return WORST;
         }
         self.net.eval_with_moves(child, nm)
+    }
+
+    /// Resilience of the position after a defender reply (higher = the defender lasts longer = more likely a refutation).
+    pub fn defender_key(&self, b: &Board, m: Move) -> f32 {
+        let mut next = b.clone();
+        next.play_unchecked(m);
+        let nm = count_moves(&next);
+        if nm == 0 || crate::search::dead(&next) {
+            WORST
+        } else {
+            self.net.eval_with_moves(&next, nm)
+        }
     }
 
     /// Value of the position after `m`, from the attacker's point of view (lower is better).
