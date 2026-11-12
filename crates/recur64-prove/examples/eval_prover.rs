@@ -1,7 +1,7 @@
 //! V500 evaluation harness: run one ordering (learned net, classical or blind) at several widths on a split, and
 //! write per-position records (so gates and paired comparisons are computed from the same positions).
 //!
-//! cargo run --release -p recur64-prove --example eval_prover -- <orderer> <KRvK|KQvK> <val|test> <per_depth> <budget> <widths> <out.json> [threads]
+//! cargo run --release -p recur64-prove --example eval_prover -- <orderer> <KRvK|KQvK> <val|test> <per_depth> <budget> <widths> <out.json> [threads] [min_depth]
 //!   orderer: a path to net.json (learned), `classical` or `blind`; widths: comma list, `full` = no width limit.
 //!
 //! Position selection is identical to `baseline.rs` (sorted by canonical key, evenly strided, per depth), so a TEST run
@@ -55,6 +55,7 @@ fn main() -> anyhow::Result<()> {
         .map(|w| if w == "full" { Ok(None) } else { w.parse().map(Some) })
         .collect::<Result<_, _>>()?;
     let threads: usize = a.get(8).map_or(Ok(8), |s| s.parse())?;
+    let min_depth: u8 = a.get(9).map_or(Ok(1), |s| s.parse())?;
     let net = match a[1].as_str() {
         "classical" | "blind" => None,
         path => Some(Mlp::load(std::path::Path::new(path))?),
@@ -71,7 +72,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
     let mut jobs: Vec<(u8, Board)> = Vec::new();
-    for d in 1..=max_depth {
+    for d in min_depth..=max_depth {
         let v = &by_depth[d as usize];
         let step = (v.len() / per_depth.max(1)).max(1);
         for b in v.iter().step_by(step).take(per_depth) {
@@ -107,7 +108,7 @@ fn main() -> anyhow::Result<()> {
                 .collect();
             handles.into_iter().flat_map(|h| h.join().expect("worker")).collect()
         });
-        let line: Vec<String> = (1..=max_depth)
+        let line: Vec<String> = (min_depth..=max_depth)
             .map(|d| {
                 let r: Vec<&Rec> = recs.iter().filter(|x| x.depth == d).collect();
                 format!("d{d}:{:.2}", r.iter().filter(|x| x.solved && x.nodes <= 100_000).count() as f64 / r.len().max(1) as f64)

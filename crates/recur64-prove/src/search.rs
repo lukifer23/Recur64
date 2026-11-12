@@ -6,7 +6,8 @@
 //! width limit `k` (only the best `k` attacker moves are tried: incomplete, never unsound) and a node budget.
 //! A returned [`Proof`] is a full AND/OR tree that [`verify`] re-checks against the rules alone.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use cozy_chess::{Board, GameStatus, Move};
 
@@ -48,27 +49,34 @@ fn is_dead(b: &Board) -> bool {
     false
 }
 
-/// A verified-by-construction proof tree: the attacker plays `mv`; if that mates, `replies` is empty,
-/// otherwise it lists EVERY legal defender reply with the attacker's continuation.
+/// A proof as a shared DAG: the attacker plays `mv`; if that mates, `replies` is empty, otherwise it lists EVERY
+/// legal defender reply with the attacker continuation. Positions reached by different lines share one node
+/// (`Arc`), so a proof whose unfolded TREE would be astronomically large stays small in memory.
 #[derive(Debug, Clone)]
 pub struct Proof {
     pub mv: Move,
-    pub replies: Vec<(Move, Proof)>,
+    pub replies: Vec<(Move, Arc<Proof>)>,
+    depth: u8,
 }
 
 impl Proof {
-    /// Attacker moves along the longest line.
-    pub fn depth(&self) -> u8 {
-        1 + self.replies.iter().map(|(_, p)| p.depth()).max().unwrap_or(0)
+    pub fn new(mv: Move, replies: Vec<(Move, Arc<Proof>)>) -> Self {
+        let depth = 1 + replies.iter().map(|(_, p)| p.depth).max().unwrap_or(0);
+        Self { mv, replies, depth }
     }
 
-    /// The line in which the defender always plays the reply that lasts longest inside this proof
-    /// (ties: the larger sub-proof): `(attacker move, defender reply)` pairs; the last pair has no reply.
+    /// Attacker moves along the longest line.
+    pub fn depth(&self) -> u8 {
+        self.depth
+    }
+
+    /// The line in which the defender always plays the reply that lasts longest inside this proof:
+    /// `(attacker move, defender reply)` pairs; the last pair has no reply.
     pub fn principal_line(&self) -> Vec<(Move, Option<Move>)> {
         let mut line = Vec::new();
         let mut cur = self;
         loop {
-            match cur.replies.iter().max_by_key(|(_, p)| (p.depth(), p.size())) {
+            match cur.replies.iter().max_by_key(|(_, p)| p.depth) {
                 Some((r, next)) => {
                     line.push((cur.mv, Some(*r)));
                     cur = next;
@@ -81,15 +89,43 @@ impl Proof {
         }
     }
 
-    pub fn size(&self) -> usize {
-        1 + self.replies.iter().map(|(_, p)| p.size()).sum::<usize>()
+    /// Number of distinct DAG nodes (shared sub-proofs counted once).
+    pub fn dag_size(&self) -> usize {
+        fn walk(p: &Proof, seen: &mut HashSet<*const Proof>) {
+            if !seen.insert(p as *const Proof) {
+                return;
+            }
+            for (_, c) in &p.replies {
+                walk(c, seen);
+            }
+        }
+        let mut seen = HashSet::new();
+        walk(self, &mut seen);
+        seen.len()
+    }
+
+    /// Size of the fully unfolded tree (can be astronomically larger than the DAG).
+    pub fn tree_size(&self) -> f64 {
+        fn walk(p: &Proof, memo: &mut HashMap<*const Proof, f64>) -> f64 {
+            if let Some(v) = memo.get(&(p as *const Proof)) {
+                return *v;
+            }
+            let v = 1.0 + p.replies.iter().map(|(_, c)| walk(c, memo)).sum::<f64>();
+            memo.insert(p as *const Proof, v);
+            v
+        }
+        walk(self, &mut HashMap::new())
     }
 }
 
-/// Independent checker: uses only the board rules, never the prover's tables or the scorer.
-/// Returns the longest attacker-move line, or an error describing the first violation.
+/// Independent checker: uses only the board rules, never the prover tables or the scorer. Nodes already verified are
+/// memoised by (position hash, proof node) so shared sub-proofs are checked once; validity of a node depends only on
+/// its position and sub-proofs. Returns the longest attacker-move line, or the first violation.
 pub fn verify(root: &Board, proof: &Proof) -> Result<u8, String> {
-    fn attacker(b: &Board, p: &Proof) -> Result<u8, String> {
+    fn attacker(b: &Board, p: &Proof, memo: &mut HashMap<(u64, *const Proof), u8>) -> Result<u8, String> {
+        if let Some(&d) = memo.get(&(b.hash(), p as *const Proof)) {
+            return Ok(d);
+        }
         if b.status() != GameStatus::Ongoing || is_dead(b) {
             return Err(format!("attacker to move in a finished position: {b}"));
         }
@@ -98,36 +134,38 @@ pub fn verify(root: &Board, proof: &Proof) -> Result<u8, String> {
         }
         let mut after = b.clone();
         after.play_unchecked(p.mv);
-        if after.status() == GameStatus::Won {
-            return if p.replies.is_empty() {
-                Ok(1)
-            } else {
-                Err("mating move with replies attached".into())
-            };
-        }
-        if after.status() != GameStatus::Ongoing || is_dead(&after) {
-            return Err(format!("attacker move ends the game without mate: {after}"));
-        }
-        let legal = moves_of(&after);
-        if p.replies.len() != legal.len() {
-            return Err(format!(
-                "proof covers {} of {} defender replies in {after}",
-                p.replies.len(),
-                legal.len()
-            ));
-        }
-        let mut deepest = 0;
-        for l in &legal {
-            let Some((_, sub)) = p.replies.iter().find(|(m, _)| m == l) else {
-                return Err(format!("defender reply {l} not covered in {after}"));
-            };
-            let mut next = after.clone();
-            next.play_unchecked(*l);
-            deepest = deepest.max(attacker(&next, sub)?);
-        }
-        Ok(1 + deepest)
+        let d = if after.status() == GameStatus::Won {
+            if !p.replies.is_empty() {
+                return Err("mating move with replies attached".into());
+            }
+            1
+        } else {
+            if after.status() != GameStatus::Ongoing || is_dead(&after) {
+                return Err(format!("attacker move ends the game without mate: {after}"));
+            }
+            let legal = moves_of(&after);
+            if p.replies.len() != legal.len() {
+                return Err(format!(
+                    "proof covers {} of {} defender replies in {after}",
+                    p.replies.len(),
+                    legal.len()
+                ));
+            }
+            let mut deepest = 0;
+            for l in &legal {
+                let Some((_, sub)) = p.replies.iter().find(|(m, _)| m == l) else {
+                    return Err(format!("defender reply {l} not covered in {after}"));
+                };
+                let mut next = after.clone();
+                next.play_unchecked(*l);
+                deepest = deepest.max(attacker(&next, sub, memo)?);
+            }
+            1 + deepest
+        };
+        memo.insert((b.hash(), p as *const Proof), d);
+        Ok(d)
     }
-    attacker(root, proof)
+    attacker(root, proof, &mut HashMap::new())
 }
 
 #[derive(Debug, Clone, Default)]
@@ -138,7 +176,7 @@ pub struct SolveStats {
 
 #[derive(Debug)]
 pub struct Solved {
-    pub proof: Option<Proof>,
+    pub proof: Option<Arc<Proof>>,
     /// Attacker moves of the first (iterative-deepening) bound at which a proof was found.
     pub bound: Option<u8>,
     pub nodes: u64,
@@ -233,7 +271,10 @@ impl<'a, O: Orderer + ?Sized> Prover<'a, O> {
         Ok(all)
     }
 
-    fn extract(&self, b: &Board, n: u8) -> Proof {
+    fn extract(&self, b: &Board, n: u8, memo: &mut HashMap<(u64, u8), Arc<Proof>>) -> Arc<Proof> {
+        if let Some(p) = memo.get(&(b.hash(), n)) {
+            return p.clone();
+        }
         let m = self
             .or_tt
             .get(&(b.hash(), n))
@@ -242,26 +283,34 @@ impl<'a, O: Orderer + ?Sized> Prover<'a, O> {
             .expect("extract only follows proven OR nodes");
         let mut after = b.clone();
         after.play_unchecked(m);
-        if after.status() == GameStatus::Won {
-            return Proof { mv: m, replies: Vec::new() };
-        }
-        let replies = moves_of(&after)
-            .into_iter()
-            .map(|r| {
-                let mut next = after.clone();
-                next.play_unchecked(r);
-                (r, self.extract(&next, n - 1))
-            })
-            .collect();
-        Proof { mv: m, replies }
+        let p = if after.status() == GameStatus::Won {
+            Arc::new(Proof::new(m, Vec::new()))
+        } else {
+            let replies = moves_of(&after)
+                .into_iter()
+                .map(|r| {
+                    let mut next = after.clone();
+                    next.play_unchecked(r);
+                    (r, self.extract(&next, n - 1, memo))
+                })
+                .collect();
+            Arc::new(Proof::new(m, replies))
+        };
+        memo.insert((b.hash(), n), p.clone());
+        p
     }
 
     /// Iterative deepening over the attacker-move bound `1..=max_n`.
-    pub fn solve(mut self, root: &Board, max_n: u8) -> Solved {
-        for n in 1..=max_n {
+    pub fn solve(self, root: &Board, max_n: u8) -> Solved {
+        self.solve_from(root, 1, max_n)
+    }
+
+    /// Iterative deepening over `from_n..=max_n` (a diagnostic can start at the optimal bound).
+    pub fn solve_from(mut self, root: &Board, from_n: u8, max_n: u8) -> Solved {
+        for n in from_n..=max_n {
             match self.or(root, n) {
                 Ok(true) => {
-                    let proof = self.extract(root, n);
+                    let proof = self.extract(root, n, &mut HashMap::new());
                     return Solved {
                         proof: Some(proof),
                         bound: Some(n),

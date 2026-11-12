@@ -50,10 +50,10 @@ fn main() -> anyhow::Result<()> {
         &a[6],
         serde_json::to_vec_pretty(&json!({
             "schema": "v500_pv_v1", "material": a[2], "root": root.to_string(), "optimal_moves_tablebase": depth,
-            "proof_checked_moves": checked, "width": width, "nodes": s.nodes, "proof_tree_nodes": proof.size(),
+            "proof_checked_moves": checked, "width": width, "nodes": s.nodes, "proof_dag_nodes": proof.dag_size(), "proof_tree_nodes": proof.tree_size(),
             "plies": plies,
         }))?,
     )?;
-    eprintln!("{}: optimal {depth}, proof {checked} moves, {} nodes, proof tree {} attacker nodes", a[2], s.nodes, proof.size());
+    eprintln!("{}: optimal {depth}, proof {checked} moves, {} nodes, proof DAG {} nodes (unfolded tree {:.3e})", a[2], s.nodes, proof.dag_size(), proof.tree_size());
     Ok(())
 }

@@ -65,7 +65,7 @@ fn the_checker_rejects_tampered_proofs() {
     let good = run(&mut Classical, None, &b, 4).proof.unwrap();
     assert!(verify(&b, &good).is_ok());
     // Drop one defender reply somewhere: the proof must be rejected.
-    let mut missing = good.clone();
+    let mut missing = (*good).clone();
     let mut tampered = false;
     fn drop_one(p: &mut recur64_prove::search::Proof) -> bool {
         if !p.replies.is_empty() {
@@ -79,11 +79,11 @@ fn the_checker_rejects_tampered_proofs() {
     }
     assert!(tampered && verify(&b, &missing).is_err(), "a proof missing a defender reply must be rejected");
     // A different first move cannot be answered by the original reply tree.
-    let mut wrong = good.clone();
+    let mut wrong = (*good).clone();
     wrong.mv = moves_of(&b).into_iter().find(|m| *m != good.mv).unwrap();
     assert!(verify(&b, &wrong).is_err());
     // An illegal move is rejected.
-    let mut illegal = good.clone();
+    let mut illegal = (*good).clone();
     illegal.mv = cozy_chess::Move {
         from: cozy_chess::Square::A1,
         to: cozy_chess::Square::H8,
