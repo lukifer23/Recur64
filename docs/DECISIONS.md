@@ -1415,3 +1415,13 @@ D55-D59. HP decisions are cited as `HP D<n>`.
 - **Lineage reading (INFERRED, NOT TESTED):** V3, V3.5, V4 and V420 together point away from "more or better single-position computation" and toward whatever
   limits mate-in-3 accuracy beyond the position network (search-like lookahead or label structure). Not established.
 - **Evidence:** `docs/V420_RESULTS.md`, `docs/evidence/v420/v420-measure.json`.
+
+## V500-D1 - V500 learned proof search (2026-11-12): central claim holds on KRvK; extrapolation and KBNvK do not
+
+- **Status:** RESULT of the pre-registered rules (V500-E3, E6, E9). **Decision:** the learned-ordering prover is kept as the project's working result on KRvK
+  (G0, G1, G3 pass on three seeds; exhaustive held-out sweep 17,088 / 17,088 with checked proofs). G2 (free extrapolation) failed and is reported as failed; the
+  width-3 / 1e6 improvement is a post-hoc diagnostic only. P6 (KBNvK) is not met: it is recorded as a limit of this phase, with the identified next step (data scale,
+  on-policy mining, proof-number search with learned priors), not as a result.
+- **Why this is different from V3-V420:** the network never has to be right, only to rank; search stays exact and every proof is independently checked, so a noisy
+  network costs nodes, never soundness. It also uses exact all-depth labels (a retrograde tablebase) as label source and grader only.
+- **Evidence:** `docs/V500_RESULTS.md`, `docs/V500_EXPERIMENTS.md`, `docs/evidence/v500/`.
