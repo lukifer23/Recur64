@@ -80,6 +80,9 @@ run than this phase carried out. KBNvK is therefore a limit of this phase, not a
 - Build artifacts from `target-opt/` were committed once by mistake (commit `31e0f87`), untracked in `450043f`; a history rewrite was blocked by permissions
   and not performed, so those blobs remain in that one commit.
 
-## 7. Next steps (not started)
+## 7. Visual summary
+A published page (private; share from its menu) presents the gates, both curves, the extrapolation result, the KBNvK limit and a move-by-move replay of a checked 16-move proof: https://claude.ai/artifact/6p87bzRYUwj2kL9FpLoXbX . It is generated from the committed evidence; the page was not visually previewed in this session.
+
+## 8. Next steps (not started)
 Scale the KBNvK training data (all parents, not 6%) and add on-policy hard-example mining; a proof-number/df-pn search with the network as the prior
 (robust to ranking errors by construction); an ablation of the king-relative tokens and the loss; a quiet-machine timing study.
