@@ -1,0 +1,72 @@
+{
+ "schema": "v500_gates_v1",
+ "classical_reference": 0.3958333333333333,
+ "width_chosen_on_val": 2,
+ "val_mean_deep_solve_1e5": 1.0,
+ "G1": {
+  "mean_deep_solve_1e5": 1.0,
+  "ci_vs_reference": [
+   0.6041666666666667,
+   0.6041666666666667
+  ],
+  "per_seed": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "threshold_mean": 0.5458333333333333,
+  "seed_floor": 0.4458333333333333,
+  "pass": true
+ },
+ "by_depth_solve_1e5": {
+  "11": 1.0,
+  "12": 1.0,
+  "13": 1.0,
+  "14": 1.0,
+  "15": 1.0,
+  "16": 1.0
+ },
+ "G3": {
+  "10": {
+   "learned_median": 1173.5,
+   "best_classical_median": 12374.0,
+   "ratio": 0.09483594633909811,
+   "classical_censored": false,
+   "pass": true
+  },
+  "11": {
+   "learned_median": 1998.0,
+   "best_classical_median": 41425.0,
+   "ratio": 0.048231744115872055,
+   "classical_censored": false,
+   "pass": true
+  },
+  "12": {
+   "learned_median": 3185.0,
+   "best_classical_median": 53188.0,
+   "ratio": 0.0598819282544935,
+   "classical_censored": false,
+   "pass": true
+  },
+  "13": {
+   "learned_median": 5283.666666666667,
+   "best_classical_median": 107019.0,
+   "ratio": 0.04937129543975058,
+   "classical_censored": false,
+   "pass": true
+  },
+  "14": {
+   "learned_median": 9288.833333333334,
+   "best_classical_median": 148174.0,
+   "ratio": 0.06268868582432366,
+   "classical_censored": false,
+   "pass": true
+  },
+  "pass_all": true
+ },
+ "G2": {
+  "extrap_mean_deep_solve_1e5": 0.32222222222222224,
+  "full_mean": 1.0,
+  "pass": false
+ }
+}

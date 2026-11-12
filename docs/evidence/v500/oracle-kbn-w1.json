@@ -1,0 +1,162 @@
+{
+  "budget": 3000000,
+  "material": "KBNvK",
+  "rows": [
+    {
+      "depth": 12,
+      "max_nodes_solved": 370,
+      "median_nodes_solved": 370,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 13,
+      "max_nodes_solved": 317,
+      "median_nodes_solved": 317,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 14,
+      "max_nodes_solved": 570,
+      "median_nodes_solved": 570,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 15,
+      "max_nodes_solved": 1117,
+      "median_nodes_solved": 1117,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 16,
+      "max_nodes_solved": 3185,
+      "median_nodes_solved": 3185,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 17,
+      "max_nodes_solved": 842,
+      "median_nodes_solved": 842,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 18,
+      "max_nodes_solved": 4213,
+      "median_nodes_solved": 4213,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 19,
+      "max_nodes_solved": 2471,
+      "median_nodes_solved": 2471,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 20,
+      "max_nodes_solved": 4207,
+      "median_nodes_solved": 4207,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 21,
+      "max_nodes_solved": 3817,
+      "median_nodes_solved": 3817,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 22,
+      "max_nodes_solved": 17410,
+      "median_nodes_solved": 17410,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 23,
+      "max_nodes_solved": 24680,
+      "median_nodes_solved": 24680,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 24,
+      "max_nodes_solved": 3066,
+      "median_nodes_solved": 3066,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 25,
+      "max_nodes_solved": 27921,
+      "median_nodes_solved": 27921,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 26,
+      "max_nodes_solved": 27887,
+      "median_nodes_solved": 27887,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 27,
+      "max_nodes_solved": 54117,
+      "median_nodes_solved": 54117,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 28,
+      "max_nodes_solved": 104870,
+      "median_nodes_solved": 104870,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 29,
+      "max_nodes_solved": 128848,
+      "median_nodes_solved": 128848,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 30,
+      "max_nodes_solved": 95598,
+      "median_nodes_solved": 95598,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 31,
+      "max_nodes_solved": 234947,
+      "median_nodes_solved": 234947,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 32,
+      "max_nodes_solved": 172987,
+      "median_nodes_solved": 172987,
+      "n": 1,
+      "solved": 1
+    },
+    {
+      "depth": 33,
+      "max_nodes_solved": 275935,
+      "median_nodes_solved": 275935,
+      "n": 1,
+      "solved": 1
+    }
+  ],
+  "schema": "v500_oracle_nodes_v1",
+  "width": 1
+}
