@@ -62,8 +62,9 @@ run than this phase carried out. KBNvK is therefore a limit of this phase, not a
   across three training seeds. The mechanism is robust to its own errors: a wrong ranking costs nodes, never correctness.
 - **Not established:** free extrapolation beyond the training depth (G2 failed); KBNvK or any four-piece ending; wall-clock superiority (see below);
   anything about positions with pawns, other material or full chess; a comparison against a proof-number search with a strong prior (plain df-pn and df-pn+ with move-count initial numbers were built and run and are
-  much weaker than the learned prover: depth 9 / 10 / 11+ at budget 1e6 for plain df-pn, but their initial numbers were not tuned); the contribution of each architectural choice (no ablation of the relative tokens was run; the only controlled comparison is
-  the failed value-regression first attempt, which used neither the listwise loss nor the relative tokens, so the two changes are confounded).
+  much weaker than the learned prover: depth 9 / 10 / 11+ at budget 1e6 for plain df-pn, but their initial numbers were not tuned); the contribution of each architectural choice beyond one ablation (V500-E14, one seed): with the ranking loss held fixed, dropping the king-relative tokens leaves width-2
+  search essentially intact (638 / 640 vs 640 / 640 solved, same node counts) but collapses width-1 search (nothing solved from depth 13), so the loss does most of the work and the tokens
+  matter when the search is narrow.
 - **Wall-clock:** per search node the learned scorer costs about 25 microseconds against about 2 for the classical ordering (after a 3.8x optimisation with identical proofs). A single-thread, quiet-machine timing study (V500-E11; 10 positions per depth, one seed) shows the learned prover solving 10 / 10 at every depth 10-16 in 0.03 to 0.56 s; among classical configurations that solve reliably it is about as fast at depth 10 and about 1.6x to 3.2x faster from depth 11 to 16.
 - The classical baseline is a heuristic I wrote; a better-tuned one could narrow the gap. It was frozen before any learned result and given the most
   generous reading (best config per depth) in the gates.
@@ -82,5 +83,4 @@ run than this phase carried out. KBNvK is therefore a limit of this phase, not a
 A published page (private; share from its menu) presents the gates, both curves, the extrapolation result, the KBNvK limit and a move-by-move replay of a checked 16-move proof: https://claude.ai/artifact/6p87bzRYUwj2kL9FpLoXbX . It is generated from the committed evidence; the page was not visually previewed in this session.
 
 ## 8. Next steps (not started)
-Scale the KBNvK training data (all parents, not 6%) and add on-policy hard-example mining; a proof-number/df-pn search with the network as the prior
-(robust to ranking errors by construction); an ablation of the king-relative tokens and the loss; a quiet-machine timing study.
+Scale the KBNvK training data (all parents, not 6%) and add on-policy hard-example mining; a different use of the network prior inside proof-number search (the initial-number version tested in V500-E12 was worse than plain df-pn); more seeds for the ablation.
