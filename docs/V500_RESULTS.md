@@ -82,5 +82,13 @@ run than this phase carried out. KBNvK is therefore a limit of this phase, not a
 ## 7. Visual summary
 A published page (private; share from its menu) presents the gates, both curves, the extrapolation result, the KBNvK limit and a move-by-move replay of a checked 16-move proof: https://claude.ai/artifact/6p87bzRYUwj2kL9FpLoXbX . It is generated from the committed evidence; the page was not visually previewed in this session.
 
+## 7b. Related work and what is (not) new
+A short literature check (two web searches, abstract level only; not a systematic review) found that the central idea is NOT new:
+- Gao, Mueller and Hayward, "Focused Depth-first Proof Number Search using Convolutional Neural Networks for the Game of Hex" (IJCAI 2017, https://www.ijcai.org/proceedings/2017/513): CNN policy for move ordering and a value network for dynamic widening inside df-pn.
+- Cazenave, "Monte Carlo Game Solver" (https://arxiv.org/pdf/2001.05087): a learned policy orders moves inside exact game solvers; because only the order changes, the result stays exact.
+- Kocsis, Uiterwijk and van den Herik, "Move Ordering Using Neural Networks" (2001, https://www.academia.edu/93225134/Move_Ordering_Using_Neural_Networks): neural move ordering in alpha-beta, reported 20-50% efficiency gains.
+- Per search snippets (not read): Kaneko et al. (2004) learned proof/disproof-number initialisation for df-pn+ in shogi.
+What this work adds is empirical and specific, and has NOT been checked against the literature beyond the above: exact all-depth retrograde labels used with a listwise ranking loss over each position's children; an independent proof checker on every counted solve; held-out symmetry-aware evaluation up to the full 16-move KRvK maximum with an exhaustive sweep; measured extrapolation behaviour (G2); and the failed KBNvK attempt with a perfect-oracle feasibility bound. I make no claim that any of this is state of the art or novel as a method.
+
 ## 8. Next steps (not started)
 Scale the KBNvK training data (all parents, not 6%) and add on-policy hard-example mining; a different use of the network prior inside proof-number search (the initial-number version tested in V500-E12 was worse than plain df-pn); more seeds for the ablation.
